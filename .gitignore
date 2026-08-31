@@ -1,0 +1,48 @@
+# Secrets - never commit
+.env
+.env.local
+.env.*.local
+
+# Uploaded / medical data - NEVER commit
+data/
+**/*.dcm
+**/*.dcmtk
+uploads/
+**/*.scan
+
+# Model weights
+**/*.onnx
+**/*.pt
+**/*.pth
+**/*.h5
+**/*.bin
+**/*.weights
+
+# Logs
+logs/
+*.log
+
+# Temp
+tmp/
+*.tmp
+
+# Caches
+.cache/
+.eslintcache
+
+# Build output
+.next/
+out/
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# TS
+*.tsbuildinfo
+next-env.d.ts
