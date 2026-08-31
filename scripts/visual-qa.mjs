@@ -10,9 +10,9 @@ const BASE = "http://localhost:3000";
     const mobileNav = (html.match(/mobile-nav/g) || []).length;
     const drawerClosed = !(html.match(/drawer-overlay/g) || []).length;
     const banners = (html.match(/banner-strip/g) || []).length;
-    const navLinks = (html.match(/class="nav-link/g) || []).length; // expected: 9 sidebar links
+    const navLinks = (html.match(/class="nav-link/g) || []).length; // expected: 11 sidebar links
     const mainContent = (html.match(/id="main-content"/g) || []).length;
-    const ok = sidebars === 1 && mobileNav === 0 && drawerClosed && banners === 1 && navLinks === 9 && mainContent === 1;
+    const ok = sidebars === 1 && mobileNav === 0 && drawerClosed && banners === 1 && navLinks === 11 && mainContent === 1;
     if (!ok) allOk = false;
     console.log(`${ok ? "[ok ]" : "[FAIL]"} ${route.padEnd(12)} sidebars=${sidebars} mobileNavInDOM=${mobileNav} drawerClosed=${drawerClosed} banners=${banners} navLinks=${navLinks} main=${mainContent}`);
   }

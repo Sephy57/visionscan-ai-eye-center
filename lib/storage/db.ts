@@ -21,7 +21,11 @@ export type Collection =
   | "users"
   | "datasets"
   | "dataset_samples"
-  | "adjudications";
+  | "adjudications"
+  | "evidence"
+  | "transitions"
+  | "evaluation_runs"
+  | "jobs";
 
 interface DbShape {
   meta: { version: number; createdAt: string; lastWrite: string };
@@ -41,6 +45,10 @@ const EMPTY: DbShape = {
     datasets: {},
     dataset_samples: {},
     adjudications: {},
+    evidence: {},
+    transitions: {},
+    evaluation_runs: {},
+    jobs: {},
   },
 };
 
@@ -66,9 +74,25 @@ async function load(): Promise<DbShape> {
 function persist(db: DbShape): Promise<void> {
   db.meta.lastWrite = new Date().toISOString();
   writeChain = writeChain.then(async () => {
-    const tmp = DATABASE_FILE + ".tmp";
-    await fs.writeFile(tmp, JSON.stringify(db, null, 2), "utf8");
-    await fs.rename(tmp, DATABASE_FILE); // atomic on same volume
+    // Unique temp name per write: parallel vitest workers / server + tests
+    // otherwise race on a shared .tmp file (Windows rename -> ENOENT/EPERM).
+    const tmp = `${DATABASE_FILE}.${process.pid}.${Math.random().toString(36).slice(2, 8)}.tmp`;
+    const payload = JSON.stringify(db, null, 2);
+    // Small retry loop: Windows AV/indexer can briefly lock the destination.
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        await fs.writeFile(tmp, payload, "utf8");
+        await fs.rename(tmp, DATABASE_FILE); // atomic on same volume
+        return;
+      } catch (err) {
+        lastErr = err;
+        await new Promise((r) => setTimeout(r, 50 * (attempt + 1)));
+      } finally {
+        await fs.rm(tmp, { force: true }).catch(() => {});
+      }
+    }
+    throw lastErr;
   });
   return writeChain;
 }
