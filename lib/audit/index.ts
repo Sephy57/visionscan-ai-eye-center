@@ -84,6 +84,8 @@ export interface AnalysisAuditRecord {
   uncertainty: number;
   ruleset_version: string;
   triage_priority: string;
+  symptoms_reported?: boolean;
+  red_flags?: string[];
   ts: string;
 }
 

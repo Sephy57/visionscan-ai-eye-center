@@ -36,8 +36,9 @@ export interface TriageInput {
   qualityScore: number;
   uncertainty: number;
   modality: string;
-  redFlagSymptoms?: string[]; // e.g. ["sudden_vision_loss", "flashes_with_floaters", "curtain_in_vision", "severe_eye_pain"]
+  redFlagSymptoms?: string[]; // symptom vocabulary types that are configured red flags
   ood?: { detected: boolean; message?: string }; // out-of-distribution / unsupported operating conditions
+  symptomUrgency?: "emergency" | "urgent" | "prompt" | "routine"; // from correlation engine
 }
 
 const HIGH_RISK = new Set([
@@ -50,8 +51,18 @@ const HIGH_RISK = new Set([
   "possible_occlusive_change",
 ]);
 
+// Phase 3: maps symptom vocabulary types to triage priorities.
+// Escalation is conservative and NEVER names a condition.
 const RED_FLAG_MAP: Record<string, TriagePriority> = {
+  // Phase 3 symptom vocabulary
   sudden_vision_loss: "emergency_evaluation",
+  curtain_shadow: "emergency_evaluation",
+  trauma_with_vision_loss: "emergency_evaluation",
+  severe_eye_pain_with_visual_disturbance: "emergency_evaluation",
+  new_floaters: "urgent_eye_care_review",
+  flashes_with_field_loss: "urgent_eye_care_review",
+  recent_eye_trauma: "urgent_eye_care_review",
+  // Legacy keys kept for compatibility with existing tests
   curtain_in_vision: "emergency_evaluation",
   flashes_with_floaters: "urgent_eye_care_review",
   severe_eye_pain: "emergency_evaluation",
@@ -69,12 +80,21 @@ export function runTriage(input: TriageInput): TriageOutcome {
       const p = RED_FLAG_MAP[s];
       if (p && priorityRank(p) > priorityRank(worst)) worst = p;
     }
+    // Symptom-engine urgency escalates even when the specific type is not mapped.
+    if (input.symptomUrgency === "emergency") worst = "emergency_evaluation";
+    else if (input.symptomUrgency === "urgent" && priorityRank(worst) < priorityRank("urgent_eye_care_review")) {
+      worst = "urgent_eye_care_review";
+    }
     if (worst !== "routine_follow_up") {
       rules.push("red_flag_symptoms_override");
       return {
         priority: worst,
-        action: triageAction(worst),
-        rationale: "Reported red-flag symptoms take priority over automated imaging assessment.",
+        action:
+          worst === "emergency_evaluation"
+            ? "Urgent review recommended. Your reported symptoms may require prompt professional evaluation - seek ophthalmic assessment now."
+            : "Urgent ophthalmic assessment is recommended based on the reported symptoms.",
+        rationale:
+          "Reported red-flag symptoms take priority over automated imaging assessment. This escalation does NOT name or imply any specific condition.",
         triggered_rules: rules,
       };
     }

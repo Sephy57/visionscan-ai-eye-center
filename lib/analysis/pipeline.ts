@@ -10,6 +10,9 @@ import { modelProvenance, RULESET_VERSION, COMPONENTS, getModel, gateModelUse, d
 import { assessOod, OOD_MESSAGE } from "./ood";
 import { mayEmitFinding } from "./taxonomy";
 import { canonicalModality } from "../models/modalities";
+import { correlateSymptoms } from "../clinical/correlation";
+import { possibleConditions } from "../clinical/conditions";
+import { PatientSymptom, SYMPTOM_MAP, redFlagSymptoms } from "../clinical/symptoms";
 import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
 
 /**
@@ -26,6 +29,7 @@ import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
 export interface PipelineInput {
   study: NormalizedStudy;
   originalBytes: Buffer;
+  symptoms?: PatientSymptom[];   // structured patient-reported symptoms (context ONLY)
 }
 
 export interface PipelineOutput {
@@ -43,6 +47,10 @@ const DISALLOWED_CLAIM_PATTERNS: Array<[RegExp, string]> = [
   // Matches affirmative guarantee claims; the mandatory negated disclaimer
   // "does not guarantee that no eye disease is present" must not trigger this.
   [/(?<!not )\bguarantee/i, "guarantee claim"],
+  // Phase 3: symptom -> diagnosis / symptom -> fabricated finding causal claims.
+  [/because (the patient|they) reports?/i, "symptom-causation claim"],
+  [/due to the reported symptom/i, "symptom-causation claim"],
+  [/symptoms? (indicate|confirm|prove)s? (a |an )?diagnosis/i, "symptom-causation claim"],
 ];
 
 export async function runPipeline(input: PipelineInput): Promise<PipelineOutput> {
@@ -103,6 +111,28 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     uncertainty.overall = Math.min(0.99, uncertainty.overall + 0.1);
   }
 
+  // ---- Stage 5b: symptom correlation (AFTER model output; context only) ----
+  const symptoms = input.symptoms ?? [];
+  const correlation = symptoms.length
+    ? correlateSymptoms({
+        symptoms,
+        findings,
+        qualityAcceptable,
+        modelStatus: modelRecord?.status ?? "DEMO",
+        modelUsesSymptoms: modelRecord?.uses_symptoms ?? false,
+        qualityScore: quality.quality_score,
+      })
+    : null;
+
+  // ---- Stage 5c: possible conditions (associations only; empty for unvalidated models) ----
+  const conditions = possibleConditions({
+    supported_conditions: modelRecord?.supported_conditions ?? [],
+    modality: study.modality,
+    modelStatus: modelRecord?.status ?? "DEMO",
+    hasValidationEvidence: !!modelRecord?.performance.evidence_reference,
+    findings,
+  });
+
   // ---- Stage 6: clinical rule engine / triage ----
   const triage = runTriage({
     findings,
@@ -111,6 +141,10 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     uncertainty: uncertainty.overall,
     modality: study.modality,
     ood: { detected: ood.detected, message: ood.message },
+    // Structured red-flag symptoms escalate via deterministic rules - but they
+    // never name a condition and never create findings.
+    redFlagSymptoms: redFlagSymptoms(symptoms).map((d) => d.type),
+    symptomUrgency: symptoms.length ? correlation!.urgency : undefined,
   });
 
   // ---- Assemble structured result ----
@@ -162,7 +196,25 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         { check: "status_gate", passed: !!modelGate?.allowed, detail: modelGate ? modelGate.reasons.join(" ") || "Status permits demo use only." : "No gate result." },
       ],
       device_compatibility: modelRecord ? deviceCompatible(modelRecord, deviceInfo) : { compatible: false, note: "Device compatibility has not been validated. No registered model in use." },
+      model_input: modelRecord?.input_schema ?? "IMAGE_ONLY",
     },
+    patient_context: {
+      reported: symptoms.length > 0,
+      symptoms: symptoms.map((s) => ({
+        type: s.type,
+        label: SYMPTOM_MAP[s.type]?.label,
+        onset: s.onset, duration: s.duration, severity: s.severity,
+        laterality: s.laterality, progression: s.progression, frequency: s.frequency,
+        free_text: s.free_text ?? null,
+      })),
+      red_flags: redFlagSymptoms(symptoms).map((d) => d.type),
+      note:
+        symptoms.length > 0
+          ? "Patient-reported symptoms provide CONTEXT only. They do not create imaging findings and never establish a diagnosis."
+          : "No structured symptoms were reported for this study.",
+    },
+    symptom_correlation: correlation ?? undefined,
+    possible_conditions: symptoms.length || findings.length ? conditions : undefined,
     recommendation: {
       priority: triage.priority,
       action: triage.action,

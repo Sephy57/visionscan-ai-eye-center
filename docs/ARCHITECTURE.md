@@ -15,7 +15,12 @@ IMAGE INGESTION (device adapters)
      taxonomy-checked: only registry-declared findings for the matching modality)
   -> ENSEMBLE / CONSISTENCY CHECK (single detector => confidence capped, no agreement claims)
   -> UNCERTAINTY ESTIMATION (raw vs calibrated confidence kept separate)
-  -> CLINICAL RULE ENGINE / TRIAGE (deterministic, conservative; AI can never downgrade)
+  -> SYMPTOM CORRELATION (post-hoc; rules-based; CONTEXT ONLY - never creates findings
+     or diagnoses; states: correlated / not_explained / inconclusive / conflicting / urgent)
+  -> POSSIBLE CONDITIONS (empty unless model is validated + registered + modality matches
+     + relevant findings detected)
+  -> CLINICAL RULE ENGINE / TRIAGE (deterministic, conservative; red-flag symptoms escalate
+     without a model diagnosis; AI can never downgrade)
   -> SAFETY VALIDATOR (schema + claims + labeling + measurement + OOD checks)
   -> STRUCTURED RESULT (schema-validated JSON)
   -> REPORT GENERATOR (cannot modify findings; model card + validation status surfaced)

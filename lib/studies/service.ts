@@ -7,6 +7,7 @@ import { generateReport, ClinicalReport } from "../reports/generator";
 import { runSafetyChecks } from "../clinical/safety";
 import { audit, appendAnalysisAudit } from "../audit";
 import { pickDemoScenario } from "../analysis/findings";
+import { PatientSymptom, validateSymptoms, SYMPTOM_MAP } from "../clinical/symptoms";
 
 export interface StudyRecord {
   study_id: string;
@@ -18,6 +19,8 @@ export interface StudyRecord {
   files: StoredFile[];
   status: "uploaded" | "analyzed" | "rejected";
   original_sha256: string;
+  symptoms?: PatientSymptom[];        // structured patient-reported context (NOT findings)
+  symptoms_updated_at?: string;
 }
 
 export interface AnalysisRecord {
@@ -60,6 +63,28 @@ export async function createStudy(
   return record;
 }
 
+/** Attach structured patient symptoms to a study (validated; audited; history preserved). */
+export async function setStudySymptoms(
+  studyId: string,
+  symptomsInput: unknown
+): Promise<{ ok: boolean; errors?: unknown[]; symptoms?: PatientSymptom[] }> {
+  const record = await dbGet<StudyRecord>("studies", studyId);
+  if (!record) return { ok: false, errors: [{ message: "Study not found" }] };
+  const v = validateSymptoms(symptomsInput);
+  if (!v.valid) return { ok: false, errors: v.errors };
+  record.symptoms = v.symptoms;
+  record.symptoms_updated_at = new Date().toISOString();
+  await dbPut("studies", studyId, record);
+  await audit({
+    actor: "user",
+    action: "symptoms.set",
+    studyId,
+    outcome: "ok",
+    detail: `${v.symptoms.length} symptom(s): ${v.symptoms.map((s) => s.type).join(",").slice(0, 180)}`,
+  });
+  return { ok: true, symptoms: v.symptoms };
+}
+
 export async function analyzeStudy(studyId: string): Promise<{ analysis: AnalysisResult; report: ClinicalReport }> {
   const record = await dbGet<StudyRecord>("studies", studyId);
   if (!record) throw new Error("Study not found");
@@ -77,6 +102,7 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
       hashSeed: pickDemoScenario(bytes).seed,
     },
     originalBytes: bytes,
+    symptoms: record.symptoms ?? [],
   });
 
   const analysisRecord: AnalysisRecord = {
@@ -102,6 +128,8 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
     uncertainty: analysis.uncertainty.overall,
     ruleset_version: analysis.provenance.ruleset_version,
     triage_priority: analysis.recommendation.priority,
+    symptoms_reported: (record.symptoms?.length ?? 0) > 0,
+    red_flags: analysis.patient_context?.red_flags ?? [],
   });
 
   const report = await generateReport(analysis);

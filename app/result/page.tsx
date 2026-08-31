@@ -27,6 +27,24 @@ interface Bundle {
       model_id: string; model_version: string; model_status: string; display_label: string | null;
       integrity_checks: Array<{ check: string; passed: boolean; detail: string }>;
       device_compatibility: { compatible: boolean; note: string };
+      model_input?: "IMAGE_ONLY" | "IMAGE_AND_SYMPTOMS";
+    };
+    patient_context?: {
+      reported: boolean;
+      symptoms: Array<{ type: string; label?: string; onset: string; duration: string; severity: string; laterality: string; progression: string; frequency: string; free_text?: string | null }>;
+      red_flags: string[];
+      note: string;
+    };
+    symptom_correlation?: {
+      state: "correlated" | "not_explained" | "inconclusive" | "conflicting" | "urgent";
+      urgency: "emergency" | "urgent" | "prompt" | "routine";
+      items: Array<{ symptom_type: string; symptom_label: string; state: string; matched_finding_types: string[]; note: string }>;
+      notes: string[];
+      label: string;
+    };
+    possible_conditions?: {
+      conditions: Array<{ id: string; label: string; matched_findings: string[]; note: string }>;
+      note: string;
     };
     demo: { synthetic_result: boolean; label: string };
     provenance: { analyzed_at: string; pipeline_version: string; ruleset_version: string };
@@ -127,6 +145,62 @@ function ResultInner() {
           <div className="tiny muted" style={{ marginTop: 4 }}>{a.recommendation.rationale}</div>
         </div>
       </div>
+
+      {a.patient_context?.reported && (
+        <div className="card">
+          <div className="card-title">
+            <h3>Patient context — reported symptoms</h3>
+            {a.patient_context.red_flags.length > 0 && <Badge tone="bad">⚠ RED FLAG</Badge>}
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+            {a.patient_context.symptoms.map((s, i) => (
+              <span key={i} className={`badge ${a.patient_context!.red_flags.includes(s.type) ? "bad" : "neutral"}`} title={`${s.onset} onset • ${s.duration.replaceAll("_", " ")} • ${s.severity} • ${s.laterality === "right" ? "right eye" : s.laterality === "left" ? "left eye" : s.laterality}`}>
+                {s.label ?? s.type.replaceAll("_", " ")} • {s.severity} • {s.laterality === "right" ? "OD" : s.laterality === "left" ? "OS" : s.laterality}
+              </span>
+            ))}
+          </div>
+          <p className="tiny muted" style={{ marginBottom: 0 }}>{a.patient_context.note}</p>
+        </div>
+      )}
+
+      {a.symptom_correlation && a.patient_context?.reported && (
+        <div className="card">
+          <div className="card-title">
+            <h3>Symptom / imaging correlation</h3>
+            <Badge tone={a.symptom_correlation.state === "urgent" ? "bad" : a.symptom_correlation.state === "correlated" ? "info" : "warn"}>
+              {a.symptom_correlation.state.replaceAll("_", " ").toUpperCase()}
+            </Badge>
+          </div>
+          {a.symptom_correlation.items.map((item, i) => (
+            <div key={i} style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: i === 0 ? 0 : 10 }}>
+              <strong className="small">{item.symptom_label}</strong>{" "}
+              <Badge tone={item.state === "urgent" ? "bad" : item.state === "correlated" ? "info" : "warn"}>{item.state.replaceAll("_", " ")}</Badge>
+              <p className="small muted" style={{ margin: "4px 0 0" }}>{item.note}</p>
+            </div>
+          ))}
+          <p className="tiny muted" style={{ margin: "10px 0 0" }}>
+            {a.symptom_correlation.notes.join(" ")} Model input: {a.model_registry?.model_input ?? "IMAGE_ONLY"} —
+            symptoms are never used to create findings and never converted into model confidence.
+          </p>
+        </div>
+      )}
+
+      {a.possible_conditions && a.patient_context?.reported && (
+        <div className="card">
+          <div className="card-title"><h3>Possible conditions to consider</h3></div>
+          {a.possible_conditions.conditions.length === 0 ? (
+            <p className="small muted" style={{ margin: 0 }}>
+              No conditions are displayed: the current model is not validated, and condition inference requires
+              documented validation evidence for the specific intended use.
+            </p>
+          ) : (
+            <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>
+              {a.possible_conditions.conditions.map((c) => <li key={c.id}>{c.label} — {c.note}</li>)}
+            </ul>
+          )}
+          <p className="tiny muted" style={{ marginBottom: 0, marginTop: 8 }}>{a.possible_conditions.note}</p>
+        </div>
+      )}
 
       <div className="grid grid-2" style={{ alignItems: "start" }}>
         <div className="card">

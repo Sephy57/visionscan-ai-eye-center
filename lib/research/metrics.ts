@@ -12,6 +12,8 @@ export interface BinaryCase {
   y_pred: 0 | 1;                 // binarized model output at operating point
   score?: number;                // continuous model score for AUROC/AUPRC/calibration
   subgroup?: string;             // e.g. device id, modality, quality band
+  with_symptoms?: boolean;       // whether symptom context was part of the model input for this case
+  symptom_category?: string;     // e.g. "visual", "retinal_vitreous" for symptom-stratified analysis
 }
 
 export interface ConfusionMatrix {
@@ -181,6 +183,52 @@ export function evaluate(cases: BinaryCase[]): EvaluationReport {
     subgroups: subgroupMetrics(cases),
     notes,
   };
+}
+
+/**
+ * Symptom-stratified evaluation (Phase 3): IMAGE ONLY vs IMAGE + SYMPTOM CONTEXT.
+ * Proves experimentally whether symptom information helps - it is never assumed.
+ */
+export interface SymptomStratifiedReport {
+  with_symptoms: EvaluationReport | null;
+  without_symptoms: EvaluationReport | null;
+  delta_notes: string[];
+  by_symptom_category: Array<{ category: string; report: EvaluationReport }>;
+  warning: string;
+}
+
+const STRAT_WARNING =
+  "Do not assume symptoms improve model performance. Improvements must be demonstrated on held-out, " +
+  "patient-level-separated validation data before any claim is made.";
+
+export function symptomStratifiedEvaluation(cases: BinaryCase[]): SymptomStratifiedReport {
+  const withS = cases.filter((c) => c.with_symptoms === true);
+  const withoutS = cases.filter((c) => c.with_symptoms === false);
+  const report: SymptomStratifiedReport = {
+    with_symptoms: withS.length > 0 ? evaluate(withS) : null,
+    without_symptoms: withoutS.length > 0 ? evaluate(withoutS) : null,
+    delta_notes: [],
+    by_symptom_category: [],
+    warning: STRAT_WARNING,
+  };
+  if (report.with_symptoms && report.without_symptoms) {
+    const d = (a: number | null, b: number | null) => (a === null || b === null ? null : Math.round((a - b) * 10000) / 10000);
+    report.delta_notes.push(`Sensitivity delta (with - without): ${d(report.with_symptoms.sensitivity, report.without_symptoms.sensitivity)}`);
+    report.delta_notes.push(`Specificity delta: ${d(report.with_symptoms.specificity, report.without_symptoms.specificity)}`);
+    report.delta_notes.push(`AUROC delta: ${d(report.with_symptoms.auroc, report.without_symptoms.auroc)}`);
+    report.delta_notes.push("False-negative differences must be reviewed for safety-critical conditions.");
+  } else {
+    report.delta_notes.push("Both strata require data before a with/without-symptoms comparison is possible.");
+  }
+  const cats = new Map<string, BinaryCase[]>();
+  for (const c of cases) {
+    if (c.symptom_category) {
+      if (!cats.has(c.symptom_category)) cats.set(c.symptom_category, []);
+      cats.get(c.symptom_category)!.push(c);
+    }
+  }
+  for (const [category, cs] of cats) report.by_symptom_category.push({ category, report: evaluate(cs) });
+  return report;
 }
 
 function round4(x: number): number {

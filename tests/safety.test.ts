@@ -9,7 +9,7 @@ import { safeJoin } from "@/lib/config";
 import { buildOverallResult, buildLimitations } from "@/lib/reports/generator";
 import type { AnalysisResult, Finding } from "@/lib/analysis/schema";
 
-function makeFinding(over: Partial<Finding> = {}): Finding {
+export function makeFinding(over: Partial<Finding> = {}): Finding {
   return {
     id: "find_x",
     type: "possible_retinal_hemorrhage",
@@ -24,7 +24,7 @@ function makeFinding(over: Partial<Finding> = {}): Finding {
   };
 }
 
-function makeResult(over: Partial<AnalysisResult> = {}): AnalysisResult {
+export function makeResult(over: Partial<AnalysisResult> = {}): AnalysisResult {
   return {
     schema_version: "1.0.0",
     study: { study_id: "s1", modality: "fundus", eye: "OD", source: "file_upload", metadata_provenance: "none" },

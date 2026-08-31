@@ -29,6 +29,12 @@ clinical decision-support system with mandatory human oversight, not as a diagno
 - **UI redesign**: premium medical-tech design system (light/dark), imaging viewer (zoom/pan/fit/fullscreen/
   overlay), dashboard, timeline history, side-by-side compare, printable reports.
 
+- **Symptom intake & correlation (Phase 3)**: structured patient symptoms (type/onset/duration/severity/
+  laterality/progression/frequency), red-flag safety escalation independent of model output, transparent
+  rules-based symptom/imaging correlation (CORRELATED / NOT EXPLAINED / INCONCLUSIVE / CONFLICTING / URGENT),
+  condition taxonomy gated to validated models only — symptoms never create findings or diagnoses
+  (`docs/SYMPTOM_CORRELATION.md`).
+
 ## Quick start
 
 ```powershell

@@ -100,6 +100,14 @@ export interface ModelRecord {
   regulatory_status: "none" | "research_only" | "registered" | "cleared" | "approved";
   status: ModelStatus;
   devices: DeviceCompatibility[];      // devices the model is validated/allowed for; empty => no device validated
+  // ---- Symptom support (Phase 3) ----
+  uses_symptoms: boolean;              // false => model input is IMAGE ONLY; correlation runs post-hoc
+  input_schema: "IMAGE_ONLY" | "IMAGE_AND_SYMPTOMS";
+  supported_symptom_types: string[];   // symptom vocabulary types the model actually accepts
+  performance_with_symptoms: PerformanceMetrics | null;   // never assumed - measured experimentally
+  performance_without_symptoms: PerformanceMetrics | null;
+  // ---- Condition support (Phase 3) ----
+  supported_conditions: string[];      // condition taxonomy ids; model cannot claim unregistered conditions
   notes?: string;
 }
 
@@ -271,6 +279,12 @@ export const MODELS: Record<string, ModelRecord> = {
     regulatory_status: "none",
     status: "DEMO",
     devices: [], // no device compatibility has been established
+    uses_symptoms: false,
+    input_schema: "IMAGE_ONLY",
+    supported_symptom_types: [], // image-only model: it consumes no symptoms
+    performance_with_symptoms: null,
+    performance_without_symptoms: null,
+    supported_conditions: [], // DEMO model supports no conditions - none can ever be displayed
     notes: "Registered DEMO model. Produces labeled synthetic output only.",
   },
 };

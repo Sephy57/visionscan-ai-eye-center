@@ -12,11 +12,13 @@ interface Finding {
   region?: { x: number; y: number; w: number; h: number } | null;
 }
 interface Bundle {
-  study?: { study_id: string; modality: string; eye: string; status: string; original_sha256: string };
+  study?: { study_id: string; modality: string; eye: string; status: string; original_sha256: string; symptoms?: Array<{ type: string; label?: string; onset: string; duration: string; severity: string; laterality: string; progression: string; free_text?: string | null }> };
   analysis?: {
     findings: Finding[];
     quality: { acceptable: boolean; status: string; score: number; artifacts: string[]; metrics: Record<string, number | boolean> };
     model_registry?: { model_id: string; model_version: string; model_status: string; device_compatibility: { compatible: boolean; note: string } };
+    patient_context?: { reported: boolean; symptoms: Array<{ type: string; label?: string; onset: string; duration: string; severity: string; laterality: string; progression: string; free_text?: string | null }>; red_flags: string[]; note: string };
+    symptom_correlation?: { state: string; urgency: string; items: Array<{ symptom_type: string; symptom_label: string; state: string; matched_finding_types: string[]; note: string }>; notes: string[]; label: string };
     provenance?: { analyzed_at: string };
   };
   report?: { review: { status: string; reviewer_id?: string; finalized_at?: string }, clinician_interpretation?: { overall: string } | null };
@@ -90,7 +92,46 @@ function ClinicianInner() {
       {msg && <div className="alert ok"><span className="alert-icon" aria-hidden="true">✓</span><div className="alert-body">{msg}</div></div>}
 
       {bundle?.analysis && (
-        <div className="grid" style={{ gridTemplateColumns: "1.2fr 1fr", alignItems: "start", marginTop: 16 }} >
+        <>
+          {bundle.analysis.patient_context?.reported && (
+            <div className="card" style={{ marginTop: 16 }}>
+              <div className="card-title">
+                <h3>Patient symptoms</h3>
+                {bundle.analysis.patient_context.red_flags.length > 0 && <Badge tone="bad">⚠ RED FLAG: {bundle.analysis.patient_context.red_flags.map((r) => r.replaceAll("_", " ")).join(", ")}</Badge>}
+              </div>
+              <table className="table">
+                <thead><tr><th>Symptom</th><th>Onset</th><th>Duration</th><th>Severity</th><th>Eye</th></tr></thead>
+                <tbody>
+                  {bundle.analysis.patient_context.symptoms.map((s, i) => (
+                    <tr key={i}>
+                      <td>{s.label ?? s.type.replaceAll("_", " ")}{bundle.analysis!.patient_context!.red_flags.includes(s.type) ? " ⚠" : ""}</td>
+                      <td>{s.onset}</td>
+                      <td>{s.duration.replaceAll("_", " ")}</td>
+                      <td>{s.severity}</td>
+                      <td>{s.laterality === "right" ? "Right" : s.laterality === "left" ? "Left" : s.laterality}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {bundle.analysis.symptom_correlation && (
+                <div style={{ marginTop: 10 }}>
+                  <strong className="small">Symptom / imaging correlation</strong>{" "}
+                  <Badge tone={bundle.analysis.symptom_correlation.state === "urgent" ? "bad" : "warn"}>
+                    {bundle.analysis.symptom_correlation.state.replaceAll("_", " ")}
+                  </Badge>
+                  {bundle.analysis.symptom_correlation.items.map((item, i) => (
+                    <p key={i} className="small muted" style={{ margin: "6px 0 0" }}>
+                      <strong>{item.symptom_label}:</strong> {item.note}
+                    </p>
+                  ))}
+                  <p className="tiny muted" style={{ marginBottom: 0, marginTop: 6 }}>{bundle.analysis.symptom_correlation.label}</p>
+                </div>
+              )}
+              <p className="tiny muted" style={{ marginBottom: 0, marginTop: 8 }}>{bundle.analysis.patient_context.note}</p>
+            </div>
+          )}
+
+          <div className="grid" style={{ gridTemplateColumns: "1.2fr 1fr", alignItems: "start", marginTop: 16 }} >
           <div className="card" style={{ margin: 0 }}>
             <div className="card-title">
               <h3>Original scan — {bundle.study?.study_id}</h3>
@@ -166,7 +207,8 @@ function ClinicianInner() {
               )}
             </div>
           </div>
-        </div>
+          </div>
+          </>
       )}
 
       {bundle?.analysis && (

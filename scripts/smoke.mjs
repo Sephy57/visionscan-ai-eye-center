@@ -32,7 +32,7 @@ async function main() {
     console.log(`${ok ? "[ok ]" : "[FAIL]"} ${name} ${detail}`);
   };
 
-  // Clean, well-lit synthetic fundus-like image
+  // 1. Upload + analyze clean (with structured symptoms, incl. one red flag)
   const clean = await makeImage("smoke-clean.png", (s) =>
     s(Buffer.from(
       `<svg width="1024" height="768"><rect width="1024" height="768" fill="#7a1f1f"/><circle cx="512" cy="384" r="300" fill="#8e2626"/><circle cx="640" cy="384" r="70" fill="#c96a2a"/><circle cx="660" cy="384" r="28" fill="#e8d9b0"/><path d="M 600 384 Q 500 300 380 260" stroke="#d94f2a" stroke-width="10" fill="none"/></svg>`
@@ -43,10 +43,31 @@ async function main() {
     s(clean).linear(0.03, 0)
   );
 
-  // 1. Upload + analyze clean
   const up = await upload(clean);
   check("upload clean", up.status === 201, JSON.stringify(up.json));
   const studyId = up.json.study_id;
+
+  // 1b. Structured symptom intake (context only; one red-flag symptom)
+  const symRes = await fetch(`${BASE}/api/studies/${studyId}/symptoms`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      symptoms: [
+        { type: "blurred_vision", onset: "gradual", duration: "weeks", severity: "moderate", laterality: "right", progression: "stable", frequency: "constant", free_text: null },
+        { type: "new_floaters", onset: "sudden", duration: "hours", severity: "moderate", laterality: "right", progression: "worsening", frequency: "unknown", free_text: null },
+      ],
+    }),
+  });
+  const symJson = await symRes.json();
+  check("symptom intake (validated, structured)", symRes.status === 200 && symJson.count === 2);
+
+  // 1c. Invalid symptoms are rejected (fail closed)
+  const badSym = await fetch(`${BASE}/api/studies/${studyId}/symptoms`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ symptoms: [{ type: "not_a_real_symptom", onset: "suddenly", duration: "x", severity: "huge", laterality: "middle", progression: "no", frequency: "?" }] }),
+  });
+  check("invalid symptoms rejected", badSym.status === 400);
 
   const an = await fetch(`${BASE}/api/analyze`, {
     method: "POST",
@@ -55,11 +76,28 @@ async function main() {
   });
   const anJson = await an.json();
   check("analyze clean", an.status === 200, JSON.stringify(anJson).slice(0, 200));
+  check(
+    "red-flag symptom escalates triage",
+    anJson.triage_priority === "urgent_eye_care_review" || anJson.triage_priority === "emergency_evaluation",
+    `triage=${anJson.triage_priority}`
+  );
 
-  // 2. Bundle present, report generated
+  // 2. Bundle present, report generated, correlation recorded
   const bundleRes = await fetch(`${BASE}/api/studies/${studyId}`);
   const bundle = await bundleRes.json();
   check("report generated", !!bundle.report, bundle.report?.overall_result);
+  check(
+    "symptom correlation present + image-only model honesty",
+    bundle.analysis?.patient_context?.reported === true &&
+    bundle.analysis?.symptom_correlation?.state === "urgent" &&
+    bundle.analysis?.model_registry?.model_input === "IMAGE_ONLY",
+    `state=${bundle.analysis?.symptom_correlation?.state}`
+  );
+  check(
+    "no conditions displayed for DEMO model",
+    bundle.analysis?.possible_conditions?.conditions?.length === 0,
+    JSON.stringify(bundle.analysis?.possible_conditions?.conditions ?? [])
+  );
 
   // 3. Quality gate rejects dark image (no findings)
   const upDark = await upload(dark);

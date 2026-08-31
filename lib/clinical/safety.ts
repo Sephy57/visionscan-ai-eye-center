@@ -135,5 +135,40 @@ export function runSafetyChecks(result: AnalysisResult): { ok: boolean; checks: 
     passed: true, // enforced structurally in the review service; placeholder here for report-level checks
   });
 
+  // ---- Phase 3 additions ----
+
+  // 16. Symptom -> finding / symptom -> diagnosis hallucination blocking.
+  const correlationText = textFields.join(" ");
+  const symptomCausation = /\b(because (the patient|they) reports?|due to the reported symptom|indicates a diagnosis of|therefore (the )?(patient )?(has|has a))\b/i;
+  checks.push({
+    rule: "no_symptom_driven_findings",
+    passed: !symptomCausation.test(correlationText),
+    detail: "Symptoms must never be worded as causes of findings or diagnoses.",
+  });
+
+  // 17. Correlation honesty: research correlation must be labeled as such.
+  if (result.symptom_correlation) {
+    checks.push({
+      rule: "correlation_labeled_research",
+      passed: result.symptom_correlation.label.includes("NOT CLINICALLY VALIDATED"),
+    });
+  }
+
+  // 18. Possible conditions must be absent for DEMO models (condition inference requires validated evidence).
+  if (result.possible_conditions && result.model_registry?.model_status === "DEMO") {
+    checks.push({
+      rule: "conditions_blocked_for_demo_models",
+      passed: result.possible_conditions.conditions.length === 0,
+    });
+  }
+
+  // 19. Patient context honesty note must be present when symptoms are reported.
+  if (result.patient_context?.reported) {
+    checks.push({
+      rule: "symptom_context_note_present",
+      passed: result.patient_context.note.includes("CONTEXT only"),
+    });
+  }
+
   return { ok: checks.every((c) => c.passed), checks };
 }

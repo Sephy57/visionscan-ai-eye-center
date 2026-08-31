@@ -99,6 +99,41 @@ export interface AnalysisResult {
     display_label: string | null;      // mandatory label when findings produced
     integrity_checks: Array<{ check: string; passed: boolean; detail: string }>;
     device_compatibility: { compatible: boolean; note: string };
+    model_input: "IMAGE_ONLY" | "IMAGE_AND_SYMPTOMS";
+  };
+  patient_context?: {
+    reported: boolean;                 // true when structured symptoms were supplied
+    symptoms: Array<{
+      type: string;
+      label?: string;
+      onset: string;
+      duration: string;
+      severity: string;
+      laterality: string;
+      progression: string;
+      frequency: string;
+      free_text?: string | null;
+      synthetic?: boolean;
+    }>;
+    red_flags: string[];
+    note: string;
+  };
+  symptom_correlation?: {
+    state: "correlated" | "not_explained" | "inconclusive" | "conflicting" | "urgent";
+    urgency: "emergency" | "urgent" | "prompt" | "routine";
+    items: Array<{
+      symptom_type: string;
+      symptom_label: string;
+      state: "correlated" | "not_explained" | "inconclusive" | "conflicting" | "urgent";
+      matched_finding_types: string[];
+      note: string;
+    }>;
+    notes: string[];
+    label: string;                     // "RESEARCH CORRELATION - NOT CLINICALLY VALIDATED"
+  };
+  possible_conditions?: {
+    conditions: Array<{ id: string; label: string; matched_findings: string[]; note: string }>;
+    note: string;
   };
   temporal_comparison?: {
     performed: boolean;
@@ -169,7 +204,34 @@ export function validateAnalysisResult(r: unknown): { valid: boolean; errors: Va
     errors.push({ path: "findings", message: "Findings present although quality gate failed - not permitted" });
   }
 
-  // Phase 2 additions (validated only when the new fields are present).
+  // Phase 3 additions (validated only when the new fields are present).
+
+  // Patient context: symptoms must come from the controlled vocabulary and
+  // must never have generated findings (correlation is wording, not evidence).
+  if (o.patient_context?.reported) {
+    need(Array.isArray(o.patient_context.symptoms), "patient_context.symptoms", "must be array");
+    if (typeof o.patient_context.note !== "string") {
+      errors.push({ path: "patient_context.note", message: "required" });
+    }
+  }
+  if (o.symptom_correlation) {
+    const validStates = ["correlated", "not_explained", "inconclusive", "conflicting", "urgent"];
+    need(validStates.includes(o.symptom_correlation.state), "symptom_correlation.state", "invalid state");
+    need(typeof o.symptom_correlation.label === "string" && o.symptom_correlation.label.length > 0, "symptom_correlation.label", "required");
+    need(
+      o.symptom_correlation.urgency === "emergency" || o.symptom_correlation.urgency === "urgent" ||
+      o.symptom_correlation.urgency === "prompt" || o.symptom_correlation.urgency === "routine",
+      "symptom_correlation.urgency", "invalid urgency"
+    );
+  }
+  if (o.possible_conditions) {
+    need(Array.isArray(o.possible_conditions.conditions), "possible_conditions.conditions", "must be array");
+    // Safety: DEMO models can never surface conditions.
+    if (o.model_registry?.model_status === "DEMO" && (o.possible_conditions.conditions?.length ?? 0) > 0) {
+      errors.push({ path: "possible_conditions.conditions", message: "DEMO models cannot display possible conditions" });
+    }
+  }
+
   (o.findings ?? []).forEach((f, i) => {
     if (f.taxonomy_level === "diagnosis") {
       errors.push({ path: `findings[${i}].taxonomy_level`, message: "Diagnosis-level findings cannot be produced by automated analysis unless separately authorized" });

@@ -14,6 +14,20 @@ interface Report {
   findings: Array<{ id: string; type: string; location: string; severity: string; confidence: number; confidence_category: string; explanation: string; synthetic: boolean }>;
   possible_associations_note: string;
   uncertainty: { overall: number; reasons: string[] };
+  patient_context?: {
+    reported: boolean;
+    symptoms: Array<{ type: string; label?: string; onset: string; duration: string; severity: string; laterality: string; progression: string; frequency: string; free_text?: string | null }>;
+    red_flags: string[];
+    note: string;
+  };
+  symptom_correlation?: {
+    state: string;
+    urgency: string;
+    items: Array<{ symptom_type: string; symptom_label: string; state: string; matched_finding_types: string[]; note: string }>;
+    notes: string[];
+    label: string;
+  };
+  possible_conditions?: { conditions: Array<{ id: string; label: string; matched_findings: string[]; note: string }>; note: string } | null;
   measurements_note: string;
   limitations: string[];
   recommended_next_step: string;
@@ -126,6 +140,61 @@ function ReportInner() {
           </div>
         ))}
       </div>
+
+      {report.patient_context?.reported && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Reported symptoms</h3>
+          <table className="table">
+            <thead><tr><th>Symptom</th><th>Onset</th><th>Duration</th><th>Severity</th><th>Eye</th><th>Progression</th></tr></thead>
+            <tbody>
+              {report.patient_context.symptoms.map((s, i) => (
+                <tr key={i}>
+                  <td>{s.label ?? s.type.replaceAll("_", " ")}{report.patient_context!.red_flags.includes(s.type) ? " ⚠" : ""}</td>
+                  <td>{s.onset}</td>
+                  <td>{s.duration.replaceAll("_", " ")}</td>
+                  <td>{s.severity}</td>
+                  <td>{s.laterality === "right" ? "Right (OD)" : s.laterality === "left" ? "Left (OS)" : s.laterality}</td>
+                  <td>{s.progression}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {report.patient_context.symptoms.some((s) => s.free_text) && (
+            <p className="small muted">Description: {report.patient_context.symptoms.filter((s) => s.free_text).map((s) => s.free_text).join(" | ")}</p>
+          )}
+          <p className="tiny muted" style={{ marginBottom: 0 }}>{report.patient_context.note}</p>
+        </div>
+      )}
+
+      {report.symptom_correlation && report.patient_context?.reported && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Symptom / imaging correlation <Badge tone="warn">{report.symptom_correlation.label}</Badge></h3>
+          {report.symptom_correlation.items.map((item, i) => (
+            <div key={i} style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: i === 0 ? 0 : 10 }}>
+              <strong className="small">{item.symptom_label}</strong> — {item.state.replaceAll("_", " ")}
+              <p className="small muted" style={{ margin: "4px 0 0" }}>{item.note}</p>
+            </div>
+          ))}
+          <p className="tiny muted" style={{ margin: "10px 0 0" }}>
+            Overall state: {report.symptom_correlation.state.replaceAll("_", " ")} • Urgency: {report.symptom_correlation.urgency}.{" "}
+            {report.symptom_correlation.notes.join(" ")}
+          </p>
+        </div>
+      )}
+
+      {report.possible_conditions && report.patient_context?.reported && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Possible conditions to consider</h3>
+          {report.possible_conditions.conditions.length === 0 ? (
+            <p className="small muted" style={{ margin: 0 }}>No condition associations met the evidence requirements for display (model not validated).</p>
+          ) : (
+            <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>
+              {report.possible_conditions.conditions.map((c) => <li key={c.id}><strong>{c.label}</strong> — {c.note} (matched findings: {c.matched_findings.join(", ")})</li>)}
+            </ul>
+          )}
+          <p className="tiny muted" style={{ marginBottom: 0, marginTop: 8 }}>{report.possible_conditions.note}</p>
+        </div>
+      )}
 
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Measurements</h3>
