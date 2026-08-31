@@ -31,18 +31,31 @@ function ProcessingInner() {
 
     (async () => {
       try {
+        // Timeout guard: if the server is unreachable or the request hangs,
+        // fail visibly instead of spinning forever.
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 60000);
         const res = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ study_id: study }),
+          signal: controller.signal,
         });
+        clearTimeout(timer);
         const data = await res.json();
         if (cancelled) return;
         if (!res.ok) throw new Error(data.error ?? "Analysis failed");
         setStep(STAGES.length);
         setTimeout(() => router.replace(`/result?study=${encodeURIComponent(study)}`), 450);
       } catch (e) {
-        if (!cancelled) { setError(e instanceof Error ? e.message : String(e)); clearInterval(tick); }
+        if (!cancelled) {
+          clearInterval(tick);
+          setError(
+            e instanceof DOMException && e.name === "AbortError"
+              ? "The analysis request timed out. The server may not be running or is unreachable."
+              : e instanceof Error ? e.message : String(e)
+          );
+        }
       }
     })();
 
