@@ -135,6 +135,26 @@ export interface AnalysisResult {
     conditions: Array<{ id: string; label: string; matched_findings: string[]; note: string }>;
     note: string;
   };
+  // Phase 3.2: future-ready visualization API. The current DEMO model emits
+  // NONE of these; the UI must display an honest empty state instead of
+  // fabricating boxes, masks, or heatmaps.
+  visualizations?: {
+    localizations: Array<{
+      id: string;
+      finding_id?: string;
+      kind: "bounding_box" | "mask" | "marker" | "heatmap";
+      // normalized 0..1 coordinates for bounding_box; mask/heatmap carry a
+      // reference to externally stored pixel data (never inline base64 here)
+      coordinates?: { x: number; y: number; w: number; h: number };
+      data_ref?: string;
+      priority: "high" | "moderate" | "low";
+      model_id: string;
+      model_version: string;
+      note: string;
+    }>;
+    segmentation: { available: true; data_ref: string; model_id: string; model_version: string } | null;
+    note: string;
+  };
   temporal_comparison?: {
     performed: boolean;
     note: string;
@@ -230,6 +250,24 @@ export function validateAnalysisResult(r: unknown): { valid: boolean; errors: Va
     if (o.model_registry?.model_status === "DEMO" && (o.possible_conditions.conditions?.length ?? 0) > 0) {
       errors.push({ path: "possible_conditions.conditions", message: "DEMO models cannot display possible conditions" });
     }
+  }
+
+  // Phase 3.2: visualization safety — unvalidated/DEMO models can never emit
+  // localizations or segmentation, so no fake boxes/masks/heatmaps can exist.
+  if (o.visualizations) {
+    need(Array.isArray(o.visualizations.localizations), "visualizations.localizations", "must be array");
+    const demoish = ["DEMO", "RESEARCH", "INTERNAL_VALIDATION"].includes(o.model_registry?.model_status ?? "DEMO");
+    if (demoish && (o.visualizations.localizations?.length ?? 0) > 0) {
+      errors.push({ path: "visualizations.localizations", message: "Unvalidated models cannot emit localization overlays" });
+    }
+    if (demoish && o.visualizations.segmentation !== null && o.visualizations.segmentation !== undefined) {
+      errors.push({ path: "visualizations.segmentation", message: "Unvalidated models cannot emit segmentation" });
+    }
+    (o.visualizations.localizations ?? []).forEach((l, i) => {
+      if (!l.model_id || !l.model_version || !l.note) {
+        errors.push({ path: `visualizations.localizations[${i}]`, message: "localization provenance (model/version/note) required" });
+      }
+    });
   }
 
   (o.findings ?? []).forEach((f, i) => {

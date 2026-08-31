@@ -19,6 +19,7 @@ export interface StudyRecord {
   files: StoredFile[];
   status: "uploaded" | "analyzed" | "rejected";
   original_sha256: string;
+  patient_ref?: string;               // user-supplied study identifier (e.g. "VS-2026-0001"); optional, never invented
   symptoms?: PatientSymptom[];        // structured patient-reported context (NOT findings)
   symptoms_updated_at?: string;
 }
@@ -34,7 +35,8 @@ export async function createStudy(
   fileName: string,
   mime: string,
   bytes: Buffer,
-  declared: DeviceMetadata
+  declared: DeviceMetadata,
+  patientRef?: string
 ): Promise<StudyRecord> {
   const studyId = newId("study");
   const adapter = new SecureFileImportAdapter(declared);
@@ -57,6 +59,7 @@ export async function createStudy(
     files: [file],
     status: "uploaded",
     original_sha256: file.sha256,
+    patient_ref: patientRef?.trim() ? patientRef.trim().slice(0, 64) : undefined,
   };
   await dbPut("studies", studyId, record);
   await audit({ actor: "user", action: "upload", studyId, outcome: "ok", detail: `modality=${study.modality} eye=${study.eye}` });

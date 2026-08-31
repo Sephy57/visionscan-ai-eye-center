@@ -68,7 +68,18 @@ function ClinicianInner() {
 
   return (
     <div>
-      <h1>Clinical review</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+        <div>
+          <div className="stat-label">Clinician review</div>
+          <h1 style={{ marginBottom: 2 }}>Clinical Review</h1>
+          <p className="muted small" style={{ margin: 0 }}>Stored locally in this research environment. AI output and clinician interpretation are kept separate.</p>
+        </div>
+        {bundle?.report && (
+          <Badge tone={bundle.report.review.status === "ai_only" ? "warn" : bundle.report.review.status === "clinician_finalized" ? "ok" : "info"}>
+            {bundle.report.review.status === "ai_only" ? "AWAITING REVIEW" : bundle.report.review.status.replaceAll("_", " ").toUpperCase()}
+          </Badge>
+        )}
+      </div>
       <p className="muted">
         Human-in-the-loop review workspace. Confirm, reject, or correct AI findings, mark the case indeterminate,
         request a new scan, or finalize the report. The AI never modifies your interpretation — records are kept
@@ -142,7 +153,7 @@ function ClinicianInner() {
               src={`/api/studies/${encodeURIComponent(studyId)}/image`}
               alt={`Original scan ${bundle.study?.study_id}`}
               region={activeRegion}
-              overlayAvailable={activeRegion != null}
+              localizations={[]}
               overlayUnavailableNote="AI localization is not available for this model."
             />
             <p className="tiny muted" style={{ marginBottom: 0, marginTop: 8 }}>
@@ -154,6 +165,9 @@ function ClinicianInner() {
           <div style={{ display: "grid", gap: 16 }}>
             <div className="card" style={{ margin: 0 }}>
               <div className="card-title">
+                <h3 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)", margin: 0 }}>AUTOMATED ANALYSIS — Research output</h3>
+              </div>
+              <div className="card-title" style={{ marginTop: -6 }}>
                 <h3>AI findings ({bundle.analysis.findings.length})</h3>
                 {bundle.report?.review.status !== "ai_only" && <Badge tone="info">{bundle.report?.review.status.replaceAll("_", " ")}</Badge>}
               </div>
@@ -187,7 +201,10 @@ function ClinicianInner() {
             </div>
 
             <div className="card" style={{ margin: 0 }}>
-              <div className="card-title"><h3>Case decision</h3></div>
+              <div className="card-title" style={{ marginBottom: 4 }}>
+              <h3 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>CLINICIAN INTERPRETATION — Human review</h3>
+            </div>
+            <div className="card-title"><h3>Case decision</h3></div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {ACTIONS.filter(([a]) => a !== "confirm" && a !== "reject").map(([a, label, style]) => (
                   <button key={a} className={`btn ${style === "danger" ? "danger" : "secondary"} sm`} onClick={() => act(a)}>{label}</button>

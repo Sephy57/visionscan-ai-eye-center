@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       providedBy: manufacturer || model ? "user" : "none",
     };
 
-    const study = await createStudy(file.name, mime, bytes, declared);
+    const study = await createStudy(file.name, mime, bytes, declared, String(form.get("patientRef") ?? "").trim() || undefined);
     return NextResponse.json({ study_id: study.study_id, status: study.status, sha256: study.original_sha256 }, { status: 201 });
   } catch (err) {
     await audit({ actor: "user", action: "upload", outcome: "error", detail: String(err).slice(0, 200) });

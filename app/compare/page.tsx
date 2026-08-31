@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import ScanViewer from "@/components/ScanViewer";
+import { Icon } from "@/components/icons";
 import { Badge, EmptyState } from "@/components/ui";
 
 interface StudyRow { study_id: string; created_at: string; modality: string; eye: string; status: string }
@@ -86,8 +87,11 @@ function CompareInner() {
             <ScanViewer
               src={`/api/studies/${encodeURIComponent(previous)}/image`}
               alt="Previous scan"
+              zoom={sync ? zoom : undefined}
+              onZoomChange={sync ? setZoom : undefined}
+              infoOverlay={{ eye: prevBundle.study.eye, modality: prevBundle.study.modality }}
             />
-          ) : <EmptyState icon="◉" title="Select a previous scan" />}
+          ) : <EmptyState icon={<Icon name="eye" size={22} />} title="Select a previous scan" />}
         </div>
         <div className="card">
           <div className="card-title"><h3>Current scan</h3>{curBundle?.study && <Badge tone="neutral">{curBundle.study.modality} • {curBundle.study.eye}</Badge>}</div>
@@ -96,9 +100,11 @@ function CompareInner() {
               src={`/api/studies/${encodeURIComponent(current)}/image`}
               alt="Current scan"
               region={curBundle.analysis?.findings?.[0]?.region ?? null}
-              overlayAvailable={curBundle.analysis?.findings?.[0]?.region != null}
+              zoom={sync ? zoom : undefined}
+              onZoomChange={sync ? setZoom : undefined}
+              infoOverlay={{ eye: curBundle.study.eye, modality: curBundle.study.modality }}
             />
-          ) : <EmptyState icon="◉" title="Select a current scan" />}
+          ) : <EmptyState icon={<Icon name="eye" size={22} />} title="Select a current scan" />}
         </div>
       </div>
 

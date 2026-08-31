@@ -83,6 +83,7 @@ async function sha256Hex(buf: ArrayBuffer): Promise<string> {
 export default function AnalyzePage() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
+  const [patientRef, setPatientRef] = useState("");
   const [drafts, setDrafts] = useState<SymptomDraft[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -139,6 +140,7 @@ export default function AnalyzePage() {
       fd.set("file", file);
       fd.set("scanType", scanType);
       fd.set("eye", eye);
+      if (patientRef) fd.set("patientRef", patientRef);
       if (manufacturer) fd.set("manufacturer", manufacturer);
       if (deviceModel) fd.set("deviceModel", deviceModel);
       if (scanDateTime) fd.set("scanDateTime", scanDateTime);
@@ -316,6 +318,13 @@ export default function AnalyzePage() {
             </div>
           )}
 
+          <div className="card" style={{ marginTop: 14, padding: "12px 16px" }}>
+            <div className="field" style={{ margin: 0 }}>
+              <label htmlFor="patientRef">Patient / study identifier (optional — use a pseudonymous code, never real names)</label>
+              <input id="patientRef" value={patientRef} onChange={(e) => setPatientRef(e.target.value)} placeholder="e.g. VS-2026-0001" maxLength={64} />
+            </div>
+          </div>
+
           <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
             <button className="btn" onClick={() => setStep(2)}>Continue to Scan Upload →</button>
             <button className="btn ghost" onClick={() => { setDrafts([]); setStep(2); }}>Skip symptoms</button>
@@ -335,6 +344,7 @@ export default function AnalyzePage() {
                 <button className="btn ghost sm" onClick={() => setStep(1)}>Edit Symptoms</button>
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {patientRef && <span className="badge info">{patientRef}</span>}
                 {drafts.map((d) => (
                   <span key={d.type} className={`badge ${RED_FLAG_TYPES.has(d.type) ? "bad" : "neutral"}`}>
                     {labelOf(d.type)} • {d.onset} • {d.laterality === "right" ? "OD" : d.laterality === "left" ? "OS" : d.laterality}

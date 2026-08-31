@@ -293,7 +293,34 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
 /* ---------- Viewer (scan pixels NEVER filtered) ---------- */
-.viewer-frame { background: #000; border-radius: var(--radius); overflow: hidden; border: 1px solid #000; }
+.viewer-frame { background: #000; border-radius: var(--radius); overflow: hidden; border: 1px solid #000; position: relative; }
+.viewer-info {
+  position: absolute; top: 8px; right: 8px; z-index: 5; display: flex; flex-direction: column;
+  gap: 4px; align-items: flex-end; pointer-events: none;
+}
+.viewer-info-chip {
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  color: #cbd5e1; background: rgba(10, 14, 20, 0.72); border: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 2px 8px; border-radius: 4px;
+}
+.viewer-info-warn { color: #fbbf24; border-color: rgba(251, 191, 36, 0.4); }
+.viewer-overlay-box.loc-high { border-color: #f87171; background: rgba(248, 113, 113, 0.12); }
+.viewer-overlay-box.loc-moderate { border-color: #38bdf8; background: rgba(56, 189, 248, 0.1); }
+.viewer-overlay-box.loc-low { border-color: #a3aebc; background: rgba(163, 174, 188, 0.08); }
+
+/* Three-zone workstation (result page) */
+.zone-3 { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1.05fr) minmax(0, 0.78fr); gap: 14px; align-items: start; }
+@media (max-width: 1180px) { .zone-3 { grid-template-columns: 1fr 1fr; } .zone-3 .zone-viewer { grid-column: 1 / -1; } }
+@media (max-width: 760px) { .zone-3 { grid-template-columns: 1fr; } }
+
+/* Skeletons */
+.skel { position: relative; overflow: hidden; background: var(--surface-3); border-radius: var(--radius-sm); }
+.skel::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--text-3) 12%, transparent), transparent);
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer { to { transform: translateX(100%); } }
 .viewer-viewport { position: relative; height: 480px; overflow: hidden; cursor: grab; touch-action: none; }
 .viewer-viewport.dragging { cursor: grabbing; }
 .viewer-img-wrap { position: absolute; top: 50%; left: 50%; transform-origin: center; will-change: transform; }

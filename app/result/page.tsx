@@ -16,7 +16,7 @@ interface Finding {
 }
 
 interface Bundle {
-  study?: { study_id: string; modality: string; eye: string; status: string; created_at: string; original_sha256: string };
+  study?: { study_id: string; modality: string; eye: string; status: string; created_at: string; original_sha256: string; patient_ref?: string };
   analysis?: {
     study: { eye: string; modality: string };
     quality: { score: number; status: string; acceptable: boolean; artifacts: string[]; metrics: Record<string, number | boolean> };
@@ -47,12 +47,33 @@ interface Bundle {
       conditions: Array<{ id: string; label: string; matched_findings: string[]; note: string }>;
       note: string;
     };
+    visualizations?: {
+      localizations: Array<unknown>;
+      segmentation: unknown;
+      note: string;
+    };
     demo: { synthetic_result: boolean; label: string };
     provenance: { analyzed_at: string; pipeline_version: string; ruleset_version: string };
     safety: { disclaimers: string[] };
   };
   report?: { report_id: string; overall_result: string };
   error?: string;
+}
+
+function ResultSkeleton() {
+  return (
+    <div className="zone-3" aria-busy="true" aria-label="Loading study">
+      <div className="zone-viewer"><div className="skel" style={{ height: 420 }} /></div>
+      <div>
+        <div className="skel" style={{ height: 180, marginBottom: 14 }} />
+        <div className="skel" style={{ height: 130 }} />
+      </div>
+      <div>
+        <div className="skel" style={{ height: 230, marginBottom: 14 }} />
+        <div className="skel" style={{ height: 110 }} />
+      </div>
+    </div>
+  );
 }
 
 function ResultInner() {
@@ -78,20 +99,21 @@ function ResultInner() {
         <h1>Unable to open result</h1>
         <div className="alert danger"><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body"><strong>We were unable to display this result</strong>{err}</div></div>
         <div style={{ display: "flex", gap: 10 }}>
-          <Link className="btn" href="/analyze">Upload Another Scan</Link>
+          <Link className="btn" href="/analyze">Upload New Scan</Link>
           <Link className="btn secondary" href="/dashboard">Return to Dashboard</Link>
         </div>
       </div>
     );
   }
-  if (!data?.analysis) return <div style={{ display: "flex", justifyContent: "center", padding: 60 }}><div className="spinner" /></div>;
+  if (!data?.analysis) return <ResultSkeleton />;
 
   const a = data.analysis;
   const rejected = !a.quality.acceptable;
   const abnormal = a.findings.length > 0;
   const ood = a.ood?.detected === true;
   const hasImage = !!data.study;
-  const redFlag = (a.patient_context?.red_flags.length ?? 0) > 0;
+  const redFlags = a.patient_context?.red_flags ?? [];
+  const hasRedFlag = redFlags.length > 0;
 
   const heroClass = rejected ? "reject" : abnormal || ood ? "abnormal" : "normal";
   const headline = rejected
@@ -102,13 +124,36 @@ function ResultInner() {
         ? "Automated interpretation inconclusive"
         : "No significant abnormality detected by automated screening";
 
+  const eyeLabel = (l?: string) => l === "OD" || l === "right" ? "RIGHT EYE" : l === "OS" || l === "left" ? "LEFT EYE" : l === "both" ? "BOTH EYES" : "EYE: UNKNOWN";
+  const modalityLabel = (m?: string) => (m ? m.replaceAll("_", " ").toUpperCase() : "UNKNOWN MODALITY");
+
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10, marginBottom: 4 }}>
+      {/* ---- Red-flag panel: always near the top, never buried ---- */}
+      {hasRedFlag && (
+        <div className="alert danger" role="alert" style={{ marginTop: 0 }}>
+          <span className="alert-icon" aria-hidden="true">⚠</span>
+          <div className="alert-body">
+            <strong>URGENT REVIEW</strong>
+            {a.patient_context!.symptoms
+              .filter((s) => redFlags.includes(s.type))
+              .map((s) => (
+                <div key={s.type}>
+                  {s.label ?? s.type.replaceAll("_", " ")} was reported
+                  {s.laterality === "right" ? " (right eye)" : s.laterality === "left" ? " (left eye)" : ""}.
+                </div>
+              ))}
+            Prompt ophthalmic assessment is recommended. This escalation does not name or imply any specific condition.
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10, margin: hasRedFlag ? "12px 0 4px" : "0 0 4px" }}>
         <div>
           <div className="stat-label">Analysis complete</div>
           <h1 style={{ marginBottom: 2 }}>Result</h1>
           <p className="small muted" style={{ margin: 0 }}>
+            {data.study?.patient_ref ? <><strong>{data.study.patient_ref}</strong> • </> : null}
             {data.study?.study_id} • {a.study?.eye} • {a.study?.modality} • {new Date(a.provenance.analyzed_at).toLocaleString()}
           </p>
         </div>
@@ -132,177 +177,173 @@ function ResultInner() {
         </p>
       </div>
 
-      <div className="grid" style={{ gridTemplateColumns: "1.45fr 1fr", alignItems: "start" }}>
-        {/* ---- Scan viewer (prominent) ---- */}
-        <div className="card" style={{ margin: 0, padding: 12 }}>
+      {/* ---- Three-zone workstation ---- */}
+      <div className="zone-3">
+        {/* ZONE 1 — viewer */}
+        <div className="zone-viewer card" style={{ margin: 0, padding: 12 }}>
           <div className="card-title" style={{ padding: "0 4px", marginBottom: 8 }}>
             <h3 style={{ fontSize: "0.88rem" }}>Scan viewer</h3>
-            <Badge tone="neutral">{a.study?.modality} • {a.study?.eye}</Badge>
+            <Badge tone="neutral">{a.study?.eye} • {a.study?.modality}</Badge>
           </div>
           {hasImage ? (
             <ScanViewer
               src={`/api/studies/${encodeURIComponent(study)}/image`}
               alt={`Original scan ${data.study?.study_id}`}
               region={activeRegion}
-              overlayAvailable={activeRegion != null}
-              overlayUnavailableNote="AI localization is not available for this model."
+              localizations={[]}
+              infoOverlay={{
+                eye: eyeLabel(a.study?.eye),
+                modality: modalityLabel(a.study?.modality),
+                analysisLabel: "RESEARCH ANALYSIS",
+              }}
             />
           ) : (
             <EmptyState icon={<Icon name="eye" size={26} />} title="Original image unavailable" />
           )}
+          <p className="tiny muted" style={{ margin: "8px 4px 0" }}>
+            The scan is displayed with unmodified pixels. Labels and overlays are rendered around the image, never
+            burned into it.
+          </p>
         </div>
 
-        {/* ---- Analysis summary sidebar ---- */}
-        <div style={{ display: "grid", gap: 14 }}>
+        {/* ZONE 2 — findings / context */}
+        <div style={{ display: "grid", gap: 14, alignContent: "start" }}>
           <div className="card" style={{ margin: 0 }}>
-            <div className="card-title"><h3 style={{ fontSize: "0.88rem" }}>Analysis summary</h3></div>
-            <dl className="kv" style={{ gridTemplateColumns: "120px 1fr" }}>
-              <dt>Status</dt>
-              <dd><Badge tone="warn">{a.model_registry?.model_status ?? "DEMO"}</Badge> <span className="tiny muted">research only</span></dd>
-              <dt>Image quality</dt>
-              <dd><Badge tone={a.quality.acceptable ? "ok" : "bad"}>{a.quality.status === "pass" ? "Good" : a.quality.status === "borderline" ? "Borderline" : "Insufficient"}</Badge> <span className="tiny muted">{a.quality.score}</span></dd>
-              <dt>Findings</dt>
-              <dd className="small">{abnormal ? `${a.findings.length} signal${a.findings.length > 1 ? "s" : ""} (synthetic demo)` : "No validated findings"}</dd>
-              <dt>Uncertainty</dt>
-              <dd className="small">{(a.uncertainty.overall * 100).toFixed(0)}%</dd>
-              <dt>Symptom correlation</dt>
-              <dd className="small">
-                {a.symptom_correlation && a.patient_context?.reported
-                  ? `${a.symptom_correlation.state.replaceAll("_", " ")} (research)`
-                  : a.patient_context?.reported ? "inconclusive" : "no symptoms reported"}
-              </dd>
-              <dt>Model input</dt>
-              <dd className="small">{a.model_registry?.model_input ?? "IMAGE_ONLY"}</dd>
-            </dl>
-          </div>
-
-          <div className="card" style={{ margin: 0 }}>
-            <div className="card-title"><h3 style={{ fontSize: "0.88rem" }}>Urgency</h3></div>
-            <TriageBadge priority={a.recommendation.priority} />
-            <p className="small" style={{ margin: "8px 0 0" }}>{a.recommendation.action}</p>
-            <p className="tiny muted" style={{ margin: "4px 0 0" }}>{a.recommendation.rationale}</p>
-          </div>
-
-          <div className="card" style={{ margin: 0 }}>
-            <div className="card-title"><h3 style={{ fontSize: "0.88rem" }}>Image quality detail</h3></div>
-            <dl className="kv" style={{ gridTemplateColumns: "1fr auto" }}>
-              {[
-                ["Sharpness", !a.quality.artifacts.includes("blur")],
-                ["Lighting", !a.quality.artifacts.includes("poor_illumination") && !a.quality.artifacts.includes("overexposure")],
-                ["Glare", !a.quality.artifacts.includes("glare")],
-                ["Resolution", !a.quality.artifacts.includes("insufficient_resolution")],
-                ["Field of view", !a.quality.artifacts.includes("incorrect_field_of_view")],
-              ].map(([label, ok]) => (
-                <dt key={String(label)} style={{ display: "flex", justifyContent: "space-between", gridColumn: "1 / -1", borderBottom: "1px solid var(--border)", paddingBottom: 4 }}>
-                  <span>{String(label)}</span>
-                  <span className="qc-check" style={{ color: ok ? "var(--ok)" : "var(--danger)", fontWeight: 700 }}>{ok ? "●" : "✕"}</span>
-                </dt>
-              ))}
-            </dl>
-            {rejected && (
-              <p className="tiny" style={{ color: "var(--danger)", marginBottom: 0 }}>
-                Detected artifacts: {a.quality.artifacts.join(", ")}. No clinical findings are generated when quality is insufficient.
-              </p>
+            <div className="card-title"><h3 style={{ fontSize: "0.9rem" }}>Findings</h3><Badge tone="neutral">{abnormal ? a.findings.length : 0}</Badge></div>
+            {!abnormal && (
+              <div className="empty-state" style={{ padding: "22px 14px" }}>
+                <h3 style={{ fontSize: "0.9rem" }}>NO VALIDATED FINDINGS</h3>
+                <p className="tiny muted" style={{ marginBottom: 8 }}>
+                  The currently installed model does not provide clinically validated ophthalmic findings.
+                  This scan has not been clinically interpreted by VisionScan AI.
+                </p>
+                <dl className="kv tiny" style={{ gridTemplateColumns: "auto 1fr", textAlign: "left", gap: "2px 10px" }}>
+                  <dt>Model</dt><dd>{a.model_registry?.model_id}</dd>
+                  <dt>Status</dt><dd>Research only</dd>
+                </dl>
+              </div>
             )}
+            {a.findings.map((f) => (
+              <div key={f.id} className="finding-card" style={{ marginBottom: 10, boxShadow: "none" }}>
+                <div className="finding-head">
+                  <h3 style={{ fontSize: "0.8rem" }}>RETINAL FINDING — {f.type.replaceAll("_", " ").toUpperCase()}</h3>
+                  <span className="badge demo">Synthetic</span>
+                </div>
+                <dl className="kv tiny" style={{ gridTemplateColumns: "105px 1fr", marginBottom: 8 }}>
+                  <dt>Location</dt><dd>{f.location.replaceAll("_", " ")}</dd>
+                  <dt>Laterality</dt><dd>{a.study?.eye}</dd>
+                  <dt>Model</dt><dd>{f.model_id}</dd>
+                  <dt>Validation</dt><dd>Not clinically validated</dd>
+                  <dt>Localization</dt><dd>Not available</dd>
+                  <dt>Priority</dt><dd>{f.severity === "severe" || f.severity === "moderate" ? "Requires clinician review" : "Routine review"}</dd>
+                </dl>
+                <ConfidenceIndicator finding={f} />
+                <p className="tiny" style={{ margin: "8px 0 8px" }}>{f.explanation}</p>
+                {f.region && hasImage
+                  ? <button className="btn secondary sm" onClick={() => setActiveRegion(f.region ?? null)}>View on scan</button>
+                  : <span className="tiny muted">No validated localization data available.</span>}
+              </div>
+            ))}
+          </div>
+
+          {a.patient_context?.reported && (
+            <div className="card" style={{ margin: 0 }}>
+              <div className="card-title">
+                <h3 style={{ fontSize: "0.9rem" }}>Patient symptoms</h3>
+                {hasRedFlag && <Badge tone="bad">⚠ RED FLAG</Badge>}
+              </div>
+              {a.patient_context.symptoms.map((s, i) => (
+                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div className="small" style={{ fontWeight: 600 }}>
+                    {s.label ?? s.type.replaceAll("_", " ")}
+                    {redFlags.includes(s.type) && <span style={{ color: "var(--danger)" }}> ⚠</span>}
+                  </div>
+                  <div className="tiny muted">
+                    {s.onset} onset • {s.duration.replaceAll("_", " ")} • {s.severity} •{" "}
+                    {s.laterality === "right" ? "right eye" : s.laterality === "left" ? "left eye" : s.laterality} • {s.progression}
+                  </div>
+                </div>
+              ))}
+              <p className="tiny muted" style={{ margin: "8px 0 0" }}>{a.patient_context.note}</p>
+            </div>
+          )}
+
+          {a.symptom_correlation && a.patient_context?.reported && (
+            <div className="card" style={{ margin: 0 }}>
+              <div className="card-title">
+                <h3 style={{ fontSize: "0.9rem" }}>Symptom / imaging correlation</h3>
+                <Badge tone={a.symptom_correlation.state === "urgent" ? "bad" : a.symptom_correlation.state === "correlated" ? "info" : "warn"}>
+                  {a.symptom_correlation.state.replaceAll("_", " ").toUpperCase()}
+                </Badge>
+              </div>
+              {a.symptom_correlation.items.map((item, i) => (
+                <p key={i} className="small" style={{ margin: "6px 0" }}>
+                  <strong>{item.symptom_label}</strong>{" "}
+                  <Badge tone={item.state === "urgent" ? "bad" : item.state === "correlated" ? "info" : "warn"}>{item.state.replaceAll("_", " ")}</Badge>
+                  <span className="muted small" style={{ display: "block", marginTop: 2 }}>{item.note}</span>
+                </p>
+              ))}
+              <p className="tiny muted" style={{ margin: "8px 0 0" }}>
+                {a.symptom_correlation.label} • Model input: {a.model_registry?.model_input ?? "IMAGE_ONLY"} • correlation is never
+                converted into model confidence.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* ZONE 3 — summary / urgency / explainability */}
+        <div style={{ display: "grid", gap: 14, alignContent: "start" }}>
+          <div className="card" style={{ margin: 0 }}>
+            <div className="card-title"><h3 style={{ fontSize: "0.9rem" }}>Analysis summary</h3></div>
+            <dl className="kv tiny" style={{ gridTemplateColumns: "110px 1fr" }}>
+              <dt>Study</dt><dd>{data.study?.patient_ref ?? data.study?.study_id.slice(0, 16) + "…"}</dd>
+              <dt>Eye</dt><dd>{eyeLabel(a.study?.eye)}</dd>
+              <dt>Modality</dt><dd>{modalityLabel(a.study?.modality)}</dd>
+              <dt>Image quality</dt>
+              <dd><Badge tone={a.quality.acceptable ? "ok" : "bad"}>{a.quality.status === "pass" ? "GOOD" : a.quality.status === "borderline" ? "BORDERLINE" : "INSUFFICIENT"}</Badge></dd>
+              <dt>Model</dt><dd>{a.model_registry?.model_id} v{a.model_registry?.model_version}</dd>
+              <dt>Model status</dt><dd><Badge tone="warn">{a.model_registry?.model_status}</Badge></dd>
+              <dt>Clinical validation</dt><dd style={{ color: "var(--danger)", fontWeight: 650 }}>NOT VALIDATED</dd>
+              <dt>Findings</dt><dd>{abnormal ? `${a.findings.length} (synthetic demo)` : "None available"}</dd>
+              <dt>Symptom correlation</dt><dd>{a.symptom_correlation && a.patient_context?.reported ? `${a.symptom_correlation.state.replaceAll("_", " ")} (research)` : a.patient_context?.reported ? "inconclusive" : "no symptoms reported"}</dd>
+              <dt>Urgency</dt><dd>{a.recommendation.priority === "routine_follow_up" ? "No escalation" : "Review recommended"}</dd>
+            </dl>
+            <div style={{ marginTop: 10 }}>
+              <TriageBadge priority={a.recommendation.priority} />
+              <p className="tiny muted" style={{ margin: "6px 0 0" }}>{a.recommendation.action}</p>
+            </div>
+          </div>
+
+          <details className="card" style={{ margin: 0 }}>
+            <summary style={{ cursor: "pointer", fontWeight: 650, fontSize: "0.9rem" }}>MODEL INFORMATION</summary>
+            <dl className="kv tiny" style={{ gridTemplateColumns: "120px 1fr", marginTop: 10 }}>
+              <dt>Model name</dt><dd>{a.model_registry?.model_id}</dd>
+              <dt>Version</dt><dd>{a.model_registry?.model_version}</dd>
+              <dt>Modality</dt><dd>{modalityLabel(a.study?.modality)}</dd>
+              <dt>Input type</dt><dd>{a.model_registry?.model_input ?? "IMAGE_ONLY"}</dd>
+              <dt>Uses symptoms</dt><dd>{a.model_registry?.model_input === "IMAGE_AND_SYMPTOMS" ? "YES" : "NO"}</dd>
+              <dt>Supported conditions</dt><dd>None registered</dd>
+              <dt>Checksum</dt><dd className="tiny">Placeholder model — no artifact on disk (data\models is empty)</dd>
+              <dt>Validation</dt><dd style={{ color: "var(--danger)", fontWeight: 650 }}>NOT VALIDATED</dd>
+              <dt>Device compatibility</dt><dd>{a.model_registry?.device_compatibility.note}</dd>
+            </dl>
+          </details>
+
+          <div className="card" style={{ margin: 0 }}>
+            <div className="card-title"><h3 style={{ fontSize: "0.9rem" }}>WHY AM I SEEING THIS RESULT?</h3></div>
+            <ol className="small" style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 7 }}>
+              <li><strong>Image quality:</strong> the quality gate measured the image ({a.quality.status}); {a.quality.acceptable ? "analysis proceeded." : "analysis of findings was blocked."}</li>
+              <li><strong>Model status:</strong> the current model is a registered DEMO research placeholder. It produces labeled synthetic output — no validated medical model is installed.</li>
+              <li><strong>Detected findings:</strong> {abnormal ? `${a.findings.length} synthetic demo signal(s) were generated to exercise the pipeline. They do not derive from image content.` : "no findings were produced by the model."}</li>
+              <li><strong>Model validation:</strong> not clinically validated — results cannot be used clinically and cannot be considered normal.</li>
+              <li><strong>Symptom information:</strong> {a.patient_context?.reported ? "reported symptoms were correlated separately by a rules layer AFTER the model ran." : "no symptoms were reported for this study."} {a.model_registry?.model_input === "IMAGE_ONLY" ? "The model analyzes the image only; symptoms are never used as model input." : ""}</li>
+            </ol>
           </div>
         </div>
       </div>
 
-      {/* ---- Patient context ---- */}
-      {a.patient_context?.reported && (
-        <div className="card" style={{ marginTop: 14 }}>
-          <div className="card-title">
-            <h3>Patient context</h3>
-            {a.patient_context.red_flags.length > 0 && <Badge tone="bad">⚠ RED FLAG</Badge>}
-          </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-            {a.patient_context.symptoms.map((s, i) => (
-              <span key={i} className={`badge ${a.patient_context!.red_flags.includes(s.type) ? "bad" : "neutral"}`} title={`${s.onset} onset • ${s.duration.replaceAll("_", " ")} • ${s.severity} • ${s.laterality}`}>
-                {s.label ?? s.type.replaceAll("_", " ")} • {s.severity} • {s.laterality === "right" ? "OD" : s.laterality === "left" ? "OS" : s.laterality}
-              </span>
-            ))}
-          </div>
-          <p className="tiny muted" style={{ marginBottom: 0 }}>{a.patient_context.note}</p>
-        </div>
-      )}
-
-      {/* ---- Symptom correlation ---- */}
-      {a.symptom_correlation && a.patient_context?.reported && (
-        <div className="card" style={{ marginTop: 14 }}>
-          <div className="card-title">
-            <h3>Symptom / imaging correlation</h3>
-            <Badge tone={a.symptom_correlation.state === "urgent" ? "bad" : a.symptom_correlation.state === "correlated" ? "info" : "warn"}>
-              {a.symptom_correlation.state.replaceAll("_", " ").toUpperCase()}
-            </Badge>
-          </div>
-          <div className="grid grid-2">
-            <div>
-              <div className="stat-label" style={{ marginBottom: 6 }}>Reported</div>
-              {a.patient_context.symptoms.map((s, i) => (
-                <div key={i} className="small" style={{ padding: "4px 0", borderBottom: "1px solid var(--border)" }}>{s.label ?? s.type}</div>
-              ))}
-            </div>
-            <div>
-              <div className="stat-label" style={{ marginBottom: 6 }}>Automated imaging</div>
-              {abnormal
-                ? a.findings.map((f) => <div key={f.id} className="small" style={{ padding: "4px 0", borderBottom: "1px solid var(--border)" }}>{f.type.replaceAll("_", " ")}</div>)
-                : <div className="small muted" style={{ padding: "4px 0" }}>No validated findings are available from the current model.</div>}
-            </div>
-          </div>
-          <div style={{ marginTop: 10 }}>
-            {a.symptom_correlation.items.map((item, i) => (
-              <p key={i} className="small" style={{ margin: "6px 0" }}>
-                <strong>{item.symptom_label}</strong> — <Badge tone={item.state === "urgent" ? "bad" : item.state === "correlated" ? "info" : "warn"}>{item.state.replaceAll("_", " ")}</Badge>{" "}
-                <span className="muted">{item.note}</span>
-              </p>
-            ))}
-          </div>
-          <p className="tiny muted" style={{ margin: "8px 0 0" }}>
-            Status: {a.symptom_correlation.label}. {a.symptom_correlation.notes.join(" ")} Model input: {a.model_registry?.model_input ?? "IMAGE_ONLY"} —
-            symptom correlation is never converted into model confidence.
-          </p>
-        </div>
-      )}
-
-      {/* ---- Findings ---- */}
-      <h2>Findings</h2>
-      {!abnormal && (
-        <EmptyState icon={<Icon name="check" size={24} />} title={rejected ? "No findings — quality gate failed" : "No validated findings are available from the current model."}>
-          {rejected
-            ? "No clinical findings are generated when image quality is insufficient. This protects against unreliable interpretation."
-            : "This does not mean the eye is healthy. It means the current model — an unvalidated research placeholder — produced no findings for this image. A negative result never guarantees absence of eye disease."}
-        </EmptyState>
-      )}
-      {a.findings.map((f) => (
-        <div key={f.id} className="finding-card" style={{ marginBottom: 10 }}>
-          <div className="finding-head">
-            <h3>POTENTIAL RETINAL FINDING — {f.type.replaceAll("_", " ").toUpperCase()}</h3>
-            <span className="badge demo">Synthetic demo finding</span>
-          </div>
-          <dl className="kv" style={{ gridTemplateColumns: "130px 1fr", marginBottom: 10 }}>
-            <dt>Location</dt><dd className="small">{f.location.replaceAll("_", " ")}</dd>
-            <dt>Model</dt><dd className="small">{f.model_id}</dd>
-            <dt>Model status</dt><dd className="small"><Badge tone="warn">{f.model_status ?? "DEMO"}</Badge> <span className="tiny muted">research only</span></dd>
-            <dt>Validation</dt><dd className="small">Not clinically validated</dd>
-          </dl>
-          <ConfidenceIndicator finding={f} />
-          <p className="small" style={{ marginTop: 8 }}>{f.explanation}</p>
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            {f.region && hasImage
-              ? <button className="btn secondary sm" onClick={() => setActiveRegion(f.region ?? null)}>View on scan</button>
-              : <span className="tiny muted">AI localization is not available for this model.</span>}
-          </div>
-        </div>
-      ))}
-
-      {/* ---- Uncertainty / associations / conditions ---- */}
+      {/* ---- Conditions + technical ---- */}
       <div className="grid grid-2" style={{ marginTop: 14 }}>
-        <div className="card" style={{ margin: 0 }}>
-          <div className="card-title"><h3>Uncertainty</h3><Badge tone="warn">{(a.uncertainty.overall * 100).toFixed(0)}%</Badge></div>
-          <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
-            {a.uncertainty.reasons.map((r, i) => <li key={i}>{r}</li>)}
-          </ul>
-        </div>
         <div className="card" style={{ margin: 0 }}>
           <div className="card-title"><h3>Possible conditions to consider</h3></div>
           {a.possible_conditions && a.possible_conditions.conditions.length > 0 ? (
@@ -317,6 +358,12 @@ function ResultInner() {
             </p>
           )}
         </div>
+        <div className="card" style={{ margin: 0 }}>
+          <div className="card-title"><h3>Uncertainty</h3><Badge tone="warn">{(a.uncertainty.overall * 100).toFixed(0)}%</Badge></div>
+          <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
+            {a.uncertainty.reasons.map((r, i) => <li key={i}>{r}</li>)}
+          </ul>
+        </div>
       </div>
 
       <details className="tech card" style={{ marginTop: 14 }}>
@@ -327,15 +374,7 @@ function ResultInner() {
           <dt>Quality score</dt><dd>{a.quality.score} ({a.quality.status})</dd>
           <dt>Quality artifacts</dt><dd>{a.quality.artifacts.join(", ") || "none"}</dd>
           <dt>Ensemble agreement</dt><dd>{String(a.uncertainty.ensemble_agreement)}</dd>
-          <dt>Device compatibility</dt><dd className="small">{a.model_registry?.device_compatibility.note}</dd>
-          <dt>Model integrity</dt>
-          <dd>
-            <ul className="small" style={{ margin: 0, paddingLeft: 16 }}>
-              {(a.model_registry?.integrity_checks ?? []).map((c, i) => (
-                <li key={i}>{c.check}: {c.passed ? "✓" : "✕"} — {c.detail}</li>
-              ))}
-            </ul>
-          </dd>
+          <dt>Localization data</dt><dd>No validated localization data available (future validated models will populate this via the visualization API).</dd>
           <dt>Original SHA-256</dt><dd style={{ wordBreak: "break-all", fontFamily: "var(--mono)", fontSize: "0.76rem" }}>{data.study?.original_sha256}</dd>
         </dl>
       </details>
