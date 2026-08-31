@@ -86,7 +86,6 @@ function CompareInner() {
             <ScanViewer
               src={`/api/studies/${encodeURIComponent(previous)}/image`}
               alt="Previous scan"
-              showToolbar={false}
             />
           ) : <EmptyState icon="◉" title="Select a previous scan" />}
         </div>
@@ -98,7 +97,6 @@ function CompareInner() {
               alt="Current scan"
               region={curBundle.analysis?.findings?.[0]?.region ?? null}
               overlayAvailable={curBundle.analysis?.findings?.[0]?.region != null}
-              showToolbar={false}
             />
           ) : <EmptyState icon="◉" title="Select a current scan" />}
         </div>

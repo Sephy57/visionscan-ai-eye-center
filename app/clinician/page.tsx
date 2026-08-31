@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import ScanViewer from "@/components/ScanViewer";
 import { Badge, ConfidenceIndicator, QualityPanel, EmptyState } from "@/components/ui";
+import { Icon } from "@/components/icons";
 
 interface Finding {
   id: string; type: string; location: string; severity: string;
@@ -235,7 +236,7 @@ function ClinicianInner() {
 
       {!bundle && !err && (
         <div style={{ marginTop: 16 }}>
-          <EmptyState icon="✓" title="Open a study to begin review">
+          <EmptyState icon={<Icon name="review" size={22} />} title="Open a study to begin review">
             Enter a study ID above, or open a result from the History page and click Clinical Review.
           </EmptyState>
         </div>

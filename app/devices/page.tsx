@@ -1,6 +1,7 @@
 import { ADAPTER_REGISTRY } from "@/lib/devices/adapter";
 import { SUPPORTED_MODALITIES } from "@/lib/models/modalities";
 import { Badge, EmptyState } from "@/components/ui";
+import { Icon } from "@/components/icons";
 
 const SUPPORTED_INPUTS: Array<[string, string, "ok" | "warn" | "neutral"]> = [
   ["JPEG / JPG / PNG / WEBP", "Ingestion + quality analysis fully supported.", "ok"],
@@ -22,7 +23,7 @@ export default function DevicesPage() {
 
       <div className="card" style={{ marginTop: 16 }}>
         <div className="card-title"><h3>Connected devices</h3><Badge tone="neutral">0 connected</Badge></div>
-        <EmptyState icon="◎" title="No devices connected"
+        <EmptyState icon={<Icon name="devices" size={22} />} title="No devices connected"
           action={<button className="btn" disabled title="Device connections are an integration placeholder">Add Device</button>}>
           Device connectivity (USB, local network, DICOM servers, PACS, vendor APIs) is architected but not yet
           implemented. Connectivity will not be faked — adapters appear here only when they actually work.

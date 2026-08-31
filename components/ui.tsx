@@ -69,7 +69,7 @@ export function QualityPanel({ quality }: { quality: { score: number; status: st
   );
 }
 
-export function EmptyState({ icon, title, children, action }: { icon: string; title: string; children?: React.ReactNode; action?: React.ReactNode }) {
+export function EmptyState({ icon, title, children, action }: { icon: React.ReactNode; title: string; children?: React.ReactNode; action?: React.ReactNode }) {
   return (
     <div className="empty-state">
       <div className="es-icon" aria-hidden="true">{icon}</div>
