@@ -65,3 +65,42 @@ export async function recentAudit(limit = 100): Promise<AuditEvent[]> {
   }
   return out.slice(0, limit);
 }
+
+/**
+ * Immutable / append-only analysis audit records (Phase 2).
+ * One NDJSON line per analysis with full provenance. Records are never
+ * updated or deleted by the application; corrections appear as new events.
+ */
+export interface AnalysisAuditRecord {
+  study_id: string;
+  image_sha256: string;
+  model_id: string;
+  model_version: string;
+  model_checksum: string;
+  device: string;
+  modality: string;
+  quality_score: number;
+  findings_count: number;
+  uncertainty: number;
+  ruleset_version: string;
+  triage_priority: string;
+  ts: string;
+}
+
+export async function appendAnalysisAudit(rec: Omit<AnalysisAuditRecord, "ts">): Promise<void> {
+  ensureDirs();
+  const full: AnalysisAuditRecord = { ...rec, ts: new Date().toISOString() };
+  const file = path.join(LOG_ROOT, "analyses.ndjson");
+  await fs.appendFile(file, JSON.stringify(full) + "\n", "utf8");
+}
+
+export async function readAnalysisAudit(limit = 200): Promise<AnalysisAuditRecord[]> {
+  ensureDirs();
+  try {
+    const raw = await fs.readFile(path.join(LOG_ROOT, "analyses.ndjson"), "utf8");
+    const lines = raw.trim().length ? raw.trim().split("\n") : [];
+    return lines.slice(-limit).map((l) => JSON.parse(l) as AnalysisAuditRecord);
+  } catch {
+    return [];
+  }
+}

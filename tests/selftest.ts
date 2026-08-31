@@ -5,6 +5,9 @@ import { validateAnalysisResult } from "@/lib/analysis/schema";
 import { runTriage } from "@/lib/clinical/triage";
 import { buildDemoFindings, pickDemoScenario } from "@/lib/analysis/findings";
 import { DeviceMetadata } from "@/lib/devices/adapter";
+import { verifyModelIntegrity } from "@/lib/models/integrity";
+import { assessOod } from "@/lib/analysis/ood";
+import type { QualityResult } from "@/lib/imaging/quality";
 
 /**
  * End-to-end self-test of the safety-critical pipeline.
@@ -109,7 +112,30 @@ export async function runSelfTest(): Promise<SelfTestReport> {
     const demoFindings = buildDemoFindings(pickDemoScenario(cleanBytes), 0.95);
     t("demo_findings_confidence_capped", demoFindings.every((f) => f.confidence <= 0.85));
 
-    // 9. Delete removes study.
+    // 9. Model registry integrity: unknown model refused; DEMO placeholder trusted only via gate.
+    t("model_integrity_refuses_unknown", verifyModelIntegrity("no-such-model").trusted === false);
+    t("model_integrity_demo_gate", verifyModelIntegrity("demo-fundus-synthetic-v0").trusted === true);
+
+    // 10. OOD layer: missing metadata + unknown model -> outside operating conditions, no normality claim.
+    const ood = assessOod({
+      modality: "unknown",
+      quality: {
+        quality_score: 0.9, quality_status: "pass", detected_artifacts: [], affected_regions: [],
+        recommended_reacquisition: false,
+        metrics: { width: 1024, height: 768, sharpness_score: 0.8, illumination_mean: 120, illumination_p5: 30, illumination_p95: 230, highlight_clip_ratio: 0, shadow_clip_ratio: 0, colorfulness: 0.4, grayscale_only: false },
+        thresholds: {}, limitations: [],
+      } as QualityResult,
+      model: null,
+      device: null,
+      metadataProvided: false,
+    });
+    t("ood_flags_unverified_input", ood.detected === true && ood.message.includes("outside the validated operating conditions"));
+
+    // 11. OOD result cannot claim normality (triage rule).
+    const oodTriage = runTriage({ findings: [], qualityAcceptable: true, qualityScore: 0.95, uncertainty: 0.1, modality: "fundus", ood: { detected: true, message: ood.message } });
+    t("ood_prevents_normality_claim", !oodTriage.action.toLowerCase().includes("no significant abnormality detected"));
+
+    // 12. Delete removes study.
     if (darkStudyId) {
       await deleteStudy(darkStudyId);
       const gone = await getStudyBundle(darkStudyId);

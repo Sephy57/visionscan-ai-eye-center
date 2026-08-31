@@ -41,6 +41,16 @@ export interface ClinicalReport {
     finalized_at?: string;
     clinician_changes?: Array<{ field: string; action: string; note?: string; at: string }>;
   };
+  // AI OUTPUT, CLINICIAN INTERPRETATION and FINAL REPORT are stored separately
+  // and never overwrite one another.
+  clinician_interpretation?: {
+    reviewer_id: string;
+    overall: "confirmed_ai_findings" | "rejected_ai_findings" | "indeterminate" | "request_new_scan" | "amended" | string;
+    finding_decisions?: Array<{ finding_id: string; decision: "confirm" | "reject" | "correct" | "indeterminate"; note?: string; at: string }>;
+    notes?: string | null;
+    at: string;
+  } | null;
+  final_interpretation?: string | null;
   provenance: AnalysisResult["provenance"];
   safety: AnalysisResult["safety"];
   exports: {

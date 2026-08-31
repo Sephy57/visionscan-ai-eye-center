@@ -37,6 +37,7 @@ export interface TriageInput {
   uncertainty: number;
   modality: string;
   redFlagSymptoms?: string[]; // e.g. ["sudden_vision_loss", "flashes_with_floaters", "curtain_in_vision", "severe_eye_pain"]
+  ood?: { detected: boolean; message?: string }; // out-of-distribution / unsupported operating conditions
 }
 
 const HIGH_RISK = new Set([
@@ -100,6 +101,20 @@ export function runTriage(input: TriageInput): TriageOutcome {
       action: "Recommended action: Prompt review by an eye-care professional.",
       rationale:
         "A potentially vision-threatening finding pattern was detected. Escalation is conservative and is not reduced by imperfect confidence.",
+      triggered_rules: rules,
+    };
+  }
+
+  // Rule 3.5: out-of-distribution input must never yield a normality claim.
+  if (input.ood?.detected) {
+    rules.push("ood_prevents_normality_claim");
+    return {
+      priority: "prompt_professional_review",
+      action:
+        (input.ood.message ?? "Input is outside the validated operating conditions of this model.") +
+        " Automated interpretation is inconclusive. Professional review is recommended.",
+      rationale:
+        "The input falls outside the model's declared operating conditions (unsupported modality/device, missing metadata, or atypical image characteristics). Normality must not be claimed.",
       triggered_rules: rules,
     };
   }

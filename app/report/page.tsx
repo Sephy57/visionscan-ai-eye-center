@@ -2,13 +2,11 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { Badge } from "@/components/ui";
 
 interface Report {
-  report_id: string;
-  study_id: string;
-  generated_at: string;
-  validation_banner: string;
-  demo_label: string;
+  report_id: string; study_id: string; generated_at: string;
+  validation_banner: string; demo_label: string;
   patient: { identifier?: string | null; age_band?: string | null; notes?: string | null };
   study: { modality: string; eye: string; source: string; captured_at?: string | null; metadata_provenance: string };
   image_quality: { score: number; status: string; acceptable: boolean; artifacts: string[] };
@@ -21,6 +19,8 @@ interface Report {
   recommended_next_step: string;
   triage_priority: string;
   review: { status: string; reviewer_id?: string; finalized_at?: string; clinician_changes?: Array<{ field: string; action: string; at: string }> };
+  clinician_interpretation?: { reviewer_id: string; overall: string; notes?: string | null } | null;
+  final_interpretation?: string | null;
   provenance: { models: Array<Record<string, unknown>>; ruleset_version: string; analyzed_at: string; pipeline_version: string };
   safety: { disclaimers: string[]; blocked_claims: string[] };
   exports: { json_path?: string; fhir_note: string };
@@ -34,66 +34,63 @@ function ReportInner() {
 
   useEffect(() => {
     if (!study) { setErr("No study id supplied."); return; }
-    (async () => {
-      const res = await fetch(`/api/studies/${encodeURIComponent(study)}`);
-      const json = await res.json();
-      if (!res.ok) setErr(json.error ?? "Not found");
-      else setReport(json.report);
-    })();
+    fetch(`/api/studies/${encodeURIComponent(study)}`)
+      .then((r) => r.json())
+      .then((json) => { if (!json.report) setErr(json.error ?? "Report not found"); else setReport(json.report); })
+      .catch(() => setErr("Failed to load report"));
   }, [study]);
 
-  if (err) return <div className="callout danger">{err}</div>;
-  if (!report) return <div className="spinner" />;
+  if (err) return <div className="alert danger"><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body"><strong>Report unavailable</strong>{err}</div></div>;
+  if (!report) return <div style={{ display: "flex", justifyContent: "center", padding: 60 }}><div className="spinner" /></div>;
 
   function downloadJson() {
-    if (!report) return;
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `${report.report_id}.json`;
-    a.click();
+    a.href = url; a.download = `${report!.report_id}.json`; a.click();
     URL.revokeObjectURL(url);
   }
 
   return (
-    <div className="report-print">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-        <h1 style={{ marginBottom: 0 }}>Clinical screening report</h1>
+    <div style={{ maxWidth: 860, margin: "0 auto" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }} className="no-print">
+        <div>
+          <div className="tiny" style={{ color: "var(--text-3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Clinical screening report</div>
+          <h1 style={{ marginBottom: 0 }}>Report</h1>
+        </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn secondary" onClick={() => window.print()}>Print / PDF export</button>
-          <button className="btn secondary" onClick={downloadJson}>Download JSON</button>
+          <button className="btn secondary sm" onClick={() => window.print()}>Print / PDF</button>
+          <button className="btn secondary sm" onClick={downloadJson}>Download JSON</button>
         </div>
       </div>
-      <div className="banner banner-validation" style={{ margin: "10px -20px", borderRadius: 0 }}>
-        {report.validation_banner}
-      </div>
-      <p><span className="demo-tag">{report.demo_label}</span></p>
 
-      <div className="panel">
-        <h2 style={{ marginTop: 0 }}>Study information</h2>
+      <div className="card" style={{ marginTop: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+          <span className="logo-mark" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5C6.5 5 2.6 9.6 1.5 12c1.1 2.4 5 7 10.5 7s9.4-4.6 10.5-7C21.4 9.6 17.5 5 12 5z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/><circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="2"/></svg>
+          </span>
+          <strong>VisionScan AI</strong>
+          <Badge tone="warn">{report.validation_banner}</Badge>
+          <Badge tone="demo">{report.demo_label}</Badge>
+        </div>
+
+        <h3>Study information</h3>
         <dl className="kv">
           <dt>Report ID</dt><dd>{report.report_id}</dd>
           <dt>Study ID</dt><dd>{report.study_id}</dd>
           <dt>Modality</dt><dd>{report.study.modality}</dd>
           <dt>Laterality</dt><dd>{report.study.eye}</dd>
           <dt>Source</dt><dd>{report.study.source}</dd>
-          <dt>Captured at</dt><dd>{report.study.captured_at ?? "not provided"}</dd>
+          <dt>Acquisition date</dt><dd>{report.study.captured_at ?? "Not provided"}</dd>
           <dt>Metadata provenance</dt><dd>{report.study.metadata_provenance}</dd>
-          <dt>Generated at</dt><dd>{report.generated_at}</dd>
-          <dt>Review status</dt>
-          <dd>
-            {report.review.status}
-            {report.review.reviewer_id ? ` by ${report.review.reviewer_id}` : ""}
-            {report.review.finalized_at ? ` at ${report.review.finalized_at}` : ""}
-          </dd>
+          <dt>Generated at</dt><dd>{new Date(report.generated_at).toLocaleString()}</dd>
         </dl>
       </div>
 
-      <div className={`result-hero ${report.image_quality.acceptable ? (report.findings.length ? "abnormal" : "normal") : "reject"}`}>
-        <h2 style={{ marginTop: 0 }}>OVERALL RESULT</h2>
-        <h1 style={{ fontSize: "1.3rem" }}>{report.overall_result}</h1>
-        <p className="small">
+      <div className={`result-hero ${report.image_quality.acceptable ? (report.findings.length ? "abnormal" : "normal") : "reject"}`} style={{ padding: 24 }}>
+        <div className="eyebrow">SCREENING RESULT</div>
+        <h2>{report.overall_result}</h2>
+        <p className="small" style={{ margin: 0 }}>
           {report.image_quality.acceptable
             ? report.findings.length === 0
               ? "This result means the system did not identify a significant abnormality in the supplied image under the conditions of this analysis. It does not guarantee that no eye disease is present."
@@ -102,72 +99,54 @@ function ReportInner() {
         </p>
       </div>
 
-      <div className="panel">
-        <h2 style={{ marginTop: 0 }}>Image quality</h2>
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Image quality</h3>
         <dl className="kv">
           <dt>Quality score</dt><dd>{report.image_quality.score} ({report.image_quality.status})</dd>
           <dt>Acceptable</dt><dd>{report.image_quality.acceptable ? "Yes" : "No"}</dd>
-          <dt>Detected artifacts</dt><dd>{report.image_quality.artifacts.join(", ") || "none"}</dd>
+          <dt>Detected artifacts</dt><dd>{report.image_quality.artifacts.join(", ") || "None"}</dd>
         </dl>
       </div>
 
-      <h2>Findings ({report.findings.length})</h2>
-      {report.findings.length === 0 && <p className="muted">No findings recorded in this report.</p>}
-      {report.findings.map((f) => (
-        <div key={f.id} className="finding-card">
-          <h3>{f.type.replaceAll("_", " ").toUpperCase()} {f.synthetic && <span className="demo-tag">SYNTHETIC</span>}</h3>
-          <dl className="kv">
-            <dt>Location</dt><dd>{f.location.replaceAll("_", " ")}</dd>
-            <dt>Severity</dt><dd>{f.severity}</dd>
-            <dt>Confidence</dt><dd>{f.confidence_category} ({f.confidence})</dd>
-          </dl>
-          <p className="small">{f.explanation}</p>
-        </div>
-      ))}
-
-      <div className="panel">
-        <h2 style={{ marginTop: 0 }}>Possible clinical associations</h2>
-        <p className="small muted">{report.possible_associations_note}</p>
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Findings ({report.findings.length})</h3>
+        {report.findings.length === 0 && <p className="muted small">No findings recorded in this report.</p>}
+        {report.findings.map((f) => (
+          <div key={f.id} style={{ borderTop: "1px solid var(--border)", padding: "12px 0" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+              <strong className="small" style={{ letterSpacing: "0.02em" }}>{f.type.replaceAll("_", " ").toUpperCase()}</strong>
+              {f.synthetic && <Badge tone="demo">Synthetic</Badge>}
+            </div>
+            <dl className="kv" style={{ marginTop: 6 }}>
+              <dt>Location</dt><dd>{f.location.replaceAll("_", " ")}</dd>
+              <dt>Severity</dt><dd style={{ textTransform: "capitalize" }}>{f.severity}</dd>
+              <dt>Confidence</dt><dd>{f.confidence_category} ({f.confidence})</dd>
+            </dl>
+            <p className="small muted" style={{ marginTop: 6 }}>{f.explanation}</p>
+          </div>
+        ))}
       </div>
 
-      <div className="panel">
-        <h2 style={{ marginTop: 0 }}>Uncertainty</h2>
-        <p>Overall: <strong>{(report.uncertainty.overall * 100).toFixed(0)}%</strong></p>
-        <ul className="small muted">{report.uncertainty.reasons.map((r, i) => <li key={i}>{r}</li>)}</ul>
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Measurements</h3>
+        <p className="small muted" style={{ margin: 0 }}>{report.measurements_note}</p>
       </div>
 
-      <div className="panel">
-        <h2 style={{ marginTop: 0 }}>Measurements</h2>
-        <p className="small muted">{report.measurements_note}</p>
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Possible clinical associations</h3>
+        <p className="small muted" style={{ margin: 0 }}>{report.possible_associations_note}</p>
       </div>
 
-      <div className="panel">
-        <h2 style={{ marginTop: 0 }}>Limitations</h2>
-        <ul className="small muted">{report.limitations.map((l, i) => <li key={i}>{l}</li>)}</ul>
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Uncertainty</h3>
+        <p className="small"><strong>Overall: {(report.uncertainty.overall * 100).toFixed(0)}%</strong></p>
+        <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
+          {report.uncertainty.reasons.map((r, i) => <li key={i}>{r}</li>)}
+        </ul>
       </div>
 
-      <div className="callout warn">
-        <h3 style={{ margin: "0 0 6px" }}>Recommended next step</h3>
-        <p style={{ margin: 0 }}>{report.recommended_next_step}</p>
-        <p className="small muted" style={{ marginBottom: 0 }}>Triage priority: {report.triage_priority}</p>
-      </div>
-
-      {report.review.clinician_changes && report.review.clinician_changes.length > 0 && (
-        <div className="panel">
-          <h2 style={{ marginTop: 0 }}>Clinician review trail</h2>
-          <table className="table">
-            <thead><tr><th>Field</th><th>Action</th><th>At</th></tr></thead>
-            <tbody>
-              {report.review.clinician_changes.map((c, i) => (
-                <tr key={i}><td>{c.field}</td><td>{c.action}</td><td>{c.at}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <div className="panel">
-        <h2 style={{ marginTop: 0 }}>Model provenance</h2>
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>AI model information</h3>
         <table className="table">
           <thead><tr><th>Model</th><th>Version</th><th>Implementation</th><th>Validation status</th></tr></thead>
           <tbody>
@@ -176,40 +155,87 @@ function ReportInner() {
                 <td>{String(m.model_id)}</td>
                 <td>{String(m.model_version)}</td>
                 <td>{String(m.implementation)}</td>
-                <td><span className="badge warn">{String(m.validation_status)}</span></td>
+                <td><Badge tone="warn">{String(m.validation_status)}</Badge></td>
               </tr>
             ))}
           </tbody>
         </table>
-        <p className="small muted">
-          Ruleset: {report.provenance.ruleset_version} &middot; Pipeline: {report.provenance.pipeline_version}
-        </p>
+        <p className="tiny muted">Ruleset {report.provenance.ruleset_version} • Pipeline {report.provenance.pipeline_version}</p>
       </div>
 
-      <div className="panel">
-        <h2 style={{ marginTop: 0 }}>Interoperability</h2>
-        <p className="small muted">{report.exports.fhir_note}</p>
-      </div>
-
-      <div className="panel">
-        <h2 style={{ marginTop: 0 }}>Safety disclaimers</h2>
-        <ul className="small muted">{report.safety.disclaimers.map((d, i) => <li key={i}>{d}</li>)}</ul>
-        {report.safety.blocked_claims.length > 0 && (
-          <p className="small">Safety validator blocked claims: {report.safety.blocked_claims.join(", ")}</p>
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Clinician review</h3>
+        <dl className="kv">
+          <dt>Review status</dt>
+          <dd>{report.review.status}{report.review.reviewer_id ? ` by ${report.review.reviewer_id}` : ""}{report.review.finalized_at ? ` at ${new Date(report.review.finalized_at).toLocaleString()}` : ""}</dd>
+        </dl>
+        {report.clinician_interpretation && (
+          <dl className="kv" style={{ marginTop: 10 }}>
+            <dt>Clinician interpretation</dt>
+            <dd>{report.clinician_interpretation.overall.replaceAll("_", " ")} — {report.clinician_interpretation.reviewer_id}</dd>
+            {report.clinician_interpretation.notes && (<><dt>Notes</dt><dd className="small">{report.clinician_interpretation.notes}</dd></>)}
+          </dl>
+        )}
+        {report.final_interpretation && (
+          <div className="alert ok" style={{ marginBottom: 0 }}>
+            <span className="alert-icon" aria-hidden="true">✓</span>
+            <div className="alert-body"><strong>Final interpretation</strong>{report.final_interpretation}</div>
+          </div>
+        )}
+        {report.review.clinician_changes && report.review.clinician_changes.length > 0 && (
+          <details className="tech" style={{ marginTop: 10 }}>
+            <summary>Review trail ({report.review.clinician_changes.length} actions)</summary>
+            <table className="table">
+              <thead><tr><th>Field</th><th>Action</th><th>At</th></tr></thead>
+              <tbody>
+                {report.review.clinician_changes.map((c, i) => (
+                  <tr key={i}><td>{c.field}</td><td>{c.action}</td><td className="small">{new Date(c.at).toLocaleString()}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
         )}
       </div>
 
-      <p className="small muted">
-        No clinician signatures are generated by this system. A report becomes a clinical document only when a
-        qualified professional reviews, amends if needed, and finalizes it through the clinician review workflow.
-      </p>
+      <div className="alert warn">
+        <span className="alert-icon" aria-hidden="true">→</span>
+        <div className="alert-body">
+          <strong>Recommended next step</strong>
+          {report.recommended_next_step}
+          <div className="tiny muted" style={{ marginTop: 4 }}>Triage priority: {report.triage_priority}</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Limitations</h3>
+        <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
+          {report.limitations.map((l, i) => <li key={i}>{l}</li>)}
+        </ul>
+      </div>
+
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Interoperability &amp; audit</h3>
+        <p className="small muted" style={{ margin: 0 }}>{report.exports.fhir_note}</p>
+        <p className="tiny muted" style={{ marginTop: 8 }}>
+          Audit: every analysis records model versions, checksums, quality score, uncertainty, and ruleset version.
+          Original scans preserved unchanged (SHA-256 verified). No clinician signatures are generated by this
+          system; a report becomes a clinical document only after qualified professional review and finalization.
+        </p>
+      </div>
+
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Safety disclaimers</h3>
+        <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
+          {report.safety.disclaimers.map((d, i) => <li key={i}>{d}</li>)}
+        </ul>
+      </div>
     </div>
   );
 }
 
 export default function ReportPage() {
   return (
-    <Suspense fallback={<div className="spinner" />}>
+    <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", padding: 60 }}><div className="spinner" /></div>}>
       <ReportInner />
     </Suspense>
   );

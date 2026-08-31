@@ -1,4 +1,4 @@
-# AI Eye Scan Analysis & Clinical Decision-Support Platform
+# VisionScan AI — AI Eye Scan Analysis & Clinical Decision-Support Platform
 
 A medical-grade **architecture** for AI-assisted analysis of ophthalmic images — engineered as a screening and
 clinical decision-support system with mandatory human oversight, not as a diagnostic product.
@@ -6,15 +6,28 @@ clinical decision-support system with mandatory human oversight, not as a diagno
 > **Honest status: NOT VALIDATED — NOT A MEDICAL DEVICE — NOT FOR CLINICAL USE.**
 > Every detection/segmentation component in this deployment is an unvalidated placeholder or heuristic.
 > The demo analysis engine generates **synthetic findings** so the full safety-critical pipeline can be exercised.
-> No fabricated capability is presented as real.
+> No fabricated capability is presented as real. `data\models\` is intentionally empty.
 
-## Project location
+## Phase 2 additions (clinical validation readiness)
 
-All project code, data, models, logs, and the Git repository live on drive D:
-
-```
-D:\AI EYE ANALYSIS PLATFORM\
-```
+- **Strict model registry** (`lib/models/registry.ts`): checksums, modality/anatomy/finding/device scope,
+  intended use, limitations, dataset descriptions, performance metrics (null until measured, with evidence
+  references), validation/regulatory status, lifecycle gates (DEMO → RESEARCH → INTERNAL_VALIDATION →
+  EXTERNALLY_VALIDATED → CLINICALLY_VALIDATED / RETIRED).
+- **Model integrity verification**: artifact → SHA-256 → registry → gates; mismatches refuse execution.
+- **EyeModelProvider interface**: ONNX / PyTorch / TensorFlow / local / remote providers plug in without
+  changing the clinical workflow (`lib/models/provider.ts`).
+- **Finding taxonomy** (`lib/analysis/taxonomy.ts`): OBSERVATION / POSSIBLE ASSOCIATION / DIAGNOSIS strictly
+  separated; retinal vascular + OCT finding schemas prepared; "blood clot" vocabulary forbidden.
+- **OOD layer** (`lib/analysis/ood.ts`): unsupported modality/device, missing metadata, atypical inputs →
+  "Input is outside the validated operating conditions of this model." Normality is never claimed.
+- **Research layer** (`lib/research/`): dataset management with patient-level split enforcement, read-only
+  locked test sets, multi-grader annotation + adjudication, and evaluation tooling (sensitivity, specificity,
+  PPV, NPV, AUROC, AUPRC, ECE calibration, confusion matrix, subgroup breakdowns — never accuracy alone).
+- **Strengthened review workflow**: AI output, clinician interpretation, and final report stored separately;
+  new actions: Confirm, Mark Indeterminate, Request New Scan; every change audited.
+- **UI redesign**: premium medical-tech design system (light/dark), imaging viewer (zoom/pan/fit/fullscreen/
+  overlay), dashboard, timeline history, side-by-side compare, printable reports.
 
 ## Quick start
 
@@ -58,16 +71,20 @@ npm run audit:fs
 | Route | Purpose |
 |---|---|
 | `/` | Landing page |
+| `/dashboard` | Workspace dashboard (recent studies, quick actions, system status) |
 | `/analyze` | Upload / scan |
 | `/processing` | Analysis progress |
-| `/result` | Analysis result |
-| `/history` | Previous scans (with deletion) |
-| `/compare` | Historical comparison |
+| `/result` | Analysis result with imaging viewer |
+| `/history` | Previous scans (timeline, with deletion) |
+| `/compare` | Historical comparison (side-by-side viewer) |
 | `/report` | Detailed report (PDF via print, JSON export) |
-| `/clinician` | Clinician review interface (accept/reject/correct/finalize) |
-| `/settings` | Account / privacy / data control |
-| `/devices` | Connected devices & adapter registry |
-| `/admin` | System administration, self-test, audit trail |
+| `/clinician` | Clinician review interface (confirm/reject/correct/indeterminate/request-scan/finalize) |
+| `/settings` | Privacy, data control, capability matrix |
+| `/devices` | Device manager & adapter registry |
+| `/admin` | System status, model registry, self-test, audit trail |
+
+API: `/api/upload`, `/api/analyze`, `/api/studies[/:id][/image]`, `/api/compare`, `/api/review/:id`,
+`/api/models`, `/api/research/metrics`, `/api/selftest`, `/api/admin`.
 
 ## Storage layout (all on D:)
 

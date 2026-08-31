@@ -14,11 +14,20 @@ export interface Finding {
   severity: "none" | "mild" | "moderate" | "severe" | "indeterminate";
   confidence: number;                  // 0..1 calibrated or categorical-mapped
   confidence_category: "HIGH CONFIDENCE" | "MODERATE CONFIDENCE" | "LOW CONFIDENCE" | "INDETERMINATE";
+  confidence_raw?: number | null;      // raw model output, if a model exists
+  confidence_calibrated?: number | null; // calibrated confidence ONLY if calibration evidence exists
+  taxonomy_level?: "observation" | "possible_association" | "diagnosis";
   measurements?: Record<string, number | string>; // only real measurements allowed
+  structured_measurements?: Array<{
+    key: string; value: number; unit: string | null; anatomical_region: string;
+    source_modality: string; measurement_confidence: number | null;
+    model_id: string; model_version: string;
+  }>;
   region?: { x: number; y: number; w: number; h: number } | null; // normalized bbox
   explanation: string;                 // careful, non-overstating language
   synthetic: boolean;                  // MUST be true for any demo-generated finding
   model_id: string;                    // component that produced this finding
+  model_status?: string;               // registry status of producing model (e.g. DEMO)
 }
 
 export interface StudyInfo {
@@ -77,6 +86,19 @@ export interface AnalysisResult {
     performed: boolean;
     note: string;
     concordance?: string;
+  };
+  ood?: {
+    detected: boolean;
+    reasons: string[];
+    message: string;
+  };
+  model_registry?: {
+    model_id: string;
+    model_version: string;
+    model_status: string;              // DEMO | RESEARCH | ... (registry, never self-declared)
+    display_label: string | null;      // mandatory label when findings produced
+    integrity_checks: Array<{ check: string; passed: boolean; detail: string }>;
+    device_compatibility: { compatible: boolean; note: string };
   };
   temporal_comparison?: {
     performed: boolean;
@@ -146,6 +168,27 @@ export function validateAnalysisResult(r: unknown): { valid: boolean; errors: Va
   if (o.quality && o.quality.acceptable === false && (o.findings ?? []).length > 0) {
     errors.push({ path: "findings", message: "Findings present although quality gate failed - not permitted" });
   }
+
+  // Phase 2 additions (validated only when the new fields are present).
+  (o.findings ?? []).forEach((f, i) => {
+    if (f.taxonomy_level === "diagnosis") {
+      errors.push({ path: `findings[${i}].taxonomy_level`, message: "Diagnosis-level findings cannot be produced by automated analysis unless separately authorized" });
+    }
+    if (f.confidence_calibrated !== undefined && f.confidence_calibrated !== null) {
+      const inBounds = f.confidence_calibrated >= 0 && f.confidence_calibrated <= 1;
+      if (!inBounds) errors.push({ path: `findings[${i}].confidence_calibrated`, message: "must be 0..1" });
+    }
+    if (f.structured_measurements) {
+      f.structured_measurements.forEach((m, j) => {
+        if (typeof m.value !== "number" || !Number.isFinite(m.value)) {
+          errors.push({ path: `findings[${i}].structured_measurements[${j}].value`, message: "measurements must be finite numbers - never invented" });
+        }
+        if (!m.model_id || !m.model_version) {
+          errors.push({ path: `findings[${i}].structured_measurements[${j}]`, message: "measurement provenance (model/version) required" });
+        }
+      });
+    }
+  });
 
   return { valid: errors.length === 0, errors };
 }

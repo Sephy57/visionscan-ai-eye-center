@@ -18,7 +18,10 @@ export type Collection =
   | "reviews"
   | "devices"
   | "comparisons"
-  | "users";
+  | "users"
+  | "datasets"
+  | "dataset_samples"
+  | "adjudications";
 
 interface DbShape {
   meta: { version: number; createdAt: string; lastWrite: string };
@@ -35,6 +38,9 @@ const EMPTY: DbShape = {
     devices: {},
     comparisons: {},
     users: {},
+    datasets: {},
+    dataset_samples: {},
+    adjudications: {},
   },
 };
 

@@ -5,7 +5,8 @@ import { runPipeline } from "../analysis/pipeline";
 import { AnalysisResult } from "../analysis/schema";
 import { generateReport, ClinicalReport } from "../reports/generator";
 import { runSafetyChecks } from "../clinical/safety";
-import { audit } from "../audit";
+import { audit, appendAnalysisAudit } from "../audit";
+import { pickDemoScenario } from "../analysis/findings";
 
 export interface StudyRecord {
   study_id: string;
@@ -73,6 +74,7 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
       source: record.source as NormalizedStudy["source"],
       metadata: record.metadata,
       files: record.files,
+      hashSeed: pickDemoScenario(bytes).seed,
     },
     originalBytes: bytes,
   });
@@ -85,6 +87,22 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
   };
   await dbPut("analyses", analysisRecord.analysis_id, analysisRecord);
   await writeJson("processed", analysisRecord.analysis_id, analysisRecord);
+
+  // Append-only audit record with full provenance (Phase 2).
+  await appendAnalysisAudit({
+    study_id: studyId,
+    image_sha256: record.original_sha256,
+    model_id: "demo-fundus-synthetic-v0",
+    model_version: "0.1.0",
+    model_checksum: "n/a-placeholder",
+    device: record.metadata.manufacturer && record.metadata.model ? `${record.metadata.manufacturer} ${record.metadata.model}` : "unspecified",
+    modality: record.modality,
+    quality_score: analysis.quality.score,
+    findings_count: analysis.findings.length,
+    uncertainty: analysis.uncertainty.overall,
+    ruleset_version: analysis.provenance.ruleset_version,
+    triage_priority: analysis.recommendation.priority,
+  });
 
   const report = await generateReport(analysis);
 
@@ -137,7 +155,7 @@ export async function deleteStudy(studyId: string): Promise<boolean> {
 
 export interface ReviewInput {
   reviewer_id: string;
-  action: "accept" | "reject" | "correct" | "note" | "finalize";
+  action: "accept" | "reject" | "correct" | "note" | "finalize" | "confirm" | "indeterminate" | "request_new_scan";
   finding_id?: string;
   note?: string;
   correction?: Partial<{ severity: string; location: string; explanation: string; type: string }>;
@@ -150,17 +168,35 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
 
   const change = { field: input.finding_id ?? "report", action: input.action, note: input.note, at: new Date().toISOString() };
   report.review = report.review ?? { status: "ai_only" };
+  report.clinician_interpretation = report.clinician_interpretation ?? {
+    reviewer_id: input.reviewer_id,
+    overall: "amended",
+    finding_decisions: [],
+    notes: null,
+    at: new Date().toISOString(),
+  };
+  const ci = report.clinician_interpretation;
 
   switch (input.action) {
     case "accept":
+    case "confirm":
       report.review.status = "clinician_reviewed";
       report.review.reviewer_id = input.reviewer_id;
+      if (input.finding_id) {
+        ci.finding_decisions = [...(ci.finding_decisions ?? []).filter((d) => d.finding_id !== input.finding_id),
+          { finding_id: input.finding_id, decision: "confirm", note: input.note, at: change.at }];
+        ci.overall = "confirmed_ai_findings";
+      }
       break;
     case "reject":
       report.review.status = "clinician_reviewed";
       report.review.reviewer_id = input.reviewer_id;
       if (input.finding_id) {
-        report.findings = report.findings.filter((f) => f.id !== input.finding_id);
+        ci.finding_decisions = [...(ci.finding_decisions ?? []).filter((d) => d.finding_id !== input.finding_id),
+          { finding_id: input.finding_id, decision: "reject", note: input.note, at: change.at }];
+        // AI output is never overwritten: the rejection lives in the clinician
+        // interpretation record, keeping the AI result intact for audit.
+        ci.overall = "rejected_ai_findings";
       }
       break;
     case "correct":
@@ -172,19 +208,45 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
           f.model_id = "clinician_manual";
           f.synthetic = false;
         }
+        ci.finding_decisions = [...(ci.finding_decisions ?? []).filter((d) => d.finding_id !== input.finding_id),
+          { finding_id: input.finding_id, decision: "correct", note: input.note, at: change.at }];
       }
       report.review.status = "clinician_reviewed";
       report.review.reviewer_id = input.reviewer_id;
+      ci.overall = "amended";
+      break;
+    case "indeterminate":
+      report.review.status = "clinician_reviewed";
+      report.review.reviewer_id = input.reviewer_id;
+      ci.overall = "indeterminate";
+      break;
+    case "request_new_scan":
+      report.review.status = "clinician_reviewed";
+      report.review.reviewer_id = input.reviewer_id;
+      ci.overall = "request_new_scan";
       break;
     case "note":
       report.patient.notes = (report.patient.notes ? report.patient.notes + " | " : "") + `[${input.reviewer_id}] ${input.note ?? ""}`;
+      ci.notes = (ci.notes ? ci.notes + " | " : "") + `[${input.reviewer_id}] ${input.note ?? ""}`;
       break;
     case "finalize":
       report.review.status = "clinician_finalized";
       report.review.reviewer_id = input.reviewer_id;
       report.review.finalized_at = new Date().toISOString();
+      // FINAL INTERPRETATION is the clinician's own statement - never AI-generated text.
+      report.final_interpretation =
+        `Final interpretation by clinician ${input.reviewer_id}: ${
+          ci.overall === "indeterminate" ? "Indeterminate - repeat imaging or further evaluation recommended."
+          : ci.overall === "request_new_scan" ? "New scan requested; current automated analysis not accepted as basis for assessment."
+          : ci.overall === "rejected_ai_findings" ? "Automated findings reviewed; clinician assessment recorded."
+          : ci.overall === "confirmed_ai_findings" ? "Automated findings confirmed by clinician review."
+          : "Report finalized after clinician review."
+        }` + (input.note ? ` Note: ${input.note}` : "");
       break;
   }
+
+  ci.reviewer_id = input.reviewer_id;
+  ci.at = change.at;
 
   report.review.clinician_changes = [...(report.review.clinician_changes ?? []), change];
   await dbPut("reports", report.report_id, report);

@@ -6,7 +6,10 @@ import { pickDemoScenario, buildDemoFindings } from "./findings";
 import { runEnsemble, estimateUncertainty } from "./ensemble";
 import { runTriage, TriageOutcome } from "../clinical/triage";
 import { validateAnalysisResult, AnalysisResult, Finding, SCHEMA_VERSION, PIPELINE_VERSION } from "./schema";
-import { modelProvenance, RULESET_VERSION, COMPONENTS } from "../models/registry";
+import { modelProvenance, RULESET_VERSION, COMPONENTS, getModel, gateModelUse, deviceCompatible, supportsModality } from "../models/registry";
+import { assessOod, OOD_MESSAGE } from "./ood";
+import { mayEmitFinding } from "./taxonomy";
+import { canonicalModality } from "../models/modalities";
 import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
 
 /**
@@ -56,14 +59,34 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   const quality = await assessQuality(originalBytes);
   const qualityAcceptable = quality.quality_status === "pass";
 
+  // ---- Stage 1b: model registry gate + out-of-distribution check ----
+  const modelRecord = getModel("demo-fundus-synthetic-v0"); // the only registered model
+  const modelGate = modelRecord ? gateModelUse(modelRecord) : null;
+  const deviceInfo = study.metadata.manufacturer || study.metadata.model
+    ? { manufacturer: study.metadata.manufacturer, model: study.metadata.model }
+    : null;
+  const ood = assessOod({
+    modality: study.modality,
+    quality,
+    model: modelRecord,
+    device: deviceInfo,
+    metadataProvided: study.metadata.providedBy !== "none",
+  });
+
   // ---- Stage 2: anatomical segmentation (placeholder) ----
   // Emits no structures or measurements. Recorded for provenance.
 
   // ---- Stage 3: specialized detectors (DEMO / SYNTHETIC ONLY) ----
   let findings: Finding[] = [];
-  if (qualityAcceptable) {
+  if (qualityAcceptable && modelGate?.allowed) {
     const scenario = pickDemoScenario(originalBytes);
     findings = buildDemoFindings(scenario, quality.quality_score);
+    // Taxonomy + provenance tagging; enforce taxonomy/modality/status rules.
+    findings = findings.flatMap((f) => {
+      const gate = mayEmitFinding(f.type, canonicalModality(study.modality), modelRecord!.status);
+      if (!gate.ok) return []; // refuse to emit a finding the taxonomy forbids
+      return [{ ...f, taxonomy_level: "observation" as const, model_status: modelRecord!.status }];
+    });
   }
   // If quality gate failed: findings stay EMPTY (safety rule), and the result
   // carries the mandatory insufficient-quality message.
@@ -74,6 +97,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
   // ---- Stage 5: uncertainty ----
   const uncertainty = estimateUncertainty(quality.quality_score, findings, ensemble);
+  if (ood.detected) {
+    uncertainty.reasons.push(OOD_MESSAGE);
+    uncertainty.reasons.push(...ood.reasons);
+    uncertainty.overall = Math.min(0.99, uncertainty.overall + 0.1);
+  }
 
   // ---- Stage 6: clinical rule engine / triage ----
   const triage = runTriage({
@@ -82,6 +110,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     qualityScore: quality.quality_score,
     uncertainty: uncertainty.overall,
     modality: study.modality,
+    ood: { detected: ood.detected, message: ood.message },
   });
 
   // ---- Assemble structured result ----
@@ -117,6 +146,23 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       reasons: uncertainty.reasons,
       ensemble_agreement: ensemble.agreement,
     },
+    ood: {
+      detected: ood.detected,
+      reasons: ood.reasons,
+      message: ood.message,
+    },
+    model_registry: {
+      model_id: modelRecord?.model_id ?? "none",
+      model_version: modelRecord?.version ?? "none",
+      model_status: modelRecord?.status ?? "DEMO",
+      display_label: modelGate?.label ?? DEMO_LABEL,
+      integrity_checks: [
+        { check: "registry", passed: !!modelRecord, detail: modelRecord ? "Registered model in use." : "No registered model." },
+        { check: "artifact", passed: true, detail: "Placeholder DEMO model: no artifact on disk by design (data/models is empty)." },
+        { check: "status_gate", passed: !!modelGate?.allowed, detail: modelGate ? modelGate.reasons.join(" ") || "Status permits demo use only." : "No gate result." },
+      ],
+      device_compatibility: modelRecord ? deviceCompatible(modelRecord, deviceInfo) : { compatible: false, note: "Device compatibility has not been validated. No registered model in use." },
+    },
     recommendation: {
       priority: triage.priority,
       action: triage.action,
@@ -147,7 +193,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         VALIDATION_STATUS_BANNER,
         DEMO_LABEL,
         "This system is a screening/decision-support architecture. It does not establish diagnoses. Only a qualified eye-care professional can diagnose eye disease.",
-        "A negative automated result does not guarantee absence of eye disease.",
+        "A negative automated result does not guarantee that no eye disease is present.",
       ],
       blocked_claims: [],
     },

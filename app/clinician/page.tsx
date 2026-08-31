@@ -2,16 +2,32 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import ScanViewer from "@/components/ScanViewer";
+import { Badge, ConfidenceIndicator, QualityPanel, EmptyState } from "@/components/ui";
 
 interface Finding {
   id: string; type: string; location: string; severity: string;
-  confidence: number; confidence_category: string; explanation: string; synthetic: boolean;
+  confidence: number; confidence_category: string;
+  explanation: string; synthetic: boolean; model_id: string;
+  region?: { x: number; y: number; w: number; h: number } | null;
 }
 interface Bundle {
-  study?: { study_id: string; modality: string; eye: string; status: string };
-  analysis?: { findings: Finding[]; quality: { acceptable: boolean; status: string; score: number } };
-  report?: { report_id: string; review: { status: string; reviewer_id?: string; finalized_at?: string } };
+  study?: { study_id: string; modality: string; eye: string; status: string; original_sha256: string };
+  analysis?: {
+    findings: Finding[];
+    quality: { acceptable: boolean; status: string; score: number; artifacts: string[]; metrics: Record<string, number | boolean> };
+    model_registry?: { model_id: string; model_version: string; model_status: string; device_compatibility: { compatible: boolean; note: string } };
+    provenance?: { analyzed_at: string };
+  };
+  report?: { review: { status: string; reviewer_id?: string; finalized_at?: string }, clinician_interpretation?: { overall: string } | null };
 }
+
+const ACTIONS = [
+  ["confirm", "Confirm", "secondary"],
+  ["reject", "Reject", "danger"],
+  ["indeterminate", "Mark Indeterminate", "secondary"],
+  ["request_new_scan", "Request New Scan", "secondary"],
+] as const;
 
 function ClinicianInner() {
   const params = useSearchParams();
@@ -21,19 +37,19 @@ function ClinicianInner() {
   const [note, setNote] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [activeRegion, setActiveRegion] = useState<Finding["region"]>(null);
 
   async function load(id: string) {
-    setErr(null);
-    setMsg(null);
+    setErr(null); setMsg(null);
     const res = await fetch(`/api/studies/${encodeURIComponent(id)}`);
     const json = await res.json();
     if (!res.ok) { setErr(json.error ?? "Not found"); setBundle(null); }
     else setBundle(json);
   }
-
   useEffect(() => { if (studyId) load(studyId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function act(action: string, findingId?: string, correction?: Record<string, string>) {
+    if (action !== "note" && !reviewer.trim()) { setErr("Enter a reviewer ID first (pseudonymous — no signatures are fabricated)."); return; }
     const res = await fetch(`/api/review/${encodeURIComponent(studyId)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -42,98 +58,145 @@ function ClinicianInner() {
     const json = await res.json();
     if (!res.ok) setErr(json.error ?? "Review action failed");
     else {
-      setMsg(`Action "${action}" recorded. Every AI result, clinician modification, and the final result are stored for audit.`);
-      if (note) setNote("");
-      load(studyId);
+      setMsg(`Action "${action.replaceAll("_", " ")}" recorded. AI output, clinician interpretation, and final report are stored separately and every change is audited.`);
+      setNote(""); load(studyId);
     }
   }
 
   return (
     <div>
-      <h1>Clinician review interface</h1>
+      <h1>Clinical review</h1>
       <p className="muted">
-        Human-in-the-loop review: open findings, accept or reject AI findings, add corrections and notes, and
-        finalize the report. The system stores the AI result, clinician modifications, and the final result separately
-        for continuous validation and auditing.
+        Human-in-the-loop review workspace. Confirm, reject, or correct AI findings, mark the case indeterminate,
+        request a new scan, or finalize the report. The AI never modifies your interpretation — records are kept
+        separately (AI output / clinician interpretation / final report).
       </p>
 
-      <div className="panel">
-        <div className="grid-2">
-          <div className="field">
+      <div className="card" style={{ marginTop: 14 }}>
+        <div className="grid grid-2">
+          <div className="field" style={{ margin: 0 }}>
             <label htmlFor="studyId">Study ID</label>
             <input id="studyId" value={studyId} onChange={(e) => setStudyId(e.target.value)} placeholder="study_..." />
           </div>
-          <div className="field">
+          <div className="field" style={{ margin: 0 }}>
             <label htmlFor="reviewer">Reviewer ID (pseudonymous; no signatures are fabricated)</label>
             <input id="reviewer" value={reviewer} onChange={(e) => setReviewer(e.target.value)} placeholder="e.g. dr-ops-001" />
           </div>
         </div>
-        <button className="btn" onClick={() => load(studyId)} disabled={!studyId}>Open study</button>
+        <button className="btn" style={{ marginTop: 14 }} onClick={() => load(studyId)} disabled={!studyId}>Open study</button>
       </div>
 
-      {err && <div className="callout danger">{err}</div>}
-      {msg && <div className="callout ok">{msg}</div>}
+      {err && <div className="alert danger"><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body">{err}</div></div>}
+      {msg && <div className="alert ok"><span className="alert-icon" aria-hidden="true">✓</span><div className="alert-body">{msg}</div></div>}
 
       {bundle?.analysis && (
-        <>
-          <div className="panel">
-            <h2 style={{ marginTop: 0 }}>Study {bundle.study?.study_id}</h2>
-            <p className="small muted">
-              Modality: {bundle.study?.modality} &middot; Eye: {bundle.study?.eye} &middot; Quality:{" "}
-              {bundle.analysis.quality.status} ({bundle.analysis.quality.score}) &middot; Review status:{" "}
-              {bundle.report?.review.status}
-            </p>
-            <p className="small muted">
-              The original scan is preserved unchanged on D:. Reviewers should open the original file locally for
-              side-by-side inspection; in-image overlay rendering (heatmaps, masks) requires the segmentation
-              component, which is an integration placeholder. Any future heatmap will be labeled
-              &ldquo;AI-highlighted region&rdquo; and is never proof of a diagnosis.
+        <div className="grid" style={{ gridTemplateColumns: "1.2fr 1fr", alignItems: "start", marginTop: 16 }} >
+          <div className="card" style={{ margin: 0 }}>
+            <div className="card-title">
+              <h3>Original scan — {bundle.study?.study_id}</h3>
+              <Badge tone="neutral">{bundle.study?.modality} • {bundle.study?.eye}</Badge>
+            </div>
+            <ScanViewer
+              src={`/api/studies/${encodeURIComponent(studyId)}/image`}
+              alt={`Original scan ${bundle.study?.study_id}`}
+              region={activeRegion}
+              overlayAvailable={activeRegion != null}
+              overlayUnavailableNote="AI localization is not available for this model."
+            />
+            <p className="tiny muted" style={{ marginBottom: 0, marginTop: 8 }}>
+              SHA-256: {bundle.study?.original_sha256.slice(0, 24)}… — original preserved unchanged.
+              Any future heatmap will be labeled &ldquo;AI-highlighted region&rdquo; and is never proof of a diagnosis.
             </p>
           </div>
 
-          {bundle.analysis.findings.length === 0 && <div className="panel muted">No AI findings to review.</div>}
-          {bundle.analysis.findings.map((f) => (
-            <div key={f.id} className="finding-card">
-              <h3>{f.type.replaceAll("_", " ").toUpperCase()} {f.synthetic && <span className="demo-tag">SYNTHETIC</span>}</h3>
-              <dl className="kv">
-                <dt>Location</dt><dd>{f.location.replaceAll("_", " ")}</dd>
-                <dt>Severity</dt><dd>{f.severity}</dd>
-                <dt>Confidence</dt><dd>{f.confidence_category} ({f.confidence})</dd>
-              </dl>
-              <p className="small">{f.explanation}</p>
-              <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                <button className="btn" style={{ padding: "6px 12px" }} onClick={() => act("accept", f.id)}>Accept</button>
-                <button className="btn danger" style={{ padding: "6px 12px" }} onClick={() => act("reject", f.id)}>Reject</button>
-                <button
-                  className="btn secondary"
-                  style={{ padding: "6px 12px" }}
-                  onClick={() => {
-                    const type = prompt("Corrected finding type:", f.type);
-                    if (type) act("correct", f.id, { type, location: f.location, severity: f.severity, explanation: f.explanation });
-                  }}
-                >
-                  Correct
-                </button>
+          <div style={{ display: "grid", gap: 16 }}>
+            <div className="card" style={{ margin: 0 }}>
+              <div className="card-title">
+                <h3>AI findings ({bundle.analysis.findings.length})</h3>
+                {bundle.report?.review.status !== "ai_only" && <Badge tone="info">{bundle.report?.review.status.replaceAll("_", " ")}</Badge>}
               </div>
+              {bundle.analysis.findings.length === 0 && (
+                <p className="muted small" style={{ margin: 0 }}>No AI findings to review for this study.</p>
+              )}
+              {bundle.analysis.findings.map((f) => (
+                <div key={f.id} style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                    <strong className="small">{f.type.replaceAll("_", " ").toUpperCase()}</strong>
+                    {f.synthetic && <Badge tone="demo">Synthetic</Badge>}
+                  </div>
+                  <p className="small muted" style={{ margin: "4px 0 8px" }}>
+                    {f.location.replaceAll("_", " ")} • Model {f.model_id}
+                    {bundle.analysis?.model_registry && <> • Status <strong>{bundle.analysis.model_registry.model_status}</strong></>}
+                  </p>
+                  <ConfidenceIndicator finding={f} />
+                  <p className="small" style={{ margin: "8px 0" }}>{f.explanation}</p>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <button className="btn sm" onClick={() => act("confirm", f.id)}>Confirm</button>
+                    <button className="btn danger sm" onClick={() => act("reject", f.id)}>Reject</button>
+                    <button className="btn secondary sm" onClick={() => {
+                      const type = prompt("Corrected finding type:", f.type);
+                      if (type) act("correct", f.id, { type, location: f.location, severity: f.severity, explanation: f.explanation });
+                    }}>Correct</button>
+                    <button className="btn secondary sm" onClick={() => act("indeterminate", f.id)}>Indeterminate</button>
+                    {f.region && <button className="btn ghost sm" onClick={() => setActiveRegion(f.region ?? null)}>View region</button>}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
 
-          <div className="panel">
-            <h2 style={{ marginTop: 0 }}>Notes &amp; finalization</h2>
-            <div className="field">
-              <textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Clinical note for the record…" />
+            <div className="card" style={{ margin: 0 }}>
+              <div className="card-title"><h3>Case decision</h3></div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {ACTIONS.filter(([a]) => a !== "confirm" && a !== "reject").map(([a, label, style]) => (
+                  <button key={a} className={`btn ${style === "danger" ? "danger" : "secondary"} sm`} onClick={() => act(a)}>{label}</button>
+                ))}
+              </div>
+              <div className="field">
+                <label htmlFor="note">Clinician notes</label>
+                <textarea id="note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Clinical note for the record…" />
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className="btn secondary sm" onClick={() => act("note")}>Add note</button>
+                <button className="btn" onClick={() => act("finalize")}>Finalize Report</button>
+              </div>
+              {bundle.report?.review.finalized_at && (
+                <p className="tiny muted" style={{ marginTop: 10, marginBottom: 0 }}>
+                  Finalized {new Date(bundle.report.review.finalized_at).toLocaleString()} by {bundle.report.review.reviewer_id}.
+                </p>
+              )}
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button className="btn secondary" onClick={() => act("note")}>Add note</button>
-              <button className="btn" onClick={() => act("finalize")}>Finalize report</button>
-            </div>
-            {bundle.report?.review.finalized_at && (
-              <p className="small muted" style={{ marginTop: 8 }}>
-                Finalized at {bundle.report.review.finalized_at} by {bundle.report.review.reviewer_id}.
-              </p>
-            )}
           </div>
-        </>
+        </div>
+      )}
+
+      {bundle?.analysis && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-title"><h3>Image quality &amp; limitations</h3></div>
+          <div className="grid grid-2">
+            <QualityPanel quality={bundle.analysis.quality} />
+            <div>
+              {bundle.analysis.model_registry && (
+                <dl className="kv">
+                  <dt>Model</dt><dd>{bundle.analysis.model_registry.model_id} v{bundle.analysis.model_registry.model_version}</dd>
+                  <dt>Validation status</dt><dd><Badge tone="warn">{bundle.analysis.model_registry.model_status}</Badge></dd>
+                  <dt>Device compatibility</dt><dd className="small">{bundle.analysis.model_registry.device_compatibility.note}</dd>
+                </dl>
+              )}
+              <p className="tiny muted" style={{ marginBottom: 0 }}>
+                Every change is audited. AI output is never overwritten by review actions — decisions are recorded
+                in the clinician interpretation layer.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!bundle && !err && (
+        <div style={{ marginTop: 16 }}>
+          <EmptyState icon="✓" title="Open a study to begin review">
+            Enter a study ID above, or open a result from the History page and click Clinical Review.
+          </EmptyState>
+        </div>
       )}
     </div>
   );
@@ -141,7 +204,7 @@ function ClinicianInner() {
 
 export default function ClinicianPage() {
   return (
-    <Suspense fallback={<div className="spinner" />}>
+    <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", padding: 60 }}><div className="spinner" /></div>}>
       <ClinicianInner />
     </Suspense>
   );

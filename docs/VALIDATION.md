@@ -2,6 +2,22 @@
 
 No clinical accuracy claim may be made until the following has been completed and documented.
 
+## Phase 2 validation infrastructure (IMPLEMENTED - research tooling)
+
+- **Dataset management** (`lib/research/datasets.ts`): versioned datasets per split
+  (train / validation / locked_test / external_test), de-identified patient keys (salted SHA-256),
+  patient-level cross-split leakage rejection, read-only locked test sets, audited documented exemptions only.
+- **Multi-grader labeling**: N-expert annotations, agreement computation (unanimous / disagreement /
+  insufficient), mandatory adjudication for disagreements (adjudicator must select a recorded annotation),
+  reference labels only settable with adjudication provenance.
+- **Evaluation tooling** (`lib/research/metrics.ts` + `POST /api/research/metrics`): sensitivity, specificity,
+  PPV, NPV, FPR, FNR, AUROC (tie-corrected), AUPRC, calibration ECE + reliability bins, confusion matrix, and
+  subgroup breakdowns (device / modality / quality). Overall accuracy is deliberately NOT a headline metric.
+- **Registry evidence rules**: models cannot hold validation-level status without `evidence_reference`,
+  a validation dataset, and a validation date; `auditRegistryConsistency()` fails closed otherwise.
+- **Locked test protection**: the production UI has no pathway to modify locked test membership or labels;
+  both are rejected at the data layer.
+
 ## Current status
 
 | Component | Status |

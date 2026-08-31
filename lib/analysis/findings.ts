@@ -35,6 +35,10 @@ function hashSeed(buf: Buffer): number {
 /** Deterministic scenario selection from image content hash (reproducible). */
 export function pickDemoScenario(buf: Buffer): DemoFindingChoice {
   const seed = hashSeed(buf);
+  return scenarioFromSeed(seed);
+}
+
+export function scenarioFromSeed(seed: number): DemoFindingChoice {
   const bucket = seed % 100;
   let scenario: DemoFindingChoice["scenario"];
   if (bucket < 45) scenario = "no_finding";
