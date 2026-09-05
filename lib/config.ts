@@ -66,7 +66,7 @@ export function tmpPath(name: string): string {
 /** Paths must never escape the configured roots. */
 export function safeJoin(root: string, ...segments: string[]): string {
   // Treat both slash styles as separators so Windows-form input is safe on Unix.
-  const portableSegments = segments.map((segment) => segment.replaceAll("\\\\", path.sep));
+  const portableSegments = segments.map((segment) => segment.replaceAll("\\", path.sep));
   const resolved = path.resolve(path.join(root, ...portableSegments));
   const normalizedRoot = path.resolve(root);
   if (!resolved.startsWith(normalizedRoot + path.sep) && resolved !== normalizedRoot) {

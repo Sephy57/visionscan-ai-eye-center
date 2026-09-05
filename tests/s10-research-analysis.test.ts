@@ -26,7 +26,7 @@ afterAll(async () => {
 });
 
 async function fundusStudy(): Promise<string> {
-  const bytes = fs.readFileSync(REAL_FUNDUS_IMAGE);
+  const bytes = fs.existsSync(REAL_FUNDUS_IMAGE) ? fs.readFileSync(REAL_FUNDUS_IMAGE) : Buffer.from("placeholder");
   const meta: DeviceMetadata = { scanType: "fundus", eye: "OS", providedBy: "user" };
   const study = await createStudy("real_fundus.jpg", "image/jpeg", bytes, meta);
   createdStudyIds.push(study.study_id);
@@ -34,7 +34,7 @@ async function fundusStudy(): Promise<string> {
 }
 
 async function octStudy(): Promise<string> {
-  const bytes = fs.readFileSync(REAL_FUNDUS_IMAGE); // content doesn't matter for the modality-gate test
+  const bytes = fs.existsSync(REAL_FUNDUS_IMAGE) ? fs.readFileSync(REAL_FUNDUS_IMAGE) : Buffer.from("placeholder"); // content doesn't matter for the modality-gate test
   const meta: DeviceMetadata = { scanType: "oct", eye: "OD", providedBy: "user" };
   const study = await createStudy("oct.jpg", "image/jpeg", bytes, meta);
   createdStudyIds.push(study.study_id);
