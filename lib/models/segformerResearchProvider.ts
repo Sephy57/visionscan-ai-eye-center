@@ -85,3 +85,7 @@ export async function runSegformerResearchInference(imagePath: string): Promise<
 }
 
 export const SEGFORMER_RESEARCH_MODEL_ID = "segformer-optic-disc-cup-refuge";
+
+export function hasSegformerResearchArtifact(): boolean {
+  return fs.existsSync(path.join(SEGFORMER_MODEL_DIR, "model.safetensors"));
+}

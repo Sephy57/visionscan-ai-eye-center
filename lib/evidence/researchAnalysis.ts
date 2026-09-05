@@ -27,7 +27,7 @@ import { assessQuality } from "../imaging/quality";
 import { canonicalModality } from "../models/modalities";
 import { assessOod, OOD_MESSAGE } from "../analysis/ood";
 import { classifyImageSuitability } from "../analysis/imageSuitability";
-import { runSegformerResearchInference, ArtifactNotFoundError } from "../models/segformerResearchProvider";
+import { runSegformerResearchInference, ArtifactNotFoundError, hasSegformerResearchArtifact } from "../models/segformerResearchProvider";
 import { segformerOutputToFindings } from "../models/segformerFindingAdapter";
 import { buildEvidenceWorkspace } from "./synthesize";
 import { evidenceFromFindings } from "./adapters";
@@ -85,6 +85,13 @@ export async function runResearchAnalysis(studyId: string): Promise<ResearchAnal
 
   const bytes = await readOriginalScan(studyId);
   if (!bytes) return { ...base, state: "NOT_A_STUDY", modality: canonical, reason: "Original scan file is missing." };
+
+  // Report unavailable before image-quality work when the research artifact
+  // is absent. This keeps fresh-checkout behavior deterministic and avoids
+  // parsing arbitrary fixture bytes just to discover there is no model.
+  if (!hasSegformerResearchArtifact()) {
+    return { ...base, state: "INFERENCE_UNAVAILABLE", reason: "Research model artifact is not installed.", modality: canonical };
+  }
 
   const quality = await assessQuality(bytes);
   if (quality.quality_status !== "pass") {
