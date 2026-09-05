@@ -19,6 +19,7 @@ import { DeviceMetadata } from "@/lib/devices/adapter";
 const SEGFORMER_ARTIFACT = path.join(PROJECT_ROOT, "scratch", "models", "segformer-optic-disc-cup-refuge", "model.safetensors");
 const REAL_FUNDUS_IMAGE = path.join(PROJECT_ROOT, "scratch", "test_images", "example_fundus.jpg");
 const HAS_ARTIFACT = fs.existsSync(SEGFORMER_ARTIFACT) && fs.existsSync(REAL_FUNDUS_IMAGE);
+const FALLBACK_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
 
 const createdStudyIds: string[] = [];
 afterAll(async () => {
@@ -26,7 +27,7 @@ afterAll(async () => {
 });
 
 async function fundusStudy(): Promise<string> {
-  const bytes = fs.existsSync(REAL_FUNDUS_IMAGE) ? fs.readFileSync(REAL_FUNDUS_IMAGE) : Buffer.from("placeholder");
+  const bytes = fs.existsSync(REAL_FUNDUS_IMAGE) ? fs.readFileSync(REAL_FUNDUS_IMAGE) : FALLBACK_PNG;
   const meta: DeviceMetadata = { scanType: "fundus", eye: "OS", providedBy: "user" };
   const study = await createStudy("real_fundus.jpg", "image/jpeg", bytes, meta);
   createdStudyIds.push(study.study_id);
@@ -34,7 +35,7 @@ async function fundusStudy(): Promise<string> {
 }
 
 async function octStudy(): Promise<string> {
-  const bytes = fs.existsSync(REAL_FUNDUS_IMAGE) ? fs.readFileSync(REAL_FUNDUS_IMAGE) : Buffer.from("placeholder"); // content doesn't matter for the modality-gate test
+  const bytes = fs.existsSync(REAL_FUNDUS_IMAGE) ? fs.readFileSync(REAL_FUNDUS_IMAGE) : FALLBACK_PNG; // content doesn't matter for the modality-gate test
   const meta: DeviceMetadata = { scanType: "oct", eye: "OD", providedBy: "user" };
   const study = await createStudy("oct.jpg", "image/jpeg", bytes, meta);
   createdStudyIds.push(study.study_id);
