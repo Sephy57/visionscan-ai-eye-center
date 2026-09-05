@@ -1,0 +1,40 @@
+name: CI
+
+# Engineering validation gate (NOT clinical validation).
+# Runs on every push and PR. Must never require patient data, model
+# artifacts, or external services:
+#  - s9/s10 real-inference tests SKIP when the SegFormer artifact is absent
+#    (documented SKIP-on-fresh-checkout behavior in those files)
+#  - the JSON database and data/ directories are created on demand
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Unit and integration tests
+        run: npm test
+
+      - name: Filesystem audit
+        run: npm run audit:fs
+
+      - name: Production build
+        run: npm run build

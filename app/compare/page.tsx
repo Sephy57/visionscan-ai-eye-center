@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import ScanViewer from "@/components/ScanViewer";
 import { Icon } from "@/components/icons";
 import { Badge, EmptyState } from "@/components/ui";
+import { authFetch } from "@/lib/auth/clientFetch";
 
 interface StudyRow { study_id: string; created_at: string; modality: string; eye: string; status: string }
 interface Bundle { study?: { study_id: string; modality: string; eye: string }; analysis?: { findings: Array<{ id: string; type: string; region?: { x: number; y: number; w: number; h: number } | null }> } }
@@ -39,7 +40,7 @@ function CompareInner() {
     setOutcome(null);
     if (!previous || !current) { setError("Select both a previous and a current study."); return; }
     if (previous === current) { setError("Select two different studies."); return; }
-    const res = await fetch("/api/compare", {
+    const res = await authFetch("/api/compare", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ previous, current }),
     });

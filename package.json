@@ -11,20 +11,30 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke": "node scripts/smoke.mjs",
+    "visual-qa": "node scripts/visual-qa.mjs",
     "setup": "node scripts/setup-dirs.mjs",
-    "audit:fs": "node scripts/audit-filesystem.mjs"
+    "audit:fs": "node scripts/audit-filesystem.mjs",
+    "seed:admin": "node scripts/seed-admin.mjs",
+    "ocr:warmup": "node scripts/ocr-warmup.mjs",
+    "migration:preflight": "node scripts/persistence-migration-preflight.mjs"
   },
   "dependencies": {
-    "next": "^14.2.35",
+    "@napi-rs/canvas": "^1.0.8",
+    "next": "^16.3.4",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "sharp": "0.33.4"
+    "sharp": "^0.35.4",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
+    "axe-core": "^4.13.0",
+    "playwright-core": "^1.62.1",
     "typescript": "5.5.3",
-    "vitest": "1.6.0"
+    "vitest": "^3.2.6"
   }
 }

@@ -168,9 +168,14 @@ describe("status transitions (evidence-gated)", () => {
       requested_by: "test",
     });
     expect(rec.decision).toBe("approved");
-    // Restore DEMO status for other tests (session-level registry).
+    // Restore DEMO status for other tests AND purge the persisted snapshot
+    // (Phase 5B: transitions now durably persist to disk, not just
+    // in-memory - an in-memory-only reset would leave a stale RESEARCH
+    // snapshot that re-applies to the real demo model on the next hydration).
     const { MODELS } = await import("@/lib/models/registry");
     MODELS["demo-fundus-synthetic-v0"].status = "DEMO";
+    const { dbDelete } = await import("@/lib/storage/db");
+    await dbDelete("model_registry_state", "demo-fundus-synthetic-v0");
   });
 
   it("rejects EXTERNALLY_VALIDATED without external-study evidence (no typed validated:true)", async () => {

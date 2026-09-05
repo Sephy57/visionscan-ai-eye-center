@@ -55,11 +55,18 @@ export interface EyeModelProvider {
   unloadModel(): Promise<void>;
 }
 
-/** Gate helper shared by all providers. Throws when the model may not run. */
-export async function gateOrThrow(modelId: string): Promise<{ model: ModelRecord; gate: ModelGateResult }> {
+/**
+ * Gate helper shared by all providers. Throws when the model may not run.
+ * `device` is passed through to gateModelUse() unchanged - omit it for a
+ * context-free check (e.g. validateModel(), with no specific study yet),
+ * pass the study's declared device (or `null`) for a real per-study
+ * execution gate, which then hard-enforces device compatibility for any
+ * non-DEMO model.
+ */
+export async function gateOrThrow(modelId: string, device?: { manufacturer?: string; model?: string } | null): Promise<{ model: ModelRecord; gate: ModelGateResult }> {
   const model = getModel(modelId);
   if (!model) throw new Error(`Model not registered: ${modelId}`);
-  const gate = gateModelUse(model);
+  const gate = gateModelUse(model, device);
   if (!gate.allowed) {
     throw new Error(`Model use rejected by registry gate: ${gate.reasons.join(" ")}`);
   }
@@ -103,7 +110,7 @@ export class PlaceholderDemoProvider implements EyeModelProvider {
   }
 
   async analyzeStudy(study: NormalizedStudy, ctx: ModelAnalysisContext): Promise<ModelAnalysisOutput> {
-    const { model, gate } = await gateOrThrow(this.modelId);
+    const { model, gate } = await gateOrThrow(this.modelId, ctx.device);
 
     const modCheck = checkModalitySupported(model, study.modality);
     if (!modCheck.ok) {
@@ -150,6 +157,69 @@ export function getProvider(providerId: string): EyeModelProvider | null {
   return PROVIDERS[providerId] ?? null;
 }
 
+export function getProviderForModel(modelId: string): EyeModelProvider | null {
+  return Object.values(PROVIDERS).find((p) => p.modelId === modelId) ?? null;
+}
+
 export function defaultProvider(): EyeModelProvider {
   return PROVIDERS["placeholder-demo"];
+}
+
+export interface ModelHealthResult {
+  model_id: string;
+  healthy: boolean;
+  checked_at: string;
+  steps: Array<{ step: "provider_lookup" | "load" | "validate" | "unload"; passed: boolean; detail?: string }>;
+}
+
+/**
+ * Model-load health check (Phase 6 infrastructure). Fails closed: any
+ * exception at any step (provider missing, load failure, validation
+ * failure, unload failure) marks the model unhealthy rather than
+ * propagating a raw error or, worse, assuming health by default. A real
+ * provider's loadModel() might load actual weights into a runtime
+ * (ONNX, etc.) - this is the place that failure surfaces before any
+ * inference is attempted against real patient data.
+ */
+export async function checkModelHealth(modelId: string): Promise<ModelHealthResult> {
+  const steps: ModelHealthResult["steps"] = [];
+  const provider = getProviderForModel(modelId);
+  if (!provider) {
+    return {
+      model_id: modelId, healthy: false, checked_at: new Date().toISOString(),
+      steps: [{ step: "provider_lookup", passed: false, detail: "No provider is registered for this model id." }],
+    };
+  }
+  steps.push({ step: "provider_lookup", passed: true });
+
+  let loaded = false;
+  try {
+    await provider.loadModel();
+    loaded = true;
+    steps.push({ step: "load", passed: true });
+  } catch (err) {
+    steps.push({ step: "load", passed: false, detail: String(err instanceof Error ? err.message : err).slice(0, 200) });
+  }
+
+  if (loaded) {
+    try {
+      const result = await provider.validateModel();
+      steps.push({ step: "validate", passed: result.gate.allowed && result.trusted, detail: result.gate.allowed ? undefined : result.gate.reasons.join(" ").slice(0, 200) });
+    } catch (err) {
+      steps.push({ step: "validate", passed: false, detail: String(err instanceof Error ? err.message : err).slice(0, 200) });
+    }
+    try {
+      await provider.unloadModel();
+      steps.push({ step: "unload", passed: true });
+    } catch (err) {
+      steps.push({ step: "unload", passed: false, detail: String(err instanceof Error ? err.message : err).slice(0, 200) });
+    }
+  }
+
+  return {
+    model_id: modelId,
+    healthy: steps.every((s) => s.passed),
+    checked_at: new Date().toISOString(),
+    steps,
+  };
 }

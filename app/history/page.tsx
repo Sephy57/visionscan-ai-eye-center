@@ -1,53 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Badge, EmptyState } from "@/components/ui";
 import { Icon } from "@/components/icons";
+import { authFetch } from "@/lib/auth/clientFetch";
+import { DASHBOARD_STATUS_META as STATUS_META } from "@/lib/reports/terminology";
 
 interface StudyRow {
-  study_id: string; created_at: string; modality: string; eye: string; status: string; sha256: string;
+  study_id: string; created_at: string; modality: string; eye: string; status: string;
+  dashboard_status?: string;
 }
-interface ReportLite {
-  review: { status: string };
-  triage_priority: string;
-}
+
+const FILTER_TO_STATUS: Record<string, string> = {
+  urgent: "URGENT_REVIEW",
+  correlation: "CLINICAL_CORRELATION_REQUIRED",
+  review: "REVIEW_REQUIRED",
+};
 
 export default function HistoryPage() {
-  const [rows, setRows] = useState<Array<StudyRow & { review?: string }>>([]);
+  return (
+    <Suspense fallback={<div role="status" aria-live="polite" style={{ display: "flex", justifyContent: "center", padding: 50 }}><div className="spinner" /><span className="sr-only">Loading history…</span></div>}>
+      <HistoryInner />
+    </Suspense>
+  );
+}
+
+function HistoryInner() {
+  const [rows, setRows] = useState<StudyRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const filter = searchParams.get("filter");
+  const filterStatus = filter ? FILTER_TO_STATUS[filter] : undefined;
 
   async function load() {
-    const res = await fetch("/api/studies");
+    const res = await fetch("/api/studies?with_status=1");
     const json = await res.json();
-    const studies: StudyRow[] = json.studies ?? [];
-    // Attach review status from reports (light fetch per study; dev scale only).
-    const withReview = await Promise.all(studies.map(async (s) => {
-      try {
-        const r = await fetch(`/api/studies/${s.study_id}`);
-        const j = await r.json();
-        return { ...s, review: j.report?.review?.status ?? undefined };
-      } catch { return { ...s }; }
-    }));
-    setRows(withReview);
+    setRows(json.studies ?? []);
     setLoaded(true);
   }
   useEffect(() => { load().catch(() => { setError("Could not load studies."); setLoaded(true); }); }, []);
 
+  const visibleRows = filterStatus ? rows.filter((r) => r.dashboard_status === filterStatus) : rows;
+
   async function remove(id: string) {
     if (!confirm(`Delete study ${id}, its analysis, report, and stored original image? This cannot be undone.`)) return;
-    const res = await fetch(`/api/studies/${id}`, { method: "DELETE" });
+    const res = await authFetch(`/api/studies/${id}`, { method: "DELETE" });
     if (res.ok) load(); else setError("Delete failed");
   }
 
-  function reviewBadge(review?: string) {
-    switch (review) {
-      case "clinician_finalized": return <Badge tone="ok">Finalized</Badge>;
-      case "clinician_reviewed": return <Badge tone="info">Reviewed</Badge>;
-      default: return <Badge tone="neutral">Research</Badge>;
-    }
-  }
+  const statusBadge = (status?: string) => {
+    const meta = status ? STATUS_META[status] : undefined;
+    return <Badge tone={meta?.tone ?? "neutral"}>{meta?.label ?? "Uploaded"}</Badge>;
+  };
 
   return (
     <div>
@@ -59,39 +66,43 @@ export default function HistoryPage() {
         <Link className="btn" href="/analyze"><Icon name="plus" size={14} /> New Analysis</Link>
       </div>
 
-      {error && <div className="alert danger" style={{ marginTop: 14 }}><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body">{error}</div></div>}
+      {filterStatus && (
+        <p className="small" style={{ margin: "10px 0 0" }}>
+          Filtered: <strong>{STATUS_META[filterStatus]?.label ?? filter}</strong> ({visibleRows.length}){" "}
+          <Link href="/history">Clear filter</Link>
+        </p>
+      )}
 
-      {!loaded && <div style={{ display: "flex", justifyContent: "center", padding: 50 }}><div className="spinner" /></div>}
+      {error && <div className="alert danger" role="alert" style={{ marginTop: 14 }}><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body">{error}</div></div>}
 
-      {loaded && rows.length === 0 && (
+      {!loaded && <div role="status" aria-live="polite" style={{ display: "flex", justifyContent: "center", padding: 50 }}><div className="spinner" /><span className="sr-only">Loading studies…</span></div>}
+
+      {loaded && visibleRows.length === 0 && (
         <div style={{ marginTop: 20 }}>
-          <EmptyState icon={<Icon name="eye" size={26} />} title="No analyses yet"
+          <EmptyState icon={<Icon name="eye" size={26} />} title={filterStatus ? "No studies match this filter" : "No analyses yet"}
             action={<Link className="btn" href="/analyze">+ New Analysis</Link>}>
-            Start a new ophthalmic imaging analysis to begin building a reviewable history.
+            {filterStatus
+              ? "No studies currently have this status."
+              : "Start a new ophthalmic imaging analysis to begin building a reviewable history."}
           </EmptyState>
         </div>
       )}
 
-      {loaded && rows.length > 0 && (
+      {loaded && visibleRows.length > 0 && (
         <div className="card" style={{ marginTop: 18, padding: "4px 14px" }}>
           <div className="table-wrap">
             <table className="table">
               <thead>
-                <tr><th>Date</th><th>Study</th><th>Eye</th><th>Modality</th><th>Status</th><th>Review</th><th style={{ textAlign: "right" }}>Actions</th></tr>
+                <tr><th scope="col">Date</th><th scope="col">Study</th><th scope="col">Eye</th><th scope="col">Modality</th><th scope="col">Status</th><th scope="col" style={{ textAlign: "right" }}>Actions</th></tr>
               </thead>
               <tbody>
-                {rows.map((s) => (
+                {visibleRows.map((s) => (
                   <tr key={s.study_id}>
                     <td className="small">{new Date(s.created_at).toLocaleDateString()}</td>
                     <td><code className="tiny">{s.study_id.slice(0, 16)}…</code></td>
                     <td>{s.eye}</td>
                     <td>{s.modality}</td>
-                    <td>
-                      {s.status === "analyzed" ? <Badge tone="info">Analyzed</Badge>
-                        : s.status === "rejected" ? <Badge tone="bad">Quality rejected</Badge>
-                        : <Badge tone="neutral">Uploaded</Badge>}
-                    </td>
-                    <td>{reviewBadge(s.review)}</td>
+                    <td>{statusBadge(s.dashboard_status)}</td>
                     <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                       <Link className="btn ghost sm" href={`/result?study=${s.study_id}`}>Result</Link>{" "}
                       <Link className="btn ghost sm" href={`/report?study=${s.study_id}`}>Report</Link>{" "}

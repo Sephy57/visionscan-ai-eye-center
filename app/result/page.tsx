@@ -4,8 +4,13 @@ import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import ScanViewer from "@/components/ScanViewer";
+import DocumentEvidencePanel from "@/components/DocumentEvidencePanel";
+import EvidenceWorkspacePanel from "@/components/EvidenceWorkspace";
+import SpecialistConsensusPanel from "@/components/SpecialistConsensusPanel";
+import ResearchAnalysisPanel from "@/components/ResearchAnalysisPanel";
 import { Badge, ConfidenceIndicator, EmptyState, TriageBadge } from "@/components/ui";
 import { Icon } from "@/components/icons";
+import { presentQuality } from "@/lib/analysis/qualityPresentation";
 
 interface Finding {
   id: string; type: string; location: string; severity: string;
@@ -44,7 +49,20 @@ interface Bundle {
       label: string;
     };
     possible_conditions?: {
-      conditions: Array<{ id: string; label: string; matched_findings: string[]; note: string }>;
+      conditions: Array<{ id: string; label: string; matched_findings: string[]; commonly_associated_symptoms: string[]; note: string }>;
+      note: string;
+    };
+    treatment_information?: {
+      items: Array<{
+        condition_id: string; condition_label: string; available: boolean; reason: string;
+        approaches: Array<{
+          approach_label: string; purpose: string; evidence_reference: string;
+          medications: Array<{ medication_id: string; generic_name: string; drug_class: string; purpose: string; route: string[]; common_contraindications: string[]; warnings: string[]; common_adverse_effects: string[]; evidence_references: string[] }>;
+        }>;
+        label: string;
+      }>;
+      dosage_notice: string;
+      interaction_notice: string;
       note: string;
     };
     visualizations?: {
@@ -53,6 +71,7 @@ interface Bundle {
       note: string;
     };
     demo: { synthetic_result: boolean; label: string };
+    diagnosis_gate?: { allowed: boolean; reasons: string[]; clinical_interpretation: "DIAGNOSIS" | "REQUIRES_CLINICAL_CORRELATION" };
     provenance: { analyzed_at: string; pipeline_version: string; ruleset_version: string };
     safety: { disclaimers: string[] };
   };
@@ -82,6 +101,25 @@ function ResultInner() {
   const [data, setData] = useState<Bundle | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [activeRegion, setActiveRegion] = useState<Finding["region"]>(null);
+  // Final phase - Presentation Mode / Clinician View: a client-side-only
+  // display preference, not a safety state. It never changes what the
+  // server computed (diagnosis gate, quality, OOD, findings) - it only
+  // shows or hides purely technical/provenance sections. Safety-critical
+  // disclaimers, the clinical-correlation notice, and urgency are shown in
+  // BOTH modes; only "Technical Details"-class content is toggled.
+  const [clinicianView, setClinicianView] = useState(false);
+  useEffect(() => {
+    try {
+      setClinicianView(window.localStorage.getItem("vs_clinician_view") === "1");
+    } catch { /* private/blocked storage - default to Presentation Mode */ }
+  }, []);
+  function toggleClinicianView() {
+    setClinicianView((v) => {
+      const next = !v;
+      try { window.localStorage.setItem("vs_clinician_view", next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (!study) { setErr("No study id supplied."); return; }
@@ -97,7 +135,7 @@ function ResultInner() {
     return (
       <div style={{ maxWidth: 640, margin: "0 auto" }}>
         <h1>Unable to open result</h1>
-        <div className="alert danger"><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body"><strong>We were unable to display this result</strong>{err}</div></div>
+        <div className="alert danger" role="alert"><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body"><strong>We were unable to display this result</strong>{err}</div></div>
         <div style={{ display: "flex", gap: 10 }}>
           <Link className="btn" href="/analyze">Upload New Scan</Link>
           <Link className="btn secondary" href="/dashboard">Return to Dashboard</Link>
@@ -110,6 +148,10 @@ function ResultInner() {
   const a = data.analysis;
   const rejected = !a.quality.acceptable;
   const abnormal = a.findings.length > 0;
+  // S12: honest quality presentation - a "pass" status can still carry real
+  // artifacts (see lib/analysis/qualityPresentation.ts's doc comment); never
+  // shown as a bare "GOOD" when a real artifact was detected.
+  const qp = presentQuality({ quality_status: a.quality.status, detected_artifacts: a.quality.artifacts });
   const ood = a.ood?.detected === true;
   const hasImage = !!data.study;
   const redFlags = a.patient_context?.red_flags ?? [];
@@ -157,7 +199,16 @@ function ResultInner() {
             {data.study?.study_id} • {a.study?.eye} • {a.study?.modality} • {new Date(a.provenance.analyzed_at).toLocaleString()}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            type="button"
+            className="btn secondary sm"
+            aria-pressed={clinicianView}
+            onClick={toggleClinicianView}
+            title="Toggles which technical/provenance sections are shown. Never changes the underlying safety state, quality, OOD, or diagnosis gate result."
+          >
+            {clinicianView ? "Clinician View" : "Presentation Mode"} — switch to {clinicianView ? "Presentation Mode" : "Clinician View"}
+          </button>
           <Link className="btn secondary sm" href={`/report?study=${encodeURIComponent(study)}`}>Report</Link>
           <Link className="btn sm" href={`/clinician?study=${encodeURIComponent(study)}`}>Clinical Review</Link>
         </div>
@@ -194,7 +245,10 @@ function ResultInner() {
               infoOverlay={{
                 eye: eyeLabel(a.study?.eye),
                 modality: modalityLabel(a.study?.modality),
-                analysisLabel: "RESEARCH ANALYSIS",
+                // This viewer belongs to the normal Gate-A pipeline. The
+                // isolated SegFormer path has its own explicitly labelled
+                // viewer below; never call synthetic output "research".
+                analysisLabel: a.demo?.synthetic_result ? "DEMO / SYNTHETIC" : "AUTOMATED ANALYSIS",
               }}
             />
           ) : (
@@ -227,7 +281,9 @@ function ResultInner() {
               <div key={f.id} className="finding-card" style={{ marginBottom: 10, boxShadow: "none" }}>
                 <div className="finding-head">
                   <h3 style={{ fontSize: "0.8rem" }}>RETINAL FINDING — {f.type.replaceAll("_", " ").toUpperCase()}</h3>
-                  <span className="badge demo">Synthetic</span>
+                  {f.synthetic
+                    ? <span className="badge demo">DEMO / SYNTHETIC</span>
+                    : <span className="badge warn">RESEARCH / UNVALIDATED</span>}
                 </div>
                 <dl className="kv tiny" style={{ gridTemplateColumns: "105px 1fr", marginBottom: 8 }}>
                   <dt>Location</dt><dd>{f.location.replaceAll("_", " ")}</dd>
@@ -300,11 +356,16 @@ function ResultInner() {
               <dt>Eye</dt><dd>{eyeLabel(a.study?.eye)}</dd>
               <dt>Modality</dt><dd>{modalityLabel(a.study?.modality)}</dd>
               <dt>Image quality</dt>
-              <dd><Badge tone={a.quality.acceptable ? "ok" : "bad"}>{a.quality.status === "pass" ? "GOOD" : a.quality.status === "borderline" ? "BORDERLINE" : "INSUFFICIENT"}</Badge></dd>
+              <dd>
+                <Badge tone={qp.blocked ? "bad" : a.quality.artifacts.length > 0 ? "warn" : "ok"}>{qp.overall_label}</Badge>
+                {!qp.blocked && a.quality.artifacts.length > 0 && (
+                  <div className="tiny muted" style={{ marginTop: 2 }}>{qp.impact_note}</div>
+                )}
+              </dd>
               <dt>Model</dt><dd>{a.model_registry?.model_id} v{a.model_registry?.model_version}</dd>
               <dt>Model status</dt><dd><Badge tone="warn">{a.model_registry?.model_status}</Badge></dd>
               <dt>Clinical validation</dt><dd style={{ color: "var(--danger)", fontWeight: 650 }}>NOT VALIDATED</dd>
-              <dt>Findings</dt><dd>{abnormal ? `${a.findings.length} (synthetic demo)` : "None available"}</dd>
+              <dt>Findings</dt><dd>{abnormal ? `${a.findings.length} (${a.demo?.synthetic_result ? "synthetic demo" : "model output"})` : "None available"}</dd>
               <dt>Symptom correlation</dt><dd>{a.symptom_correlation && a.patient_context?.reported ? `${a.symptom_correlation.state.replaceAll("_", " ")} (research)` : a.patient_context?.reported ? "inconclusive" : "no symptoms reported"}</dd>
               <dt>Urgency</dt><dd>{a.recommendation.priority === "routine_follow_up" ? "No escalation" : "Review recommended"}</dd>
             </dl>
@@ -314,27 +375,57 @@ function ResultInner() {
             </div>
           </div>
 
-          <details className="card" style={{ margin: 0 }}>
-            <summary style={{ cursor: "pointer", fontWeight: 650, fontSize: "0.9rem" }}>MODEL INFORMATION</summary>
-            <dl className="kv tiny" style={{ gridTemplateColumns: "120px 1fr", marginTop: 10 }}>
-              <dt>Model name</dt><dd>{a.model_registry?.model_id}</dd>
-              <dt>Version</dt><dd>{a.model_registry?.model_version}</dd>
-              <dt>Modality</dt><dd>{modalityLabel(a.study?.modality)}</dd>
-              <dt>Input type</dt><dd>{a.model_registry?.model_input ?? "IMAGE_ONLY"}</dd>
-              <dt>Uses symptoms</dt><dd>{a.model_registry?.model_input === "IMAGE_AND_SYMPTOMS" ? "YES" : "NO"}</dd>
-              <dt>Supported conditions</dt><dd>None registered</dd>
-              <dt>Checksum</dt><dd className="tiny">Placeholder model — no artifact on disk (data\models is empty)</dd>
-              <dt>Validation</dt><dd style={{ color: "var(--danger)", fontWeight: 650 }}>NOT VALIDATED</dd>
-              <dt>Device compatibility</dt><dd>{a.model_registry?.device_compatibility.note}</dd>
-            </dl>
-          </details>
+          {clinicianView && (
+            <details className="card" style={{ margin: 0 }} open>
+              <summary style={{ cursor: "pointer", fontWeight: 650, fontSize: "0.9rem" }}>MODEL INFORMATION</summary>
+              <dl className="kv tiny" style={{ gridTemplateColumns: "120px 1fr", marginTop: 10 }}>
+                <dt>Model name</dt><dd>{a.model_registry?.model_id}</dd>
+                <dt>Version</dt><dd>{a.model_registry?.model_version}</dd>
+                <dt>Modality</dt><dd>{modalityLabel(a.study?.modality)}</dd>
+                <dt>Input type</dt><dd>{a.model_registry?.model_input ?? "IMAGE_ONLY"}</dd>
+                <dt>Uses symptoms</dt><dd>{a.model_registry?.model_input === "IMAGE_AND_SYMPTOMS" ? "YES" : "NO"}</dd>
+                <dt>Supported conditions</dt><dd>None registered</dd>
+                <dt>Checksum</dt><dd className="tiny">Placeholder model — no artifact on disk (data\models is empty)</dd>
+                <dt>Validation</dt><dd style={{ color: "var(--danger)", fontWeight: 650 }}>NOT VALIDATED</dd>
+                <dt>Device compatibility</dt><dd>{a.model_registry?.device_compatibility.note}</dd>
+              </dl>
+            </details>
+          )}
+
+          {clinicianView && data.study?.study_id && (
+            <div style={{ margin: 0 }}>
+              <DocumentEvidencePanel studyId={data.study.study_id} />
+            </div>
+          )}
+
+          {clinicianView && data.study?.study_id && (
+            <div style={{ margin: 0 }}>
+              <EvidenceWorkspacePanel studyId={data.study.study_id} />
+            </div>
+          )}
+
+          {clinicianView && data.study?.study_id && (
+            <div style={{ margin: 0 }}>
+              <SpecialistConsensusPanel studyId={data.study.study_id} />
+            </div>
+          )}
+
+          {data.study?.study_id && (
+            <div style={{ margin: 0 }}>
+              <ResearchAnalysisPanel
+                studyId={data.study.study_id}
+                originalImageUrl={`/api/studies/${encodeURIComponent(study)}/image`}
+                eye={data.study.eye}
+              />
+            </div>
+          )}
 
           <div className="card" style={{ margin: 0 }}>
             <div className="card-title"><h3 style={{ fontSize: "0.9rem" }}>WHY AM I SEEING THIS RESULT?</h3></div>
             <ol className="small" style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 7 }}>
               <li><strong>Image quality:</strong> the quality gate measured the image ({a.quality.status}); {a.quality.acceptable ? "analysis proceeded." : "analysis of findings was blocked."}</li>
-              <li><strong>Model status:</strong> the current model is a registered DEMO research placeholder. It produces labeled synthetic output — no validated medical model is installed.</li>
-              <li><strong>Detected findings:</strong> {abnormal ? `${a.findings.length} synthetic demo signal(s) were generated to exercise the pipeline. They do not derive from image content.` : "no findings were produced by the model."}</li>
+              <li><strong>Model status:</strong> {a.demo?.synthetic_result ? "the current model is a registered DEMO placeholder. It produces labeled synthetic output — no validated medical model is installed." : "the current model is not clinically validated for autonomous diagnosis; interpret its output only within the clinician review workflow."}</li>
+              <li><strong>Detected findings:</strong> {abnormal ? a.demo?.synthetic_result ? `${a.findings.length} synthetic demo signal(s) were generated to exercise the pipeline. They do not derive from image content.` : `${a.findings.length} model output signal(s) are shown with their research/validation status.` : "no findings were produced by the model."}</li>
               <li><strong>Model validation:</strong> not clinically validated — results cannot be used clinically and cannot be considered normal.</li>
               <li><strong>Symptom information:</strong> {a.patient_context?.reported ? "reported symptoms were correlated separately by a rules layer AFTER the model ran." : "no symptoms were reported for this study."} {a.model_registry?.model_input === "IMAGE_ONLY" ? "The model analyzes the image only; symptoms are never used as model input." : ""}</li>
             </ol>
@@ -348,7 +439,17 @@ function ResultInner() {
           <div className="card-title"><h3>Possible conditions to consider</h3></div>
           {a.possible_conditions && a.possible_conditions.conditions.length > 0 ? (
             <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>
-              {a.possible_conditions.conditions.map((c) => <li key={c.id}>{c.label} — {c.note}</li>)}
+              {a.possible_conditions.conditions.map((c) => (
+                <li key={c.id} style={{ marginBottom: 6 }}>
+                  {c.label} — {c.note}
+                  {c.commonly_associated_symptoms.length > 0 && (
+                    <div className="tiny muted" style={{ marginTop: 2 }}>
+                      Commonly associated symptoms (knowledge base — not necessarily reported by this patient):{" "}
+                      {c.commonly_associated_symptoms.map((s) => s.replaceAll("_", " ")).join(", ")}
+                    </div>
+                  )}
+                </li>
+              ))}
             </ul>
           ) : (
             <p className="small muted" style={{ margin: 0 }}>
@@ -359,25 +460,83 @@ function ResultInner() {
           )}
         </div>
         <div className="card" style={{ margin: 0 }}>
-          <div className="card-title"><h3>Uncertainty</h3><Badge tone="warn">{(a.uncertainty.overall * 100).toFixed(0)}%</Badge></div>
+          <div className="card-title"><h3>Uncertainty</h3></div>
+          {/* S12: relabeled - this is a heuristic score from the DEMO pipeline's
+              quality/agreement heuristics, not calibrated model confidence; a
+              bare percentage badge here could be misread as AI confidence. */}
+          <p className="tiny muted" style={{ margin: "0 0 8px" }}>
+            Heuristic uncertainty score (not calibrated confidence): <strong>{(a.uncertainty.overall * 100).toFixed(0)}%</strong>
+          </p>
           <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
             {a.uncertainty.reasons.map((r, i) => <li key={i}>{r}</li>)}
           </ul>
         </div>
       </div>
 
-      <details className="tech card" style={{ marginTop: 14 }}>
-        <summary>Advanced technical information</summary>
-        <dl className="kv">
-          <dt>Pipeline version</dt><dd>{a.provenance.pipeline_version}</dd>
-          <dt>Ruleset version</dt><dd>{a.provenance.ruleset_version}</dd>
-          <dt>Quality score</dt><dd>{a.quality.score} ({a.quality.status})</dd>
-          <dt>Quality artifacts</dt><dd>{a.quality.artifacts.join(", ") || "none"}</dd>
-          <dt>Ensemble agreement</dt><dd>{String(a.uncertainty.ensemble_agreement)}</dd>
-          <dt>Localization data</dt><dd>No validated localization data available (future validated models will populate this via the visualization API).</dd>
-          <dt>Original SHA-256</dt><dd style={{ wordBreak: "break-all", fontFamily: "var(--mono)", fontSize: "0.76rem" }}>{data.study?.original_sha256}</dd>
-        </dl>
-      </details>
+      {/* ---- Treatment information (evidence-based reference only — never a prescription) ---- */}
+      <div className="card" style={{ marginTop: 14 }}>
+        <div className="card-title"><h3>Treatment information</h3><Badge tone="warn">Clinician review required</Badge></div>
+        {a.treatment_information && a.treatment_information.items.length > 0 ? (
+          <>
+            {a.treatment_information.items.map((item) => (
+              <div key={item.condition_id} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                <div className="small" style={{ fontWeight: 650 }}>{item.condition_label}</div>
+                {item.available ? (
+                  item.approaches.map((ap, i) => (
+                    <div key={i} className="small" style={{ marginTop: 4 }}>
+                      <strong>{ap.approach_label}</strong> — {ap.purpose}
+                      {ap.medications.length > 0 && (
+                        <ul className="tiny muted" style={{ margin: "4px 0 0", paddingLeft: 16 }}>
+                          {ap.medications.map((m) => <li key={m.medication_id}>{m.generic_name} ({m.drug_class})</li>)}
+                        </ul>
+                      )}
+                      <div className="tiny muted" style={{ marginTop: 2 }}>Evidence: {ap.evidence_reference}</div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="tiny muted" style={{ margin: "4px 0 0" }}>{item.reason}</p>
+                )}
+              </div>
+            ))}
+            <p className="tiny muted" style={{ margin: "10px 0 0" }}>
+              {a.treatment_information.dosage_notice} {a.treatment_information.interaction_notice}{" "}
+              {a.treatment_information.note}
+            </p>
+          </>
+        ) : (
+          <p className="small muted" style={{ margin: 0 }}>
+            No treatment information is displayed: treatment information is only generated for conditions that have
+            already passed validated-model condition gating, and this deployment has no connected medication
+            knowledge source. Evidence-based treatment information is not a prescription and always requires
+            clinician review.
+          </p>
+        )}
+      </div>
+
+      {clinicianView && (
+        <details className="tech card" style={{ marginTop: 14 }} open>
+          <summary>Advanced technical information</summary>
+          <dl className="kv">
+            <dt>Pipeline version</dt><dd>{a.provenance.pipeline_version}</dd>
+            <dt>Ruleset version</dt><dd>{a.provenance.ruleset_version}</dd>
+            <dt>Quality score</dt><dd>{a.quality.score} ({a.quality.status})</dd>
+            <dt>Quality artifacts</dt><dd>{a.quality.artifacts.join(", ") || "none"}</dd>
+            <dt>Ensemble agreement</dt><dd>{String(a.uncertainty.ensemble_agreement)}</dd>
+            <dt>Heuristic uncertainty score</dt><dd>{(a.uncertainty.overall * 100).toFixed(0)}% (not calibrated confidence)</dd>
+            <dt>Clinical interpretation gate</dt>
+            <dd>{a.diagnosis_gate?.clinical_interpretation === "DIAGNOSIS" ? "DIAGNOSIS" : "REQUIRES CLINICAL CORRELATION"}{a.diagnosis_gate && a.diagnosis_gate.reasons.length > 0 ? ` — ${a.diagnosis_gate.reasons.join(" ")}` : ""}</dd>
+            <dt>Localization data</dt><dd>No validated localization data available (future validated models will populate this via the visualization API).</dd>
+            <dt>Original SHA-256</dt><dd style={{ wordBreak: "break-all", fontFamily: "var(--mono)", fontSize: "0.76rem" }}>{data.study?.original_sha256}</dd>
+          </dl>
+        </details>
+      )}
+      {!clinicianView && (
+        <p className="tiny muted" style={{ marginTop: 14 }}>
+          Presentation Mode is hiding technical/provenance details (model metadata, raw evidence, pipeline internals).
+          Safety notices, quality status, and clinical-correlation requirements above are shown in every mode.{" "}
+          <button type="button" className="btn ghost sm" onClick={toggleClinicianView} style={{ padding: "2px 8px" }}>Switch to Clinician View</button>
+        </p>
+      )}
 
       <div style={{ display: "flex", gap: 10, marginTop: 18, flexWrap: "wrap" }}>
         <Link className="btn" href={`/report?study=${encodeURIComponent(study)}`}>Open full report</Link>
@@ -390,7 +549,7 @@ function ResultInner() {
 
 export default function ResultPage() {
   return (
-    <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", padding: 60 }}><div className="spinner" /></div>}>
+    <Suspense fallback={<div role="status" aria-live="polite" style={{ display: "flex", justifyContent: "center", padding: 60 }}><div className="spinner" /><span className="sr-only">Loading result…</span></div>}>
       <ResultInner />
     </Suspense>
   );

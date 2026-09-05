@@ -37,6 +37,12 @@ export interface TriageInput {
   uncertainty: number;
   modality: string;
   redFlagSymptoms?: string[]; // symptom vocabulary types that are configured red flags
+  /**
+   * Candidate red flags quoted from a source document. These are not
+   * clinician-verified symptoms, but must still raise a pre-review safety
+   * signal; ignoring them until review could conceal an urgent presentation.
+   */
+  documentExtractedRedFlagSymptoms?: string[];
   ood?: { detected: boolean; message?: string }; // out-of-distribution / unsupported operating conditions
   symptomUrgency?: "emergency" | "urgent" | "prompt" | "routine"; // from correlation engine
 }
@@ -73,31 +79,63 @@ const RED_FLAG_MAP: Record<string, TriagePriority> = {
 export function runTriage(input: TriageInput): TriageOutcome {
   const rules: string[] = [];
 
+  // Rule 0: a source document can contain an urgent presentation. Keep its
+  // provenance separate from patient/clinician-entered symptoms, but do not
+  // make an unreviewed extraction a reason to delay an urgent safety signal.
+  let documentWorst: TriagePriority = "routine_follow_up";
+  if (input.documentExtractedRedFlagSymptoms?.length) {
+    for (const symptom of input.documentExtractedRedFlagSymptoms) {
+      const priority = RED_FLAG_MAP[symptom];
+      if (priority && priorityRank(priority) > priorityRank(documentWorst)) documentWorst = priority;
+    }
+    if (documentWorst !== "routine_follow_up") {
+      rules.push("document_extracted_red_flag_pre_review_signal");
+    }
+  }
+
   // Rule 1: red-flag symptoms always dominate.
+  let reportedWorst: TriagePriority = "routine_follow_up";
   if (input.redFlagSymptoms?.length) {
-    let worst: TriagePriority = "routine_follow_up";
     for (const s of input.redFlagSymptoms) {
       const p = RED_FLAG_MAP[s];
-      if (p && priorityRank(p) > priorityRank(worst)) worst = p;
+      if (p && priorityRank(p) > priorityRank(reportedWorst)) reportedWorst = p;
     }
     // Symptom-engine urgency escalates even when the specific type is not mapped.
-    if (input.symptomUrgency === "emergency") worst = "emergency_evaluation";
-    else if (input.symptomUrgency === "urgent" && priorityRank(worst) < priorityRank("urgent_eye_care_review")) {
-      worst = "urgent_eye_care_review";
+    if (input.symptomUrgency === "emergency") reportedWorst = "emergency_evaluation";
+    else if (input.symptomUrgency === "urgent" && priorityRank(reportedWorst) < priorityRank("urgent_eye_care_review")) {
+      reportedWorst = "urgent_eye_care_review";
     }
-    if (worst !== "routine_follow_up") {
+    if (reportedWorst !== "routine_follow_up") {
       rules.push("red_flag_symptoms_override");
+    }
+  }
+
+  // Both channels are independent, but neither may downgrade the other. A
+  // lower-priority document candidate must never mask a higher-priority
+  // structured symptom (or vice versa); choose the worst signal and retain
+  // both provenance rules in the output for review.
+  const redFlagWorst = priorityRank(reportedWorst) >= priorityRank(documentWorst) ? reportedWorst : documentWorst;
+  if (redFlagWorst !== "routine_follow_up") {
+    if (reportedWorst !== "routine_follow_up" && priorityRank(reportedWorst) >= priorityRank(documentWorst)) {
       return {
-        priority: worst,
+        priority: redFlagWorst,
         action:
-          worst === "emergency_evaluation"
+          redFlagWorst === "emergency_evaluation"
             ? "Urgent review recommended. Your reported symptoms may require prompt professional evaluation - seek ophthalmic assessment now."
             : "Urgent ophthalmic assessment is recommended based on the reported symptoms.",
         rationale:
-          "Reported red-flag symptoms take priority over automated imaging assessment. This escalation does NOT name or imply any specific condition.",
+          documentWorst !== "routine_follow_up"
+            ? "Reported red-flag symptoms and an independent document-derived safety signal are present. Reported symptoms take priority over automated imaging assessment; the document signal remains UNREVIEWED. This escalation does NOT name or imply any specific condition."
+            : "Reported red-flag symptoms take priority over automated imaging assessment. This escalation does NOT name or imply any specific condition.",
         triggered_rules: rules,
       };
     }
+    return {
+      priority: redFlagWorst,
+      action: "An urgent symptom candidate was extracted from a source document. Prompt clinician confirmation and ophthalmic assessment are recommended.",
+      rationale: "This is a document-derived, UNREVIEWED safety signal, not a diagnosis or verified patient report. It is escalated conservatively so review cannot suppress a potentially urgent presentation.",
+      triggered_rules: rules,
+    };
   }
 
   // Rule 2: unsupported format / failed quality gate blocks routine triage.

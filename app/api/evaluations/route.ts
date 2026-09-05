@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createEvaluationRun, listEvaluationRuns, compareRuns } from "@/lib/research/evaluationRuns";
 import { audit } from "@/lib/audit";
+import { requireRole } from "@/lib/auth/rbac";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** GET: list evaluation runs (optionally per model) + per-split comparison. */
 export async function GET(req: NextRequest) {
+  const denied = await requireRole(req, ["ADMIN", "RESEARCHER"]);
+  if (denied) return denied;
   const modelId = req.nextUrl.searchParams.get("modelId") ?? undefined;
   const runs = await listEvaluationRuns(modelId);
   return NextResponse.json({
@@ -36,6 +39,8 @@ export async function GET(req: NextRequest) {
 
 /** POST: create an evaluation run (research-only). Input: locked/external dataset cases. */
 export async function POST(req: NextRequest) {
+  const denied = await requireRole(req, ["ADMIN", "RESEARCHER"]);
+  if (denied) return denied;
   try {
     const body = await req.json();
     if (!body?.model_id || !body?.dataset_ref || !body?.split || !Array.isArray(body?.cases)) {

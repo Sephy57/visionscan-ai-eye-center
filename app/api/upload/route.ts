@@ -4,6 +4,8 @@ import { normalizeMime, SUPPORTED_MIME, detectDicom } from "@/lib/imaging/dicom"
 import { MAX_UPLOAD_BYTES } from "@/lib/config";
 import { ScanType, EyeLaterality, DeviceMetadata } from "@/lib/devices/adapter";
 import { audit } from "@/lib/audit";
+import { requireRole, requireSession } from "@/lib/auth/rbac";
+import { canAccessPatientRef } from "@/lib/auth/scope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +16,10 @@ const SCAN_TYPES: ScanType[] = [
 ];
 
 export async function POST(req: NextRequest) {
+  const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "TECHNICIAN"]);
+  if (denied) return denied;
+  const { user } = await requireSession(req);
+  if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   try {
     const form = await req.formData();
     const file = form.get("file");
@@ -41,6 +47,14 @@ export async function POST(req: NextRequest) {
     const manufacturer = String(form.get("manufacturer") ?? "").trim() || undefined;
     const model = String(form.get("deviceModel") ?? "").trim() || undefined;
     const scanDateTime = String(form.get("scanDateTime") ?? "").trim() || undefined;
+    const patientRef = String(form.get("patientRef") ?? "").trim() || undefined;
+
+    // A patient reference is not an authorization token. If it already
+    // belongs to a patient, the caller must own or be explicitly assigned
+    // that patient; unknown refs may be provisioned and become owner-bound.
+    if (patientRef && !(await canAccessPatientRef(user, patientRef))) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
     const declared: DeviceMetadata = {
       scanType,
@@ -51,7 +65,16 @@ export async function POST(req: NextRequest) {
       providedBy: manufacturer || model ? "user" : "none",
     };
 
-    const study = await createStudy(file.name, mime, bytes, declared, String(form.get("patientRef") ?? "").trim() || undefined);
+    const study = await createStudy(
+      file.name,
+      mime,
+      bytes,
+      declared,
+      patientRef,
+      user.username,
+      true,
+      { tenant_id: user.tenant_id ?? null, owner_user_id: user.user_id, owner_username: user.username }
+    );
     return NextResponse.json({ study_id: study.study_id, status: study.status, sha256: study.original_sha256 }, { status: 201 });
   } catch (err) {
     await audit({ actor: "user", action: "upload", outcome: "error", detail: String(err).slice(0, 200) });

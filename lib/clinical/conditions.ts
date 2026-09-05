@@ -59,6 +59,8 @@ export interface PossibleCondition {
   id: string;
   label: string;
   matched_findings: string[];
+  /** Commonly associated symptoms from the controlled taxonomy - NOT what this patient reported. */
+  commonly_associated_symptoms: string[];
   note: string;
 }
 
@@ -95,7 +97,13 @@ export function possibleConditions(input: PossibleConditionInput): {
     if (!def.modalities.includes(input.modality.toUpperCase())) continue;
     const matched = input.findings.filter((f) => def.relevant_finding_types.includes(f.type)).map((f) => f.type);
     if (matched.length === 0) continue; // no relevant imaging evidence -> do not display
-    out.push({ id: def.id, label: def.label, matched_findings: matched, note: def.note });
+    out.push({
+      id: def.id,
+      label: def.label,
+      matched_findings: matched,
+      commonly_associated_symptoms: def.commonly_associated_symptoms,
+      note: def.note,
+    });
   }
   return { conditions: out, note: out.length ? NOTE : "No condition associations met the evidence requirements for display. " + NOTE };
 }

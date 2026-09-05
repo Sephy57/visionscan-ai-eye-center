@@ -127,6 +127,29 @@ export const RETINAL_FINDINGS: FindingDefinition[] = [
     associations: ["cannot be determined from this image alone; specialist review recommended"],
     high_risk: false,
   },
+  // S10 - segmentation-derived optic-disc/cup area findings. Produced ONLY by
+  // the isolated research pathway (lib/evidence/researchAnalysis.ts), never
+  // by the DEMO pipeline. observation-level (a segmented pixel area is not
+  // itself a diagnosis or even a possible-association claim on its own -
+  // the S5 evidence/condition layer decides what, if anything, that area
+  // pattern is associated with). NOT high_risk: an optic-disc/cup area
+  // segmentation is not by itself a vision-threatening-emergency signal.
+  {
+    type: "research_segmented_optic_disc_area",
+    level: "observation",
+    label: "Segmented optic disc area (research)",
+    modalities: FUNDUS,
+    associations: ["optic nerve head morphology (association, not diagnosis) - requires cup-to-disc ratio context and clinical examination"],
+    high_risk: false,
+  },
+  {
+    type: "research_segmented_optic_cup_area",
+    level: "observation",
+    label: "Segmented optic cup area (research)",
+    modalities: FUNDUS,
+    associations: ["optic nerve head morphology (association, not diagnosis) - requires cup-to-disc ratio context and clinical examination"],
+    high_risk: false,
+  },
 ];
 
 // ---------------------------------------------------------------------------

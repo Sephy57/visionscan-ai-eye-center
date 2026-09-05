@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeStudy } from "@/lib/studies/service";
 import { enqueueAnalysis } from "@/lib/jobs/queue";
+import { requireRole } from "@/lib/auth/rbac";
+import { requireStudyScope } from "@/lib/auth/scope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,12 +14,17 @@ export const maxDuration = 60;
  *  - default: synchronous execution (used by tests/smoke).
  */
 export async function POST(req: NextRequest) {
+  const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "TECHNICIAN"]);
+  if (denied) return denied;
   try {
     const body = await req.json();
     const study_id = body?.study_id;
     if (typeof study_id !== "string" || study_id.length === 0) {
       return NextResponse.json({ error: "study_id required" }, { status: 400 });
     }
+    const scoped = await requireStudyScope(req, study_id);
+    if (scoped.response) return scoped.response;
+    if (!scoped.resource) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (body?.async === true) {
       const job = await enqueueAnalysis(study_id);
       return NextResponse.json({ study_id, job_id: job.job_id, status: job.status });

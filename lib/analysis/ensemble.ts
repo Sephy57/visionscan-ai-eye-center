@@ -64,7 +64,7 @@ export function runEnsemble(findings: Finding[]): EnsembleOutcome {
   };
 }
 
-function capCategory(c: number): Finding["confidence_category"] {
+export function capCategory(c: number): Finding["confidence_category"] {
   if (c >= 0.85) return "HIGH CONFIDENCE";
   if (c >= 0.65) return "MODERATE CONFIDENCE";
   if (c >= 0.4) return "LOW CONFIDENCE";

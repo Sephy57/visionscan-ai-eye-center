@@ -8,12 +8,18 @@ import { listEvidence } from "@/lib/research/evidence";
 import { listEvaluationRuns } from "@/lib/research/evaluationRuns";
 import { dbGet } from "@/lib/storage/db";
 import type { StudyRecord } from "@/lib/studies/service";
+import { requireRole } from "@/lib/auth/rbac";
+import { ensureRegistryHydrated } from "@/lib/models/registryPersistence";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** GET /api/models/:id — full model management payload: status + WHY, integrity, package, evidence, transitions, evaluations, card. */
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
+  params = await params;
+  const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "REVIEWER", "RESEARCHER"]);
+  if (denied) return denied;
+  await ensureRegistryHydrated();
   const model = getModel(params.id);
   if (!model) return NextResponse.json({ error: "Model not registered" }, { status: 404 });
 

@@ -35,8 +35,9 @@ IMAGE INGESTION (device adapters)
 |---|---|
 | `lib/config.ts` | Windows-safe paths from env; all data on D:; path traversal guard |
 | `lib/storage/files.ts` | Originals (immutable, SHA-256), processed/reports JSON, temp cleanup |
-| `lib/storage/db.ts` | JSON document store on D: (SQLite-swappable interface) |
+| `lib/storage/db.ts` | JSON document store on D: (SQLite-swappable interface; development only) |
 | `lib/audit/index.ts` | NDJSON audit logs; sanitizes potentially sensitive content |
+| `lib/observability/metrics.ts` | Bounded, PHI-free process-local operational counters (not production telemetry) |
 | `lib/imaging/quality.ts` | Real quality metrics: sharpness (Laplacian variance), illumination, clipping, glare, resolution, FOV |
 | `lib/imaging/dicom.ts` | DICOM Part 10 detection; refused-for-analysis policy |
 | `lib/devices/adapter.ts` | DeviceAdapter abstraction + registry (file import available; others placeholders) |
@@ -78,16 +79,30 @@ while making it impossible to mistake demo output for validated clinical output.
 
 1. Place the artifact under `data\models\<model_id>\` (ONNX recommended via onnxruntime-node).
 2. Register a `ModelRecord` with the true SHA-256, scope, datasets, and status `RESEARCH`.
-3. Implement `EyeModelProvider` (load/validate/analyze/capabilities/metadata/unload).
-4. Add the model to the provider registry; the pipeline gates, taxonomies, triage, reporting, review, and
-   audit apply automatically.
+3. Implement `EyeModelProvider` (load/validate/analyze/capabilities/metadata/unload). Inside `analyzeStudy()`,
+   convert the runtime's raw output through `lib/models/outputConversion.ts convertRawModelOutputToFindings()`
+   (contract validation + trusted calibration lookup) rather than constructing `Finding` objects by hand — see
+   `docs/MODEL_REGISTRY.md`'s "Phase 6 additions" section for what already exists and is tested.
+4. Add the model to the provider registry (`getProviderForModel()` resolves it by model id); the pipeline
+   gates (now including a real device-compatibility hard gate, not just modality), taxonomies, triage,
+   reporting, review, and audit apply automatically. Register a `CalibrationRecord` via
+   `lib/models/calibrationRegistry.ts` once real calibration evidence exists — never before.
 5. Only after the full validation framework (docs/VALIDATION.md) + evidence references can the status advance.
+6. Use `GET /api/models/[id]/health` to verify the provider actually loads/validates/unloads cleanly before
+   ever routing real study traffic to it.
 
 ## Planned upgrades
 
-1. Replace synthetic detector with real validated models (ONNX runtime; weights under `data\models\`).
+1. Replace synthetic detector with real validated models (ONNX runtime; weights under `data\models\`) — the
+   provider boundary, output-contract validation, calibration registry, and device-compatibility gate this
+   requires are now implemented and tested (Phase 6 infrastructure); only the actual model artifact and
+   provider implementation remain.
 2. SQLite on D: (`data\database\eye-ai.db`) replacing the JSON store behind the same interface.
+   Run `npm run migration:preflight` before any reviewed importer; it is a
+   non-destructive dry-run that emits source hashes and collection counts.
 3. DICOM parser (dcmjs or equivalent) inside a device adapter; pixel-data normalization.
 4. FHIR DiagnosticReport/Observation export.
-5. Authentication, RBAC, encryption at rest, consent capture, retention schedules.
+5. ~~Authentication, RBAC~~ — **implemented, Phase 5B** (see `docs/AUTH_RBAC.md`). Encryption at rest, consent
+   enforcement (the data model exists, Phase 5B; not wired as a hard gate — see
+   `docs/CONSENT_DATA_GOVERNANCE.md`), and retention schedules remain open.
 6. In-image overlays: bounding regions, segmentation masks, "AI-highlighted region" heatmaps.

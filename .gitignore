@@ -39,6 +39,14 @@ build/
 # Dependencies
 node_modules/
 
+# S7 - isolated research-only Python environment for candidate model work
+# (never global/user site-packages; ~700MB+ of PyTorch binaries - never commit)
+.venv-ophthalmic/
+
+# S9 - downloaded research model artifacts and test images live here, never
+# in data/models/ and never committed (checkpoints, sample images, .safetensors)
+scratch/
+
 # OS
 Thumbs.db
 .DS_Store
@@ -46,3 +54,6 @@ Thumbs.db
 # TS
 *.tsbuildinfo
 next-env.d.ts
+
+# Tesseract language data (downloadable artifact, ~5MB) - never commit
+*.traineddata

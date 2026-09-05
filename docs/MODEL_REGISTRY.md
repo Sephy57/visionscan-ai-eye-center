@@ -67,3 +67,52 @@ MODEL FILE -> SHA-256 -> REGISTRY -> MATCH?
 `generateModelCard()` (`lib/reports/modelCard.ts`) renders a complete model card **from registry fields only** —
 the card cannot claim anything the registry does not record. Cards are exposed via `GET /api/models` and the
 admin UI.
+
+## Phase 6 additions — real-model integration infrastructure (IMPLEMENTED, no real model installed yet)
+
+Built ahead of any real model artifact, so the plumbing is ready and tested
+the moment one is supplied (per the Phase 5B → Phase 6 readiness audit).
+
+- **Device compatibility is now a real execution gate**, not just
+  informational display. `gateModelUse(model, device)` takes an explicit,
+  optional `device` argument: registry-listing calls omit it (context-free,
+  unchanged behavior); `lib/analysis/pipeline.ts` and
+  `lib/models/provider.ts`'s `analyzeStudy()` path now pass the study's
+  actual declared device, and a non-DEMO model with no matching device
+  entry is hard-blocked here — the DEMO model is completely unaffected
+  (the check only ever applies when `model.status !== "DEMO"`).
+- **Calibration registry** (`lib/models/calibrationRegistry.ts`): a
+  persisted, evidence-gated store for `CalibrationRecord`s (previously
+  `lib/models/calibration.ts` had the shape and pure functions but nothing
+  to register or look one up). `registerCalibration()` refuses a record
+  without evidence, mirroring the evidence/transitions registries.
+- **Raw-output → Finding[] conversion** (`lib/models/outputConversion.ts`):
+  the literal "connect the plumbing" work — `convertRawModelOutputToFindings()`
+  runs a real model's raw output through `validateRawModelOutput()` (fail
+  closed on contract violation), looks up a trusted calibration record, and
+  only then produces pipeline-native `Finding[]`. A future real
+  `EyeModelProvider` should call this rather than constructing `Finding`
+  objects by hand. **Not called by `PlaceholderDemoProvider`** (which still
+  builds `Finding[]` directly, unchanged) — this is infrastructure for the
+  next real provider, not a change to today's DEMO behavior.
+- **Model-load health check** (`lib/models/provider.ts checkModelHealth()`,
+  `GET /api/models/[id]/health`): load → validate → unload, fails closed at
+  every step (unknown provider, load exception, validation rejection,
+  unload exception all mark the model unhealthy). Exposed in the `/models`
+  UI as a "Check health" button per model.
+- **Two safety-validator rules were adjusted, not weakened**, to stop
+  hard-forbidding what a real (non-DEMO) model would legitimately produce:
+  `synthetic_findings_labeled` and `calibration_honesty` in
+  `lib/clinical/safety.ts` now scope their hard requirement to
+  `model_status === "DEMO"` specifically, rather than blocking a real
+  model's honest `synthetic: false` or evidence-backed calibrated
+  confidence. The DEMO model's guarantees (must always be `synthetic:
+  true`, must never carry calibrated confidence) are completely unchanged
+  and still enforced — verified by dedicated tests in
+  `tests/phase6-model-infra.test.ts` that check both directions (DEMO still
+  blocked; non-DEMO now permitted).
+
+All of the above is exercised by 46 new tests
+(`tests/phase6-model-infra.test.ts`) using a disposable, non-persisted test
+model — none of it touches or weakens the real `demo-fundus-synthetic-v0`
+registry entry.

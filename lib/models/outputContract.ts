@@ -99,6 +99,25 @@ export function validateRawModelOutput(raw: unknown): ContractValidationResult {
       if (f.localization?.kind === "bounding_box" && !f.localization.coordinates && !f.localization.data_ref) {
         errors.push({ path: `findings[${i}].localization`, message: "bounding_box requires coordinates or data_ref" });
       }
+      // S13 - defense-in-depth: a bounding_box's coordinates must be real,
+      // in-range, image-relative [0,1] values, never NaN/Infinite/negative/
+      // overflowing. The real SegFormer script only ever emits valid boxes
+      // today, but nothing upstream of this validator enforced that - this
+      // closes the gap found by the S13 localization audit.
+      const coords = f.localization?.kind === "bounding_box" ? f.localization.coordinates : undefined;
+      if (coords) {
+        for (const [k, v] of [["x", coords.x], ["y", coords.y], ["w", coords.w], ["h", coords.h]] as const) {
+          if (typeof v !== "number" || !Number.isFinite(v) || v < 0 || v > 1) {
+            errors.push({ path: `findings[${i}].localization.coordinates.${k}`, message: "must be a finite number in 0..1" });
+          }
+        }
+        if (Number.isFinite(coords.x) && Number.isFinite(coords.w) && coords.x + coords.w > 1.0001) {
+          errors.push({ path: `findings[${i}].localization.coordinates`, message: "x + w exceeds image bounds" });
+        }
+        if (Number.isFinite(coords.y) && Number.isFinite(coords.h) && coords.y + coords.h > 1.0001) {
+          errors.push({ path: `findings[${i}].localization.coordinates`, message: "y + h exceeds image bounds" });
+        }
+      }
     });
   }
 

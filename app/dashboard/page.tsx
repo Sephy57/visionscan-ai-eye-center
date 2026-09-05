@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge, EmptyState } from "@/components/ui";
 import { Icon } from "@/components/icons";
+import { DASHBOARD_STATUS_META } from "@/lib/reports/terminology";
 
 interface StudyRow {
   study_id: string; created_at: string; modality: string; eye: string; status: string;
+  dashboard_status?: string;
+  triage_priority?: string;
 }
 
 function greeting(): string {
@@ -20,12 +23,15 @@ export default function DashboardPage() {
   const [studies, setStudies] = useState<StudyRow[] | null>(null);
 
   useEffect(() => {
-    fetch("/api/studies").then((r) => r.json())
+    fetch("/api/studies?with_status=1").then((r) => r.json())
       .then((j) => setStudies(j.studies ?? []))
       .catch(() => setStudies([]));
   }, []);
 
   const recent = (studies ?? []).slice(0, 6);
+  const urgentCount = (studies ?? []).filter((s) => s.dashboard_status === "URGENT_REVIEW").length;
+  const correlationCount = (studies ?? []).filter((s) => s.dashboard_status === "CLINICAL_CORRELATION_REQUIRED").length;
+  const reviewCount = (studies ?? []).filter((s) => s.dashboard_status === "REVIEW_REQUIRED").length;
 
   return (
     <div>
@@ -59,6 +65,32 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {studies && studies.length > 0 && (urgentCount > 0 || correlationCount > 0 || reviewCount > 0) && (
+        <div className="grid grid-3" style={{ marginTop: 14 }} role="status" aria-label="Studies needing attention">
+          {urgentCount > 0 && (
+            <Link href="/history?filter=urgent" className="card hover" style={{ textDecoration: "none", color: "inherit", borderColor: "var(--danger, #b3261e)" }}>
+              <span className="stat-label">Urgent review</span>
+              <span className="stat-value" style={{ color: "var(--danger, #b3261e)" }}>{urgentCount}</span>
+              <span className="stat-detail">Symptom- or rule-driven urgent/emergency triage — review promptly</span>
+            </Link>
+          )}
+          {correlationCount > 0 && (
+            <Link href="/history?filter=correlation" className="card hover" style={{ textDecoration: "none", color: "inherit" }}>
+              <span className="stat-label">Clinical correlation required</span>
+              <span className="stat-value" style={{ color: "var(--warn)" }}>{correlationCount}</span>
+              <span className="stat-detail">Research findings present — not a diagnosis, human correlation needed</span>
+            </Link>
+          )}
+          {reviewCount > 0 && (
+            <Link href="/history?filter=review" className="card hover" style={{ textDecoration: "none", color: "inherit" }}>
+              <span className="stat-label">Review required</span>
+              <span className="stat-value">{reviewCount}</span>
+              <span className="stat-detail">Analyzed, not yet reviewed by a clinician/reviewer</span>
+            </Link>
+          )}
+        </div>
+      )}
+
       <h2>Recent analyses</h2>
       {studies && recent.length === 0 && (
         <EmptyState icon={<Icon name="eye" size={26} />} title="No analyses yet"
@@ -72,7 +104,7 @@ export default function DashboardPage() {
           <div className="table-wrap">
             <table className="table">
               <thead>
-                <tr><th>Study</th><th>Date</th><th>Modality</th><th>Eye</th><th>Status</th><th style={{ textAlign: "right" }}>Actions</th></tr>
+                <tr><th scope="col">Study</th><th scope="col">Date</th><th scope="col">Modality</th><th scope="col">Eye</th><th scope="col">Status</th><th scope="col" style={{ textAlign: "right" }}>Actions</th></tr>
               </thead>
               <tbody>
                 {recent.map((s) => (
@@ -82,9 +114,9 @@ export default function DashboardPage() {
                     <td>{s.modality}</td>
                     <td>{s.eye}</td>
                     <td>
-                      {s.status === "analyzed" ? <Badge tone="info">Analyzed</Badge>
-                        : s.status === "rejected" ? <Badge tone="bad">Quality rejected</Badge>
-                        : <Badge tone="neutral">Uploaded</Badge>}
+                      <Badge tone={DASHBOARD_STATUS_META[s.dashboard_status ?? "UPLOADED"]?.tone ?? "neutral"}>
+                        {DASHBOARD_STATUS_META[s.dashboard_status ?? "UPLOADED"]?.label ?? "Uploaded"}
+                      </Badge>
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <Link className="btn ghost sm" href={`/result?study=${s.study_id}`}>Open</Link>

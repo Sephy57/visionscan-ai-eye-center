@@ -308,8 +308,21 @@ export interface ModelGateResult {
   findings_use: string;
 }
 
-/** Hard validation-status gate: what may this model do right now? */
-export function gateModelUse(model: ModelRecord): ModelGateResult {
+/**
+ * Hard validation-status gate: what may this model do right now?
+ *
+ * `device` is OPTIONAL and distinguishes two different call shapes:
+ *  - omitted entirely (`undefined`): a context-free check (e.g. the model
+ *    registry listing UI) - device compatibility is NOT evaluated, since
+ *    there is no specific study/device to check against.
+ *  - passed explicitly (a device object, or `null` for "no device metadata
+ *    was provided"): a per-study execution gate (pipeline/provider call
+ *    sites). For any non-DEMO model, device compatibility is then hard-
+ *    enforced here, the same point modality is already enforced - this
+ *    closes the Phase 4/5 audit finding that device compatibility was
+ *    checked and displayed but never actually gated inference.
+ */
+export function gateModelUse(model: ModelRecord, device?: { manufacturer?: string; model?: string } | null): ModelGateResult {
   const reasons: string[] = [];
   const caps = STATUS_CAPABILITIES[model.status];
 
@@ -335,6 +348,10 @@ export function gateModelUse(model: ModelRecord): ModelGateResult {
       Object.values(model.performance).some((x) => typeof x === "number")
     ) {
       reasons.push("Performance metrics present without evaluation evidence reference.");
+    }
+    if (device !== undefined) {
+      const compat = deviceCompatible(model, device);
+      if (!compat.compatible) reasons.push(`Device compatibility check failed: ${compat.note}`);
     }
   }
   return {

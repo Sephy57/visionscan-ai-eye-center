@@ -1,14 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { listModels, gateModelUse, auditRegistryConsistency } from "@/lib/models/registry";
+import { ensureRegistryHydrated } from "@/lib/models/registryPersistence";
 import { verifyModelIntegrity } from "@/lib/models/integrity";
 import { ADAPTER_REGISTRY } from "@/lib/devices/adapter";
 import { generateModelCard } from "@/lib/reports/modelCard";
 import { COMPONENTS } from "@/lib/models/registry";
+import { requireRole } from "@/lib/auth/rbac";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "REVIEWER", "RESEARCHER"]);
+  if (denied) return denied;
+  await ensureRegistryHydrated();
   const consistencyProblems = auditRegistryConsistency();
   const models = listModels().map((m) => {
     const integrity = verifyModelIntegrity(m.model_id);

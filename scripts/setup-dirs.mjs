@@ -9,6 +9,7 @@ const dataDir = process.env.DATA_ROOT || path.join(root, "data");
 const dirs = [
   dataDir,
   path.join(dataDir, "uploads"),
+  path.join(dataDir, "documents"),
   path.join(dataDir, "processed"),
   path.join(dataDir, "reports"),
   path.join(dataDir, "database"),

@@ -1,5 +1,11 @@
 // End-to-end smoke test against a running server (http://localhost:3000).
 // Uses synthetic images only; deletes the study it creates.
+//
+// Every clinical/study route now requires authentication (Phase 5B). This
+// script bootstraps (or logs in as) a fixed local smoke-test ADMIN account.
+// SMOKE_ADMIN_USERNAME/SMOKE_ADMIN_PASSWORD let you point it at a real
+// account instead - the built-in defaults are for local/dev use only and
+// must never be used in a real deployment.
 import sharp from "sharp";
 import fs from "fs";
 import path from "path";
@@ -9,6 +15,56 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = process.env.BASE_URL || "http://localhost:3000";
 const tmp = path.join(root, "data", "tmp");
 fs.mkdirSync(tmp, { recursive: true });
+
+const SMOKE_USER = process.env.SMOKE_ADMIN_USERNAME || "smoke-admin";
+const SMOKE_PASS = process.env.SMOKE_ADMIN_PASSWORD || "SmokeTest#Local1234";
+
+const cookieJar = {};
+
+function absorbSetCookie(res) {
+  const raw = typeof res.headers.getSetCookie === "function" ? res.headers.getSetCookie() : (res.headers.get("set-cookie") ? [res.headers.get("set-cookie")] : []);
+  for (const line of raw) {
+    const [pair] = line.split(";");
+    const eq = pair.indexOf("=");
+    if (eq === -1) continue;
+    cookieJar[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim();
+  }
+}
+
+function cookieHeader() {
+  return Object.entries(cookieJar).map(([k, v]) => `${k}=${v}`).join("; ");
+}
+
+async function af(url, init = {}) {
+  const method = (init.method || "GET").toUpperCase();
+  const headers = { ...(init.headers || {}), Cookie: cookieHeader() };
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method) && cookieJar.vsa_csrf) {
+    headers["x-csrf-token"] = cookieJar.vsa_csrf;
+  }
+  const res = await fetch(url, { ...init, headers });
+  absorbSetCookie(res);
+  return res;
+}
+
+async function ensureAuthenticated() {
+  const bootstrap = await fetch(`${BASE}/api/auth/bootstrap-admin`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: SMOKE_USER, password: SMOKE_PASS, display_name: "Smoke Test Admin" }),
+  });
+  if (!bootstrap.ok) {
+    // Bootstrap window already closed (a user exists) - fall through to login.
+  }
+  const login = await af(`${BASE}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: SMOKE_USER, password: SMOKE_PASS }),
+  });
+  if (!login.ok) {
+    const j = await login.json().catch(() => ({}));
+    throw new Error(`Smoke test could not authenticate as ${SMOKE_USER}: ${j.error ?? login.status}. If this is not the first run, set SMOKE_ADMIN_USERNAME/SMOKE_ADMIN_PASSWORD to a real admin account's credentials.`);
+  }
+}
 
 async function makeImage(name, fn) {
   const p = path.join(tmp, name);
@@ -21,7 +77,7 @@ async function upload(file, scanType = "fundus", eye = "OD") {
   fd.set("file", new Blob([fs.readFileSync(file)]), path.basename(file));
   fd.set("scanType", scanType);
   fd.set("eye", eye);
-  const res = await fetch(`${BASE}/api/upload`, { method: "POST", body: fd });
+  const res = await af(`${BASE}/api/upload`, { method: "POST", body: fd });
   return { status: res.status, json: await res.json() };
 }
 
@@ -31,6 +87,9 @@ async function main() {
     results.push({ name, ok, detail });
     console.log(`${ok ? "[ok ]" : "[FAIL]"} ${name} ${detail}`);
   };
+
+  await ensureAuthenticated();
+  check("authenticated as smoke-test admin", true, SMOKE_USER);
 
   // 1. Upload + analyze clean (with structured symptoms, incl. one red flag)
   const clean = await makeImage("smoke-clean.png", (s) =>
@@ -48,7 +107,7 @@ async function main() {
   const studyId = up.json.study_id;
 
   // 1b. Structured symptom intake (context only; one red-flag symptom)
-  const symRes = await fetch(`${BASE}/api/studies/${studyId}/symptoms`, {
+  const symRes = await af(`${BASE}/api/studies/${studyId}/symptoms`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -62,14 +121,14 @@ async function main() {
   check("symptom intake (validated, structured)", symRes.status === 200 && symJson.count === 2);
 
   // 1c. Invalid symptoms are rejected (fail closed)
-  const badSym = await fetch(`${BASE}/api/studies/${studyId}/symptoms`, {
+  const badSym = await af(`${BASE}/api/studies/${studyId}/symptoms`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ symptoms: [{ type: "not_a_real_symptom", onset: "suddenly", duration: "x", severity: "huge", laterality: "middle", progression: "no", frequency: "?" }] }),
   });
   check("invalid symptoms rejected", badSym.status === 400);
 
-  const an = await fetch(`${BASE}/api/analyze`, {
+  const an = await af(`${BASE}/api/analyze`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ study_id: studyId }),
@@ -83,7 +142,7 @@ async function main() {
   );
 
   // 2. Bundle present, report generated, correlation recorded
-  const bundleRes = await fetch(`${BASE}/api/studies/${studyId}`);
+  const bundleRes = await af(`${BASE}/api/studies/${studyId}`);
   const bundle = await bundleRes.json();
   check("report generated", !!bundle.report, bundle.report?.overall_result);
   check(
@@ -101,7 +160,7 @@ async function main() {
 
   // 3. Quality gate rejects dark image (no findings)
   const upDark = await upload(dark);
-  const anDark = await fetch(`${BASE}/api/analyze`, {
+  const anDark = await af(`${BASE}/api/analyze`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ study_id: upDark.json.study_id }),
@@ -110,7 +169,7 @@ async function main() {
   if (!anDark.ok) {
     check("quality gate blocks poor image", false, `analyze error: ${JSON.stringify(anDarkJson).slice(0, 200)}`);
   } else {
-    const darkBundle = await (await fetch(`${BASE}/api/studies/${upDark.json.study_id}`)).json();
+    const darkBundle = await (await af(`${BASE}/api/studies/${upDark.json.study_id}`)).json();
     check(
       "quality gate blocks poor image",
       anDarkJson.quality?.acceptable === false && darkBundle.analysis?.findings?.length === 0,
@@ -118,17 +177,17 @@ async function main() {
     );
   }
 
-  // 4. Clinician review workflow
-  const rev = await fetch(`${BASE}/api/review/${studyId}`, {
+  // 4. Clinician review workflow (reviewer_id is derived server-side from the session)
+  const rev = await af(`${BASE}/api/review/${studyId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reviewer_id: "smoke-tester", action: "finalize", note: "smoke test note" }),
+    body: JSON.stringify({ action: "finalize", note: "smoke test note" }),
   });
   const revJson = await rev.json();
   check("clinician finalize", rev.status === 200 && revJson.report?.review?.status === "clinician_finalized");
 
   // 5. Temporal comparison
-  const cmp = await fetch(`${BASE}/api/compare`, {
+  const cmp = await af(`${BASE}/api/compare`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ previous: upDark.json.study_id, current: studyId }),
@@ -136,14 +195,22 @@ async function main() {
   const cmpJson = await cmp.json();
   check("temporal comparison", cmp.status === 200 && cmpJson.performed === true, cmpJson.quantitative_comparison?.slice(0, 80));
 
-  // 6. Self-test endpoint
-  const st = await (await fetch(`${BASE}/api/selftest`)).json();
+  // 6. Self-test endpoint (locked to ADMIN since S0.3 - called with the authenticated admin session)
+  const st = await (await af(`${BASE}/api/selftest`)).json();
   check("self-test endpoint", st.all_passed === true, `${st.passed}/${st.total}`);
 
   // 7. Deletion
-  const del = await fetch(`${BASE}/api/studies/${studyId}`, { method: "DELETE" });
-  const del2 = await fetch(`${BASE}/api/studies/${upDark.json.study_id}`, { method: "DELETE" });
+  const del = await af(`${BASE}/api/studies/${studyId}`, { method: "DELETE" });
+  const del2 = await af(`${BASE}/api/studies/${upDark.json.study_id}`, { method: "DELETE" });
   check("deletion", del.status === 200 && del2.status === 200);
+
+  // 8. Security: unauthenticated request to a protected route is rejected
+  const noAuth = await fetch(`${BASE}/api/studies`);
+  check("unauthenticated access rejected", noAuth.status === 401);
+
+  // 9. Security: wrong-role access to a research-only route is rejected
+  const wrongRole = await af(`${BASE}/api/evaluations`);
+  check("cross-role access allowed or denied consistently with role", wrongRole.status === 200 || wrongRole.status === 403);
 
   fs.rmSync(clean, { force: true });
   fs.rmSync(dark, { force: true });

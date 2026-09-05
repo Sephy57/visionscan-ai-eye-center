@@ -19,6 +19,7 @@ export const PROJECT_ROOT = envPath("PROJECT_ROOT", DEFAULT_PROJECT_ROOT);
 export const DATA_ROOT = envPath("DATA_ROOT", DEFAULT_DATA_ROOT);
 
 export const UPLOAD_ROOT = envPath("UPLOAD_ROOT", path.join(DATA_ROOT, "uploads"));
+export const DOCUMENTS_ROOT = envPath("DOCUMENTS_ROOT", path.join(DATA_ROOT, "documents"));
 export const PROCESSED_ROOT = envPath("PROCESSED_ROOT", path.join(DATA_ROOT, "processed"));
 export const REPORT_ROOT = envPath("REPORT_ROOT", path.join(DATA_ROOT, "reports"));
 export const DATABASE_ROOT = envPath("DATABASE_ROOT", path.join(DATA_ROOT, "database"));
@@ -40,6 +41,7 @@ export const ALL_DIRS = [
   PROJECT_ROOT,
   DATA_ROOT,
   UPLOAD_ROOT,
+  DOCUMENTS_ROOT,
   PROCESSED_ROOT,
   REPORT_ROOT,
   DATABASE_ROOT,
@@ -50,7 +52,7 @@ export const ALL_DIRS = [
 
 /** Ensure every configured storage directory exists (called lazily). */
 export function ensureDirs(): void {
-  for (const dir of [UPLOAD_ROOT, PROCESSED_ROOT, REPORT_ROOT, DATABASE_ROOT, MODEL_ROOT, LOG_ROOT, TMP_ROOT]) {
+  for (const dir of [UPLOAD_ROOT, DOCUMENTS_ROOT, PROCESSED_ROOT, REPORT_ROOT, DATABASE_ROOT, MODEL_ROOT, LOG_ROOT, TMP_ROOT]) {
     fs.mkdirSync(dir, { recursive: true });
   }
 }

@@ -20,6 +20,7 @@ import { newId } from "../storage/files";
 import { audit } from "../audit";
 import { ModelStatus, MODELS, STATUS_CAPABILITIES, gateModelUse } from "./registry";
 import { getEvidence, EvidenceRecord } from "../research/evidence";
+import { ensureRegistryHydrated, persistModelState } from "./registryPersistence";
 
 export const STATUS_LADDER: ModelStatus[] = [
   "DEMO", "RESEARCH", "INTERNAL_VALIDATION", "EXTERNALLY_VALIDATED", "CLINICALLY_VALIDATED",
@@ -69,6 +70,7 @@ function rank(s: ModelStatus): number {
 }
 
 export async function whyStatus(modelId: string): Promise<string[]> {
+  await ensureRegistryHydrated();
   const model = MODELS[modelId];
   if (!model) return ["Unknown model id."];
   const gate = gateModelUse(model);
@@ -90,6 +92,7 @@ export async function requestStatusTransition(params: {
   evidence_refs: string[];
   requested_by: string;
 }): Promise<TransitionRecord> {
+  await ensureRegistryHydrated();
   const model = MODELS[params.model_id];
   if (!model) throw new Error(`Unknown model: ${params.model_id}`);
 
@@ -151,8 +154,7 @@ async function finalize(
   };
   await dbPut("transitions", rec.transition_id, rec);
   if (decision === "approved") {
-    // Apply to the in-memory registry for the session; persisted transition
-    // records are the durable audit trail (registry persistence is a planned upgrade).
+    // Apply to the in-memory registry immediately...
     model.status = params.to_status;
     if (params.to_status === "EXTERNALLY_VALIDATED" || params.to_status === "CLINICALLY_VALIDATED") {
       model.external_validation_status = "completed";
@@ -160,6 +162,16 @@ async function finalize(
     if (params.to_status === "CLINICALLY_VALIDATED") {
       model.clinical_validation_status = "completed";
     }
+    // ...and persist the snapshot atomically so a process restart cannot
+    // silently revert a model's status back to its source-code default.
+    await persistModelState({
+      model_id: params.model_id,
+      status: model.status,
+      external_validation_status: model.external_validation_status,
+      clinical_validation_status: model.clinical_validation_status,
+      last_transition_id: rec.transition_id,
+      updated_by: params.requested_by,
+    });
   }
   await audit({ actor: `admin:${params.requested_by}`, action: "model.transition", outcome: decision === "approved" ? "ok" : "rejected", detail: `${params.model_id} ${key} -> ${decision} (${reasons.join(" ").slice(0, 150)})` });
   return rec;

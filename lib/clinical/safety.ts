@@ -26,17 +26,23 @@ export function runSafetyChecks(result: AnalysisResult): { ok: boolean; checks: 
     passed: result.findings.every((f) => f.confidence >= 0 && f.confidence <= 1),
   });
 
-  // 3. Synthetic labeling: all findings from placeholder detectors must be flagged.
+  // 3. Synthetic labeling: a DEMO-status model's findings must always be
+  // flagged synthetic (unchanged, hard rule for the only model installed
+  // today). A non-DEMO model's finding MAY be synthetic: false - this does
+  // not weaken the DEMO guarantee, it only stops forcing a real model's
+  // genuine output to falsely claim it is synthetic demo data.
   checks.push({
     rule: "synthetic_findings_labeled",
-    passed: result.findings.every((f) => f.synthetic === true),
-    detail: "All current detectors are placeholders; every finding must be marked synthetic.",
+    passed: result.findings.every((f) => f.synthetic === true || f.model_status !== "DEMO"),
+    detail: "Every finding from a DEMO-status model must be marked synthetic.",
   });
 
-  // 4. Demo labeling present whenever findings exist.
+  // 4. Demo labeling present whenever a SYNTHETIC finding exists (mirrors
+  // rule 14 "demo_isolation" below). Does not require the demo label for a
+  // genuinely non-synthetic finding from a non-DEMO model.
   checks.push({
     rule: "demo_label_present",
-    passed: result.findings.length === 0 || result.demo.synthetic_result === true,
+    passed: !result.findings.some((f) => f.synthetic) || result.demo.synthetic_result === true,
   });
 
   // 5. No diagnostic absolutes in text fields.
@@ -97,8 +103,13 @@ export function runSafetyChecks(result: AnalysisResult): { ok: boolean; checks: 
   // 11. Calibration honesty: calibrated confidence only when calibration exists.
   checks.push({
     rule: "calibration_honesty",
-    passed: result.findings.every((f) => f.confidence_calibrated === undefined || f.confidence_calibrated === null),
-    detail: "No component in this deployment has calibration evidence; calibrated confidence must be absent.",
+    // DEMO has no calibration evidence and must never show a calibrated
+    // number (unchanged, hard rule). A non-DEMO model MAY carry a
+    // calibrated_confidence - trusting that it was only ever set through
+    // lib/models/outputConversion.ts's mayDisplayCalibrated() gate is this
+    // rule's remaining job as a defense-in-depth check, not a blanket ban.
+    passed: result.findings.every((f) => f.confidence_calibrated === undefined || f.confidence_calibrated === null || f.model_status !== "DEMO"),
+    detail: "A DEMO-status model has no calibration evidence; calibrated confidence must be absent for its findings.",
   });
 
   // 12. OOD honesty: if OOD was detected, the result must not assert normality.
@@ -129,10 +140,14 @@ export function runSafetyChecks(result: AnalysisResult): { ok: boolean; checks: 
     passed: !anySynthetic || (result.demo.synthetic_result === true && !!result.demo.label),
   });
 
-  // 15. No invented clinician approval: finalized reports require a reviewer id + timestamp.
+  // 15. No invented clinician approval: the raw AI-generated AnalysisResult
+  // must never itself carry a clinician-authorship field (reviewer id,
+  // finalized timestamp, etc.) - that only exists on the ClinicalReport,
+  // added exclusively through the review service after an actual clinician acts.
   checks.push({
     rule: "no_invented_clinician_approval",
-    passed: true, // enforced structurally in the review service; placeholder here for report-level checks
+    passed: !("reviewer_id" in result) && !("finalized_at" in result) && !("clinician_interpretation" in result),
+    detail: "The AI-generated result must not contain any clinician-authorship field; that is only added by the review workflow.",
   });
 
   // ---- Phase 3 additions ----
@@ -167,6 +182,41 @@ export function runSafetyChecks(result: AnalysisResult): { ok: boolean; checks: 
     checks.push({
       rule: "symptom_context_note_present",
       passed: result.patient_context.note.includes("CONTEXT only"),
+    });
+  }
+
+  // ---- Phase 5 additions ----
+
+  // 20. Treatment information can only exist for conditions that already
+  // passed possible_conditions gating (finding -> condition -> treatment chain).
+  if (result.treatment_information) {
+    const gatedIds = new Set((result.possible_conditions?.conditions ?? []).map((c) => c.id));
+    checks.push({
+      rule: "treatment_requires_gated_condition",
+      passed: result.treatment_information.items.every((i) => gatedIds.has(i.condition_id)),
+      detail: "Treatment information must never be produced for a condition that did not pass possible_conditions gating.",
+    });
+
+    // 21. Every treatment item must carry the mandatory clinician-review label.
+    checks.push({
+      rule: "treatment_requires_clinician_label",
+      passed: result.treatment_information.items.every((i) => i.label.includes("clinician review required")),
+    });
+
+    // 22. DEMO models can never surface treatment information (mirrors condition gating).
+    if (result.model_registry?.model_status === "DEMO") {
+      checks.push({
+        rule: "treatment_blocked_for_demo_models",
+        passed: result.treatment_information.items.length === 0,
+      });
+    }
+
+    // 23. Dosage safety: treatment information must never resemble a computed, patient-specific dose.
+    const dosagePattern = /\b\d+(\.\d+)?\s?(mg|mcg|g|ml|units?)\b.{0,20}\b(once|twice|three times|daily|per day|bid|tid|qid|q\d+h)\b/i;
+    checks.push({
+      rule: "no_dosage_instructions",
+      passed: !dosagePattern.test(JSON.stringify(result.treatment_information)),
+      detail: "Medication and dosage must be determined by the treating clinician - this system never computes a dose.",
     });
   }
 

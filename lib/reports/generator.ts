@@ -35,6 +35,14 @@ export interface ClinicalReport {
   limitations: string[];
   recommended_next_step: string;
   triage_priority: string;
+  // Report structure (Phase 5, Step 20): patient-reported symptoms, possible
+  // conditions, symptom/finding correlation, and treatment information are
+  // distinct sections, carried straight through from the AI-generated
+  // AnalysisResult - never re-derived or re-worded by the report layer.
+  patient_context?: AnalysisResult["patient_context"];
+  symptom_correlation?: AnalysisResult["symptom_correlation"];
+  possible_conditions?: AnalysisResult["possible_conditions"];
+  treatment_information?: AnalysisResult["treatment_information"];
   review: {
     status: "ai_only" | "clinician_reviewed" | "clinician_finalized";
     reviewer_id?: string;
@@ -46,11 +54,58 @@ export interface ClinicalReport {
   clinician_interpretation?: {
     reviewer_id: string;
     overall: "confirmed_ai_findings" | "rejected_ai_findings" | "indeterminate" | "request_new_scan" | "amended" | string;
-    finding_decisions?: Array<{ finding_id: string; decision: "confirm" | "reject" | "correct" | "indeterminate"; note?: string; at: string }>;
+    finding_decisions?: Array<{ finding_id: string; decision: "confirm" | "reject" | "correct" | "indeterminate"; note?: string; correction?: Partial<{ severity: string; location: string; explanation: string; type: string }>; at: string }>;
     notes?: string | null;
     at: string;
   } | null;
+  /** Additive clinician amendments; the original AI `findings` array above
+   * remains byte-for-byte unchanged when a finding is corrected. */
+  clinician_corrections?: Array<{
+    finding_id: string;
+    original: { type: string; location: string; severity: string; explanation: string };
+    correction: Partial<{ severity: string; location: string; explanation: string; type: string }>;
+    reviewer_id: string;
+    note?: string;
+    at: string;
+  }>;
+  /** Human observations are stored separately from automated findings and
+   * are never fed back into the model output. */
+  clinician_observations?: Array<{
+    observation_id: string;
+    text: string;
+    laterality?: "OD" | "OS" | "OU" | "UNKNOWN";
+    reviewer_id: string;
+    at: string;
+  }>;
+  // Clinician's disposition of the AI-generated treatment information ONLY -
+  // the AI-generated treatment_information above is never mutated.
+  treatment_review?: {
+    reviewer_id: string;
+    decisions: Array<{
+      condition_id: string;
+      decision: "accept" | "modify" | "reject";
+      added_medication_ids?: string[];
+      removed_medication_ids?: string[];
+      contraindication_note?: string;
+      patient_restriction_note?: string;
+      clinical_note?: string;
+      at: string;
+    }>;
+  } | null;
   final_interpretation?: string | null;
+  /** Structured clinician-authored assessment; never populated by AI. */
+  clinician_final_assessment?: {
+    diagnosis?: string | null;
+    impression?: string | null;
+    plan?: string | null;
+    follow_up?: string | null;
+    reviewer_id: string;
+    at: string;
+  } | null;
+  // S12: carried straight through from the AI-generated AnalysisResult -
+  // never re-derived or weakened by the report layer. See
+  // clinicalInterpretationLabel() below for the fail-closed accessor.
+  diagnosis_gate?: AnalysisResult["diagnosis_gate"];
   provenance: AnalysisResult["provenance"];
   safety: AnalysisResult["safety"];
   exports: {
@@ -69,6 +124,21 @@ export const MEASUREMENTS_NOTE =
   "currently produces validated quantitative measurements; any numeric values in findings are demo placeholders " +
   "and must not be used clinically.";
 
+/**
+ * S12 - fail-closed accessor for whether this result's clinical
+ * interpretation is allowed to use diagnostic language. Any report/result
+ * rendering surface that ever needs to choose between "diagnosis" and
+ * "requires clinical correlation" wording MUST go through this (or
+ * `report.diagnosis_gate` directly) rather than inventing that decision
+ * itself. Missing gate data (e.g. a pre-S12 stored result) is treated as
+ * closed, never as open.
+ */
+export function clinicalInterpretationLabel(
+  r: Pick<AnalysisResult, "diagnosis_gate">
+): "DIAGNOSIS" | "REQUIRES_CLINICAL_CORRELATION" {
+  return r.diagnosis_gate?.clinical_interpretation ?? "REQUIRES_CLINICAL_CORRELATION";
+}
+
 export function buildOverallResult(r: AnalysisResult): string {
   if (r.quality.acceptable === false) {
     return "IMAGE QUALITY INSUFFICIENT FOR RELIABLE AUTOMATED ANALYSIS";
@@ -76,7 +146,16 @@ export function buildOverallResult(r: AnalysisResult): string {
   if (r.findings.length === 0) {
     return "NO SIGNIFICANT ABNORMALITY DETECTED BY AUTOMATED SCREENING";
   }
-  return "POTENTIAL ABNORMAL FINDING DETECTED";
+  const result = "POTENTIAL ABNORMAL FINDING DETECTED";
+  // S12 safety guard: this legacy pipeline never emits diagnostic ("this is
+  // X condition") wording - only correlation-required "potential finding"
+  // wording. Assert that invariant against the diagnosis gate so a future
+  // edit to this function cannot silently start producing diagnostic-
+  // sounding text without the gate actually having allowed it.
+  if (/\bDIAGNOS/i.test(result) && clinicalInterpretationLabel(r) !== "DIAGNOSIS") {
+    throw new Error("Safety violation: diagnostic-sounding overall_result produced without diagnosis gate approval.");
+  }
+  return result;
 }
 
 export function buildLimitations(r: AnalysisResult): string[] {
@@ -116,6 +195,11 @@ export async function generateReport(
     limitations: buildLimitations(analysis),
     recommended_next_step: analysis.recommendation.action,
     triage_priority: analysis.recommendation.priority,
+    patient_context: analysis.patient_context,
+    symptom_correlation: analysis.symptom_correlation,
+    possible_conditions: analysis.possible_conditions,
+    treatment_information: analysis.treatment_information,
+    diagnosis_gate: analysis.diagnosis_gate,
     review: { status: "ai_only" },
     provenance: analysis.provenance,
     safety: analysis.safety,

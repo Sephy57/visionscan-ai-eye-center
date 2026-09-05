@@ -7,13 +7,33 @@ import { runEnsemble, estimateUncertainty } from "./ensemble";
 import { runTriage, TriageOutcome } from "../clinical/triage";
 import { validateAnalysisResult, AnalysisResult, Finding, SCHEMA_VERSION, PIPELINE_VERSION } from "./schema";
 import { modelProvenance, RULESET_VERSION, COMPONENTS, getModel, gateModelUse, deviceCompatible, supportsModality } from "../models/registry";
+import { ensureRegistryHydrated } from "../models/registryPersistence";
 import { assessOod, OOD_MESSAGE } from "./ood";
 import { mayEmitFinding } from "./taxonomy";
 import { canonicalModality } from "../models/modalities";
 import { correlateSymptoms } from "../clinical/correlation";
 import { possibleConditions } from "../clinical/conditions";
+import { getTreatmentInformation } from "../treatment/treatmentInfo";
 import { PatientSymptom, SYMPTOM_MAP, redFlagSymptoms } from "../clinical/symptoms";
 import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
+import { canDisplayDiagnosis, unvalidatedGateResult, DiagnosisGateInput } from "../models/diagnosisGate";
+
+/**
+ * S12 - maps this deployment's registry ModelStatus onto the diagnosis
+ * gate's independent validation-status vocabulary. Any status this
+ * function does not explicitly recognize (including undefined - no
+ * registered model) fails closed to "NOT_VALIDATED", never to a more
+ * permissive value.
+ */
+function mapModelValidationStatus(status: string | undefined): DiagnosisGateInput["modelValidation"] {
+  switch (status) {
+    case "CLINICALLY_VALIDATED": return "CLINICALLY_VALIDATED";
+    case "EXTERNALLY_VALIDATED": return "EXTERNALLY_VALIDATED";
+    case "INTERNAL_VALIDATION": return "INTERNALLY_VALIDATED";
+    case "RESEARCH": return "RESEARCH_ONLY";
+    default: return "NOT_VALIDATED"; // DEMO, unknown/unregistered - fail closed
+  }
+}
 
 /**
  * AI Analysis Pipeline orchestrator.
@@ -39,7 +59,10 @@ export interface PipelineOutput {
   validationErrors: string[];
 }
 
-const DISALLOWED_CLAIM_PATTERNS: Array<[RegExp, string]> = [
+// Exported (Phase 4, §26) so other presentation-facing text generators -
+// e.g. lib/models/reasoningEngine.ts's forbidden-claims scan - reuse this
+// SAME list rather than maintaining a second, potentially-divergent one.
+export const DISALLOWED_CLAIM_PATTERNS: Array<[RegExp, string]> = [
   [/100% accurat/i, "absolutist accuracy claim"],
   [/definitely healthy/i, "definitive health claim"],
   [/you (definitely|certainly) (do not|don't) have/i, "definitive negative claim"],
@@ -54,6 +77,7 @@ const DISALLOWED_CLAIM_PATTERNS: Array<[RegExp, string]> = [
 ];
 
 export async function runPipeline(input: PipelineInput): Promise<PipelineOutput> {
+  await ensureRegistryHydrated();
   const { study, originalBytes } = input;
 
   // ---- Stage 0: format gate (DICOM detection) ----
@@ -69,10 +93,14 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
   // ---- Stage 1b: model registry gate + out-of-distribution check ----
   const modelRecord = getModel("demo-fundus-synthetic-v0"); // the only registered model
-  const modelGate = modelRecord ? gateModelUse(modelRecord) : null;
   const deviceInfo = study.metadata.manufacturer || study.metadata.model
     ? { manufacturer: study.metadata.manufacturer, model: study.metadata.model }
     : null;
+  // device is passed explicitly (per-study execution gate) so a non-DEMO
+  // model with incompatible/undeclared device support is hard-blocked here,
+  // the same point modality already is - device is informational-only for
+  // DEMO, which is unaffected by this check (see gateModelUse's doc comment).
+  const modelGate = modelRecord ? gateModelUse(modelRecord, deviceInfo) : null;
   const ood = assessOod({
     modality: study.modality,
     quality,
@@ -133,6 +161,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     findings,
   });
 
+  // ---- Stage 5d: treatment information (ONLY for conditions that already
+  // passed possible_conditions gating - finding -> condition -> treatment
+  // provenance chain; STOP and produce nothing if that chain is broken) ----
+  const treatmentInformation = getTreatmentInformation(
+    conditions.conditions.map((c) => ({ id: c.id, label: c.label }))
+  );
+
   // ---- Stage 6: clinical rule engine / triage ----
   const triage = runTriage({
     findings,
@@ -145,6 +180,25 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     // never name a condition and never create findings.
     redFlagSymptoms: redFlagSymptoms(symptoms).map((d) => d.type),
     symptomUrgency: symptoms.length ? correlation!.urgency : undefined,
+  });
+
+  // ---- Stage 6b: diagnosis gate (S12 - additive, fail-closed) ----
+  // Decides whether this result may EVER use diagnostic ("this is X
+  // condition") language vs. correlation-required language. Every field
+  // that has no documented/formal basis in this deployment (intended-use
+  // approval, calibration evidence) defaults to the value that keeps the
+  // gate CLOSED, per the S12 integration policy - only modelValidation,
+  // modalityMatches, qualityStatus, oodDetected and evidenceSufficient are
+  // derived from real pipeline state; the gate is closed by modelValidation
+  // alone today (DEMO is never CLINICALLY_VALIDATED), regardless.
+  const diagnosisGateResult = canDisplayDiagnosis({
+    modelValidation: mapModelValidationStatus(modelRecord?.status),
+    intendedUseMatches: false, // no formally documented/approved intended use exists in this deployment
+    modalityMatches: !!modelRecord && supportsModality(modelRecord, study.modality),
+    qualityStatus: quality.quality_status,
+    oodDetected: ood.detected,
+    calibrationAvailable: false, // no documented calibration evidence exists in this deployment
+    evidenceSufficient: conditions.conditions.length > 0 && !!modelRecord?.performance.evidence_reference,
   });
 
   // ---- Assemble structured result ----
@@ -215,6 +269,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     },
     symptom_correlation: correlation ?? undefined,
     possible_conditions: symptoms.length || findings.length ? conditions : undefined,
+    treatment_information: treatmentInformation,
     recommendation: {
       priority: triage.priority,
       action: triage.action,
@@ -228,6 +283,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     demo: {
       synthetic_result: true,
       label: DEMO_LABEL,
+    },
+    diagnosis_gate: {
+      allowed: diagnosisGateResult.allowed,
+      reasons: diagnosisGateResult.reasons,
+      clinical_interpretation: diagnosisGateResult.clinicalInterpretation,
     },
     provenance: {
       models: modelProvenance(["quality", "segmentation", "detector", "ensemble"]),
@@ -299,6 +359,10 @@ function unsupportedResult(study: NormalizedStudy, note: string): PipelineOutput
     recommendation: { priority: triage.priority, action: triage.action, rationale: triage.rationale },
     ensemble: { performed: false, checks: [], note: "Not performed." },
     demo: { synthetic_result: false, label: DEMO_LABEL },
+    diagnosis_gate: (() => {
+      const g = unvalidatedGateResult();
+      return { allowed: g.allowed, reasons: g.reasons, clinical_interpretation: g.clinicalInterpretation };
+    })(),
     provenance: { models: modelProvenance(["quality"]), ruleset_version: RULESET_VERSION, analyzed_at: new Date().toISOString(), input_dimensions: { width: 0, height: 0 }, pipeline_version: PIPELINE_VERSION },
     safety: { quality_gate_enforced: true, disclaimers: [VALIDATION_STATUS_BANNER], blocked_claims: [] },
   };

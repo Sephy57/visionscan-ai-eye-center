@@ -1,5 +1,5 @@
 import sharp from "sharp";
-import { createStudy, analyzeStudy, getStudyBundle, deleteStudy } from "@/lib/studies/service";
+import { createStudy, analyzeStudy, getStudyBundle, deleteStudy, submitReview } from "@/lib/studies/service";
 import { runSafetyChecks } from "@/lib/clinical/safety";
 import { validateAnalysisResult } from "@/lib/analysis/schema";
 import { runTriage } from "@/lib/clinical/triage";
@@ -135,7 +135,24 @@ export async function runSelfTest(): Promise<SelfTestReport> {
     const oodTriage = runTriage({ findings: [], qualityAcceptable: true, qualityScore: 0.95, uncertainty: 0.1, modality: "fundus", ood: { detected: true, message: ood.message } });
     t("ood_prevents_normality_claim", !oodTriage.action.toLowerCase().includes("no significant abnormality detected"));
 
-    // 12. Delete removes study.
+    // 12. Treatment information is honestly empty for the DEMO deployment, and
+    // the clinician treatment-review workflow keeps the AI output immutable.
+    t(
+      "treatment_information_empty_for_demo",
+      analysis.treatment_information === undefined,
+      "DEMO model must never surface treatment information"
+    );
+    const treatmentReview = await submitReview(clean.study_id, {
+      reviewer_id: "selftest_clinician", action: "treatment_note", condition_id: "diabetic_retinopathy", note: "self-test note",
+    });
+    t(
+      "treatment_review_recorded_without_mutating_ai_output",
+      treatmentReview?.treatment_review?.decisions.some((d) => d.condition_id === "diabetic_retinopathy") === true &&
+        treatmentReview?.treatment_information === undefined,
+      "clinician treatment note recorded separately; AI treatment_information (absent for DEMO) left untouched"
+    );
+
+    // 13. Delete removes study.
     if (darkStudyId) {
       await deleteStudy(darkStudyId);
       const gone = await getStudyBundle(darkStudyId);

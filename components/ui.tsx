@@ -57,7 +57,7 @@ export function QualityPanel({ quality }: { quality: { score: number; status: st
         </div>
       ))}
       {!quality.acceptable && (
-        <div className="alert danger" style={{ marginTop: 12 }}>
+        <div className="alert danger" role="alert" style={{ marginTop: 12 }}>
           <span className="alert-icon" aria-hidden="true">⚠</span>
           <div className="alert-body">
             <strong>Image quality is insufficient for reliable automated analysis</strong>
@@ -82,7 +82,7 @@ export function EmptyState({ icon, title, children, action }: { icon: React.Reac
 
 export function ErrorState({ title, causes, onRetryHref }: { title: string; causes: string[]; onRetryHref: string }) {
   return (
-    <div className="card" style={{ textAlign: "center", padding: 40 }}>
+    <div className="card" role="alert" style={{ textAlign: "center", padding: 40 }}>
       <div className="es-icon" style={{ fontSize: "2rem" }} aria-hidden="true">⚠</div>
       <h2>{title}</h2>
       <p className="muted small">Possible causes:</p>

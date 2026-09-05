@@ -58,13 +58,18 @@ adjudicator are recorded for every sample.
 
 | Control | Status |
 |---|---|
-| Encryption in transit | Local deployment; TLS termination NOT configured (dev build) |
-| Encryption at rest | **NOT IMPLEMENTED** |
-| Authentication | **NOT IMPLEMENTED** |
-| RBAC | **NOT IMPLEMENTED** |
-| Public image URLs | None generated |
+| Encryption in transit | **REQUIRES EXTERNAL INFRASTRUCTURE** - TLS termination is not, and should not be, done by this application; see `docs/PHASE5B_SECURITY.md` |
+| Encryption at rest | **REQUIRES EXTERNAL INFRASTRUCTURE** - not implemented at the application layer (correctly so - see `docs/PHASE5B_SECURITY.md`) |
+| Authentication | **IMPLEMENTED** (Phase 5B) - scrypt password hashing, server-side sessions, CSRF, rate limiting, lockout; see `docs/AUTH_RBAC.md` |
+| RBAC | **IMPLEMENTED** (Phase 5B) - five roles, enforced server-side on every protected route; see `docs/AUTH_RBAC.md` |
+| Public image URLs | None generated; `/api/studies/[id]/image` requires an authenticated clinical-staff role (Phase 5B) |
 | Image logging | Never |
-| Audit logging | IMPLEMENTED (append-only) |
+| Audit logging | IMPLEMENTED (append-only, hash-chained for tamper evidence as of Phase 5B - see `docs/PHASE5B_SECURITY.md`) |
 | Data deletion | IMPLEMENTED |
 
-The dev build must not be exposed to untrusted networks and must not contain real patient data.
+This table was last accurate as of Phase 3; Phase 5B substantially changed the
+authentication/RBAC/encryption rows above (this correction was made when that
+staleness was noticed during the Phase 5B → Phase 6 readiness audit). The dev
+build must still not be exposed to untrusted networks without a real TLS
+terminator in front of it, and must not contain real patient data until the
+clinical-validation and regulatory gates in later phases are satisfied.

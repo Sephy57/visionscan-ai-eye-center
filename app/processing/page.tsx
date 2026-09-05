@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Icon } from "@/components/icons";
+import { authFetch } from "@/lib/auth/clientFetch";
 
 const STAGES = [
   "File integrity verified (SHA-256)",
@@ -38,7 +39,7 @@ function ProcessingInner() {
     (async () => {
       try {
         // Async mode: enqueue a job and poll — keeps inference off the UI request path.
-        const res = await fetch("/api/analyze", {
+        const res = await authFetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ study_id: study, async: true }),
@@ -48,9 +49,11 @@ function ProcessingInner() {
         if (!res.ok) throw new Error(data.error ?? "Could not start analysis");
         setJobId(data.job_id);
 
-        // Poll job status
+        // Poll job status, with a bound so a stuck job surfaces an error instead of spinning forever.
+        const pollDeadline = Date.now() + 120_000;
         for (;;) {
           if (cancelled) return;
+          if (Date.now() > pollDeadline) throw new Error("Analysis is taking longer than expected. The job may be stuck — please retry.");
           await new Promise((r) => setTimeout(r, 900));
           const jr = await fetch(`/api/jobs/${encodeURIComponent(data.job_id)}`);
           if (!jr.ok) throw new Error("Lost contact with the analysis job.");
@@ -102,7 +105,7 @@ function ProcessingInner() {
               onClick={async () => {
                 setFailed(null);
                 setStep(0);
-                await fetch(`/api/jobs/${encodeURIComponent(jobId)}`, {
+                await authFetch(`/api/jobs/${encodeURIComponent(jobId)}`, {
                   method: "POST", headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ requested_by: "user" }),
                 });

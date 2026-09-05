@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon, IconName } from "./icons";
 
@@ -20,6 +20,7 @@ const NAV: Array<{ section?: string; href?: string; label?: string; icon?: IconN
   { href: "/history", label: "History", icon: "history" },
   { href: "/compare", label: "Compare", icon: "compare" },
   { section: "Clinical" },
+  { href: "/patients", label: "Patients", icon: "review" },
   { href: "/clinician", label: "Clinical Review", icon: "review" },
   { href: "/report", label: "Reports", icon: "reports" },
   { section: "System" },
@@ -72,6 +73,38 @@ function ThemeToggle() {
   );
 }
 
+interface SessionInfo { authenticated: boolean; user?: { username: string; role: string } }
+
+function UserMenu() {
+  const router = useRouter();
+  const [session, setSession] = useState<SessionInfo | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/session").then((r) => r.json()).then(setSession).catch(() => setSession({ authenticated: false }));
+  }, []);
+
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.replace("/login");
+    router.refresh();
+  }
+
+  if (!session?.authenticated || !session.user) {
+    return (
+      <Link href="/login" className="btn secondary sm">Sign in</Link>
+    );
+  }
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <span className="status-chip" title={session.user.role} aria-label={`Signed in as ${session.user.username}, role ${session.user.role}`}>
+        <span className="dot dot-amber" aria-hidden="true" />
+        <span className="status-chip-label">{session.user.username} · {session.user.role}</span>
+      </span>
+      <button className="btn ghost sm" onClick={logout}>Sign out</button>
+    </div>
+  );
+}
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
@@ -87,7 +120,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div className="banner-strip" role="note">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
+      <div className="banner-strip" role="region" aria-label="Research environment notice">
         <span className="banner-icon" aria-hidden="true">⚠</span>
         <span className="banner-text">
           <strong>RESEARCH ENVIRONMENT</strong>
@@ -117,15 +151,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <span className="page-crumb mobile-only-flex" style={{ fontWeight: 700 }}>VisionScan AI</span>
             </div>
             <div className="topbar-actions">
-              <Link href="/admin" className="status-chip" title="Open system status">
+              <Link href="/admin" className="status-chip" title="Open system status" aria-label="Research environment — open system status">
                 <span className="dot dot-amber" aria-hidden="true" />
-                Research environment
+                <span className="status-chip-label">Research environment</span>
               </Link>
+              <UserMenu />
               <ThemeToggle />
             </div>
           </header>
 
-          <main className="content" id="main-content">{children}</main>
+          <main className="content" id="main-content" tabIndex={-1}>{children}</main>
 
           <footer className="app-footer">
             VisionScan AI is a clinical decision-support <strong>architecture</strong> under development. It does not

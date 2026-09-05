@@ -26,6 +26,7 @@ allOk &= check("Source code (lib/)", path.join(root, "lib"));
 allOk &= check("Source code (components)", path.join(root, "components"));
 allOk &= check("Git repository (.git)", path.join(root, ".git"));
 allOk &= check("Uploaded scans", path.join(dataDir, "uploads"));
+allOk &= check("Uploaded documents", path.join(dataDir, "documents"));
 allOk &= check("Processed analyses", path.join(dataDir, "processed"));
 allOk &= check("Generated reports", path.join(dataDir, "reports"));
 allOk &= check("Database", path.join(dataDir, "database"));
@@ -42,7 +43,7 @@ const countFiles = (p) => {
   }
 };
 console.log("\nDirectory contents:");
-for (const sub of ["uploads", "processed", "reports", "database", "logs", "tmp"]) {
+for (const sub of ["uploads", "documents", "processed", "reports", "database", "logs", "tmp"]) {
   const p = path.join(dataDir, sub);
   console.log(`  ${sub.padEnd(12)} ${countFiles(p)} entries`);
 }
@@ -55,13 +56,21 @@ try {
   console.log("\nD: free space: (could not query)");
 }
 
-// Honest listing of known C: dependencies
-console.log("\nKnown C: dependencies (unavoidable, system-level):");
-console.log("  - Node.js runtime:       " + execSync("where node").toString().split("\n")[0].trim());
-console.log("  - npm:                   " + execSync("where npm").toString().split("\n")[0].trim());
-console.log("  - npm cache (default):   " + path.join(os.homedir(), "AppData", "Local", "npm-cache"));
-console.log("    -> redirect with: npm config set cache \"D:\\npm-cache\"");
-console.log("  - Windows TEMP for npm install scripts: " + os.tmpdir());
-console.log("  - Application temp files themselves are on D: (data\\tmp)");
+// Honest listing of system-level dependencies (platform-guarded: this audit
+// must never crash CI on non-Windows hosts - it is diagnostic, not a gate).
+console.log("\nKnown system-level dependencies (unavoidable):");
+try {
+  const whereCmd = process.platform === "win32" ? "where" : "which";
+  console.log("  - Node.js runtime:       " + execSync(`${whereCmd} node`).toString().split("\n")[0].trim());
+  console.log("  - npm:                   " + execSync(`${whereCmd} npm`).toString().split("\n")[0].trim());
+} catch {
+  console.log("  - Node.js/npm: (could not query)");
+}
+if (process.platform === "win32") {
+  console.log("  - npm cache (default):   " + path.join(os.homedir(), "AppData", "Local", "npm-cache"));
+  console.log("    -> redirect with: npm config set cache \"D:\\npm-cache\"");
+  console.log("  - Windows TEMP for npm install scripts: " + os.tmpdir());
+  console.log("  - Application temp files themselves are on D: (data\\tmp)");
+}
 
 console.log(`\n${allOk ? "AUDIT PASSED: project and data live on D:" : "AUDIT: some items missing - see above"}\n`);

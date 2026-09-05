@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui";
+import { presentQuality } from "@/lib/analysis/qualityPresentation";
 
 interface Report {
   report_id: string; study_id: string; generated_at: string;
@@ -27,15 +28,36 @@ interface Report {
     notes: string[];
     label: string;
   };
-  possible_conditions?: { conditions: Array<{ id: string; label: string; matched_findings: string[]; note: string }>; note: string } | null;
+  possible_conditions?: { conditions: Array<{ id: string; label: string; matched_findings: string[]; commonly_associated_symptoms: string[]; note: string }>; note: string } | null;
+  treatment_information?: {
+    items: Array<{
+      condition_id: string; condition_label: string; available: boolean; reason: string;
+      approaches: Array<{
+        approach_label: string; purpose: string; evidence_reference: string;
+        medications: Array<{ medication_id: string; generic_name: string; drug_class: string; purpose: string; route: string[]; common_contraindications: string[]; warnings: string[]; common_adverse_effects: string[]; evidence_references: string[] }>;
+      }>;
+      label: string;
+    }>;
+    dosage_notice: string;
+    interaction_notice: string;
+    note: string;
+  } | null;
+  treatment_review?: {
+    reviewer_id: string;
+    decisions: Array<{ condition_id: string; decision: string; added_medication_ids?: string[]; removed_medication_ids?: string[]; contraindication_note?: string; patient_restriction_note?: string; clinical_note?: string; at: string }>;
+  } | null;
   measurements_note: string;
   limitations: string[];
   recommended_next_step: string;
   triage_priority: string;
   review: { status: string; reviewer_id?: string; finalized_at?: string; clinician_changes?: Array<{ field: string; action: string; at: string }> };
   clinician_interpretation?: { reviewer_id: string; overall: string; notes?: string | null } | null;
+  clinician_corrections?: Array<{ finding_id: string; original: { type: string; location: string; severity: string; explanation: string }; correction: Record<string, string>; reviewer_id: string; note?: string; at: string }>;
+  clinician_observations?: Array<{ observation_id: string; text: string; laterality?: string; reviewer_id: string; at: string }>;
   final_interpretation?: string | null;
+  clinician_final_assessment?: { diagnosis?: string | null; impression?: string | null; plan?: string | null; follow_up?: string | null; reviewer_id: string; at: string } | null;
   provenance: { models: Array<Record<string, unknown>>; ruleset_version: string; analyzed_at: string; pipeline_version: string };
+  diagnosis_gate?: { allowed: boolean; reasons: string[]; clinical_interpretation: "DIAGNOSIS" | "REQUIRES_CLINICAL_CORRELATION" };
   safety: { disclaimers: string[]; blocked_claims: string[] };
   exports: { json_path?: string; fhir_note: string };
 }
@@ -56,6 +78,8 @@ function ReportInner() {
 
   if (err) return <div className="alert danger"><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body"><strong>Report unavailable</strong>{err}</div></div>;
   if (!report) return <div style={{ display: "flex", justifyContent: "center", padding: 60 }}><div className="spinner" /></div>;
+
+  const qp = presentQuality({ quality_status: report.image_quality.status, detected_artifacts: report.image_quality.artifacts });
 
   function downloadJson() {
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
@@ -88,7 +112,7 @@ function ReportInner() {
           <Badge tone="demo">{report.demo_label}</Badge>
         </div>
 
-        <h3>Study information</h3>
+        <h2>Study information</h2>
         <dl className="kv">
           <dt>Report ID</dt><dd>{report.report_id}</dd>
           <dt>Study ID</dt><dd>{report.study_id}</dd>
@@ -114,16 +138,19 @@ function ReportInner() {
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Image quality</h3>
+        <h2 style={{ marginTop: 0 }}>Image quality <Badge tone={qp.blocked ? "bad" : report.image_quality.artifacts.length > 0 ? "warn" : "ok"}>{qp.overall_label}</Badge></h2>
         <dl className="kv">
           <dt>Quality score</dt><dd>{report.image_quality.score} ({report.image_quality.status})</dd>
           <dt>Acceptable</dt><dd>{report.image_quality.acceptable ? "Yes" : "No"}</dd>
           <dt>Detected artifacts</dt><dd>{report.image_quality.artifacts.join(", ") || "None"}</dd>
         </dl>
+        {/* S12: honest quality presentation - a "pass" status can still carry
+            real artifacts; never shown as bare "GOOD" when one was detected. */}
+        <p className="tiny muted" style={{ margin: "8px 0 0" }}>{qp.impact_note}</p>
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Findings ({report.findings.length})</h3>
+        <h2 style={{ marginTop: 0 }}>Findings ({report.findings.length})</h2>
         {report.findings.length === 0 && <p className="muted small">No findings recorded in this report.</p>}
         {report.findings.map((f) => (
           <div key={f.id} style={{ borderTop: "1px solid var(--border)", padding: "12px 0" }}>
@@ -143,22 +170,24 @@ function ReportInner() {
 
       {report.patient_context?.reported && (
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Reported symptoms</h3>
-          <table className="table">
-            <thead><tr><th>Symptom</th><th>Onset</th><th>Duration</th><th>Severity</th><th>Eye</th><th>Progression</th></tr></thead>
-            <tbody>
-              {report.patient_context.symptoms.map((s, i) => (
-                <tr key={i}>
-                  <td>{s.label ?? s.type.replaceAll("_", " ")}{report.patient_context!.red_flags.includes(s.type) ? " ⚠" : ""}</td>
-                  <td>{s.onset}</td>
-                  <td>{s.duration.replaceAll("_", " ")}</td>
-                  <td>{s.severity}</td>
-                  <td>{s.laterality === "right" ? "Right (OD)" : s.laterality === "left" ? "Left (OS)" : s.laterality}</td>
-                  <td>{s.progression}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <h2 style={{ marginTop: 0 }}>Reported symptoms</h2>
+          <div className="table-wrap">
+            <table className="table">
+              <thead><tr><th>Symptom</th><th>Onset</th><th>Duration</th><th>Severity</th><th>Eye</th><th>Progression</th></tr></thead>
+              <tbody>
+                {report.patient_context.symptoms.map((s, i) => (
+                  <tr key={i}>
+                    <td>{s.label ?? s.type.replaceAll("_", " ")}{report.patient_context!.red_flags.includes(s.type) ? " ⚠" : ""}</td>
+                    <td>{s.onset}</td>
+                    <td>{s.duration.replaceAll("_", " ")}</td>
+                    <td>{s.severity}</td>
+                    <td>{s.laterality === "right" ? "Right (OD)" : s.laterality === "left" ? "Left (OS)" : s.laterality}</td>
+                    <td>{s.progression}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {report.patient_context.symptoms.some((s) => s.free_text) && (
             <p className="small muted">Description: {report.patient_context.symptoms.filter((s) => s.free_text).map((s) => s.free_text).join(" | ")}</p>
           )}
@@ -168,7 +197,7 @@ function ReportInner() {
 
       {report.symptom_correlation && report.patient_context?.reported && (
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Symptom / imaging correlation <Badge tone="warn">{report.symptom_correlation.label}</Badge></h3>
+          <h2 style={{ marginTop: 0 }}>Symptom / imaging correlation <Badge tone="warn">{report.symptom_correlation.label}</Badge></h2>
           {report.symptom_correlation.items.map((item, i) => (
             <div key={i} style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: i === 0 ? 0 : 10 }}>
               <strong className="small">{item.symptom_label}</strong> — {item.state.replaceAll("_", " ")}
@@ -182,58 +211,134 @@ function ReportInner() {
         </div>
       )}
 
-      {report.possible_conditions && report.patient_context?.reported && (
+      {report.possible_conditions && (
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Possible conditions to consider</h3>
+          <h2 style={{ marginTop: 0 }}>Possible conditions to consider</h2>
           {report.possible_conditions.conditions.length === 0 ? (
             <p className="small muted" style={{ margin: 0 }}>No condition associations met the evidence requirements for display (model not validated).</p>
           ) : (
             <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>
-              {report.possible_conditions.conditions.map((c) => <li key={c.id}><strong>{c.label}</strong> — {c.note} (matched findings: {c.matched_findings.join(", ")})</li>)}
+              {report.possible_conditions.conditions.map((c) => (
+                <li key={c.id} style={{ marginBottom: 6 }}>
+                  <strong>{c.label}</strong> — {c.note} (matched findings: {c.matched_findings.join(", ")})
+                  {c.commonly_associated_symptoms.length > 0 && (
+                    <div className="tiny muted">
+                      Commonly associated symptoms (knowledge base — not necessarily reported by this patient):{" "}
+                      {c.commonly_associated_symptoms.map((s) => s.replaceAll("_", " ")).join(", ")}
+                    </div>
+                  )}
+                </li>
+              ))}
             </ul>
           )}
           <p className="tiny muted" style={{ marginBottom: 0, marginTop: 8 }}>{report.possible_conditions.note}</p>
         </div>
       )}
 
+      {report.treatment_information && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Treatment information <Badge tone="warn">Clinician review required</Badge></h2>
+          {report.treatment_information.items.length === 0 ? (
+            <p className="small muted" style={{ margin: 0 }}>No treatment information is registered for the conditions above.</p>
+          ) : (
+            report.treatment_information.items.map((item) => (
+              <div key={item.condition_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 10 }}>
+                <strong className="small">{item.condition_label}</strong>
+                {item.available ? (
+                  item.approaches.map((ap, i) => (
+                    <div key={i} className="small" style={{ marginTop: 4 }}>
+                      <strong>{ap.approach_label}</strong> — {ap.purpose}
+                      {ap.medications.length > 0 && (
+                        <ul className="tiny muted" style={{ margin: "4px 0 0", paddingLeft: 16 }}>
+                          {ap.medications.map((m) => <li key={m.medication_id}>{m.generic_name} ({m.drug_class})</li>)}
+                        </ul>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="small muted" style={{ margin: "4px 0 0" }}>{item.reason}</p>
+                )}
+              </div>
+            ))
+          )}
+          {report.treatment_review && report.treatment_review.decisions.length > 0 && (
+            <div style={{ marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+              <p className="tiny muted" style={{ margin: "0 0 4px" }}>Clinician disposition (recorded separately from the AI-generated information above):</p>
+              {report.treatment_review.decisions.map((d, i) => (
+                <p key={i} className="tiny muted" style={{ margin: "2px 0" }}>
+                  {d.condition_id}: {d.decision}
+                  {d.contraindication_note ? ` — contraindication noted: ${d.contraindication_note}` : ""}
+                  {d.patient_restriction_note ? ` — restriction noted: ${d.patient_restriction_note}` : ""}
+                  {d.clinical_note ? ` — ${d.clinical_note}` : ""}
+                  {" "}(by {report.treatment_review!.reviewer_id}, {new Date(d.at).toLocaleString()})
+                </p>
+              ))}
+            </div>
+          )}
+          {report.treatment_information.items.length > 0 && (
+            <p className="tiny muted" style={{ marginBottom: 0, marginTop: 8 }}>
+              {report.treatment_information.dosage_notice} {report.treatment_information.interaction_notice}{" "}
+              {report.treatment_information.note}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Measurements</h3>
+        <h2 style={{ marginTop: 0 }}>Measurements</h2>
         <p className="small muted" style={{ margin: 0 }}>{report.measurements_note}</p>
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Possible clinical associations</h3>
+        <h2 style={{ marginTop: 0 }}>Possible clinical associations</h2>
         <p className="small muted" style={{ margin: 0 }}>{report.possible_associations_note}</p>
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Uncertainty</h3>
-        <p className="small"><strong>Overall: {(report.uncertainty.overall * 100).toFixed(0)}%</strong></p>
+        <h2 style={{ marginTop: 0 }}>Uncertainty</h2>
+        {/* S12: relabeled - this is a heuristic score from the DEMO pipeline's
+            quality/agreement heuristics, not calibrated model confidence; a
+            bare percentage here could be misread as AI confidence. */}
+        <p className="small"><strong>Heuristic uncertainty score (not calibrated confidence): {(report.uncertainty.overall * 100).toFixed(0)}%</strong></p>
         <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
           {report.uncertainty.reasons.map((r, i) => <li key={i}>{r}</li>)}
         </ul>
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>AI model information</h3>
-        <table className="table">
-          <thead><tr><th>Model</th><th>Version</th><th>Implementation</th><th>Validation status</th></tr></thead>
-          <tbody>
-            {report.provenance.models.map((m, i) => (
-              <tr key={i}>
-                <td>{String(m.model_id)}</td>
-                <td>{String(m.model_version)}</td>
-                <td>{String(m.implementation)}</td>
-                <td><Badge tone="warn">{String(m.validation_status)}</Badge></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="tiny muted">Ruleset {report.provenance.ruleset_version} • Pipeline {report.provenance.pipeline_version}</p>
+        <h2 style={{ marginTop: 0 }}>AI model information</h2>
+        <div className="table-wrap">
+          <table className="table">
+            <thead><tr><th>Model</th><th>Version</th><th>Implementation</th><th>Validation status</th></tr></thead>
+            <tbody>
+              {report.provenance.models.map((m, i) => (
+                <tr key={i}>
+                  <td>{String(m.model_id)}</td>
+                  <td>{String(m.model_version)}</td>
+                  <td>{String(m.implementation)}</td>
+                  <td><Badge tone="warn">{String(m.validation_status)}</Badge></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <details className="tech" style={{ marginTop: 10 }}>
+          <summary>Advanced technical information</summary>
+          <dl className="kv">
+            <dt>Pipeline version</dt><dd>{report.provenance.pipeline_version}</dd>
+            <dt>Ruleset version</dt><dd>{report.provenance.ruleset_version}</dd>
+            <dt>Heuristic uncertainty score</dt><dd>{(report.uncertainty.overall * 100).toFixed(0)}% (not calibrated confidence)</dd>
+            <dt>Clinical interpretation gate</dt>
+            <dd>
+              {report.diagnosis_gate?.clinical_interpretation === "DIAGNOSIS" ? "DIAGNOSIS" : "REQUIRES CLINICAL CORRELATION"}
+              {report.diagnosis_gate && report.diagnosis_gate.reasons.length > 0 ? ` — ${report.diagnosis_gate.reasons.join(" ")}` : ""}
+            </dd>
+          </dl>
+        </details>
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Clinician review</h3>
+        <h2 style={{ marginTop: 0 }}>Clinician review</h2>
         <dl className="kv">
           <dt>Review status</dt>
           <dd>{report.review.status}{report.review.reviewer_id ? ` by ${report.review.reviewer_id}` : ""}{report.review.finalized_at ? ` at ${new Date(report.review.finalized_at).toLocaleString()}` : ""}</dd>
@@ -251,17 +356,51 @@ function ReportInner() {
             <div className="alert-body"><strong>Final interpretation</strong>{report.final_interpretation}</div>
           </div>
         )}
+        {report.clinician_final_assessment && (
+          <div className="card" style={{ marginTop: 12, marginBottom: 0, background: "var(--surface-2)" }}>
+            <h3 style={{ marginTop: 0 }}>Clinician final assessment</h3>
+            <dl className="kv">
+              {(["diagnosis", "impression", "plan", "follow_up"] as const).map((field) => report.clinician_final_assessment?.[field] ? <><dt key={`${field}-dt`}>{field.replace("_", " ")}</dt><dd key={`${field}-dd`}>{report.clinician_final_assessment![field]}</dd></> : null)}
+            </dl>
+            <p className="tiny muted" style={{ marginBottom: 0 }}>Entered by {report.clinician_final_assessment.reviewer_id} · {new Date(report.clinician_final_assessment.at).toLocaleString()}</p>
+          </div>
+        )}
+        {report.clinician_corrections && report.clinician_corrections.length > 0 && (
+          <div className="alert warn" style={{ marginTop: 10, marginBottom: 0 }}>
+            <div className="alert-body">
+              <strong>Clinician amendments (original AI findings preserved)</strong>
+              {report.clinician_corrections.map((c) => (
+                <div key={`${c.finding_id}-${c.at}`} className="tiny" style={{ marginTop: 4 }}>
+                  {c.finding_id}: {Object.entries(c.correction).map(([k, v]) => `${k}=${v}`).join(", ")} · {c.reviewer_id}
+                  {c.note ? ` — ${c.note}` : ""}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {report.clinician_observations && report.clinician_observations.length > 0 && (
+          <div style={{ marginTop: 10 }}>
+            <strong className="small">Clinician observations (additive)</strong>
+            {report.clinician_observations.map((o) => (
+              <p key={o.observation_id} className="tiny muted" style={{ margin: "4px 0" }}>
+                {o.text}{o.laterality ? ` · ${o.laterality}` : ""} · {o.reviewer_id}
+              </p>
+            ))}
+          </div>
+        )}
         {report.review.clinician_changes && report.review.clinician_changes.length > 0 && (
           <details className="tech" style={{ marginTop: 10 }}>
             <summary>Review trail ({report.review.clinician_changes.length} actions)</summary>
-            <table className="table">
-              <thead><tr><th>Field</th><th>Action</th><th>At</th></tr></thead>
-              <tbody>
-                {report.review.clinician_changes.map((c, i) => (
-                  <tr key={i}><td>{c.field}</td><td>{c.action}</td><td className="small">{new Date(c.at).toLocaleString()}</td></tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="table-wrap">
+              <table className="table">
+                <thead><tr><th>Field</th><th>Action</th><th>At</th></tr></thead>
+                <tbody>
+                  {report.review.clinician_changes.map((c, i) => (
+                    <tr key={i}><td>{c.field}</td><td>{c.action}</td><td className="small">{new Date(c.at).toLocaleString()}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </details>
         )}
       </div>
@@ -276,14 +415,14 @@ function ReportInner() {
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Limitations</h3>
+        <h2 style={{ marginTop: 0 }}>Limitations</h2>
         <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
           {report.limitations.map((l, i) => <li key={i}>{l}</li>)}
         </ul>
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Interoperability &amp; audit</h3>
+        <h2 style={{ marginTop: 0 }}>Interoperability &amp; audit</h2>
         <p className="small muted" style={{ margin: 0 }}>{report.exports.fhir_note}</p>
         <p className="tiny muted" style={{ marginTop: 8 }}>
           Audit: every analysis records model versions, checksums, quality score, uncertainty, and ruleset version.
@@ -293,7 +432,7 @@ function ReportInner() {
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Safety disclaimers</h3>
+        <h2 style={{ marginTop: 0 }}>Safety disclaimers</h2>
         <ul className="small muted" style={{ margin: 0, paddingLeft: 18 }}>
           {report.safety.disclaimers.map((d, i) => <li key={i}>{d}</li>)}
         </ul>

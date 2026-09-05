@@ -132,7 +132,32 @@ export interface AnalysisResult {
     label: string;                     // "RESEARCH CORRELATION - NOT CLINICALLY VALIDATED"
   };
   possible_conditions?: {
-    conditions: Array<{ id: string; label: string; matched_findings: string[]; note: string }>;
+    conditions: Array<{ id: string; label: string; matched_findings: string[]; commonly_associated_symptoms: string[]; note: string }>;
+    note: string;
+  };
+  // Phase 5: treatment information is generated ONLY for conditions that
+  // already passed possible_conditions gating (finding -> condition ->
+  // treatment provenance chain). Never a prescription; always clinician-review-gated.
+  treatment_information?: {
+    items: Array<{
+      condition_id: string;
+      condition_label: string;
+      available: boolean;
+      reason: string;
+      approaches: Array<{
+        approach_label: string;
+        purpose: string;
+        medications: Array<{
+          medication_id: string; generic_name: string; drug_class: string; purpose: string;
+          route: string[]; common_contraindications: string[]; warnings: string[];
+          common_adverse_effects: string[]; evidence_references: string[];
+        }>;
+        evidence_reference: string;
+      }>;
+      label: string;
+    }>;
+    dosage_notice: string;
+    interaction_notice: string;
     note: string;
   };
   // Phase 3.2: future-ready visualization API. The current DEMO model emits
@@ -164,6 +189,17 @@ export interface AnalysisResult {
   demo: {
     synthetic_result: boolean;         // true whenever findings are demo-generated
     label: string;
+  };
+  // S12: server-side, fail-closed decision of whether this result may ever
+  // use diagnostic ("this is X condition") language vs. correlation-required
+  // language. Computed via lib/models/diagnosisGate.ts's canDisplayDiagnosis
+  // - never constructed ad hoc by a UI layer. Optional only for backward
+  // compatibility with any pre-S12 stored result; a missing value must be
+  // treated as closed (REQUIRES_CLINICAL_CORRELATION), never as open.
+  diagnosis_gate?: {
+    allowed: boolean;
+    reasons: string[];
+    clinical_interpretation: "DIAGNOSIS" | "REQUIRES_CLINICAL_CORRELATION";
   };
   provenance: {
     models: Array<Record<string, unknown>>;
@@ -249,6 +285,32 @@ export function validateAnalysisResult(r: unknown): { valid: boolean; errors: Va
     // Safety: DEMO models can never surface conditions.
     if (o.model_registry?.model_status === "DEMO" && (o.possible_conditions.conditions?.length ?? 0) > 0) {
       errors.push({ path: "possible_conditions.conditions", message: "DEMO models cannot display possible conditions" });
+    }
+  }
+
+  // Phase 5: treatment information may only exist for conditions that already
+  // passed possible_conditions gating (the finding -> condition -> treatment
+  // provenance chain). If any link is missing, STOP - never display treatment
+  // information for an ungated condition.
+  if (o.treatment_information) {
+    const gatedIds = new Set((o.possible_conditions?.conditions ?? []).map((c) => c.id));
+    (o.treatment_information.items ?? []).forEach((item, i) => {
+      if (!gatedIds.has(item.condition_id)) {
+        errors.push({
+          path: `treatment_information.items[${i}]`,
+          message: "Treatment information exists for a condition that did not pass possible_conditions gating - provenance chain broken",
+        });
+      }
+      if (!item.label || !item.label.includes("clinician review required")) {
+        errors.push({ path: `treatment_information.items[${i}].label`, message: "Treatment information must carry the mandatory clinician-review label" });
+      }
+    });
+    if (o.model_registry?.model_status === "DEMO" && (o.treatment_information.items?.length ?? 0) > 0) {
+      errors.push({ path: "treatment_information.items", message: "DEMO models can never surface treatment information" });
+    }
+    const dosagePattern = /\b\d+(\.\d+)?\s?(mg|mcg|g|ml|units?)\b.{0,20}\b(once|twice|three times|daily|per day|bid|tid|qid|q\d+h)\b/i;
+    if (dosagePattern.test(JSON.stringify(o.treatment_information))) {
+      errors.push({ path: "treatment_information", message: "Output resembles a patient-specific dosing instruction - never permitted" });
     }
   }
 

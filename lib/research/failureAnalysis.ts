@@ -11,7 +11,8 @@ import { BinaryCase } from "./metrics";
 
 export interface FailureCase {
   case_id: string;
-  failure_type: "false_negative" | "false_positive";
+  /** Unused by analysis logic (derived internally from y_true/y_pred); optional so callers never mislabel a true-positive/true-negative case. */
+  failure_type?: "false_negative" | "false_positive";
   y_true: 0 | 1;
   y_pred: 0 | 1;
   score?: number;

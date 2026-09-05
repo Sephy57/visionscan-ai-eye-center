@@ -21,9 +21,80 @@ interface ModelData {
   model_store_status: { path: string; populated: boolean; note: string };
 }
 
+interface HealthResult {
+  healthy: boolean;
+  checked_at: string;
+  steps: Array<{ step: string; passed: boolean; detail?: string }>;
+}
+
+interface CandidateDossier {
+  candidate_id: string;
+  model_name: string;
+  source: string;
+  license: string;
+  license_compatible_for_commercial_clinical_use: boolean | "UNKNOWN";
+  modality: string[];
+  intended_task: string;
+  evidence_quality: string;
+  unresolved_blockers: string[];
+  status: string;
+}
+
+function CandidateRow({ c }: { c: CandidateDossier }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="card" style={{ margin: 0 }}>
+      <div className="card-title">
+        <div>
+          <h3 style={{ marginBottom: 1 }}>{c.model_name}</h3>
+          <span className="tiny muted">{c.candidate_id} · {c.modality.join(", ")}</span>
+        </div>
+        <Badge tone="warn">{c.status}</Badge>
+      </div>
+      <dl className="kv" style={{ gridTemplateColumns: "150px 1fr" }}>
+        <dt>License</dt><dd className="tiny">{c.license}</dd>
+        <dt>Commercial/clinical use</dt>
+        <dd>
+          {c.license_compatible_for_commercial_clinical_use === true
+            ? <Badge tone="ok">compatible</Badge>
+            : c.license_compatible_for_commercial_clinical_use === false
+              ? <Badge tone="bad">incompatible</Badge>
+              : <Badge tone="warn">UNKNOWN</Badge>}
+        </dd>
+        <dt>Intended task</dt><dd className="tiny">{c.intended_task}</dd>
+        <dt>Evidence quality</dt><dd className="tiny">{c.evidence_quality.replaceAll("_", " ")}</dd>
+        <dt>Source</dt><dd className="tiny" style={{ wordBreak: "break-all" }}>{c.source}</dd>
+      </dl>
+      <button className="btn ghost sm" style={{ marginTop: 8 }} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        {open ? "Hide" : "View"} unresolved blockers ({c.unresolved_blockers.length})
+      </button>
+      {open && (
+        <ul className="tiny" style={{ marginTop: 8, paddingLeft: 18 }}>
+          {c.unresolved_blockers.map((b, i) => <li key={i}>{b}</li>)}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function ModelRow({ m }: { m: ModelData["models"][number] }) {
   const [open, setOpen] = useState(false);
+  const [health, setHealth] = useState<HealthResult | null>(null);
+  const [checkingHealth, setCheckingHealth] = useState(false);
   const statusTone = m.status === "DEMO" ? "demo" : m.status === "RESEARCH" ? "warn" : m.status === "RETIRED" ? "bad" : "info";
+
+  async function checkHealth() {
+    setCheckingHealth(true);
+    try {
+      const res = await fetch(`/api/models/${encodeURIComponent(m.model_id)}/health`);
+      setHealth(await res.json());
+    } catch {
+      setHealth(null);
+    } finally {
+      setCheckingHealth(false);
+    }
+  }
+
   return (
     <div className="card" style={{ margin: 0 }}>
       <div className="card-title">
@@ -46,19 +117,37 @@ function ModelRow({ m }: { m: ModelData["models"][number] }) {
         <dt>Integrity</dt><dd>{m.integrity.trusted ? <Badge tone="ok">verified</Badge> : <Badge tone="bad">rejected</Badge>}</dd>
         <dt>Metrics</dt><dd className="tiny">Not measured (no evaluation evidence)</dd>
       </dl>
-      <button className="btn ghost sm" style={{ marginTop: 10 }} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-        {open ? "Hide" : "View"} model card
-      </button>
+      <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+        <button className="btn ghost sm" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+          {open ? "Hide" : "View"} model card
+        </button>
+        <button className="btn secondary sm" onClick={checkHealth} disabled={checkingHealth}>
+          {checkingHealth ? "Checking…" : "Check health"}
+        </button>
+      </div>
       {open && <pre className="code-block" style={{ whiteSpace: "pre-wrap", marginTop: 10 }}>{m.model_card}</pre>}
+      {health && (
+        <div className="tiny" style={{ marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+          <Badge tone={health.healthy ? "ok" : "bad"}>{health.healthy ? "HEALTHY" : "UNHEALTHY"}</Badge>{" "}
+          <span className="muted">checked {new Date(health.checked_at).toLocaleTimeString()}</span>
+          <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+            {health.steps.map((s, i) => (
+              <li key={i}>{s.step}: {s.passed ? "ok" : `failed${s.detail ? ` — ${s.detail}` : ""}`}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function ModelsPage() {
   const [data, setData] = useState<ModelData | null>(null);
+  const [candidates, setCandidates] = useState<CandidateDossier[] | null>(null);
 
   useEffect(() => {
     fetch("/api/models").then((r) => r.json()).then(setData).catch(() => {});
+    fetch("/api/models/candidates").then((r) => (r.ok ? r.json() : null)).then((j) => setCandidates(j?.candidates ?? null)).catch(() => {});
   }, []);
 
   return (
@@ -89,6 +178,21 @@ export default function ModelsPage() {
       <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
         {(data?.models ?? []).map((m) => <ModelRow key={m.model_id} m={m} />)}
       </div>
+
+      {candidates && candidates.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <h2 style={{ fontSize: "1rem", marginBottom: 4 }}>Candidate models (research dossiers only)</h2>
+          <p className="tiny muted" style={{ marginTop: 0 }}>
+            Real-world models researched for a possible future S6+ installation. None are installed, registered, or
+            reachable by the analysis pipeline — <code>data\models\</code> remains empty and Gate A remains CLOSED.
+            Every entry lists unresolved blockers that must be cleared by a human before installation could even be
+            considered.
+          </p>
+          <div style={{ display: "grid", gap: 14 }}>
+            {candidates.map((c) => <CandidateRow key={c.candidate_id} c={c} />)}
+          </div>
+        </div>
+      )}
 
       <div className="card" style={{ marginTop: 18 }}>
         <div className="card-title"><h3>Status ladder &amp; evidence requirements</h3></div>

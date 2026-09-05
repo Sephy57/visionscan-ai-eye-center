@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui";
 import { Icon } from "@/components/icons";
+import { authFetch, csrfHeader } from "@/lib/auth/clientFetch";
 
 // Mirrors lib/clinical/symptoms.ts vocabulary (validated server-side).
 const GROUPS: Array<{ title: string; items: Array<[string, string]> }> = [
@@ -39,6 +40,7 @@ const GROUPS: Array<{ title: string; items: Array<[string, string]> }> = [
     items: [
       ["headache_with_visual_symptoms", "Headache + Visual"], ["recent_eye_trauma", "Eye Trauma"],
       ["trauma_with_vision_loss", "Trauma + Vision Loss"], ["recent_eye_procedure", "Recent Procedure"],
+      ["chemical_exposure", "Chemical Exposure"], ["severe_pain_with_nausea", "Severe Pain + Nausea"],
     ],
   },
 ];
@@ -46,6 +48,7 @@ const GROUPS: Array<{ title: string; items: Array<[string, string]> }> = [
 const RED_FLAG_TYPES = new Set([
   "sudden_vision_loss", "new_floaters", "flashes_with_field_loss", "curtain_shadow",
   "severe_eye_pain_with_visual_disturbance", "recent_eye_trauma", "trauma_with_vision_loss",
+  "chemical_exposure", "severe_pain_with_nausea",
 ]);
 
 const RED_FLAG_MESSAGES: Record<string, string> = {
@@ -82,7 +85,9 @@ async function sha256Hex(buf: ArrayBuffer): Promise<string> {
 
 export default function AnalyzePage() {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2>(1);
+  // Upload is the primary workflow. Symptom entry remains available as an
+  // optional correction/context step, but patients are never blocked on it.
+  const [step, setStep] = useState<1 | 2>(2);
   const [patientRef, setPatientRef] = useState("");
   const [drafts, setDrafts] = useState<SymptomDraft[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -101,9 +106,114 @@ export default function AnalyzePage() {
   const [drag, setDrag] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Optional clinical record attachment. It is extracted automatically after
+  // upload; the clinician review workspace preserves UNREVIEWED provenance.
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfStatus, setPdfStatus] = useState<"idle" | "uploading" | "uploaded" | "duplicate" | "rejected" | "error">("idle");
+  const [pdfMessage, setPdfMessage] = useState<string | null>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+
   const flagged = drafts.filter((d) => RED_FLAG_TYPES.has(d.type));
   const allLabels = GROUPS.flatMap((g) => g.items);
   const labelOf = (type: string) => allLabels.find(([t]) => t === type)?.[1] ?? type;
+
+  function pickPdf(f: File | null) {
+    setPdfFile(f);
+    setPdfStatus("idle");
+    setPdfMessage(null);
+    if (f) {
+      const isPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+      if (!isPdf) {
+        setPdfStatus("rejected");
+        setPdfMessage("Not a PDF file. Only PDF documents are accepted.");
+      } else if (f.size > 25 * 1024 * 1024) {
+        setPdfStatus("rejected");
+        setPdfMessage("PDF exceeds the 25 MB limit.");
+      }
+    }
+  }
+
+  async function uploadPdf(studyId: string): Promise<boolean> {
+    if (!pdfFile) return true;
+    setPdfStatus("uploading");
+    try {
+      const fd = new FormData();
+      fd.set("file", pdfFile);
+      const res = await authFetch(`/api/studies/${encodeURIComponent(studyId)}/documents`, { method: "POST", body: fd });
+      const j = await res.json().catch(() => ({} as Record<string, unknown>));
+      if (res.status === 201) {
+        const doc = j.document as { page_count?: number; document_id?: string } | undefined;
+        setPdfStatus("uploaded");
+        if (!doc?.document_id) {
+          setPdfStatus("error");
+          setPdfMessage("Document was stored, but no extraction target was returned. Review it from the clinician workspace.");
+          return true;
+        }
+
+        // The upload route queues S2 extraction server-side. Keep a fallback
+        // request for older deployments that accepted the document without
+        // returning a queue id. Extracted facts remain document-derived and
+        // unreviewed; this only removes the manual trigger.
+        let extractionJobId = String(j.extraction_job_id ?? "");
+        if (!extractionJobId) {
+          const extractRes = await authFetch(`/api/documents/${encodeURIComponent(doc.document_id)}/extract`, { method: "POST" });
+          const extractJson = await extractRes.json().catch(() => ({} as Record<string, unknown>));
+          if (!extractRes.ok && extractRes.status !== 409) {
+            setPdfStatus("error");
+            setPdfMessage("Document stored, but automatic extraction could not be started. A clinician can retry it from the workspace.");
+            return true;
+          }
+          extractionJobId = String(extractJson.job_id ?? "");
+        }
+        if (extractionJobId) {
+          const deadline = Date.now() + 120_000;
+          for (;;) {
+            if (Date.now() > deadline) {
+              setPdfStatus("error");
+              setPdfMessage("Document stored; extraction is still running. Review the extracted evidence when the job completes.");
+              return true;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 700));
+            const jr = await authFetch(`/api/jobs/${encodeURIComponent(extractionJobId)}`);
+            const job = await jr.json().catch(() => ({} as Record<string, unknown>));
+            if (!jr.ok) {
+              setPdfStatus("error");
+              setPdfMessage("Document stored; extraction status is unavailable. Review the workspace for retry options.");
+              return true;
+            }
+            if (job.status === "completed") break;
+            if (job.status === "failed" || job.status === "cancelled") {
+              setPdfStatus("error");
+              setPdfMessage("Document stored, but automatic extraction failed. No extracted facts were treated as verified.");
+              return true;
+            }
+          }
+        }
+        setPdfStatus("uploaded");
+        setPdfMessage(`Validated and extracted: ${doc.page_count ?? "?"} page(s). Candidate facts are stored with DOCUMENT_EXTRACTED / UNREVIEWED provenance.`);
+        return true;
+      }
+      if (res.status === 200 && j.duplicate) {
+        setPdfStatus("duplicate");
+        setPdfMessage("An identical document (same SHA-256) already exists for this study; no duplicate was created.");
+        return true;
+      }
+      const errCode = String(j.error ?? "REJECTED");
+      setPdfStatus("rejected");
+      setPdfMessage(
+        errCode === "TOO_LARGE" ? "PDF exceeds the server-side size limit." :
+        errCode === "TOO_MANY_PAGES" ? "PDF exceeds the maximum page count." :
+        errCode === "UNSAFE_DOCUMENT" ? "Rejected: dangerous embedded content (JavaScript, launch actions, or embedded files) was detected." :
+        errCode === "INVALID_DOCUMENT" ? "Rejected: the file is not a valid, unencrypted PDF." :
+        "Document was rejected during validation."
+      );
+      return false;
+    } catch {
+      setPdfStatus("error");
+      setPdfMessage("PDF upload failed (network error).");
+      return false;
+    }
+  }
 
   function toggleSymptom(type: string) {
     setDrafts((d) => d.some((x) => x.type === type) ? d.filter((x) => x.type !== type) : [...d, newDraft(type)]);
@@ -157,13 +267,14 @@ export default function AnalyzePage() {
           } catch { reject(new Error("Unexpected server response")); }
         };
         xhr.onerror = () => reject(new Error("Network error during upload"));
+        xhr.open("POST", "/api/upload");
+        for (const [k, v] of Object.entries(csrfHeader())) xhr.setRequestHeader(k, v);
+        xhr.send(fd);
       });
-      xhr.open("POST", "/api/upload");
-      xhr.send(fd);
 
       if (drafts.length > 0) {
         setState("validating");
-        const symRes = await fetch(`/api/studies/${encodeURIComponent(studyId)}/symptoms`, {
+        const symRes = await authFetch(`/api/studies/${encodeURIComponent(studyId)}/symptoms`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ symptoms: drafts.map((d) => ({ ...d, free_text: d.free_text || null })) }),
@@ -174,7 +285,21 @@ export default function AnalyzePage() {
         }
       }
 
+      // S1: attach the optional PDF test result to the created study. A
+      // rejected document does NOT block the image analysis, but the user
+      // sees the rejection and can retry or continue without it.
+      let pdfFailed = false;
+      if (pdfFile) {
+        setState("validating");
+        pdfFailed = !(await uploadPdf(studyId));
+      }
+
       setProgress(100);
+      if (pdfFailed) {
+        setError(`Image uploaded, but the PDF document was rejected: ${pdfMessage}`);
+        setState("idle");
+        return;
+      }
       router.push(`/processing?study=${encodeURIComponent(studyId)}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -210,10 +335,10 @@ export default function AnalyzePage() {
 
       {step === 1 && (
         <div>
-          <h1>Patient Context</h1>
+          <h1>Optional Patient Context</h1>
           <p className="muted small" style={{ marginTop: 0 }}>
-            Capture symptoms before reviewing the scan. Symptoms provide <strong>context only</strong> — they never
-            create imaging findings and never produce diagnoses. Optional.
+            Add or correct structured symptoms if you already have them. This step is optional: uploaded records are
+            analyzed automatically and their symptoms are extracted for clinician review.
           </p>
 
           {flagged.length > 0 && (
@@ -327,15 +452,25 @@ export default function AnalyzePage() {
 
           <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
             <button className="btn" onClick={() => setStep(2)}>Continue to Scan Upload →</button>
-            <button className="btn ghost" onClick={() => { setDrafts([]); setStep(2); }}>Skip symptoms</button>
+            <button className="btn ghost" onClick={() => { setDrafts([]); setStep(2); }}>Skip optional context</button>
           </div>
         </div>
       )}
 
       {step === 2 && (
         <div>
-          <h1>Scan Upload</h1>
-          <p className="muted small" style={{ marginTop: 0 }}>Upload an ophthalmic image.</p>
+          <h1>Upload records and scan</h1>
+          <p className="muted small" style={{ marginTop: 0 }}>Upload an ophthalmic image and, optionally, a clinical record. Record extraction starts automatically after upload.</p>
+
+          <div className="card" style={{ marginBottom: 14, padding: "12px 16px" }}>
+            <div className="field" style={{ margin: 0 }}>
+              <label htmlFor="patientRefPrimary">Patient / study identifier (optional — use a pseudonymous code, never real names)</label>
+              <input id="patientRefPrimary" value={patientRef} onChange={(e) => setPatientRef(e.target.value)} placeholder="e.g. VS-2026-0001" maxLength={64} />
+            </div>
+            <p className="tiny muted" style={{ margin: "8px 0 0" }}>
+              <button className="btn ghost sm" type="button" onClick={() => setStep(1)}>Add optional symptom context</button>
+            </p>
+          </div>
 
           {drafts.length > 0 && (
             <div className="card" style={{ marginBottom: 14, padding: "12px 16px" }}>
@@ -405,6 +540,43 @@ export default function AnalyzePage() {
             accept=".jpg,.jpeg,.png,.webp,.dcm,image/jpeg,image/png,image/webp"
             onChange={(e) => pick(e.target.files?.[0] ?? null)}
           />
+
+          {/* S1: optional PDF test-result attachment (ingestion + security validation only). */}
+          <div className="card" style={{ marginTop: 14 }}>
+            <div className="card-title">
+              <h3 style={{ fontSize: "0.88rem" }}>PDF test result (optional)</h3>
+              {pdfFile && <button className="btn ghost sm" onClick={() => pickPdf(null)} disabled={state !== "idle"}>Remove</button>}
+            </div>
+            {!pdfFile ? (
+              <>
+                <button className="btn secondary sm" type="button" onClick={() => pdfInputRef.current?.click()} disabled={state !== "idle"}>
+                  <Icon name="upload" size={14} /> Upload PDF
+                </button>
+                <p className="tiny muted" style={{ margin: "8px 0 0" }}>
+                  Attach an ophthalmic report or test result (PDF, max 25 MB). It is validated, stored immutably,
+                  and analyzed automatically. Extracted facts remain unreviewed until a clinician verifies them.
+                </p>
+              </>
+            ) : (
+              <div className="kv" style={{ gridTemplateColumns: "110px 1fr" }}>
+                <dt>Filename</dt><dd className="small" style={{ wordBreak: "break-all" }}>{pdfFile.name}</dd>
+                <dt>Size</dt><dd className="small">{(pdfFile.size / 1024).toFixed(0)} KB</dd>
+                <dt>Status</dt>
+                <dd className="small">
+                  <span className={`badge ${pdfStatus === "uploaded" ? "ok" : pdfStatus === "duplicate" ? "info" : pdfStatus === "idle" || pdfStatus === "uploading" ? "neutral" : "bad"}`}>
+                    {pdfStatus === "idle" ? "Pending upload" : pdfStatus === "uploading" ? "Uploading…" : pdfStatus.toUpperCase()}
+                  </span>
+                </dd>
+                {pdfMessage && <dt>Detail</dt>}
+                {pdfMessage && <dd className="tiny muted">{pdfMessage}</dd>}
+              </div>
+            )}
+            <input
+              ref={pdfInputRef} type="file" hidden
+              accept=".pdf,application/pdf"
+              onChange={(e) => pickPdf(e.target.files?.[0] ?? null)}
+            />
+          </div>
 
           {file && (
             <div className="card" style={{ marginTop: 14 }}>

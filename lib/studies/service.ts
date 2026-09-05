@@ -6,8 +6,12 @@ import { AnalysisResult } from "../analysis/schema";
 import { generateReport, ClinicalReport } from "../reports/generator";
 import { runSafetyChecks } from "../clinical/safety";
 import { audit, appendAnalysisAudit } from "../audit";
+import { deleteDocument } from "../documents/service";
+import { listAllDocumentRecords } from "../documents/repository";
+import { deleteTestResultsForDocument } from "../documents/extraction/testResultService";
 import { pickDemoScenario } from "../analysis/findings";
 import { PatientSymptom, validateSymptoms, SYMPTOM_MAP } from "../clinical/symptoms";
+import { ensurePatient, createEncounter } from "../patients/service";
 
 export interface StudyRecord {
   study_id: string;
@@ -20,6 +24,10 @@ export interface StudyRecord {
   status: "uploaded" | "analyzed" | "rejected";
   original_sha256: string;
   patient_ref?: string;               // user-supplied study identifier (e.g. "VS-2026-0001"); optional, never invented
+  /** Optional patient/tenant scope metadata. Legacy synthetic fixtures omit it. */
+  tenant_id?: string | null;
+  owner_user_id?: string | null;
+  owner_username?: string | null;
   symptoms?: PatientSymptom[];        // structured patient-reported context (NOT findings)
   symptoms_updated_at?: string;
 }
@@ -36,7 +44,10 @@ export async function createStudy(
   mime: string,
   bytes: Buffer,
   declared: DeviceMetadata,
-  patientRef?: string
+  patientRef?: string,
+  createdBy = "system",
+  autoLinkPatient = false,
+  scope?: { tenant_id?: string | null; owner_user_id?: string | null; owner_username?: string | null }
 ): Promise<StudyRecord> {
   const studyId = newId("study");
   const adapter = new SecureFileImportAdapter(declared);
@@ -60,8 +71,29 @@ export async function createStudy(
     status: "uploaded",
     original_sha256: file.sha256,
     patient_ref: patientRef?.trim() ? patientRef.trim().slice(0, 64) : undefined,
+    tenant_id: scope?.tenant_id ?? null,
+    owner_user_id: scope?.owner_user_id ?? null,
+    owner_username: scope?.owner_username ?? null,
   };
   await dbPut("studies", studyId, record);
+  // A supplied pseudonymous patient reference is enough to provision the
+  // local workspace link. This creates no inferred identity: the reference
+  // remains exactly the user-provided value, and the encounter contains no
+  // clinical facts until a record is uploaded/reviewed.
+  if (autoLinkPatient && record.patient_ref) {
+    try {
+      const patient = await ensurePatient(record.patient_ref, createdBy, "PROVISIONED_FROM_STUDY", null, scope);
+      await createEncounter({
+        patient_id: patient.patient_id,
+        linked_study_ids: [studyId],
+        created_by: createdBy,
+      });
+    } catch {
+      // The study remains usable if workspace provisioning is temporarily
+      // unavailable; the failed link is visible in audit and can be retried.
+      await audit({ actor: createdBy, action: "study.patient_link_failed", studyId, outcome: "error", detail: "patient workspace provisioning failed" });
+    }
+  }
   await audit({ actor: "user", action: "upload", studyId, outcome: "ok", detail: `modality=${study.modality} eye=${study.eye}` });
   return record;
 }
@@ -173,10 +205,79 @@ export async function listStudies(): Promise<StudyRecord[]> {
   return all.sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
+/**
+ * Final phase - dashboard status buckets. Every value here is derived
+ * directly from real, already-computed, server-stored state (triage
+ * priority, diagnosis gate, review status, study status) - nothing is
+ * invented or inferred client-side. Precedence (most urgent first):
+ * an urgent/emergency triage priority always wins, regardless of
+ * whether an AI finding exists (never let "no AI finding" hide urgency).
+ */
+export type DashboardStatus =
+  | "URGENT_REVIEW"                    // emergency_evaluation / urgent_eye_care_review triage priority
+  | "CLINICAL_CORRELATION_REQUIRED"    // analysis exists, diagnosis gate closed, findings/possible-conditions present
+  | "REVIEW_REQUIRED"                  // analyzed, not yet reviewed by a clinician/reviewer
+  | "REVIEWED"                         // analyzed and clinician-reviewed/finalized
+  | "IMAGE_NOT_SUITABLE"               // study.status === "rejected" (quality gate failure)
+  | "UPLOADED";                        // no analysis run yet
+
+export interface DashboardStudyRow {
+  study_id: string; created_at: string; modality: string; eye: string; status: string;
+  patient_ref?: string | null;
+  tenant_id?: string | null; owner_user_id?: string | null; owner_username?: string | null;
+  dashboard_status: DashboardStatus;
+  triage_priority?: string;
+}
+
+export async function listStudiesWithStatus(): Promise<DashboardStudyRow[]> {
+  const studies = await listStudies();
+  const rows: DashboardStudyRow[] = [];
+  for (const s of studies) {
+    let dashboard_status: DashboardStatus = "UPLOADED";
+    let triage_priority: string | undefined;
+    if (s.status === "rejected") {
+      dashboard_status = "IMAGE_NOT_SUITABLE";
+    } else if (s.status === "analyzed") {
+      const analysisRecord = await dbGet<AnalysisRecord>("analyses", `anl_${s.study_id}`);
+      const report = await dbGet<ClinicalReport>("reports", `rep_${s.study_id}`);
+      triage_priority = analysisRecord?.result.recommendation.priority;
+      const urgent = triage_priority === "emergency_evaluation" || triage_priority === "urgent_eye_care_review";
+      const gate = analysisRecord?.result.diagnosis_gate;
+      const hasClinicalContent =
+        (analysisRecord?.result.findings.length ?? 0) > 0 ||
+        (analysisRecord?.result.possible_conditions?.conditions.length ?? 0) > 0;
+      if (urgent) {
+        dashboard_status = "URGENT_REVIEW";
+      } else if (report?.review.status === "clinician_reviewed" || report?.review.status === "clinician_finalized") {
+        dashboard_status = "REVIEWED";
+      } else if (gate && !gate.allowed && hasClinicalContent) {
+        dashboard_status = "CLINICAL_CORRELATION_REQUIRED";
+      } else {
+        dashboard_status = "REVIEW_REQUIRED";
+      }
+    }
+    rows.push({
+      study_id: s.study_id, created_at: s.created_at, modality: s.modality, eye: s.eye,
+      status: s.status, patient_ref: s.patient_ref ?? null,
+      tenant_id: s.tenant_id ?? null, owner_user_id: s.owner_user_id ?? null, owner_username: s.owner_username ?? null,
+      dashboard_status, triage_priority,
+    });
+  }
+  return rows;
+}
+
 export async function deleteStudy(studyId: string): Promise<boolean> {
   const record = await dbGet<StudyRecord>("studies", studyId);
   if (!record) return false;
   await deleteStudyFiles(studyId);
+  // Cascade: documents bound to this study are deleted with it (S1).
+  const docs = await listAllDocumentRecords();
+  for (const doc of docs) {
+    if (doc.study_id === studyId && doc.status !== "DELETED") {
+      await deleteTestResultsForDocument(doc.document_id);
+      await deleteDocument(doc.document_id, "study_deletion_cascade");
+    }
+  }
   await dbDelete("studies", studyId);
   await dbDelete("analyses", `anl_${studyId}`);
   await dbDelete("reports", `rep_${studyId}`);
@@ -184,12 +285,51 @@ export async function deleteStudy(studyId: string): Promise<boolean> {
   return true;
 }
 
+export type TreatmentReviewAction =
+  | "treatment_accept" | "treatment_modify" | "treatment_reject"
+  | "treatment_add_medication" | "treatment_remove_medication"
+  | "treatment_mark_contraindication" | "treatment_mark_restriction" | "treatment_note";
+
 export interface ReviewInput {
   reviewer_id: string;
-  action: "accept" | "reject" | "correct" | "note" | "finalize" | "confirm" | "indeterminate" | "request_new_scan";
+  action: "accept" | "reject" | "correct" | "note" | "add_observation" | "finalize" | "confirm" | "indeterminate" | "request_new_scan" | TreatmentReviewAction;
   finding_id?: string;
   note?: string;
   correction?: Partial<{ severity: string; location: string; explanation: string; type: string }>;
+  observation?: { text: string; laterality?: "OD" | "OS" | "OU" | "UNKNOWN" };
+  /** Explicit clinician-authored fields for final assessment; never AI-generated. */
+  assessment?: { diagnosis?: string; impression?: string; plan?: string; follow_up?: string };
+  // Treatment-review-only fields.
+  condition_id?: string;
+  medication_id?: string;
+}
+
+/** Validate clinician-authored finding amendments before storing them. This
+ * is not a model-output validator (the AI finding is not changed); it simply
+ * prevents prototype/payload surprises and keeps the additive review record
+ * bounded and auditable. */
+function sanitizeFindingCorrection(
+  input: ReviewInput["correction"],
+): Partial<{ severity: string; location: string; explanation: string; type: string }> | null {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const out: Partial<{ severity: string; location: string; explanation: string; type: string }> = {};
+  const allowed = ["severity", "location", "explanation", "type"] as const;
+  for (const key of allowed) {
+    if (!(key in input)) continue;
+    const value = input[key];
+    if (typeof value !== "string" || value.trim().length === 0 || value.length > 2000) return null;
+    if (key === "severity" && !["none", "mild", "moderate", "severe", "indeterminate"].includes(value)) return null;
+    out[key] = value.trim();
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
+
+function sanitizeAssessment(input: ReviewInput["assessment"]): NonNullable<ClinicalReport["clinician_final_assessment"]> | null {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const clean = (v: unknown) => typeof v === "string" ? v.trim().slice(0, 4000) : "";
+  const out = { diagnosis: clean(input.diagnosis), impression: clean(input.impression), plan: clean(input.plan), follow_up: clean(input.follow_up) };
+  if (!Object.values(out).some(Boolean)) return null;
+  return { ...out, reviewer_id: "", at: "" };
 }
 
 export async function submitReview(studyId: string, input: ReviewInput): Promise<ClinicalReport | null> {
@@ -233,14 +373,26 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
     case "correct":
       if (input.finding_id && input.correction) {
         const f = report.findings.find((x) => x.id === input.finding_id);
-        if (f) {
-          // Clinician modifications are attributed to the clinician, never to a model.
-          Object.assign(f, input.correction);
-          f.model_id = "clinician_manual";
-          f.synthetic = false;
-        }
+        if (!f) throw new Error("Finding not found");
+        const correction = sanitizeFindingCorrection(input.correction);
+        if (!correction) throw new Error("Invalid finding correction");
+        // Keep the model-produced finding immutable. The clinician's amended
+        // fields are stored in a separate, additive record with the original
+        // snapshot and reviewer provenance; downstream consumers can choose
+        // which layer to display without losing the source output.
+        report.clinician_corrections = [
+          ...(report.clinician_corrections ?? []),
+          {
+            finding_id: f.id,
+            original: { type: f.type, location: f.location, severity: f.severity, explanation: f.explanation },
+            correction,
+            reviewer_id: input.reviewer_id,
+            note: input.note,
+            at: change.at,
+          },
+        ];
         ci.finding_decisions = [...(ci.finding_decisions ?? []).filter((d) => d.finding_id !== input.finding_id),
-          { finding_id: input.finding_id, decision: "correct", note: input.note, at: change.at }];
+          { finding_id: input.finding_id, decision: "correct", note: input.note, correction, at: change.at }];
       }
       report.review.status = "clinician_reviewed";
       report.review.reviewer_id = input.reviewer_id;
@@ -260,6 +412,58 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
       report.patient.notes = (report.patient.notes ? report.patient.notes + " | " : "") + `[${input.reviewer_id}] ${input.note ?? ""}`;
       ci.notes = (ci.notes ? ci.notes + " | " : "") + `[${input.reviewer_id}] ${input.note ?? ""}`;
       break;
+    case "add_observation": {
+      const text = typeof input.observation?.text === "string" && input.observation.text.trim().length > 0
+        ? input.observation.text.trim().slice(0, 2000)
+        : typeof input.note === "string" && input.note.trim().length > 0
+          ? input.note.trim().slice(0, 2000)
+          : "";
+      if (!text) throw new Error("Clinician observation text is required");
+      const laterality = input.observation?.laterality;
+      if (laterality !== undefined && !["OD", "OS", "OU", "UNKNOWN"].includes(laterality)) {
+        throw new Error("Invalid observation laterality");
+      }
+      report.clinician_observations = [
+        ...(report.clinician_observations ?? []),
+        { observation_id: newId("obs"), text, laterality, reviewer_id: input.reviewer_id, at: change.at },
+      ];
+      report.review.status = "clinician_reviewed";
+      report.review.reviewer_id = input.reviewer_id;
+      ci.overall = "amended";
+      break;
+    }
+    case "treatment_accept":
+    case "treatment_modify":
+    case "treatment_reject":
+    case "treatment_add_medication":
+    case "treatment_remove_medication":
+    case "treatment_mark_contraindication":
+    case "treatment_mark_restriction":
+    case "treatment_note": {
+      // The AI-generated report.treatment_information is NEVER mutated here.
+      // Clinician disposition is recorded as a separate, additive record.
+      if (!input.condition_id) throw new Error("condition_id is required for treatment review actions");
+      report.treatment_review = report.treatment_review ?? { reviewer_id: input.reviewer_id, decisions: [] };
+      const decision: "accept" | "modify" | "reject" =
+        input.action === "treatment_accept" ? "accept" :
+        input.action === "treatment_reject" ? "reject" : "modify";
+      report.treatment_review.decisions = [
+        ...report.treatment_review.decisions.filter((d) => d.condition_id !== input.condition_id || input.action === "treatment_note"),
+        {
+          condition_id: input.condition_id,
+          decision,
+          added_medication_ids: input.action === "treatment_add_medication" && input.medication_id ? [input.medication_id] : undefined,
+          removed_medication_ids: input.action === "treatment_remove_medication" && input.medication_id ? [input.medication_id] : undefined,
+          contraindication_note: input.action === "treatment_mark_contraindication" ? (input.note ?? "") : undefined,
+          patient_restriction_note: input.action === "treatment_mark_restriction" ? (input.note ?? "") : undefined,
+          clinical_note: input.action === "treatment_note" ? (input.note ?? "") : undefined,
+          at: change.at,
+        },
+      ];
+      report.review.status = "clinician_reviewed";
+      report.review.reviewer_id = input.reviewer_id;
+      break;
+    }
     case "finalize":
       report.review.status = "clinician_finalized";
       report.review.reviewer_id = input.reviewer_id;
@@ -273,6 +477,10 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
           : ci.overall === "confirmed_ai_findings" ? "Automated findings confirmed by clinician review."
           : "Report finalized after clinician review."
         }` + (input.note ? ` Note: ${input.note}` : "");
+      const assessment = sanitizeAssessment(input.assessment);
+      if (assessment) {
+        report.clinician_final_assessment = { ...assessment, reviewer_id: input.reviewer_id, at: change.at };
+      }
       break;
   }
 

@@ -61,6 +61,8 @@ export const SYMPTOM_VOCABULARY: SymptomTypeDef[] = [
   { type: "recent_eye_trauma", label: "Recent eye trauma", category: "other", red_flag: true, urgency: "urgent", related_finding_types: ["retinal_hemorrhage"] },
   { type: "trauma_with_vision_loss", label: "Recent eye trauma with vision loss", category: "other", red_flag: true, urgency: "emergency", related_finding_types: ["retinal_hemorrhage", "detachment_like_abnormality"] },
   { type: "recent_eye_procedure", label: "Recent eye procedure / surgery", category: "other", red_flag: false, urgency: "none", related_finding_types: [] },
+  { type: "chemical_exposure", label: "Chemical exposure to the eye", category: "other", red_flag: true, urgency: "emergency", related_finding_types: [] },
+  { type: "severe_pain_with_nausea", label: "Severe eye pain with nausea/vomiting", category: "discomfort", red_flag: true, urgency: "emergency", related_finding_types: [] },
 ];
 
 export const SYMPTOM_MAP: Record<string, SymptomTypeDef> = Object.fromEntries(

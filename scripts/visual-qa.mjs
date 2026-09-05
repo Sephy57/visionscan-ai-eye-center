@@ -1,6 +1,6 @@
 // Visual QA: verify exactly one sidebar, no duplicated mobile-nav in HTML, drawer closed by default.
 const routes = ["/", "/dashboard", "/analyze", "/history", "/compare", "/clinician", "/settings", "/devices", "/admin", "/report"];
-const BASE = "http://localhost:3000";
+const BASE = process.env.BASE_URL || "http://localhost:3000";
 
 (async () => {
   let allOk = true;
@@ -10,9 +10,12 @@ const BASE = "http://localhost:3000";
     const mobileNav = (html.match(/mobile-nav/g) || []).length;
     const drawerClosed = !(html.match(/drawer-overlay/g) || []).length;
     const banners = (html.match(/banner-strip/g) || []).length;
-    const navLinks = (html.match(/class="nav-link/g) || []).length; // expected: 11 sidebar links
+    // The patient workspace adds a first-class Patients destination to the
+    // existing navigation. Keep this explicit so a missing/duplicated link
+    // still fails loudly instead of allowing the UI contract to drift.
+    const navLinks = (html.match(/class="nav-link/g) || []).length; // expected: 12 sidebar links
     const mainContent = (html.match(/id="main-content"/g) || []).length;
-    const ok = sidebars === 1 && mobileNav === 0 && drawerClosed && banners === 1 && navLinks === 11 && mainContent === 1;
+    const ok = sidebars === 1 && mobileNav === 0 && drawerClosed && banners === 1 && navLinks === 12 && mainContent === 1;
     if (!ok) allOk = false;
     console.log(`${ok ? "[ok ]" : "[FAIL]"} ${route.padEnd(12)} sidebars=${sidebars} mobileNavInDOM=${mobileNav} drawerClosed=${drawerClosed} banners=${banners} navLinks=${navLinks} main=${mainContent}`);
   }

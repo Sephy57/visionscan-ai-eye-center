@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { evaluate, symptomStratifiedEvaluation, BinaryCase } from "@/lib/research/metrics";
 import { audit } from "@/lib/audit";
+import { requireRole } from "@/lib/auth/rbac";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +12,8 @@ export const dynamic = "force-dynamic";
  * -> full metric report (no "accuracy" headline), optional symptom-stratified analysis.
  */
 export async function POST(req: NextRequest) {
+  const denied = await requireRole(req, ["ADMIN", "RESEARCHER"]);
+  if (denied) return denied;
   try {
     const body = await req.json();
     const cases: BinaryCase[] = body?.cases;

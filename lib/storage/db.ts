@@ -13,6 +13,8 @@ import { DATABASE_ROOT, DATABASE_FILE, ensureDirs } from "../config";
 
 export type Collection =
   | "studies"
+  | "documents"
+  | "test_results"
   | "analyses"
   | "reports"
   | "reviews"
@@ -25,7 +27,16 @@ export type Collection =
   | "evidence"
   | "transitions"
   | "evaluation_runs"
-  | "jobs";
+  | "jobs"
+  | "model_registry_state"
+  | "sessions"
+  | "access_grants"
+  | "consent"
+  | "reset_tokens"
+  | "calibration_records"
+  | "patients"
+  | "encounters"
+  | "record_extractions";
 
 interface DbShape {
   meta: { version: number; createdAt: string; lastWrite: string };
@@ -36,6 +47,8 @@ const EMPTY: DbShape = {
   meta: { version: 1, createdAt: new Date().toISOString(), lastWrite: new Date().toISOString() },
   collections: {
     studies: {},
+    documents: {},
+    test_results: {},
     analyses: {},
     reports: {},
     reviews: {},
@@ -49,6 +62,15 @@ const EMPTY: DbShape = {
     transitions: {},
     evaluation_runs: {},
     jobs: {},
+    model_registry_state: {},
+    sessions: {},
+    access_grants: {},
+    consent: {},
+    reset_tokens: {},
+    calibration_records: {},
+    patients: {},
+    encounters: {},
+    record_extractions: {},
   },
 };
 

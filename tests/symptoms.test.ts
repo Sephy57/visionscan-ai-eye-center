@@ -270,7 +270,7 @@ describe("safety: symptom causation blocking", () => {
   it("blocks conditions displayed by DEMO models", () => {
     const res = makeResult({
       model_registry: { model_id: "demo", model_version: "1", model_status: "DEMO", display_label: "L", integrity_checks: [], device_compatibility: { compatible: false, note: "" }, model_input: "IMAGE_ONLY" },
-      possible_conditions: { conditions: [{ id: "retinal_detachment", label: "Retinal detachment", matched_findings: ["x"], note: "" }], note: "n" },
+      possible_conditions: { conditions: [{ id: "retinal_detachment", label: "Retinal detachment", matched_findings: ["x"], commonly_associated_symptoms: [], note: "" }], note: "n" },
     });
     const s = runSafetyChecks(res);
     expect(s.checks.find((c) => c.rule === "conditions_blocked_for_demo_models")!.passed).toBe(false);
@@ -307,7 +307,7 @@ describe("schema validation for symptom structures", () => {
   it("rejects conditions shown by a DEMO model at schema level", () => {
     const res = makeResult({
       model_registry: { model_id: "d", model_version: "1", model_status: "DEMO", display_label: "L", integrity_checks: [], device_compatibility: { compatible: false, note: "" }, model_input: "IMAGE_ONLY" },
-      possible_conditions: { conditions: [{ id: "x", label: "X", matched_findings: [], note: "" }], note: "n" },
+      possible_conditions: { conditions: [{ id: "x", label: "X", matched_findings: [], commonly_associated_symptoms: [], note: "" }], note: "n" },
     });
     expect(validateAnalysisResult(res).valid).toBe(false);
   });

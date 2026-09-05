@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import ScanViewer from "@/components/ScanViewer";
 import { Badge, ConfidenceIndicator, QualityPanel, EmptyState } from "@/components/ui";
 import { Icon } from "@/components/icons";
+import { authFetch } from "@/lib/auth/clientFetch";
 
 interface Finding {
   id: string; type: string; location: string; severity: string;
@@ -20,9 +21,24 @@ interface Bundle {
     model_registry?: { model_id: string; model_version: string; model_status: string; device_compatibility: { compatible: boolean; note: string } };
     patient_context?: { reported: boolean; symptoms: Array<{ type: string; label?: string; onset: string; duration: string; severity: string; laterality: string; progression: string; free_text?: string | null }>; red_flags: string[]; note: string };
     symptom_correlation?: { state: string; urgency: string; items: Array<{ symptom_type: string; symptom_label: string; state: string; matched_finding_types: string[]; note: string }>; notes: string[]; label: string };
+    treatment_information?: {
+      items: Array<{
+        condition_id: string; condition_label: string; available: boolean; reason: string;
+        approaches: Array<{ approach_label: string; purpose: string; evidence_reference: string; medications: Array<{ medication_id: string; generic_name: string; drug_class: string }> }>;
+        label: string;
+      }>;
+      dosage_notice: string; interaction_notice: string; note: string;
+    };
     provenance?: { analyzed_at: string };
   };
-  report?: { review: { status: string; reviewer_id?: string; finalized_at?: string }, clinician_interpretation?: { overall: string } | null };
+  report?: {
+    review: { status: string; reviewer_id?: string; finalized_at?: string };
+    clinician_interpretation?: { overall: string } | null;
+    clinician_corrections?: Array<{ finding_id: string; original: { type: string; location: string; severity: string; explanation: string }; correction: Record<string, string>; reviewer_id: string; note?: string; at: string }>;
+    clinician_observations?: Array<{ observation_id: string; text: string; laterality?: string; reviewer_id: string; at: string }>;
+    clinician_final_assessment?: { diagnosis?: string | null; impression?: string | null; plan?: string | null; follow_up?: string | null; reviewer_id: string; at: string } | null;
+    treatment_review?: { reviewer_id: string; decisions: Array<{ condition_id: string; decision: string; contraindication_note?: string; patient_restriction_note?: string; clinical_note?: string; at: string }> } | null;
+  };
 }
 
 const ACTIONS = [
@@ -36,8 +52,8 @@ function ClinicianInner() {
   const params = useSearchParams();
   const [studyId, setStudyId] = useState(params.get("study") ?? "");
   const [bundle, setBundle] = useState<Bundle | null>(null);
-  const [reviewer, setReviewer] = useState("");
   const [note, setNote] = useState("");
+  const [assessment, setAssessment] = useState({ diagnosis: "", impression: "", plan: "", follow_up: "" });
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [activeRegion, setActiveRegion] = useState<Finding["region"]>(null);
@@ -51,12 +67,17 @@ function ClinicianInner() {
   }
   useEffect(() => { if (studyId) load(studyId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function act(action: string, findingId?: string, correction?: Record<string, string>) {
-    if (action !== "note" && !reviewer.trim()) { setErr("Enter a reviewer ID first (pseudonymous — no signatures are fabricated)."); return; }
-    const res = await fetch(`/api/review/${encodeURIComponent(studyId)}`, {
+  async function act(action: string, findingId?: string, correction?: Record<string, string>, extra?: { condition_id?: string; medication_id?: string; note?: string }) {
+    // reviewer_id is always taken server-side from the authenticated
+    // session (see app/api/review/[id]/route.ts) - it is not sent from here.
+    const res = await authFetch(`/api/review/${encodeURIComponent(studyId)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reviewer_id: reviewer || "anonymous-reviewer", action, finding_id: findingId, correction, note }),
+      body: JSON.stringify({
+        action, finding_id: findingId, correction,
+        note: extra?.note ?? note, condition_id: extra?.condition_id, medication_id: extra?.medication_id,
+        assessment: action === "finalize" ? assessment : undefined,
+      }),
     });
     const json = await res.json();
     if (!res.ok) setErr(json.error ?? "Review action failed");
@@ -87,16 +108,13 @@ function ClinicianInner() {
       </p>
 
       <div className="card" style={{ marginTop: 14 }}>
-        <div className="grid grid-2">
-          <div className="field" style={{ margin: 0 }}>
-            <label htmlFor="studyId">Study ID</label>
-            <input id="studyId" value={studyId} onChange={(e) => setStudyId(e.target.value)} placeholder="study_..." />
-          </div>
-          <div className="field" style={{ margin: 0 }}>
-            <label htmlFor="reviewer">Reviewer ID (pseudonymous; no signatures are fabricated)</label>
-            <input id="reviewer" value={reviewer} onChange={(e) => setReviewer(e.target.value)} placeholder="e.g. dr-ops-001" />
-          </div>
+        <div className="field" style={{ margin: 0 }}>
+          <label htmlFor="studyId">Study ID</label>
+          <input id="studyId" value={studyId} onChange={(e) => setStudyId(e.target.value)} placeholder="study_..." />
         </div>
+        <p className="tiny muted" style={{ margin: "6px 0 0" }}>
+          Review actions are attributed to your signed-in account - there is no separate reviewer-id field to fill in.
+        </p>
         <button className="btn" style={{ marginTop: 14 }} onClick={() => load(studyId)} disabled={!studyId}>Open study</button>
       </div>
 
@@ -216,8 +234,29 @@ function ClinicianInner() {
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button className="btn secondary sm" onClick={() => act("note")}>Add note</button>
+                <button className="btn secondary sm" onClick={() => act("add_observation")}>Add clinician observation</button>
                 <button className="btn" onClick={() => act("finalize")}>Finalize Report</button>
               </div>
+              <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 12, margin: "10px 0" }}>
+                <legend className="small">Final clinician assessment (optional until finalize)</legend>
+                <p className="tiny muted">These are your authored fields, stored separately from AI output. Do not copy an AI diagnosis without clinical review.</p>
+                {(["diagnosis", "impression", "plan", "follow_up"] as const).map((field) => (
+                  <div className="field" key={field}>
+                    <label htmlFor={`assessment-${field}`}>{field.replace("_", " ")}</label>
+                    <textarea id={`assessment-${field}`} rows={field === "impression" || field === "plan" ? 3 : 2} value={assessment[field]} onChange={(e) => setAssessment({ ...assessment, [field]: e.target.value })} maxLength={4000} placeholder={`Clinician ${field.replace("_", " ")}…`} />
+                  </div>
+                ))}
+              </fieldset>
+              {bundle.report?.clinician_observations && bundle.report.clinician_observations.length > 0 && (
+                <div style={{ marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+                  <strong className="tiny">Clinician observations (additive)</strong>
+                  {bundle.report.clinician_observations.map((o) => (
+                    <p key={o.observation_id} className="tiny muted" style={{ margin: "4px 0" }}>
+                      {o.text}{o.laterality ? ` · ${o.laterality}` : ""} · {o.reviewer_id}
+                    </p>
+                  ))}
+                </div>
+              )}
               {bundle.report?.review.finalized_at && (
                 <p className="tiny muted" style={{ marginTop: 10, marginBottom: 0 }}>
                   Finalized {new Date(bundle.report.review.finalized_at).toLocaleString()} by {bundle.report.review.reviewer_id}.
@@ -226,6 +265,72 @@ function ClinicianInner() {
             </div>
           </div>
           </div>
+
+          {bundle.analysis.treatment_information && bundle.analysis.treatment_information.items.length > 0 && (
+            <div className="card" style={{ marginTop: 16 }}>
+              <div className="card-title">
+                <h3 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)" }}>
+                  TREATMENT INFORMATION — Clinician review required
+                </h3>
+              </div>
+              {bundle.analysis.treatment_information.items.map((item) => (
+                <div key={item.condition_id} style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 12 }}>
+                  <strong className="small">{item.condition_label}</strong>
+                  {item.available ? (
+                    item.approaches.map((ap, i) => (
+                      <p key={i} className="small muted" style={{ margin: "4px 0" }}>
+                        <strong>{ap.approach_label}</strong> — {ap.purpose}
+                        {ap.medications.length > 0 && ` (${ap.medications.map((m) => m.generic_name).join(", ")})`}
+                      </p>
+                    ))
+                  ) : (
+                    <p className="small muted" style={{ margin: "4px 0" }}>{item.reason}</p>
+                  )}
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                    <button className="btn sm" onClick={() => act("treatment_accept", undefined, undefined, { condition_id: item.condition_id })}>Accept</button>
+                    <button className="btn danger sm" onClick={() => act("treatment_reject", undefined, undefined, { condition_id: item.condition_id })}>Reject</button>
+                    <button className="btn secondary sm" onClick={() => {
+                      const medId = prompt("Medication ID to add (must exist in the medication registry):");
+                      if (medId) act("treatment_add_medication", undefined, undefined, { condition_id: item.condition_id, medication_id: medId });
+                    }}>Add medication</button>
+                    <button className="btn secondary sm" onClick={() => {
+                      const medId = prompt("Medication ID to remove:");
+                      if (medId) act("treatment_remove_medication", undefined, undefined, { condition_id: item.condition_id, medication_id: medId });
+                    }}>Remove medication</button>
+                    <button className="btn secondary sm" onClick={() => {
+                      const n = prompt("Contraindication note:");
+                      if (n) act("treatment_mark_contraindication", undefined, undefined, { condition_id: item.condition_id, note: n });
+                    }}>Mark contraindication</button>
+                    <button className="btn secondary sm" onClick={() => {
+                      const n = prompt("Patient-specific restriction note:");
+                      if (n) act("treatment_mark_restriction", undefined, undefined, { condition_id: item.condition_id, note: n });
+                    }}>Mark restriction</button>
+                    <button className="btn ghost sm" onClick={() => {
+                      const n = prompt("Clinical note:");
+                      if (n) act("treatment_note", undefined, undefined, { condition_id: item.condition_id, note: n });
+                    }}>Add note</button>
+                  </div>
+                </div>
+              ))}
+              <p className="tiny muted" style={{ marginTop: 10, marginBottom: 0 }}>
+                {bundle.analysis.treatment_information.dosage_notice} {bundle.analysis.treatment_information.interaction_notice} The
+                AI-generated treatment information above is never modified by these actions — clinician decisions are
+                recorded as a separate, additive record.
+              </p>
+              {bundle.report?.treatment_review && bundle.report.treatment_review.decisions.length > 0 && (
+                <div style={{ marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+                  {bundle.report.treatment_review.decisions.map((d, i) => (
+                    <p key={i} className="tiny muted" style={{ margin: "2px 0" }}>
+                      {d.condition_id}: {d.decision}
+                      {d.contraindication_note ? ` — contraindication: ${d.contraindication_note}` : ""}
+                      {d.patient_restriction_note ? ` — restriction: ${d.patient_restriction_note}` : ""}
+                      {d.clinical_note ? ` — ${d.clinical_note}` : ""}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           </>
       )}
 
