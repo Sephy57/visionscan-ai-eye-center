@@ -12,7 +12,9 @@ function envPath(name: string, fallback: string): string {
   return v && v.trim().length > 0 ? v.trim() : fallback;
 }
 
-const DEFAULT_PROJECT_ROOT = "D:\\AI EYE ANALYSIS PLATFORM";
+// Keep the deployment default on D: for Windows, but use the checked-out
+// workspace on Unix CI/dev hosts so paths never become invalid Windows literals.
+const DEFAULT_PROJECT_ROOT = process.platform === "win32" ? "D:\\AI EYE ANALYSIS PLATFORM" : process.cwd();
 const DEFAULT_DATA_ROOT = path.join(DEFAULT_PROJECT_ROOT, "data");
 
 export const PROJECT_ROOT = envPath("PROJECT_ROOT", DEFAULT_PROJECT_ROOT);
@@ -63,7 +65,9 @@ export function tmpPath(name: string): string {
 
 /** Paths must never escape the configured roots. */
 export function safeJoin(root: string, ...segments: string[]): string {
-  const resolved = path.resolve(path.join(root, ...segments));
+  // Treat both slash styles as separators so Windows-form input is safe on Unix.
+  const portableSegments = segments.map((segment) => segment.replaceAll("\\\\", path.sep));
+  const resolved = path.resolve(path.join(root, ...portableSegments));
   const normalizedRoot = path.resolve(root);
   if (!resolved.startsWith(normalizedRoot + path.sep) && resolved !== normalizedRoot) {
     throw new Error("Path traversal rejected");

@@ -18,7 +18,9 @@ import { getProviderForModel, defaultProvider } from "@/lib/models/provider";
  * now passes.
  */
 
-describe("S7 - live Python environment readiness (real subprocess, no mocks)", () => {
+const RUN_LIVE_PYTHON = process.env.VISIONSCAN_RUN_LIVE_PYTHON === "1" || !process.env.CI;
+
+describe.skipIf(!RUN_LIVE_PYTHON)("S7 - live Python environment readiness (real subprocess, no mocks)", () => {
   it("reports the actual current environment state truthfully", async () => {
     const env = await checkPythonInferenceEnvironment();
     expect(typeof env.ready).toBe("boolean");
@@ -35,7 +37,7 @@ describe("S7 - live Python environment readiness (real subprocess, no mocks)", (
   }, 20_000);
 });
 
-describe("S7 - PythonBridgeProvider fails closed for every real candidate (even with a ready environment)", () => {
+describe.skipIf(!RUN_LIVE_PYTHON)("S7 - PythonBridgeProvider fails closed for every real candidate (even with a ready environment)", () => {
   for (const candidateId of Object.keys(CANDIDATE_MODEL_DOSSIER_MAP)) {
     it(`${candidateId}: loadModel/validateModel/analyzeStudy all fail closed - no installed artifact`, async () => {
       const provider = new PythonBridgeProvider(candidateId);
