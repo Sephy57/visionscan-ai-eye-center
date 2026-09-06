@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { hashPassword, verifyPassword, checkPasswordPolicy, randomToken } from "@/lib/auth/passwords";
 import { createUser, authenticate, getUserByUsername, setUserDisabled } from "@/lib/auth/users";
 import { createSession, validateSession, destroySession, csrfMatches, SESSION_COOKIE, CSRF_COOKIE } from "@/lib/auth/sessions";
 import { requireRole } from "@/lib/auth/rbac";
-import { checkRateLimit, _resetRateLimitForTests } from "@/lib/auth/rateLimit";
+import { checkRateLimit, inspectRateLimit, recordRateLimitFailure, _resetRateLimitForTests } from "@/lib/auth/rateLimit";
 import { audit, verifyAuditChain } from "@/lib/audit";
 import { safeJoin } from "@/lib/config";
 import { getConsentStatus, recordConsent, withdrawConsent } from "@/lib/consent/consent";
@@ -12,6 +12,7 @@ import { requestStatusTransition } from "@/lib/models/transitions";
 import { ensureRegistryHydrated, _resetHydrationForTests } from "@/lib/models/registryPersistence";
 import { MODELS, ModelRecord } from "@/lib/models/registry";
 import { dbDelete } from "@/lib/storage/db";
+import { cookieTransportPolicy } from "@/lib/auth/cookieSecurity";
 
 function reqWithCookies(url: string, cookies: Record<string, string>, method = "GET", extraHeaders: Record<string, string> = {}): NextRequest {
   const cookieHeader = Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join("; ");
@@ -119,6 +120,15 @@ describe("sessions", () => {
     expect(check.session?.username).toBe("sessiontest");
   });
 
+  it("does not rewrite a newly-created session for every validation", async () => {
+    const { token } = await createSession({ user_id: "u_touch", username: "sessiontouch", role: "ADMIN" });
+    const first = await validateSession(token);
+    const firstSeen = first.session?.last_seen_at;
+    const second = await validateSession(token);
+    expect(second.valid).toBe(true);
+    expect(second.session?.last_seen_at).toBe(firstSeen);
+  });
+
   it("rejects a forged/unknown session token", async () => {
     const check = await validateSession("0".repeat(64));
     expect(check.valid).toBe(false);
@@ -144,6 +154,44 @@ describe("sessions", () => {
     expect(csrfMatches("abc123", undefined)).toBe(false);
     expect(csrfMatches("abc123", "")).toBe(false);
   });
+});
+
+describe("session cookie transport", () => {
+  // Node's ambient type marks NODE_ENV readonly even though tests need to
+  // exercise the production transport policy deterministically.
+  const testEnv = process.env as Record<string, string | undefined>;
+  const originalNodeEnv = testEnv.NODE_ENV;
+  const originalLocalOverride = testEnv.ALLOW_INSECURE_LOCAL_AUTH;
+  const originalTrustProxy = testEnv.TRUST_PROXY;
+
+  beforeEach(() => {
+    testEnv.NODE_ENV = "production";
+    delete testEnv.ALLOW_INSECURE_LOCAL_AUTH;
+    delete testEnv.TRUST_PROXY;
+  });
+
+  afterEach(() => {
+    if (originalNodeEnv === undefined) delete testEnv.NODE_ENV; else testEnv.NODE_ENV = originalNodeEnv;
+    if (originalLocalOverride === undefined) delete testEnv.ALLOW_INSECURE_LOCAL_AUTH; else testEnv.ALLOW_INSECURE_LOCAL_AUTH = originalLocalOverride;
+    if (originalTrustProxy === undefined) delete testEnv.TRUST_PROXY; else testEnv.TRUST_PROXY = originalTrustProxy;
+  });
+
+  it("requires HTTPS by default in production instead of issuing an unusable Secure cookie over HTTP", () => {
+    expect(cookieTransportPolicy({ protocol: "http:", hostname: "192.168.100.78" })).toEqual({ secure: true, allowed: false, reason: "https_required" });
+  });
+
+  it("permits only an explicit private-network local-demo override", () => {
+    testEnv.ALLOW_INSECURE_LOCAL_AUTH = "true";
+    expect(cookieTransportPolicy({ protocol: "http:", hostname: "192.168.100.78" })).toEqual({ secure: false, allowed: true });
+    expect(cookieTransportPolicy({ protocol: "http:", hostname: "example.com" })).toEqual({ secure: true, allowed: false, reason: "https_required" });
+  });
+
+  it("honors forwarded HTTPS only after an explicit trusted-proxy configuration", () => {
+    expect(cookieTransportPolicy({ protocol: "http:", hostname: "app.example", forwardedProto: "https" }).allowed).toBe(false);
+    testEnv.TRUST_PROXY = "true";
+    expect(cookieTransportPolicy({ protocol: "http:", hostname: "app.example", forwardedProto: "https" })).toEqual({ secure: true, allowed: true });
+  });
+
 });
 
 describe("RBAC - requireRole (the real server-side enforcement point)", () => {
@@ -203,6 +251,13 @@ describe("rate limiting", () => {
   it("different keys have independent buckets", () => {
     expect(checkRateLimit("a", 1, 60_000).allowed).toBe(true);
     expect(checkRateLimit("b", 1, 60_000).allowed).toBe(true);
+  });
+
+  it("inspecting successful-login eligibility does not consume failure budget", () => {
+    const key = "successful-login-check";
+    for (let i = 0; i < 20; i++) expect(inspectRateLimit(key, 5, 60_000).allowed).toBe(true);
+    for (let i = 0; i < 5; i++) expect(recordRateLimitFailure(key, 5, 60_000).allowed).toBe(true);
+    expect(inspectRateLimit(key, 5, 60_000).allowed).toBe(false);
   });
 });
 

@@ -512,7 +512,7 @@ export default function AnalyzePage() {
           ) : (
             <div className="card">
               <div className="card-title"><h3>Scan preview</h3><button className="btn ghost sm" onClick={() => pick(null)}>Remove</button></div>
-              <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 16, alignItems: "start" }}>
+              <div className="stack-mobile" style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 16, alignItems: "start" }}>
                 {previewUrl
                   ? // eslint-disable-next-line @next/next/no-img-element
                   <img src={previewUrl} alt="Selected scan preview" style={{ width: 150, height: 112, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)", background: "#000" }} />

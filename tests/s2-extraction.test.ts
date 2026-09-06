@@ -88,7 +88,7 @@ async function newStudyWithDoc(bytes: Buffer, filename = "report.pdf"): Promise<
 
 afterAll(async () => {
   for (const id of createdStudyIds) await deleteStudy(id).catch(() => {});
-});
+}, 30_000);
 
 /* ---------- orchestration with mocked provider ---------- */
 

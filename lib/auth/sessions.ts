@@ -17,6 +17,13 @@ export const SESSION_COOKIE = "vsa_session";
 export const CSRF_COOKIE = "vsa_csrf";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;       // 12 hours sliding
 const SESSION_ABSOLUTE_MAX_MS = 7 * 24 * 60 * 60 * 1000; // 7 days absolute cap
+// JSON persistence rewrites the local development database atomically.  A
+// successful API request can validate a session several times (for example,
+// an RBAC check followed by a scoped-resource check), so persisting an
+// identical sliding-window update for every validation creates needless I/O.
+// Refresh at most once per interval; the effective idle timeout remains 12h
+// and the seven-day absolute cap still applies on every validation.
+const SESSION_TOUCH_INTERVAL_MS = 5 * 60 * 1000;
 
 export interface SessionRecord {
   session_hash: string;      // sha256(raw token) - never the raw token
@@ -65,7 +72,12 @@ export interface SessionCheck {
   reason?: "no_token" | "not_found" | "expired" | "absolute_expired";
 }
 
-/** Validate a raw session token from the cookie. Sliding-renews expires_at on success, capped by the absolute max. */
+/**
+ * Validate a raw session token from the cookie. Sliding-renews expires_at on
+ * success, capped by the absolute max. To avoid rewriting the whole local
+ * JSON store on every ordinary request, the renewal is persisted at most once
+ * every five minutes. Expiry and absolute-expiry are always checked first.
+ */
 export async function validateSession(token: string | undefined | null): Promise<SessionCheck> {
   if (!token) return { valid: false, reason: "no_token" };
   const rec = await dbGet<SessionRecord>("sessions", hashToken(token));
@@ -79,9 +91,12 @@ export async function validateSession(token: string | undefined | null): Promise
     await dbDelete("sessions", rec.session_hash);
     return { valid: false, reason: "expired" };
   }
-  rec.expires_at = new Date(Math.min(now + SESSION_TTL_MS, new Date(rec.absolute_expires_at).getTime())).toISOString();
-  rec.last_seen_at = new Date(now).toISOString();
-  await dbPut("sessions", rec.session_hash, rec);
+  const lastSeen = new Date(rec.last_seen_at).getTime();
+  if (!Number.isFinite(lastSeen) || now - lastSeen >= SESSION_TOUCH_INTERVAL_MS) {
+    rec.expires_at = new Date(Math.min(now + SESSION_TTL_MS, new Date(rec.absolute_expires_at).getTime())).toISOString();
+    rec.last_seen_at = new Date(now).toISOString();
+    await dbPut("sessions", rec.session_hash, rec);
+  }
   return { valid: true, session: rec };
 }
 

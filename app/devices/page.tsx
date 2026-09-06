@@ -62,7 +62,7 @@ export default function DevicesPage() {
       </div>
 
       <h2>Supported input types</h2>
-      <div className="card">
+      <div className="card table-wrap">
         <table className="table">
           <thead><tr><th>Input</th><th>Support level</th></tr></thead>
           <tbody>

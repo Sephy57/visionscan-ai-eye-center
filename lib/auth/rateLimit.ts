@@ -21,6 +21,24 @@ export interface RateLimitResult {
   retryAfterMs: number;
 }
 
+/**
+ * Read a bucket without consuming an attempt. Authentication uses this before
+ * password verification so successful sign-ins do not exhaust the abuse
+ * budget merely because a user refreshes, retries, or changes devices.
+ */
+export function inspectRateLimit(key: string, limit: number, windowMs: number): RateLimitResult {
+  const now = Date.now();
+  const b = buckets.get(key);
+  if (!b || now - b.windowStart >= windowMs) return { allowed: true, remaining: limit, retryAfterMs: 0 };
+  if (b.count >= limit) return { allowed: false, remaining: 0, retryAfterMs: windowMs - (now - b.windowStart) };
+  return { allowed: true, remaining: limit - b.count, retryAfterMs: 0 };
+}
+
+/** Record a failed authentication attempt. Successful logins never call this. */
+export function recordRateLimitFailure(key: string, limit: number, windowMs: number): RateLimitResult {
+  return checkRateLimit(key, limit, windowMs);
+}
+
 export function checkRateLimit(key: string, limit: number, windowMs: number): RateLimitResult {
   const now = Date.now();
   const b = buckets.get(key);

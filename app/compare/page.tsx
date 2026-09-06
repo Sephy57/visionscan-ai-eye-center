@@ -117,23 +117,25 @@ function CompareInner() {
           </div>
           <div className="card" style={{ marginTop: 14 }}>
             <h3 style={{ marginTop: 0 }}>Detected finding types: previous → current</h3>
-            <table className="table">
-              <thead><tr><th>Finding type</th><th>Previous</th><th>Current</th><th>Change</th></tr></thead>
-              <tbody>
-                {outcome.finding_type_changes.map((c) => (
-                  <tr key={c.type}>
-                    <td>{c.type.replaceAll("_", " ")}</td>
-                    <td>{c.previous}</td>
-                    <td>{c.current}</td>
-                    <td>
-                      {c.direction === "increased" ? <Badge tone="warn">increased</Badge> :
-                       c.direction === "decreased" ? <Badge tone="info">decreased</Badge> :
-                       <Badge tone="neutral">unchanged</Badge>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="table-wrap">
+              <table className="table">
+                <thead><tr><th>Finding type</th><th>Previous</th><th>Current</th><th>Change</th></tr></thead>
+                <tbody>
+                  {outcome.finding_type_changes.map((c) => (
+                    <tr key={c.type}>
+                      <td>{c.type.replaceAll("_", " ")}</td>
+                      <td>{c.previous}</td>
+                      <td>{c.current}</td>
+                      <td>
+                        {c.direction === "increased" ? <Badge tone="warn">increased</Badge> :
+                         c.direction === "decreased" ? <Badge tone="info">decreased</Badge> :
+                         <Badge tone="neutral">unchanged</Badge>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             <p className="tiny muted" style={{ marginBottom: 0 }}>
               A change in detected findings is not a statement about disease progression. Quantitative comparison:{" "}
               {outcome.quantitative_comparison}

@@ -71,18 +71,20 @@ export default function SettingsPage() {
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Capability status</h3>
         <p className="small muted" style={{ marginTop: 0 }}>Explicit, honest capability levels for every subsystem.</p>
-        <table className="table">
-          <thead><tr><th>Capability</th><th>Status</th><th>Note</th></tr></thead>
-          <tbody>
-            {CAPABILITIES.map(([cap, status, note]) => (
-              <tr key={cap}>
-                <td className="small">{cap}</td>
-                <td><Badge tone={status === "IMPLEMENTED" ? "ok" : status === "DEMO" ? "demo" : status === "RESEARCH" ? "info" : status === "NOT VALIDATED" ? "warn" : "neutral"}>{status}</Badge></td>
-                <td className="tiny muted">{note}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="table-wrap">
+          <table className="table">
+            <thead><tr><th>Capability</th><th>Status</th><th>Note</th></tr></thead>
+            <tbody>
+              {CAPABILITIES.map(([cap, status, note]) => (
+                <tr key={cap}>
+                  <td className="small">{cap}</td>
+                  <td><Badge tone={status === "IMPLEMENTED" ? "ok" : status === "DEMO" ? "demo" : status === "RESEARCH" ? "info" : status === "NOT VALIDATED" ? "warn" : "neutral"}>{status}</Badge></td>
+                  <td className="tiny muted">{note}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="card">

@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "smoke": "node scripts/smoke.mjs",
     "visual-qa": "node scripts/visual-qa.mjs",
+    "browser:responsive": "node scripts/browser-responsive-qa.mjs",
     "setup": "node scripts/setup-dirs.mjs",
     "audit:fs": "node scripts/audit-filesystem.mjs",
     "seed:admin": "node scripts/seed-admin.mjs",

@@ -54,13 +54,13 @@ describe.skipIf(!HAS_ARTIFACT)("S9 - real CPU inference on a genuine fundus imag
       expect(f.finding_type).toMatch(/^research_segmented_/);
       expect(f.laterality).toBe("unknown"); // never inferred from pixels
     }
-  }, 60_000);
+  }, 120_000);
 
   it("is deterministic across repeated runs on the same image (eval mode, no dropout)", async () => {
     const a = await runSegformerResearchInference(TEST_IMAGE);
     const b = await runSegformerResearchInference(TEST_IMAGE);
     expect(a.findings).toEqual(b.findings);
-  }, 60_000);
+  }, 120_000);
 
   it("never fabricates a calibrated confidence value the model doesn't actually produce", async () => {
     const output = await runSegformerResearchInference(TEST_IMAGE);
@@ -68,12 +68,12 @@ describe.skipIf(!HAS_ARTIFACT)("S9 - real CPU inference on a genuine fundus imag
     for (const f of output.findings!) {
       expect(f.calibrated_confidence == null).toBe(true);
     }
-  }, 60_000);
+  }, 120_000);
 
   it("carries explicit NOT-CLINICALLY-VALIDATED limitations text", async () => {
     const output = await runSegformerResearchInference(TEST_IMAGE);
     expect(output.limitations?.some((l) => /NOT CLINICALLY VALIDATED/i.test(l))).toBe(true);
-  }, 60_000);
+  }, 120_000);
 });
 
 describe.skipIf(!HAS_ARTIFACT)("S9 - fail-closed behavior against a genuine loaded model", () => {

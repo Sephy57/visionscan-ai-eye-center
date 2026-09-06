@@ -214,6 +214,14 @@ code { font-family: var(--mono); font-size: 0.82em; background: var(--surface-3)
 @media (max-width: 1060px) { .grid-4 { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 720px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
 
+/* Explicit escape hatches for the few route-specific grids that use inline
+   column templates. These prevent a clinical viewer or preview from becoming
+   unusably narrow on a phone without changing the desktop workstation. */
+@media (max-width: 720px) {
+  .stack-mobile { grid-template-columns: 1fr !important; }
+  .landing-split { grid-template-columns: 1fr !important; }
+}
+
 .stat-card { display: flex; flex-direction: column; gap: 3px; }
 .stat-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); }
 .stat-value { font-size: 1.02rem; font-weight: 700; }
