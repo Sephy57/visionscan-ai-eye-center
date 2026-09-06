@@ -1,7 +1,18 @@
 # Model Governance — Candidate Review Process
 
+## 2026-09-07 lesion-candidate addendum
+
+The ClementP four-class lesion checkpoint has now been acquired under an
+immutable revision and independently loaded in an isolated offline probe with
+444/444 strict state-dict compatibility. This is a **candidate evidence
+record**, not an approval: its SafeTensors remains under gitignored
+`scratch/models/`, it is absent from `MODELS`, and the live pipeline cannot
+call it. See `docs/FUNDUS_LESION_MODEL_INTEGRATION.md` for the hash, package
+versions, preprocessing caveat, legal/data provenance blockers, and exact
+promotion gate.
+
 > **STATUS: ALL GATES CLOSED.** No candidate model has been approved for
-> installation. `lib/models/candidateDossiers.ts` holds three researched,
+> installation. `lib/models/candidateDossiers.ts` holds four researched,
 > due-diligence dossiers — nothing more. None of them is registered in
 > `MODELS` (`lib/models/registry.ts`), none has a `data/models/` package,
 > and none has been reviewed by a human decision-maker for license,
@@ -11,7 +22,7 @@
 ## The dossier format and where dossiers live
 
 `lib/models/candidateDossiers.ts` defines `CandidateModelDossier` and
-exports `CANDIDATE_MODEL_DOSSIERS` (currently 3 entries) plus a lookup map.
+exports `CANDIDATE_MODEL_DOSSIERS` (currently 4 entries) plus a lookup map.
 Every field the type requires:
 
 | Field | Purpose |
@@ -38,7 +49,7 @@ physically separate from the live model registry — a different file, a
 different type, imported by nothing in the live analysis path. Populating
 this file is explicitly **not** the same as clearing a model for use.
 
-## The three example candidates and their license findings
+## The four example candidates and their license findings
 
 License review is the first gate, because a license blocker makes every
 other review moot:
@@ -66,6 +77,12 @@ other review moot:
   Kaggle/APTOS competition terms themselves restrict commercial use and
   redistribution of the dataset — and, by extension, of weights trained
   directly on it.
+- **ClementP fundus lesion segmentation**
+  (`clementp-fundus-lesions-unet-seresnext50`) — the artifact is tagged MIT,
+  but the publisher reports DDR, FGADR, IDRiD, MESSIDOR, and RETLES in
+  training. Underlying data-use rights, patient-level independence, and
+  validation evidence remain unresolved; it is recorded as a candidate only
+  in `docs/FUNDUS_LESION_MODEL_INTEGRATION.md`.
 
 ## Required approvals before any candidate could move toward installation
 
@@ -103,14 +120,14 @@ required human review:
    checksum-before-load, and no-runtime-network-fetch requirements any
    real loader must satisfy regardless of which candidate is involved.
 4. **Clinical / regulatory review.** Confirm the candidate's own
-   `clinical_claims` (none of the three claim to be validated diagnostic
+   `clinical_claims` (none of the four claim to be validated diagnostic
    devices — all present as research/screening tools), and separately
    determine what regulatory status this platform would need to claim for
    its intended use once installed (`ModelManifest.regulatory_status` and
    `ModelRecord.regulatory_status` both exist as required fields precisely
    so this can never be left unrecorded). This review only makes sense
    after the validation requirements in `docs/MODEL_VALIDATION.md` have a
-   credible plan to be met — none of the three candidates currently has
+   credible plan to be met — none of the four candidates currently has
    one; see that document's worked examples for each dossier's specific
    `unresolved_blockers`.
 
@@ -126,7 +143,7 @@ inspection of the current codebase:
   function in this codebase inserts a `CandidateModelDossier` into `MODELS`
   — `candidateDossiers.ts` and `registry.ts` are not connected by any
   import in either direction beyond documentation comments.
-- Inserting any of the three candidates into `MODELS` was deliberately
+- Inserting any of the four candidates into `MODELS` was deliberately
   **not done this session** — the dossier file and the provider reference
   implementation (`CandidateOnlyProvider`, `lib/models/candidateProvider.ts`)
   were built specifically to demonstrate the pattern *without* performing
@@ -160,7 +177,7 @@ inspection of the current codebase:
    model selection into `pipeline.ts`) — currently none of it done.
 3. A credible plan to meet `docs/MODEL_VALIDATION.md`'s evidence
    requirements before any status advances past `DEMO`/`RESEARCH` —
-   currently none of the three candidates has one; see that document for
+   currently none of the four candidates has one; see that document for
    each dossier's specific gaps.
 
 Gates B–F cannot open before Gate A does, by construction — there is no
@@ -186,7 +203,7 @@ real model registered for a status transition to apply to.
 - `docs/MODEL_INTEGRATION.md` — the technical architecture and installation
   steps this document assumes.
 - `docs/MODEL_VALIDATION.md` — the evidence bar for lifecycle advancement,
-  with the same three dossiers used as worked "not ready" examples.
+  with the same four dossiers used as worked "not ready" examples.
 - `docs/MODEL_REGISTRY.md` / `docs/MODEL_REGISTRY_PERSISTENCE.md` — the
   live registry these candidates are deliberately excluded from.
 - `docs/DATA_GOVERNANCE.md` — patient data handling constraints relevant to

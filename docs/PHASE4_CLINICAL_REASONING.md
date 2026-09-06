@@ -1,5 +1,15 @@
 # Phase 4 — Clinical Evidence Synthesis + Differential/Etiology Reasoning
 
+## Fundus lesion evidence boundary (2026-09-07)
+
+The lesion candidate is an image-observation source only. Even if a future
+validated research worker emits a hemorrhage-, exudate-, cotton-wool-spot-, or
+microaneurysm-like region, this layer may contribute evidence to a possible
+association but cannot establish diabetic retinopathy, AMD, vascular occlusion,
+tumor, or any other diagnosis. Source-document diagnoses remain separate, and
+the diagnosis gate remains closed unless its independent validation and
+intended-use requirements are met.
+
 > **Phase 4 provides structured clinical evidence synthesis and hypothesis
 > generation. It does not establish autonomous diagnosis or treatment.**
 

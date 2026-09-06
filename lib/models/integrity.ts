@@ -17,9 +17,24 @@ export interface IntegrityResult {
   model: ModelRecord | null;
 }
 
+const MAX_MODEL_ARTIFACT_BYTES = 2 * 1024 * 1024 * 1024;
+
+function pathWithin(parent: string, candidate: string): boolean {
+  const relative = path.relative(path.resolve(parent), path.resolve(candidate));
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
 function sha256File(p: string): string {
-  const buf = fs.readFileSync(p);
-  return createHash("sha256").update(buf).digest("hex");
+  const stat = fs.statSync(p);
+  if (!stat.isFile() || stat.size > MAX_MODEL_ARTIFACT_BYTES) throw new Error("artifact is not a regular file within the size limit");
+  const hash = createHash("sha256");
+  const fd = fs.openSync(p, "r");
+  const chunk = Buffer.allocUnsafe(1024 * 1024);
+  try {
+    let read = 0;
+    do { read = fs.readSync(fd, chunk, 0, chunk.length, null); if (read > 0) hash.update(chunk.subarray(0, read)); } while (read > 0);
+  } finally { fs.closeSync(fd); }
+  return hash.digest("hex");
 }
 
 /**
@@ -52,7 +67,7 @@ export function verifyModelIntegrity(modelId: string): IntegrityResult {
   }
 
   const abs = path.resolve(MODEL_ROOT, model.file_path);
-  if (!abs.startsWith(path.resolve(MODEL_ROOT))) {
+  if (!pathWithin(MODEL_ROOT, abs)) {
     push("artifact_path", false, "Artifact path escapes MODEL_ROOT.");
     return { trusted: false, model, checks };
   }
@@ -62,7 +77,11 @@ export function verifyModelIntegrity(modelId: string): IntegrityResult {
   }
   push("artifact_exists", true, "Model file located on disk.");
 
-  const actual = sha256File(abs);
+  let actual: string;
+  try { actual = sha256File(abs); } catch (err) {
+    push("checksum", false, `Artifact hash failed: ${String(err instanceof Error ? err.message : err).slice(0, 180)}`);
+    return { trusted: false, model, checks };
+  }
   push("checksum", actual === model.sha256, actual === model.sha256 ? "SHA-256 matches registry." : `SHA-256 MISMATCH (registry ${model.sha256?.slice(0, 12)}…, disk ${actual.slice(0, 12)}…). Model rejected.`);
 
   return { trusted: gate.allowed && checks.every((c) => c.passed), model, checks };

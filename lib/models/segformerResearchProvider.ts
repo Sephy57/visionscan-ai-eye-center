@@ -32,7 +32,11 @@ import { validateRawModelOutput } from "./outputContract";
 export const SEGFORMER_MODEL_DIR = path.join(PROJECT_ROOT, "scratch", "models", "segformer-optic-disc-cup-refuge");
 const INFER_SCRIPT = path.join(PROJECT_ROOT, "scripts", "inference", "segformer_infer.py");
 const VENV_PYTHON = path.join(PROJECT_ROOT, ".venv-ophthalmic", process.platform === "win32" ? "Scripts" : "bin", process.platform === "win32" ? "python.exe" : "python3");
-const INFERENCE_TIMEOUT_MS = 60_000;
+// Research-only CPU inference can be scheduled alongside other worker-heavy
+// tests/processes on a constrained host. Keep a hard upper bound, but allow
+// enough time for model import + load under contention; this provider is not
+// on the live request path.
+const INFERENCE_TIMEOUT_MS = 120_000;
 
 export class ArtifactNotFoundError extends Error {
   constructor() {

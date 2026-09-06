@@ -18,6 +18,31 @@ import { ModelRecord, getModel } from "./registry";
 import { audit } from "../audit";
 
 export const MANIFEST_VERSION = "1.0.0";
+/** Refuse unexpectedly large model files before hashing them. */
+export const MAX_MODEL_ARTIFACT_BYTES = 2 * 1024 * 1024 * 1024;
+
+function pathWithin(parent: string, candidate: string): boolean {
+  const relative = path.relative(path.resolve(parent), path.resolve(candidate));
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function hashFileBounded(filePath: string): { sha256: string; bytes: number } {
+  const stat = fs.statSync(filePath);
+  if (!stat.isFile()) throw new Error("artifact is not a regular file");
+  if (stat.size > MAX_MODEL_ARTIFACT_BYTES) throw new Error(`artifact exceeds ${MAX_MODEL_ARTIFACT_BYTES} byte safety limit`);
+  const hash = createHash("sha256");
+  const fd = fs.openSync(filePath, "r");
+  const chunk = Buffer.allocUnsafe(1024 * 1024);
+  let bytes = 0;
+  try {
+    let read = 0;
+    do {
+      read = fs.readSync(fd, chunk, 0, chunk.length, null);
+      if (read > 0) { hash.update(chunk.subarray(0, read)); bytes += read; }
+    } while (read > 0);
+  } finally { fs.closeSync(fd); }
+  return { sha256: hash.digest("hex"), bytes };
+}
 
 export interface ModelManifest {
   manifest_version: string;                 // "1.0.0"
@@ -27,7 +52,9 @@ export interface ModelManifest {
   artifact: {
     file: string;                           // relative to the package dir
     sha256: string;                         // checksum of the artifact file
-    format: "onnx" | "pytorch" | "tensorflow" | "tflite" | "remote_api";
+    // SafeTensors is explicit rather than being hidden under generic
+    // "pytorch": callers can reject pickle-backed checkpoints by policy.
+    format: "onnx" | "safetensors" | "pytorch" | "tensorflow" | "tflite" | "remote_api";
   };
   input: {
     modalities: string[];
@@ -105,7 +132,7 @@ export function loadModelPackage(modelId: string): PackageLoadResult {
   }
 
   const pkgDir = path.resolve(MODEL_ROOT, modelId);
-  if (!pkgDir.startsWith(path.resolve(MODEL_ROOT))) {
+  if (!pathWithin(MODEL_ROOT, pkgDir)) {
     return { ok: false, reasons: ["Package path escapes MODEL_ROOT"] };
   }
   const manifestPath = path.join(pkgDir, "manifest.json");
@@ -127,15 +154,15 @@ export function loadModelPackage(modelId: string): PackageLoadResult {
 
   // Artifact integrity
   const artifactPath = path.resolve(pkgDir, manifest.artifact.file);
-  if (!artifactPath.startsWith(pkgDir)) {
+  if (!pathWithin(pkgDir, artifactPath)) {
     reasons.push("artifact.file escapes the package directory");
   } else if (!fs.existsSync(artifactPath)) {
     reasons.push(`Artifact file not found: ${manifest.artifact.file}`);
   } else {
-    const computed = createHash("sha256").update(fs.readFileSync(artifactPath)).digest("hex");
-    if (computed !== manifest.artifact.sha256) {
-      reasons.push(`ARTIFACT CHECKSUM MISMATCH: manifest ${manifest.artifact.sha256.slice(0, 12)}… vs disk ${computed.slice(0, 12)}…. Model will not be executed.`);
-    }
+    try {
+      const computed = hashFileBounded(artifactPath).sha256;
+      if (computed !== manifest.artifact.sha256) reasons.push(`ARTIFACT CHECKSUM MISMATCH: manifest ${manifest.artifact.sha256.slice(0, 12)}… vs disk ${computed.slice(0, 12)}…. Model will not be executed.`);
+    } catch (err) { reasons.push(`ARTIFACT HASH FAILED: ${String(err instanceof Error ? err.message : err).slice(0, 180)}`); }
   }
 
   if (reasons.length > 0) {

@@ -1,5 +1,14 @@
 # Final Platform Audit
 
+## Fundus lesion candidate review (2026-09-07)
+
+The ClementP SafeTensors artifact has a verified hash and a strict offline
+architecture/state-dict reproduction, but remains `CANDIDATE_ONLY / DISABLED`.
+No clinical or independent validation evidence, legally cleared external cohort,
+threshold protocol, calibration, or supplied failure-image fixture is present.
+The live pipeline therefore exposes the explicit model-unavailable/OOD states
+and does not call this artifact.
+
 ## Executive Summary
 
 This finalization phase closed the two safety-relevant gaps still open

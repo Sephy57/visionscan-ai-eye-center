@@ -29,6 +29,7 @@ tmp/
 # Caches
 .cache/
 .eslintcache
+**/__pycache__/
 
 # Build output
 .next/

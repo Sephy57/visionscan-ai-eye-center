@@ -82,7 +82,7 @@ export interface ModelRecord {
   model_name: string;
   version: string;
   sha256: string | null;              // checksum of the model artifact; null => nothing on disk
-  format: "onnx" | "pytorch" | "tensorflow" | "tflite" | "remote_api" | "heuristic" | "placeholder" | null;
+  format: "onnx" | "safetensors" | "pytorch" | "tensorflow" | "tflite" | "remote_api" | "heuristic" | "placeholder" | null;
   file_path: string | null;           // relative to MODEL_ROOT
   modalities: Modality[];             // explicit modality support - empty => cannot run
   supported_anatomy: string[];

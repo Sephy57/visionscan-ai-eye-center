@@ -2,6 +2,8 @@
 
 Status as of 2026-09-07: **no model is cleared for clinical production or diagnosis**. VisionScan now records a dedicated pre-diagnosis `fundus_abnormality` state. An unavailable, unsuitable, OOD, or target-negative model result can never be presented as a globally normal fundus.
 
+The companion [fundus lesion integration record](FUNDUS_LESION_MODEL_INTEGRATION.md) contains the exact architecture/state-dict proof and offline CPU probe. That proof does **not** promote the candidate: it remains `CANDIDATE_ONLY / DISABLED` pending legal provenance, independent patient-level validation, frozen preprocessing/thresholds, and false-negative review.
+
 ## Candidate selected for controlled research acquisition
 
 | Field | Record |
@@ -15,10 +17,10 @@ Status as of 2026-09-07: **no model is cleared for clinical production or diagno
 | Training-domain statement | DDR, FGADR, IDRiD, MESSIDOR, RETLES; exact patient partition and device/population coverage remain unverified |
 | Model-card metrics | Self-reported PR-AUC: IDRiD CWS .670, exudates .786, hemorrhage .674, microaneurysm .398; FGADR CWS .445, exudates .695, hemorrhage .651, microaneurysm .290 |
 | Calibration | None supplied; raw scores must never be shown as diagnostic probabilities |
-| CPU | Not accepted until an isolated worker benchmark (p50/p95/max) passes; the source dependency graph presently cannot be reproduced from an approved package release (`torchseg` is not published on PyPI) |
+| CPU | Isolated offline probe reproduced strict 444/444 loading and finite 1024x1024 output; warmed four-thread timings 2.240–2.366 s. This is an engineering probe, not a validated deployment benchmark. |
 | Current status | `CANDIDATE_ONLY` / artifact acquired, **not enabled for app inference** |
 
-The artifact is deliberately not made executable merely because it uses SafeTensors. Its published reference path relies on an unavailable/unreviewed `torchseg` dependency and a direct Git dependency. Installing that chain would violate the project's reviewed-artifact rule. A reviewed, locally reproducible architecture and patient-separated validation set are prerequisites for enabling the provider.
+The artifact is deliberately not enabled merely because it uses SafeTensors. Its exact core architecture can be reproduced with a pinned PyPI TorchSeg 0.0.1a4 wheel and reviewed local modules, but the publisher's helper still includes unpinned dependencies and no independent validation or data-rights record. A legally cleared, patient-separated external validation set and frozen preprocessing/threshold protocol remain prerequisites for enabling the provider.
 
 ## Generic abnormality detection
 

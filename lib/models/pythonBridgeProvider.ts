@@ -57,7 +57,11 @@ export interface PythonEnvironmentCheckResult {
 }
 
 const CHECK_SCRIPT = path.join(PROJECT_ROOT, "scripts", "inference", "check_environment.py");
-const CHECK_TIMEOUT_MS = 15_000;
+// Importing the CPU PyTorch stack takes roughly 15 seconds on this Windows
+// host. Leave a small bounded margin for the same process competing with
+// research-only workers, while staying inside the existing 20-second S7 test
+// budget and never allowing an unbounded readiness probe.
+const CHECK_TIMEOUT_MS = 19_000;
 
 /**
  * S7 - the isolated, project-scoped virtual environment (never global/user
