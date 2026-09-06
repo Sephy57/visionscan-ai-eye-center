@@ -9,9 +9,11 @@
 
 The application built and ran locally. End-to-end smoke, structural visual QA,
 responsive browser QA, type checking, filesystem audit, and the complete Vitest
-suite passed after one research-provider timeout was widened from 60 seconds to
-120 seconds. The timeout change only affects an explicitly isolated,
-non-registered research subprocess; it is not on the live analysis path.
+suite passed after two bounded research-runtime margins were hardened: the
+SegFormer worker cap was widened from 60 to 120 seconds, and the PyTorch
+environment-readiness probe from 15 to 19 seconds. These changes affect only
+explicitly isolated, non-registered research subprocesses; neither is on the
+live analysis path.
 
 The ClementP fundus-lesion checkpoint was reproduced safely offline, but it is
 not clinically or independently validated. It remains exactly:
@@ -54,10 +56,11 @@ login request dependency.
   1024, 1280, and 1440 px.
 - `npx tsc --noEmit`: passed.
 - Complete `npm test`: **38 files passed; 774 tests passed; 2 skipped**.
-- The first full-suite attempt exposed a test-host contention artifact: a
-  real SegFormer subprocess reached its old 60-second cap while Vitest workers
-  were competing for CPU. The provider now keeps a hard 120-second cap; the
-  isolated S9 file passes under default parallel scheduling.
+- Early full-suite attempts exposed test-host contention artifacts: the real
+  SegFormer subprocess reached its old 60-second cap, and the PyTorch package
+  readiness probe reached its old 15-second cap while Vitest workers competed
+  for CPU. Both remain hard bounded (120 seconds and 19 seconds respectively),
+  and the final full suite passes under default parallel scheduling.
 
 Expected non-failing warnings included the existing Next.js middleware-to-proxy
 deprecation notice, PDF standard-font notices in tests, and PyTorch deprecation
