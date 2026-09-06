@@ -143,8 +143,20 @@ export function buildOverallResult(r: AnalysisResult): string {
   if (r.quality.acceptable === false) {
     return "IMAGE QUALITY INSUFFICIENT FOR RELIABLE AUTOMATED ANALYSIS";
   }
+  // A missing general detector is an availability limitation, never a
+  // negative screening result. This check intentionally precedes legacy demo
+  // findings so a synthetic scenario cannot make a real image appear covered.
+  if (r.fundus_abnormality?.state === "MODEL_UNAVAILABLE" || r.fundus_abnormality?.state === "MODEL_NOT_VALIDATED_FOR_IMAGE") {
+    return "GENERAL FUNDUS ABNORMALITY MODEL UNAVAILABLE — CLINICAL INTERPRETATION NOT AVAILABLE";
+  }
+  if (r.fundus_abnormality?.state === "OUT_OF_DISTRIBUTION") {
+    return "INPUT OUT OF DISTRIBUTION — AUTOMATED FUNDUS INTERPRETATION INCONCLUSIVE";
+  }
+  if (r.fundus_abnormality?.state === "SUSPICIOUS_ABNORMALITY" || r.fundus_abnormality?.state === "MULTIPLE_ABNORMALITIES") {
+    return "SUSPICIOUS FUNDUS ABNORMALITY DETECTED BY RESEARCH AI — OPHTHALMIC REVIEW REQUIRED";
+  }
   if (r.findings.length === 0) {
-    return "NO SIGNIFICANT ABNORMALITY DETECTED BY AUTOMATED SCREENING";
+    return "NO TARGET ABNORMALITY IDENTIFIED BY THE AVAILABLE MODEL — OTHER ABNORMALITIES MAY STILL BE PRESENT";
   }
   const result = "POTENTIAL ABNORMAL FINDING DETECTED";
   // S12 safety guard: this legacy pipeline never emits diagnostic ("this is
@@ -169,6 +181,9 @@ export function buildLimitations(r: AnalysisResult): string[] {
   ];
   if (r.quality.acceptable === false) {
     l.push("The quality gate failed; no clinical interpretation was attempted.");
+  }
+  if (r.fundus_abnormality?.state === "MODEL_UNAVAILABLE") {
+    l.push("No general fundus-abnormality detector was available for this image. The report does not claim a normal fundus.");
   }
   return l;
 }

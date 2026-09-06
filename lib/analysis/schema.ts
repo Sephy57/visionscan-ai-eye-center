@@ -92,6 +92,8 @@ export interface AnalysisResult {
     reasons: string[];
     message: string;
   };
+  /** Dedicated, pre-diagnosis fundus safety layer. It is never a global-normal claim. */
+  fundus_abnormality?: import("../models/fundusAbnormality").FundusAbnormalityResult;
   model_registry?: {
     model_id: string;
     model_version: string;
@@ -330,6 +332,22 @@ export function validateAnalysisResult(r: unknown): { valid: boolean; errors: Va
         errors.push({ path: `visualizations.localizations[${i}]`, message: "localization provenance (model/version/note) required" });
       }
     });
+  }
+
+  if (o.fundus_abnormality) {
+    const fa = o.fundus_abnormality;
+    const validStates = ["NO_TARGET_ABNORMALITY_DETECTED", "SUSPICIOUS_ABNORMALITY", "MULTIPLE_ABNORMALITIES", "IMAGE_NOT_SUITABLE", "OUT_OF_DISTRIBUTION", "MODEL_UNAVAILABLE", "MODEL_NOT_VALIDATED_FOR_IMAGE"];
+    need(validStates.includes(fa.state), "fundus_abnormality.state", "invalid state");
+    need(Array.isArray(fa.regions), "fundus_abnormality.regions", "must be array");
+    if (["MODEL_UNAVAILABLE", "IMAGE_NOT_SUITABLE", "OUT_OF_DISTRIBUTION", "MODEL_NOT_VALIDATED_FOR_IMAGE"].includes(fa.state) && fa.regions.length > 0) {
+      errors.push({ path: "fundus_abnormality.regions", message: "unavailable/blocked abnormality state cannot carry regions" });
+    }
+    for (const [i, region] of fa.regions.entries()) {
+      const c = region.localization?.coordinates;
+      if (!c || ![c.x, c.y, c.w, c.h].every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1) || c.x + c.w > 1 || c.y + c.h > 1) {
+        errors.push({ path: `fundus_abnormality.regions[${i}].localization`, message: "must contain finite, in-bounds normalized coordinates" });
+      }
+    }
   }
 
   (o.findings ?? []).forEach((f, i) => {

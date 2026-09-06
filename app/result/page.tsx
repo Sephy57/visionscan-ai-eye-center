@@ -29,6 +29,11 @@ interface Bundle {
     uncertainty: { overall: number; reasons: string[]; ensemble_agreement?: string };
     recommendation: { priority: string; action: string; rationale: string };
     ood?: { detected: boolean; reasons: string[]; message: string };
+    fundus_abnormality?: {
+      state: "NO_TARGET_ABNORMALITY_DETECTED" | "SUSPICIOUS_ABNORMALITY" | "MULTIPLE_ABNORMALITIES" | "IMAGE_NOT_SUITABLE" | "OUT_OF_DISTRIBUTION" | "MODEL_UNAVAILABLE" | "MODEL_NOT_VALIDATED_FOR_IMAGE";
+      regions: Array<{ id: string; finding_type: string; localization: { kind: "bounding_box"; coordinates: { x: number; y: number; w: number; h: number } }; source_model_id: string; source_model_version: string; note: string }>;
+      model_id: string | null; model_version: string | null; validation_state: string; limitations: string[];
+    };
     model_registry?: {
       model_id: string; model_version: string; model_status: string; display_label: string | null;
       integrity_checks: Array<{ check: string; passed: boolean; detail: string }>;
@@ -148,6 +153,9 @@ function ResultInner() {
   const a = data.analysis;
   const rejected = !a.quality.acceptable;
   const abnormal = a.findings.length > 0;
+  const fundus = a.fundus_abnormality;
+  const suspiciousFundus = fundus?.state === "SUSPICIOUS_ABNORMALITY" || fundus?.state === "MULTIPLE_ABNORMALITIES";
+  const fundusUnavailable = fundus?.state === "MODEL_UNAVAILABLE" || fundus?.state === "MODEL_NOT_VALIDATED_FOR_IMAGE";
   // S12: honest quality presentation - a "pass" status can still carry real
   // artifacts (see lib/analysis/qualityPresentation.ts's doc comment); never
   // shown as a bare "GOOD" when a real artifact was detected.
@@ -157,14 +165,18 @@ function ResultInner() {
   const redFlags = a.patient_context?.red_flags ?? [];
   const hasRedFlag = redFlags.length > 0;
 
-  const heroClass = rejected ? "reject" : abnormal || ood ? "abnormal" : "normal";
+  const heroClass = rejected ? "reject" : abnormal || suspiciousFundus || ood || fundusUnavailable ? "abnormal" : "normal";
   const headline = rejected
     ? "Automated interpretation inconclusive — image quality insufficient"
-    : abnormal
+    : suspiciousFundus
+      ? "Abnormal retinal region identified by research AI"
+      : fundusUnavailable
+        ? "General fundus abnormality model unavailable"
+      : abnormal
       ? "Potential abnormal finding detected"
       : ood
         ? "Automated interpretation inconclusive"
-        : "No significant abnormality detected by automated screening";
+        : "No target abnormality identified by the available model";
 
   const eyeLabel = (l?: string) => l === "OD" || l === "right" ? "RIGHT EYE" : l === "OS" || l === "left" ? "LEFT EYE" : l === "both" ? "BOTH EYES" : "EYE: UNKNOWN";
   const modalityLabel = (m?: string) => (m ? m.replaceAll("_", " ").toUpperCase() : "UNKNOWN MODALITY");
@@ -220,12 +232,24 @@ function ResultInner() {
         <p className="small" style={{ margin: 0, maxWidth: 640 }}>
           {rejected
             ? "Image quality is insufficient for reliable automated analysis. Please acquire another scan or have the image reviewed by an eye-care professional."
+            : suspiciousFundus
+              ? "A research model localized a suspicious retinal region. The type is not established unless listed below, and ophthalmic interpretation is required."
+              : fundusUnavailable
+                ? "Clinical interpretation is not available because no installed general fundus abnormality model can evaluate this image. This is not a normal-fundus result."
             : abnormal
               ? "The automated analysis identified the findings below. These are screening signals, not diagnoses, and require interpretation by a qualified eye-care professional."
               : ood
                 ? "Input is outside the validated operating conditions of this model. Automated interpretation is inconclusive — normality is not claimed."
-                : "This result means the system did not identify a significant abnormality in the supplied image under the conditions of this analysis. It does not guarantee that no eye disease is present."}
+                : "No target abnormality was identified by the available model. This does not exclude other eye disease."}
         </p>
+      </div>
+
+      <div className="card" style={{ margin: "14px 0" }}>
+        <div className="card-title"><h3>AI imaging review</h3><Badge tone={suspiciousFundus ? "bad" : fundusUnavailable ? "warn" : "neutral"}>{fundus?.state?.replaceAll("_", " ") ?? "NOT AVAILABLE"}</Badge></div>
+        <p className="small" style={{ margin: "0 0 6px" }}>
+          {suspiciousFundus ? "Research AI detected a suspicious fundus region; ophthalmic review is required." : fundus?.limitations?.[0] ?? "No general fundus-abnormality result is recorded."}
+        </p>
+        <p className="tiny muted" style={{ margin: 0 }}>Validation: {fundus?.validation_state ?? "not recorded"} • Model: {fundus?.model_id ?? "not installed"}{fundus?.model_version ? ` v${fundus.model_version}` : ""}</p>
       </div>
 
       {/* ---- Three-zone workstation ---- */}
@@ -241,7 +265,7 @@ function ResultInner() {
               src={`/api/studies/${encodeURIComponent(study)}/image`}
               alt={`Original scan ${data.study?.study_id}`}
               region={activeRegion}
-              localizations={[]}
+              localizations={(fundus?.regions ?? []).map((r) => ({ id: r.id, finding_id: r.id, kind: r.localization.kind, coordinates: r.localization.coordinates, priority: "high" as const, note: `SUSPICIOUS REGION — ${r.finding_type.replaceAll("_", " ")}` }))}
               infoOverlay={{
                 eye: eyeLabel(a.study?.eye),
                 modality: modalityLabel(a.study?.modality),
@@ -298,6 +322,13 @@ function ResultInner() {
                 {f.region && hasImage
                   ? <button className="btn secondary sm" onClick={() => setActiveRegion(f.region ?? null)}>View on scan</button>
                   : <span className="tiny muted">No validated localization data available.</span>}
+              </div>
+            ))}
+            {(fundus?.regions ?? []).map((region) => (
+              <div key={region.id} className="finding-card" style={{ marginBottom: 10, boxShadow: "none" }}>
+                <div className="finding-head"><h3 style={{ fontSize: "0.8rem" }}>SUSPICIOUS REGION — {region.finding_type.replaceAll("_", " ").toUpperCase()}</h3><span className="badge warn">RESEARCH</span></div>
+                <p className="tiny" style={{ margin: "8px 0" }}>{region.note}</p>
+                <button className="btn secondary sm" onClick={() => setActiveRegion(region.localization.coordinates)}>View on scan</button>
               </div>
             ))}
           </div>

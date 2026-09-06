@@ -17,6 +17,7 @@ import { getTreatmentInformation } from "../treatment/treatmentInfo";
 import { PatientSymptom, SYMPTOM_MAP, redFlagSymptoms } from "../clinical/symptoms";
 import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
 import { canDisplayDiagnosis, unvalidatedGateResult, DiagnosisGateInput } from "../models/diagnosisGate";
+import { unavailableFundusAbnormalityResult } from "../models/fundusAbnormality";
 
 /**
  * S12 - maps this deployment's registry ModelStatus onto the diagnosis
@@ -108,6 +109,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     device: deviceInfo,
     metadataProvided: study.metadata.providedBy !== "none",
   });
+
+  // ---- Stage 1c: general fundus-abnormality gate (before any disease reasoning) ----
+  // A reviewed detector plugs in here. There is intentionally no fallback to
+  // SegFormer: optic-disc/cup segmentation has no lesion-detection scope.
+  // Until a hash-verified detector completes local validation, this returns a
+  // transparent MODEL_UNAVAILABLE state rather than a reassuring "normal".
+  const fundusAbnormality = unavailableFundusAbnormalityResult(quality, ood, study.modality);
 
   // ---- Stage 2: anatomical segmentation (placeholder) ----
   // Emits no structures or measurements. Recorded for provenance.
@@ -239,6 +247,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       reasons: ood.reasons,
       message: ood.message,
     },
+    fundus_abnormality: fundusAbnormality,
     model_registry: {
       model_id: modelRecord?.model_id ?? "none",
       model_version: modelRecord?.version ?? "none",

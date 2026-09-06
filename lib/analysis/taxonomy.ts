@@ -47,6 +47,11 @@ export interface StructuredMeasurement {
 const FUNDUS = ["FUNDUS", "EXTERNAL_EYE"];
 
 export const RETINAL_FINDINGS: FindingDefinition[] = [
+  // These labels are emitted only by a reviewed model declaring support for
+  // them. Their presence here is a controlled vocabulary, not a detector.
+  { type: "other_suspicious_retinal_region", level: "observation", label: "Other suspicious retinal region", modalities: FUNDUS, associations: ["type not established from image-model output alone; ophthalmic review required"], high_risk: true },
+  { type: "hard_exudate", level: "observation", label: "Hard exudate", modalities: FUNDUS, associations: ["retinal exudative change (association, not diagnosis)"], high_risk: false },
+  { type: "cotton_wool_spot", level: "observation", label: "Cotton-wool spot", modalities: FUNDUS, associations: ["retinal ischemic/inflammatory change (association, not diagnosis)"], high_risk: false },
   {
     type: "retinal_hemorrhage",
     level: "observation",

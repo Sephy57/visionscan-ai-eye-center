@@ -125,14 +125,16 @@ function ReportInner() {
         </dl>
       </div>
 
-      <div className={`result-hero ${report.image_quality.acceptable ? (report.findings.length ? "abnormal" : "normal") : "reject"}`} style={{ padding: 24 }}>
+      <div className={`result-hero ${report.image_quality.acceptable ? (report.overall_result.includes("NO TARGET") ? "normal" : "abnormal") : "reject"}`} style={{ padding: 24 }}>
         <div className="eyebrow">SCREENING RESULT</div>
         <h2>{report.overall_result}</h2>
         <p className="small" style={{ margin: 0 }}>
           {report.image_quality.acceptable
-            ? report.findings.length === 0
-              ? "This result means the system did not identify a significant abnormality in the supplied image under the conditions of this analysis. It does not guarantee that no eye disease is present."
-              : "Findings below are automated screening signals. They are not diagnoses."
+            ? report.overall_result.includes("MODEL UNAVAILABLE")
+              ? "No installed general fundus-abnormality model evaluated this image. This is not a normal-fundus result."
+              : report.overall_result.includes("NO TARGET")
+                ? "No target abnormality was identified by the available model. This does not exclude other eye disease."
+                : "Findings below are automated screening signals. They are not diagnoses."
             : "Image quality is insufficient for reliable automated analysis. No clinical interpretation was generated."}
         </p>
       </div>

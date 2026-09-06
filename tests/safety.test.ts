@@ -149,7 +149,7 @@ describe("safety checks", () => {
 describe("report wording", () => {
   it("uses mandatory negative wording", () => {
     const r = makeResult({ findings: [] });
-    expect(buildOverallResult(r)).toBe("NO SIGNIFICANT ABNORMALITY DETECTED BY AUTOMATED SCREENING");
+    expect(buildOverallResult(r)).toBe("NO TARGET ABNORMALITY IDENTIFIED BY THE AVAILABLE MODEL — OTHER ABNORMALITIES MAY STILL BE PRESENT");
     expect(buildLimitations(r).join(" ")).toContain("not a medical device");
   });
 

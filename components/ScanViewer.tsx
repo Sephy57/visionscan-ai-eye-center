@@ -10,10 +10,9 @@ import { Icon } from "./icons";
  * dark mode and themes never touch the image pixels.
  *
  * Overlay architecture: rendering layers for bounding boxes / markers /
- * masks / heatmaps exist so future VALIDATED models can plug in via
- * analysis.visualizations.localizations. The current DEMO model emits none —
- * the caller must pass `localizations={[]}` and the viewer shows the honest
- * "No validated localization data available" state.
+ * masks / heatmaps exist for provenance-bearing model output.  An overlay is
+ * never fabricated: callers pass only actual, bounded localization data and
+ * their surrounding UI must show its research/validation state.
  */
 
 export interface Localization {
@@ -155,7 +154,7 @@ export default function ScanViewer({
               <span>{regionLabel} (demo)</span>
             </div>
           )}
-          {/* Validated-model localization layers (none in this deployment) */}
+          {/* Provenance-bearing localization layers; no geometry is invented here. */}
           {hasValidatedOverlays && showOverlay && localizations!.map((loc) =>
             loc.kind === "bounding_box" && loc.coordinates ? (
               <div

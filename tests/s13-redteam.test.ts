@@ -120,7 +120,7 @@ describe("S13 scenario 2 - zero findings is never silently presented as 'normal'
     const { analysis, report } = await analyzeStudy(study.study_id);
     expect(analysis.findings.length).toBe(0);
     // Honest wording only: never an unqualified "normal"/"healthy" claim.
-    expect(report.overall_result).toBe("NO SIGNIFICANT ABNORMALITY DETECTED BY AUTOMATED SCREENING");
+    expect(report.overall_result).toBe("INPUT OUT OF DISTRIBUTION — AUTOMATED FUNDUS INTERPRETATION INCONCLUSIVE");
     expect(report.overall_result).not.toMatch(/\bNORMAL\b/i);
     expect(report.overall_result).not.toMatch(/\bHEALTHY\b/i);
     expect(report.limitations.join(" ")).toMatch(/not clinically validated|unvalidated/i);
