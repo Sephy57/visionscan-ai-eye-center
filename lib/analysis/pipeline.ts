@@ -139,31 +139,40 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     try {
       // Lazy import: the DEMO/quality/OOD path never loads the ML worker module.
       const { runFundusLesionResearchAnalysis } = await import("../models/fundusLesionLocalProvider");
-      researchRun = await runFundusLesionResearchAnalysis(study, {
+      const run = await runFundusLesionResearchAnalysis(study, {
         qualityScore: quality.quality_score,
         eye: study.eye,
         device: deviceInfo,
         imageBytes: originalBytes,
       });
-      // Lesion-domain OOD: image characteristics and modality still block;
-      // missing device metadata is DOMAIN_VALIDATION_UNKNOWN (disclosed in
-      // provider notes), never conflated into OUT_OF_DISTRIBUTION.
-      const lesionOod = assessOod({
-        modality: study.modality,
-        quality,
-        model: lesionRecord,
-        device: deviceInfo,
-        metadataProvided: study.metadata.providedBy !== "none",
-        deviceUnknownIsDomainUnknown: true,
-      });
-      fundusAbnormality = resultFromResearchDetector({
-        raw: researchRun.raw,
-        quality,
-        ood: lesionOod,
-        modelId: lesionRecord.model_id,
-        modelVersion: lesionRecord.version,
-        supportedFindingTypes: new Set(lesionRecord.supported_findings),
-      });
+      if (run.raw.inference_status !== "completed") {
+        // Worker failed (no package, no runtime, timeout, malformed output):
+        // keep the original quality/OOD verdict (it already distinguishes
+        // OOD from unavailable) and fall back to the labeled DEMO path below.
+        // The failure reason is preserved in the integrity-check notes.
+        researchAttemptNote = run.notes[0] ?? "Research lesion detector failed; no finding was inferred.";
+      } else {
+        researchRun = run;
+        // Lesion-domain OOD: image characteristics and modality still block;
+        // missing device metadata is DOMAIN_VALIDATION_UNKNOWN (disclosed in
+        // provider notes), never conflated into OUT_OF_DISTRIBUTION.
+        const lesionOod = assessOod({
+          modality: study.modality,
+          quality,
+          model: lesionRecord,
+          device: deviceInfo,
+          metadataProvided: study.metadata.providedBy !== "none",
+          deviceUnknownIsDomainUnknown: true,
+        });
+        fundusAbnormality = resultFromResearchDetector({
+          raw: researchRun.raw,
+          quality,
+          ood: lesionOod,
+          modelId: lesionRecord.model_id,
+          modelVersion: lesionRecord.version,
+          supportedFindingTypes: new Set(lesionRecord.supported_findings),
+        });
+      }
     } catch (err) {
       researchRun = null;
       researchAttemptNote = `Research lesion detector could not run: ${String(err instanceof Error ? err.message : err).slice(0, 200)}`;
