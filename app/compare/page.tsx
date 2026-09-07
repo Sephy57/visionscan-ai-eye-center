@@ -117,7 +117,7 @@ function CompareInner() {
           </div>
           <div className="card" style={{ marginTop: 14 }}>
             <h3 style={{ marginTop: 0 }}>Detected finding types: previous → current</h3>
-            <div className="table-wrap">
+            <div className="table-wrap" tabIndex={0}>
               <table className="table">
                 <thead><tr><th>Finding type</th><th>Previous</th><th>Current</th><th>Change</th></tr></thead>
                 <tbody>

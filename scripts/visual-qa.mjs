@@ -7,7 +7,9 @@ const BASE = process.env.BASE_URL || "http://localhost:3000";
   for (const route of routes) {
     const html = await (await fetch(BASE + route)).text();
     const sidebars = (html.match(/class="sidebar"/g) || []).length;
-    const mobileNav = (html.match(/mobile-nav/g) || []).length;
+    // Count duplicated legacy navigation containers, not accessible references
+    // such as aria-controls="mobile-navigation-drawer" on the menu button.
+    const mobileNav = (html.match(/class="[^"]*\bmobile-nav\b/g) || []).length;
     const drawerClosed = !(html.match(/drawer-overlay/g) || []).length;
     const banners = (html.match(/banner-strip/g) || []).length;
     // The patient workspace adds a first-class Patients destination to the

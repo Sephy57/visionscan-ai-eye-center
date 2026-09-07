@@ -71,7 +71,7 @@ export default function SettingsPage() {
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Capability status</h3>
         <p className="small muted" style={{ marginTop: 0 }}>Explicit, honest capability levels for every subsystem.</p>
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table">
             <thead><tr><th>Capability</th><th>Status</th><th>Note</th></tr></thead>
             <tbody>

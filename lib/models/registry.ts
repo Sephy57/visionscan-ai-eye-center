@@ -413,8 +413,23 @@ export function auditRegistryConsistency(): Array<{ model_id: string; problems: 
 /** Locate and hash a model artifact under MODEL_ROOT. */
 export function hashModelArtifact(relativePath: string): { sha256: string | null; error?: string } {
   const p = path.resolve(MODEL_ROOT, relativePath);
-  if (!p.startsWith(path.resolve(MODEL_ROOT))) return { sha256: null, error: "Path escapes MODEL_ROOT" };
+  const relative = path.relative(path.resolve(MODEL_ROOT), p);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) return { sha256: null, error: "Path escapes MODEL_ROOT" };
   if (!fs.existsSync(p)) return { sha256: null, error: "Model artifact not found on disk" };
-  const buf = fs.readFileSync(p);
-  return { sha256: createHash("sha256").update(buf).digest("hex") };
+  const stat = fs.lstatSync(p);
+  if (!stat.isFile() || stat.isSymbolicLink()) return { sha256: null, error: "Model artifact must be a regular file, not a symlink" };
+  if (stat.size > 2 * 1024 * 1024 * 1024) return { sha256: null, error: "Model artifact exceeds the 2 GiB safety limit" };
+  const hash = createHash("sha256");
+  const fd = fs.openSync(p, "r");
+  const chunk = Buffer.allocUnsafe(1024 * 1024);
+  try {
+    let read = 0;
+    do {
+      read = fs.readSync(fd, chunk, 0, chunk.length, null);
+      if (read > 0) hash.update(chunk.subarray(0, read));
+    } while (read > 0);
+  } finally {
+    fs.closeSync(fd);
+  }
+  return { sha256: hash.digest("hex") };
 }

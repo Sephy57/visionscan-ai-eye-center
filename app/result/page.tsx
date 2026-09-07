@@ -11,6 +11,7 @@ import ResearchAnalysisPanel from "@/components/ResearchAnalysisPanel";
 import { Badge, ConfidenceIndicator, EmptyState, TriageBadge } from "@/components/ui";
 import { Icon } from "@/components/icons";
 import { presentQuality } from "@/lib/analysis/qualityPresentation";
+import { coverageForModality } from "@/lib/models/ophthalmicCoverage";
 
 interface Finding {
   id: string; type: string; location: string; severity: string;
@@ -164,6 +165,9 @@ function ResultInner() {
   const hasImage = !!data.study;
   const redFlags = a.patient_context?.red_flags ?? [];
   const hasRedFlag = redFlags.length > 0;
+  const fundusCoverage = coverageForModality("FUNDUS");
+  const disabledCandidateTargets = fundusCoverage.filter((entry) => entry.state === "CANDIDATE_DISABLED").map((entry) => entry.display_name);
+  const unsupportedDiseaseTargets = fundusCoverage.filter((entry) => entry.task === "DISEASE_SCREENING").map((entry) => entry.display_name);
 
   const heroClass = rejected ? "reject" : abnormal || suspiciousFundus || ood || fundusUnavailable ? "abnormal" : "normal";
   const headline = rejected
@@ -250,6 +254,13 @@ function ResultInner() {
           {suspiciousFundus ? "Research AI detected a suspicious fundus region; ophthalmic review is required." : fundus?.limitations?.[0] ?? "No general fundus-abnormality result is recorded."}
         </p>
         <p className="tiny muted" style={{ margin: 0 }}>Validation: {fundus?.validation_state ?? "not recorded"} • Model: {fundus?.model_id ?? "not installed"}{fundus?.model_version ? ` v${fundus.model_version}` : ""}</p>
+        <details className="tech" style={{ marginTop: 8 }}>
+          <summary>What this deployment did and did not evaluate</summary>
+          <p className="tiny muted"><strong>Active production imaging targets:</strong> none.</p>
+          <p className="tiny muted"><strong>Downloaded candidate, disabled and not executed here:</strong> {disabledCandidateTargets.join(", ")}.</p>
+          <p className="tiny muted"><strong>No validated disease model available:</strong> {unsupportedDiseaseTargets.join(", ")}.</p>
+          <p className="tiny muted" style={{ marginBottom: 0 }}>Missing or disabled coverage is never evidence of a normal fundus or absence of unlisted pathology.</p>
+        </details>
       </div>
 
       {/* ---- Three-zone workstation ---- */}
@@ -266,6 +277,7 @@ function ResultInner() {
               alt={`Original scan ${data.study?.study_id}`}
               region={activeRegion}
               localizations={(fundus?.regions ?? []).map((r) => ({ id: r.id, finding_id: r.id, kind: r.localization.kind, coordinates: r.localization.coordinates, priority: "high" as const, note: `SUSPICIOUS REGION — ${r.finding_type.replaceAll("_", " ")}` }))}
+              overlayStatus={fundus?.regions?.length ? (fundus.validation_state === "CLINICALLY_VALIDATED" ? "CLINICALLY_VALIDATED" : "RESEARCH") : undefined}
               infoOverlay={{
                 eye: eyeLabel(a.study?.eye),
                 modality: modalityLabel(a.study?.modality),

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon, IconName } from "./icons";
 
 /**
@@ -96,7 +96,7 @@ function UserMenu() {
   }
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <span className="status-chip" title={session.user.role} aria-label={`Signed in as ${session.user.username}, role ${session.user.role}`}>
+      <span className="status-chip" role="status" title={session.user.role} aria-label={`Signed in as ${session.user.username}, role ${session.user.role}`}>
         <span className="dot dot-amber" aria-hidden="true" />
         <span className="status-chip-label">{session.user.username} · {session.user.role}</span>
       </span>
@@ -108,15 +108,37 @@ function UserMenu() {
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   // Close the drawer on navigation.
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
-  // Escape closes the drawer; focus returns to the toggle.
+  // The mobile drawer is a modal navigation surface: trap keyboard focus,
+  // support Escape, and restore focus to the trigger when it closes.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setDrawerOpen(false); };
+    if (!drawerOpen) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : menuButtonRef.current;
+    closeButtonRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setDrawerOpen(false);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const focusable = Array.from(drawerRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? []);
+      if (!focusable.length) return;
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      (previous ?? menuButtonRef.current)?.focus();
+    };
+  }, [drawerOpen]);
 
   return (
     <>
@@ -145,7 +167,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div className="main-col">
           <header className="topbar">
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <button className="btn ghost sm icon-btn mobile-only-flex" onClick={() => setDrawerOpen(true)} aria-label="Open navigation menu" aria-expanded={drawerOpen}>
+              <button ref={menuButtonRef} className="btn ghost sm icon-btn mobile-only-flex" onClick={() => setDrawerOpen(true)} aria-label="Open navigation menu" aria-expanded={drawerOpen} aria-controls="mobile-navigation-drawer">
                 <Icon name="menu" size={16} />
               </button>
               <span className="page-crumb mobile-only-flex" style={{ fontWeight: 700 }}>VisionScan AI</span>
@@ -172,15 +194,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {drawerOpen && (
         <div className="drawer-overlay" onClick={() => setDrawerOpen(false)}>
-          <nav className="drawer" aria-label="Mobile navigation" onClick={(e) => e.stopPropagation()}>
+          <div ref={drawerRef} id="mobile-navigation-drawer" className="drawer" aria-label="Navigation menu" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <div className="drawer-head">
               <span className="brand"><span className="logo-mark"><Icon name="eye" size={17} /></span>VisionScan AI</span>
-              <button className="btn ghost sm icon-btn" onClick={() => setDrawerOpen(false)} aria-label="Close menu">
+              <button ref={closeButtonRef} className="btn ghost sm icon-btn" onClick={() => setDrawerOpen(false)} aria-label="Close menu">
                 <Icon name="close" size={16} />
               </button>
             </div>
-            <NavLinks onNavigate={() => setDrawerOpen(false)} />
-          </nav>
+            <nav aria-label="Mobile navigation"><NavLinks onNavigate={() => setDrawerOpen(false)} /></nav>
+          </div>
         </div>
       )}
     </>

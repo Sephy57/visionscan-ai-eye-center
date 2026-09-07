@@ -332,6 +332,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .zone-3 { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1.05fr) minmax(0, 0.78fr); gap: 14px; align-items: start; }
 @media (max-width: 1180px) { .zone-3 { grid-template-columns: 1fr 1fr; } .zone-3 .zone-viewer { grid-column: 1 / -1; } }
 @media (max-width: 760px) { .zone-3 { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .clinician-review-grid { grid-template-columns: minmax(0, 1fr) !important; } }
 
 /* Skeletons */
 .skel { position: relative; overflow: hidden; background: var(--surface-3); border-radius: var(--radius-sm); }
@@ -343,6 +344,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 @keyframes shimmer { to { transform: translateX(100%); } }
 .viewer-viewport { position: relative; height: 480px; overflow: hidden; cursor: grab; touch-action: none; }
 .viewer-viewport.dragging { cursor: grabbing; }
+.viewer-viewport.side-by-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1px; background: var(--border); }
+.viewer-pane { position: relative; min-width: 0; height: 100%; overflow: hidden; background: #000; }
 .viewer-img-wrap { position: absolute; top: 50%; left: 50%; transform-origin: center; will-change: transform; }
 .viewer-img-wrap img { display: block; max-width: none; user-select: none; -webkit-user-drag: none; }
 .viewer-overlay-box { position: absolute; border: 1.5px dashed #38bdf8; background: rgba(56, 189, 248, 0.1); border-radius: 3px; pointer-events: none; }
@@ -409,6 +412,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
   .app-footer { padding: 14px 14px 30px; }
   .banner-text span:not(.banner-icon) { display: none; }
   .viewer-viewport { height: 320px; }
+  .viewer-viewport.side-by-side { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; height: 520px; }
   /* The "Research environment" link and the username/role status-chip are
      redundant with the always-visible global banner-strip disclaimer - hide
      their text on narrow screens so the topbar's essential controls (menu,

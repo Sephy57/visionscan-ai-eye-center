@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Icon } from "@/components/icons";
 import { authFetch } from "@/lib/auth/clientFetch";
 
-const STAGES = [
+const EXPECTED_STAGES = [
   "File integrity verified (SHA-256)",
   "Image quality assessed",
   "Modality & device compatibility checked",
@@ -27,15 +27,13 @@ function ProcessingInner() {
   const router = useRouter();
   const params = useSearchParams();
   const study = params.get("study") ?? "";
-  const [step, setStep] = useState(0);
+  const [jobStatus, setJobStatus] = useState<"requesting" | "queued" | "running">("requesting");
   const [jobId, setJobId] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
     if (!study) { setFailed("No study id supplied. Start from the Analyze page."); return; }
     let cancelled = false;
-    const tick = setInterval(() => setStep((s) => Math.min(s + 1, STAGES.length - 2)), 700);
-
     (async () => {
       try {
         // Async mode: enqueue a job and poll — keeps inference off the UI request path.
@@ -48,6 +46,7 @@ function ProcessingInner() {
         if (cancelled) return;
         if (!res.ok) throw new Error(data.error ?? "Could not start analysis");
         setJobId(data.job_id);
+        setJobStatus("queued");
 
         // Poll job status, with a bound so a stuck job surfaces an error instead of spinning forever.
         const pollDeadline = Date.now() + 120_000;
@@ -58,29 +57,26 @@ function ProcessingInner() {
           const jr = await fetch(`/api/jobs/${encodeURIComponent(data.job_id)}`);
           if (!jr.ok) throw new Error("Lost contact with the analysis job.");
           const job: Job = await jr.json();
+          if (job.status === "running") setJobStatus("running");
           if (job.status === "completed") {
             if (cancelled) return;
-            clearInterval(tick);
-            setStep(STAGES.length);
             setTimeout(() => router.replace(`/result?study=${encodeURIComponent(study)}`), 400);
             return;
           }
           if (job.status === "failed") {
             if (cancelled) return;
-            clearInterval(tick);
             setFailed(job.error ?? "Model inference could not be completed.");
             return;
           }
         }
       } catch (e) {
         if (!cancelled) {
-          clearInterval(tick);
           setFailed(e instanceof Error ? e.message : String(e));
         }
       }
     })();
 
-    return () => { cancelled = true; clearInterval(tick); };
+    return () => { cancelled = true; };
   }, [study, router]);
 
   if (failed) {
@@ -104,7 +100,7 @@ function ProcessingInner() {
               className="btn"
               onClick={async () => {
                 setFailed(null);
-                setStep(0);
+                setJobStatus("queued");
                 await authFetch(`/api/jobs/${encodeURIComponent(jobId)}`, {
                   method: "POST", headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ requested_by: "user" }),
@@ -133,20 +129,21 @@ function ProcessingInner() {
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
           <span className="pulse-dot" aria-hidden="true" />
           <span className="small" style={{ fontWeight: 650 }} aria-live="polite">
-            {step < STAGES.length ? STAGES[step] : "Complete — opening result"}
+            {jobStatus === "requesting" ? "Requesting analysis job" : jobStatus === "queued" ? "Analysis job queued" : "Analysis job running"}
           </span>
         </div>
-        <ul className="state-steps">
-          {STAGES.map((s, i) => (
-            <li key={s} className={i < step ? "done" : i === step ? "active" : ""}>
-              <span className="step-dot-2" aria-hidden="true">{i < step ? "✓" : i + 1}</span>
+        <ul className="state-steps" aria-label="Expected analysis pipeline sequence">
+          {EXPECTED_STAGES.map((s, i) => (
+            <li key={s}>
+              <span className="step-dot-2" aria-hidden="true">{i + 1}</span>
               {s}
             </li>
           ))}
         </ul>
         <p className="tiny muted" style={{ marginBottom: 0 }}>
-          Stage-based progress — no fake percentages. The stages reflect the real pipeline; the analysis runs as a
-          background job so the interface stays responsive.
+          The server currently reports job-level queued/running/completed status, not per-stage completion. The list
+          above is the expected pipeline sequence and no checkmark or percentage is shown until the server confirms a result.
+          Analysis runs as a background job so the interface stays responsive.
         </p>
       </div>
     </div>

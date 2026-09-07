@@ -1,4 +1,5 @@
 import { Finding } from "../analysis/schema";
+import type { FundusAbnormalityResult } from "../models/fundusAbnormality";
 
 /**
  * Clinical Triage Engine - deterministic, conservative rules.
@@ -45,6 +46,12 @@ export interface TriageInput {
   documentExtractedRedFlagSymptoms?: string[];
   ood?: { detected: boolean; message?: string }; // out-of-distribution / unsupported operating conditions
   symptomUrgency?: "emergency" | "urgent" | "prompt" | "routine"; // from correlation engine
+  /**
+   * Explicit state of the broad fundus-abnormality attempt. Omission is
+   * treated as unavailable. This prevents a caller from accidentally turning
+   * an empty finding array into a normality claim when no detector ran.
+   */
+  generalDetector?: Pick<FundusAbnormalityResult, "state" | "validation_state"> | null;
 }
 
 const HIGH_RISK = new Set([
@@ -199,14 +206,49 @@ export function runTriage(input: TriageInput): TriageOutcome {
     };
   }
 
-  // Rule 6: all components unvalidated => even normal results get routine review language.
-  rules.push("unvalidated_system_routine");
+  // Rule 6: an empty finding array is only target-negative when a broad
+  // detector actually ran. Missing, failed, blocked, or unvalidated detector
+  // state must never become a normal-fundus or routine-follow-up result.
+  const detector = input.generalDetector;
+  if (detector?.state === "SUSPICIOUS_ABNORMALITY" || detector?.state === "MULTIPLE_ABNORMALITIES") {
+    rules.push("general_detector_suspicion_requires_review");
+    return {
+      priority: "prompt_professional_review",
+      action: "A retinal region was flagged by automated analysis. Prompt review by an eye-care professional is recommended.",
+      rationale: "The general fundus detector reported a suspicious region. This is an observation for review, not a diagnosis.",
+      triggered_rules: rules,
+    };
+  }
+
+  if (!detector || detector.state !== "NO_TARGET_ABNORMALITY_DETECTED") {
+    rules.push("general_detector_unavailable_prevents_normality_claim");
+    return {
+      priority: "prompt_professional_review",
+      action: "General fundus automated interpretation is unavailable or was not completed. Professional ophthalmic review is required.",
+      rationale: "No broad fundus detector produced a target-negative result; an empty finding list cannot establish normality.",
+      triggered_rules: rules,
+    };
+  }
+
+  if (detector.validation_state !== "CLINICALLY_VALIDATED") {
+    rules.push("unvalidated_target_negative_requires_review");
+    return {
+      priority: "prompt_professional_review",
+      action: "No target abnormality was identified by the available unvalidated detector. Professional ophthalmic review is recommended.",
+      rationale: "A target-specific negative from an unvalidated detector does not establish a normal fundus or exclude other pathology.",
+      triggered_rules: rules,
+    };
+  }
+
+  // Rule 7: this narrow routine pathway is reserved for a completed,
+  // clinically validated, target-negative broad detector result.
+  rules.push("validated_target_negative_routine");
   return {
     priority: "routine_follow_up",
     action:
-      "No significant abnormality detected by automated screening. Continue routine eye-care follow-up. " +
-      "This does not guarantee that no eye disease is present.",
-    rationale: "No findings detected; routine follow-up recommended given the system's unvalidated status.",
+      "No target abnormality was identified by the validated automated detector. Continue routine eye-care follow-up. " +
+      "This does not guarantee that no eye disease is present or exclude conditions outside the detector's scope.",
+    rationale: "A clinically validated broad detector completed with no target findings; its declared scope and limitations still apply.",
     triggered_rules: rules,
   };
 }

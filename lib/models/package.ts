@@ -20,6 +20,8 @@ import { audit } from "../audit";
 export const MANIFEST_VERSION = "1.0.0";
 /** Refuse unexpectedly large model files before hashing them. */
 export const MAX_MODEL_ARTIFACT_BYTES = 2 * 1024 * 1024 * 1024;
+export const MAX_MODEL_MANIFEST_BYTES = 1024 * 1024;
+const ARTIFACT_FORMATS = new Set(["onnx", "safetensors", "pytorch", "tensorflow", "tflite", "remote_api"]);
 
 function pathWithin(parent: string, candidate: string): boolean {
   const relative = path.relative(path.resolve(parent), path.resolve(candidate));
@@ -102,20 +104,27 @@ export function validateManifest(raw: unknown): { ok: boolean; reasons: string[]
   for (const [key, label] of REQUIRED_STRING_FIELDS) {
     if (typeof m[key] !== "string" || String(m[key]).trim() === "") reasons.push(`Missing required field: ${label}`);
   }
-  if (!m.artifact?.file || !m.artifact?.sha256 || !m.artifact?.format) {
+  if (typeof m.artifact?.file !== "string" || !m.artifact.file || typeof m.artifact?.sha256 !== "string" || !m.artifact.sha256 || typeof m.artifact?.format !== "string" || !m.artifact.format) {
     reasons.push("Missing artifact (file/sha256/format)");
   }
-  if (!m.input?.modalities?.length) reasons.push("input.modalities must list at least one modality");
-  if (!m.input?.dimensions || !m.input?.preprocessing) reasons.push("input.dimensions and input.preprocessing are required");
-  if (!m.input?.input_schema) reasons.push("input.input_schema is required");
+  if (m.artifact && (typeof m.artifact.sha256 !== "string" || !/^[a-f0-9]{64}$/.test(m.artifact.sha256))) reasons.push("artifact.sha256 must be exactly 64 lowercase hexadecimal characters");
+  if (m.artifact && (typeof m.artifact.format !== "string" || !ARTIFACT_FORMATS.has(m.artifact.format))) reasons.push("artifact.format is not supported");
+  if (typeof m.artifact?.file === "string" && (path.isAbsolute(m.artifact.file) || m.artifact.file.includes("..") || /[\0\r\n]/.test(m.artifact.file))) reasons.push("artifact.file must be a safe package-relative path");
+  if (m.artifact?.format === "safetensors" && (typeof m.artifact.file !== "string" || !m.artifact.file.toLowerCase().endsWith(".safetensors"))) reasons.push("SafeTensors artifacts must use a .safetensors filename");
+  if (!Array.isArray(m.input?.modalities) || m.input.modalities.length === 0 || !m.input.modalities.every((v) => typeof v === "string" && v.length > 0)) reasons.push("input.modalities must list at least one modality");
+  if (typeof m.input?.dimensions !== "string" || !m.input.dimensions || typeof m.input?.preprocessing !== "string" || !m.input.preprocessing) reasons.push("input.dimensions and input.preprocessing are required");
+  if (!["IMAGE_ONLY", "IMAGE_AND_SYMPTOMS"].includes(m.input?.input_schema)) reasons.push("input.input_schema is required");
   if (typeof m.output_schema !== "string" || !m.output_schema) reasons.push("output_schema is required");
   if (!Array.isArray(m.supported_findings)) reasons.push("supported_findings must be an array");
   if (!Array.isArray(m.supported_conditions)) reasons.push("supported_conditions must be an array");
+  if (!Array.isArray(m.supported_anatomy)) reasons.push("supported_anatomy must be an array");
+  if (!Array.isArray(m.supported_symptom_types)) reasons.push("supported_symptom_types must be an array");
   if (!Array.isArray(m.devices)) reasons.push("devices must be an array");
   if (!Array.isArray(m.contraindications) || m.contraindications.length === 0) reasons.push("contraindications must be a non-empty array");
   if (!Array.isArray(m.limitations) || m.limitations.length === 0) reasons.push("limitations must be a non-empty array");
   if (!m.training_dataset && !m.validation_dataset) reasons.push("At least one of training_dataset / validation_dataset must be documented");
   if (!Array.isArray(m.validation_evidence_refs)) reasons.push("validation_evidence_refs must be an array");
+  if (!["none", "research_only", "registered", "cleared", "approved"].includes(m.regulatory_status)) reasons.push("regulatory_status is invalid");
   if (reasons.length > 0) return { ok: false, reasons };
   return { ok: true, reasons: [], manifest: m };
 }
@@ -142,6 +151,14 @@ export function loadModelPackage(modelId: string): PackageLoadResult {
 
   let raw: unknown;
   try {
+    const packageStat = fs.lstatSync(pkgDir);
+    if (!packageStat.isDirectory() || packageStat.isSymbolicLink()) return { ok: false, reasons: ["model package must be a real directory, not a symlink/reparse link"] };
+    const manifestStat = fs.lstatSync(manifestPath);
+    if (!manifestStat.isFile() || manifestStat.isSymbolicLink()) return { ok: false, reasons: ["manifest.json must be a regular file, not a symlink"] };
+    if (manifestStat.size > MAX_MODEL_MANIFEST_BYTES) return { ok: false, reasons: [`manifest.json exceeds ${MAX_MODEL_MANIFEST_BYTES} byte safety limit`] };
+    const realRoot = fs.realpathSync(MODEL_ROOT);
+    const realPackage = fs.realpathSync(pkgDir);
+    if (!pathWithin(realRoot, realPackage)) return { ok: false, reasons: ["resolved model package escapes MODEL_ROOT"] };
     raw = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
   } catch {
     return { ok: false, reasons: ["manifest.json is not valid JSON"] };
@@ -151,6 +168,9 @@ export function loadModelPackage(modelId: string): PackageLoadResult {
   const manifest = v.manifest;
 
   if (manifest.model_id !== modelId) reasons.push(`manifest model_id (${manifest.model_id}) does not match package directory (${modelId})`);
+  if (manifest.version !== registered.version) reasons.push(`manifest version (${manifest.version}) does not match registry version (${registered.version})`);
+  if (registered.sha256 && manifest.artifact.sha256 !== registered.sha256) reasons.push("manifest artifact hash does not match the registry record");
+  if (registered.format && manifest.artifact.format !== registered.format) reasons.push(`manifest artifact format (${manifest.artifact.format}) does not match registry format (${registered.format})`);
 
   // Artifact integrity
   const artifactPath = path.resolve(pkgDir, manifest.artifact.file);
@@ -160,6 +180,11 @@ export function loadModelPackage(modelId: string): PackageLoadResult {
     reasons.push(`Artifact file not found: ${manifest.artifact.file}`);
   } else {
     try {
+      const artifactStat = fs.lstatSync(artifactPath);
+      if (!artifactStat.isFile() || artifactStat.isSymbolicLink()) throw new Error("artifact must be a regular file, not a symlink");
+      const realPackage = fs.realpathSync(pkgDir);
+      const realArtifact = fs.realpathSync(artifactPath);
+      if (!pathWithin(realPackage, realArtifact)) throw new Error("resolved artifact escapes the package directory");
       const computed = hashFileBounded(artifactPath).sha256;
       if (computed !== manifest.artifact.sha256) reasons.push(`ARTIFACT CHECKSUM MISMATCH: manifest ${manifest.artifact.sha256.slice(0, 12)}… vs disk ${computed.slice(0, 12)}…. Model will not be executed.`);
     } catch (err) { reasons.push(`ARTIFACT HASH FAILED: ${String(err instanceof Error ? err.message : err).slice(0, 180)}`); }

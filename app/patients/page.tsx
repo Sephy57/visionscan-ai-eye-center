@@ -126,7 +126,7 @@ export default function PatientsPage() {
       )}
 
       {rows.length > 0 && (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>

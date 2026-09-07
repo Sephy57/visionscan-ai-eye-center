@@ -317,6 +317,7 @@ export default function AnalyzePage() {
     <div style={{ maxWidth: 720, margin: "0 auto" }}>
       {/* Horizontal workflow indicator */}
       <div className="stepper" aria-label="Workflow progress">
+        <span className="sr-only">Step {step} of 3: {step === 1 ? "Patient context" : "Scan upload"}</span>
         <div className={`step ${step >= 1 ? (step > 1 ? "done" : "current") : ""}`} aria-current={step === 1 ? "step" : undefined}>
           <span className="step-dot">{step > 1 ? "✓" : "1"}</span>
           <span className="step-label">Patient Context</span>
@@ -492,11 +493,9 @@ export default function AnalyzePage() {
           {!file ? (
             <div
               className={`dropzone${drag ? " active" : ""}`}
-              onClick={() => inputRef.current?.click()}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") inputRef.current?.click(); }}
-              role="button"
-              tabIndex={0}
-              aria-label="Upload scan: drag and drop or browse files"
+              role="group"
+              aria-label="Scan upload drop area"
+              aria-describedby="scan-upload-formats"
               onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
               onDragLeave={() => setDrag(false)}
               onDrop={(e) => { e.preventDefault(); setDrag(false); pick(e.dataTransfer.files?.[0] ?? null); }}
@@ -505,7 +504,7 @@ export default function AnalyzePage() {
               <strong>Drag &amp; drop scan here</strong>
               <p style={{ margin: "6px 0 10px" }} className="small">or</p>
               <button className="btn secondary sm" type="button" onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}>Browse Files</button>
-              <p className="tiny" style={{ marginTop: 14, color: "var(--text-3)", marginBottom: 0 }}>
+              <p id="scan-upload-formats" className="tiny" style={{ marginTop: 14, color: "var(--text-3)", marginBottom: 0 }}>
                 Fundus · OCT · Supported image formats (JPEG, PNG, WEBP) · max 25 MB · DICOM detected but not analyzable
               </p>
             </div>
@@ -620,7 +619,7 @@ export default function AnalyzePage() {
 
           {(state === "uploading" || state === "validating") && (
             <div style={{ marginTop: 14 }} aria-live="polite">
-              <div className="meter"><div style={{ width: `${progress}%` }} /></div>
+              <div className="meter" role="progressbar" aria-label={state === "uploading" ? "Scan upload progress" : "Upload validation progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-valuetext={`${progress}% ${state}`}><div style={{ width: `${progress}%` }} /></div>
               <p className="small muted" style={{ marginBottom: 0 }}>{state === "uploading" ? "UPLOADING…" : "VALIDATING…"}</p>
             </div>
           )}

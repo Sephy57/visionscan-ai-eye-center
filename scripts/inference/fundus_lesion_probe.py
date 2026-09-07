@@ -10,25 +10,26 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
 import sys
 
-os.environ.setdefault("HF_HUB_OFFLINE", "1")
-os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
-os.environ.setdefault("PYTHONNOUSERSITE", "1")
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
 EXPECTED_MODEL_ID = "fundus-lesions-clementp-unet-seresnext50"
 EXPECTED_OUTPUT_ORDER = ["background", "cotton_wool_spot", "hard_exudate", "retinal_hemorrhage", "microaneurysm_like_lesion"]
 EXPECTED_SHA256 = "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2"
 MAX_IMAGE_BYTES = 64 * 1024 * 1024
 MAX_PIXELS = 64 * 1024 * 1024
+MAX_COMPONENTS = 10_000
 
 
 def fail(message: str) -> None:
     print(json.dumps({"inference_status": "failed", "inference_error": message[:500], "findings": []}))
-    raise SystemExit(0)
+    raise SystemExit(2)
 
 
 def sha256_file(path: Path) -> str:
@@ -39,6 +40,18 @@ def sha256_file(path: Path) -> str:
         while chunk := f.read(1024 * 1024):
             h.update(chunk)
     return h.hexdigest()
+
+
+def path_contains_reparse_point(path: Path) -> bool:
+    current = path.absolute()
+    while True:
+        if current.exists():
+            stat = current.lstat()
+            if current.is_symlink() or bool(getattr(stat, "st_file_attributes", 0) & 0x400):
+                return True
+        if current.parent == current:
+            return False
+        current = current.parent
 
 
 def crop_and_pad(rgb, cv2, np, size: int):
@@ -65,32 +78,120 @@ def crop_and_pad(rgb, cv2, np, size: int):
     if ph < 0 or pw < 0:
         raise ValueError("resize exceeded declared model input")
     top, left = ph // 2, pw // 2
-    return np.pad(resized, ((top, ph - top), (left, pw - left), (0, 0)), mode="constant")
+    transform = {
+        "coordinate_space": "MODEL_PIXELS_TO_ORIGINAL_IMAGE",
+        "original": {"width": int(w), "height": int(h)},
+        "crop": {"x": xmin, "y": ymin, "w": int(cropped.shape[1]), "h": int(cropped.shape[0])},
+        "model": {"width": size, "height": size},
+        "resized": {"width": int(resized.shape[1]), "height": int(resized.shape[0])},
+        "padding": {"left": left, "top": top, "right": pw - left, "bottom": ph - top},
+    }
+    prepared = np.pad(resized, ((top, ph - top), (left, pw - left), (0, 0)), mode="constant")
+    return prepared, transform
+
+
+def model_box_to_original(box, transform):
+    """Map a half-open model-pixel box through crop/letterbox to source-normalized geometry."""
+    left = transform["padding"]["left"]
+    top = transform["padding"]["top"]
+    resized_w = transform["resized"]["width"]
+    resized_h = transform["resized"]["height"]
+    x0 = max(float(left), float(box[0]))
+    y0 = max(float(top), float(box[1]))
+    x1 = min(float(left + resized_w), float(box[0] + box[2]))
+    y1 = min(float(top + resized_h), float(box[1] + box[3]))
+    if x1 <= x0 or y1 <= y0:
+        return None
+    crop = transform["crop"]
+    original = transform["original"]
+    ox0 = crop["x"] + (x0 - left) * crop["w"] / resized_w
+    oy0 = crop["y"] + (y0 - top) * crop["h"] / resized_h
+    ox1 = crop["x"] + (x1 - left) * crop["w"] / resized_w
+    oy1 = crop["y"] + (y1 - top) * crop["h"] / resized_h
+    nx0 = min(1.0, max(0.0, ox0 / original["width"]))
+    ny0 = min(1.0, max(0.0, oy0 / original["height"]))
+    nx1 = min(1.0, max(0.0, ox1 / original["width"]))
+    ny1 = min(1.0, max(0.0, oy1 / original["height"]))
+    if nx1 <= nx0 or ny1 <= ny0:
+        return None
+    return {"x": nx0, "y": ny0, "w": nx1 - nx0, "h": ny1 - ny0}
+
+
+def model_point_to_original(point, transform):
+    left = transform["padding"]["left"]
+    top = transform["padding"]["top"]
+    resized = transform["resized"]
+    crop = transform["crop"]
+    original = transform["original"]
+    x = crop["x"] + (float(point[0]) - left) * crop["w"] / resized["width"]
+    y = crop["y"] + (float(point[1]) - top) * crop["h"] / resized["height"]
+    return {
+        "x": min(1.0, max(0.0, x / original["width"])),
+        "y": min(1.0, max(0.0, y / original["height"])),
+    }
+
+
+def require_isolated_runtime(modules) -> None:
+    # PYTHONNOUSERSITE set inside a script is too late: startup already built
+    # sys.path. Require interpreter isolation and reject dependencies imported
+    # from a user/temporary overlay instead of this dedicated environment.
+    if not sys.flags.isolated or not sys.flags.no_user_site:
+        fail("isolated interpreter required; invoke the dedicated Python with -I -s")
+    prefix = Path(sys.prefix).resolve()
+    for name, module in modules.items():
+        module_file = getattr(module, "__file__", None)
+        if not module_file:
+            fail(f"dependency {name} has no auditable module path")
+        try:
+            Path(module_file).resolve().relative_to(prefix)
+        except ValueError:
+            fail(f"dependency {name} was imported outside the dedicated environment")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("model_dir", type=Path)
     parser.add_argument("image", type=Path)
-    parser.add_argument("--model-sha256", default=EXPECTED_SHA256)
     parser.add_argument("--threads", type=int, default=4)
     args = parser.parse_args()
+    # Reject before importing any third-party package: otherwise a malicious
+    # user-site/overlay module could execute before isolation is checked.
+    if not sys.flags.isolated or not sys.flags.no_user_site:
+        fail("isolated interpreter required; invoke the dedicated Python with -I -s")
     try:
         import cv2
+        import einops
         import numpy as np
+        import timm
         import torch
+        import torchvision
+        from PIL import Image
         from safetensors.torch import load_file
         import torchseg
     except Exception as exc:
         fail(f"approved local runtime unavailable: {exc}")
 
-    artifact = (args.model_dir / "model.safetensors").resolve()
-    if sha256_file(artifact) != args.model_sha256.lower():
+    require_isolated_runtime({"cv2": cv2, "einops": einops, "numpy": np, "PIL": sys.modules["PIL"], "timm": timm, "torch": torch, "torchvision": torchvision, "safetensors": sys.modules["safetensors"], "torchseg": torchseg})
+
+    artifact_path = args.model_dir / "model.safetensors"
+    if path_contains_reparse_point(args.model_dir) or path_contains_reparse_point(args.image) or path_contains_reparse_point(artifact_path):
+        fail("symbolic-link/reparse-point model or image paths are not accepted")
+    artifact = artifact_path.resolve()
+    if sha256_file(artifact) != EXPECTED_SHA256:
         fail("model SHA-256 mismatch")
     if not args.image.is_file() or args.image.stat().st_size > MAX_IMAGE_BYTES:
         fail("image is missing or exceeds the byte limit")
     raw = args.image.read_bytes()
     image_id = hashlib.sha256(raw).hexdigest()
+    try:
+        with Image.open(io.BytesIO(raw)) as header:
+            header_width, header_height = header.size
+            if header_width <= 0 or header_height <= 0 or header_width * header_height > MAX_PIXELS:
+                fail("declared image dimensions exceed the pixel limit")
+    except SystemExit:
+        raise
+    except Exception as exc:
+        fail(f"image header validation failed: {exc}")
     bgr = cv2.imdecode(np.frombuffer(raw, dtype=np.uint8), cv2.IMREAD_COLOR)
     if bgr is None or bgr.ndim != 3 or bgr.shape[2] != 3:
         fail("image decode failed or image is not three-channel color")
@@ -98,7 +199,7 @@ def main() -> None:
         fail("decoded image dimensions exceed the pixel limit")
     try:
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-        prepared = crop_and_pad(rgb, cv2, np, 1024)
+        prepared, transform = crop_and_pad(rgb, cv2, np, 1024)
         tensor = torch.from_numpy(prepared.astype(np.float32) / 255.0).permute(2, 0, 1).unsqueeze(0)
         mean = torch.tensor([0.485, 0.456, 0.406], dtype=tensor.dtype).view(1, 3, 1, 1)
         std = torch.tensor([0.229, 0.224, 0.225], dtype=tensor.dtype).view(1, 3, 1, 1)
@@ -109,7 +210,7 @@ def main() -> None:
         # Hash again after the SafeTensors read to detect a hash-then-load
         # replacement in a writable research directory. Production packaging
         # must additionally make the package directory non-writable.
-        if sha256_file(artifact) != args.model_sha256.lower():
+        if sha256_file(artifact) != EXPECTED_SHA256:
             fail("model artifact changed during load")
         if not state or any(not isinstance(k, str) for k in state):
             fail("SafeTensors state is empty or malformed")
@@ -122,21 +223,43 @@ def main() -> None:
         if tuple(probabilities.shape) != (5, 1024, 1024) or not bool(torch.isfinite(probabilities).all()):
             fail("model output shape or finite-value contract failed")
         labels = torch.argmax(probabilities, dim=0).numpy()
+        # Predictions in artificial letterbox pixels are never source-image
+        # evidence. Force those pixels to background before any area or region
+        # is derived.
+        left, top = transform["padding"]["left"], transform["padding"]["top"]
+        resized_w, resized_h = transform["resized"]["width"], transform["resized"]["height"]
+        content = np.zeros((1024, 1024), dtype=bool)
+        content[top:top + resized_h, left:left + resized_w] = True
+        labels[~content] = 0
         regions = []
         masks = []
+        component_count = 0
         for index, class_name in enumerate(EXPECTED_OUTPUT_ORDER):
             mask = labels == index
             area = int(mask.sum())
             masks.append({"class_name": class_name, "width": 1024, "height": 1024, "mask_ref": None, "area_pixels": area})
             if index == 0 or area == 0:
                 continue
-            ys, xs = np.where(mask)
-            regions.append({"class_name": class_name, "area_pixels": area,
-                            "centroid": {"x": float(xs.mean() / 1024), "y": float(ys.mean() / 1024)},
-                            "bounding_box": {"x": float(xs.min() / 1024), "y": float(ys.min() / 1024), "w": float((xs.max() - xs.min() + 1) / 1024), "h": float((ys.max() - ys.min() + 1) / 1024)},
-                            "mask_ref": None, "raw_score": None})
+            count, _, stats, centroids = cv2.connectedComponentsWithStats(mask.astype(np.uint8), connectivity=8)
+            component_count += count - 1
+            if component_count > MAX_COMPONENTS:
+                fail("candidate output exceeds the bounded connected-component limit")
+            for component in range(1, count):
+                x, y, width, height, component_area = [int(v) for v in stats[component]]
+                mapped = model_box_to_original((x, y, width, height), transform)
+                if mapped is None:
+                    fail("non-background component could not be mapped to source-image coordinates")
+                regions.append({
+                    "class_name": class_name,
+                    "area_pixels": component_area,
+                    "centroid": model_point_to_original((centroids[component][0] + 0.5, centroids[component][1] + 0.5), transform),
+                    "bounding_box": mapped,
+                    "mask_ref": None,
+                    "raw_score": None,
+                    "region_semantics": "UNFILTERED_ARGMAX_COMPONENT_NOT_VALIDATED_AS_LESION",
+                })
         summary = "NO_TARGET_ABNORMALITY_DETECTED" if not regions else ("MULTIPLE_ABNORMALITIES" if len(regions) > 1 else "SUSPICIOUS_ABNORMALITY")
-        print(json.dumps({"inference_status": "completed", "model_id": EXPECTED_MODEL_ID, "model_version": "a2cfcb594e483", "image_id": image_id, "raw_output_shape": [5, 1024, 1024], "output_order": EXPECTED_OUTPUT_ORDER, "preprocessing_version": "clementp-source-pinned-1024-v1", "threshold_version": "argmax-only-no-calibration", "validation_status": "CANDIDATE_ONLY", "image_level_summary": summary, "class_masks": masks, "class_scores": [{"class_name": c, "score_semantics": "NOT_CALIBRATED", "score": None} for c in EXPECTED_OUTPUT_ORDER], "lesion_regions": regions, "limitations": ["CANDIDATE_ONLY; no clinical or independent validation", "Argmax masks are not calibrated probabilities"]}))
+        print(json.dumps({"inference_status": "completed", "model_id": EXPECTED_MODEL_ID, "model_version": "a2cfcb594e483", "artifact_sha256": EXPECTED_SHA256, "image_id": image_id, "coordinate_space": "ORIGINAL_IMAGE_NORMALIZED", "original_image_size": transform["original"], "preprocessing_transform": transform, "raw_output_shape": [5, 1024, 1024], "output_order": EXPECTED_OUTPUT_ORDER, "preprocessing_version": "clementp-source-pinned-1024-v1", "threshold_version": "argmax-components-no-threshold-no-calibration", "validation_status": "CANDIDATE_ONLY", "image_level_summary": summary, "class_masks": masks, "class_scores": [{"class_name": c, "score_semantics": "NOT_CALIBRATED", "score": None} for c in EXPECTED_OUTPUT_ORDER], "lesion_regions": regions, "limitations": ["CANDIDATE_ONLY; no clinical or independent validation", "Connected components are unfiltered argmax regions, not validated lesions", "Argmax masks are not calibrated probabilities", "No auditable mask artifact is persisted"]}))
     except SystemExit:
         raise
     except Exception as exc:

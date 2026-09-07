@@ -12,10 +12,14 @@ importable in this Python interpreter.
 Called by lib/models/pythonBridgeProvider.ts via child_process.spawn, never
 by the analysis pipeline directly.
 """
+import argparse
 import json
 import sys
 
-REQUIRED_PACKAGES = ["torch", "torchvision", "numpy", "PIL"]
+REQUIRED_PROFILES = {
+    "base": ["torch", "torchvision", "numpy", "PIL"],
+    "fundus-lesion": ["torch", "torchvision", "numpy", "PIL", "cv2", "safetensors", "torchseg", "timm", "einops"],
+}
 
 
 def check_package(name: str):
@@ -28,13 +32,33 @@ def check_package(name: str):
 
 
 def main() -> None:
-    packages = {name: check_package(name) for name in REQUIRED_PACKAGES}
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--profile", choices=sorted(REQUIRED_PROFILES), default="base")
+    args = parser.parse_args()
+    isolated_required = args.profile == "fundus-lesion"
+    isolated = bool(sys.flags.isolated and sys.flags.no_user_site)
+    if isolated_required and not isolated:
+        packages = {name: {"available": False, "error": "not imported because interpreter isolation is required"} for name in REQUIRED_PROFILES[args.profile]}
+        print(json.dumps({
+            "profile": args.profile,
+            "python_version": sys.version,
+            "packages": packages,
+            "missing": list(REQUIRED_PROFILES[args.profile]),
+            "isolated_interpreter": False,
+            "ready": False,
+            "limitations": ["fundus-lesion profile requires Python -I -s startup isolation"],
+        }))
+        return
+    packages = {name: check_package(name) for name in REQUIRED_PROFILES[args.profile]}
     missing = [name for name, info in packages.items() if not info["available"]]
     result = {
+        "profile": args.profile,
         "python_version": sys.version,
         "packages": packages,
         "missing": missing,
-        "ready": len(missing) == 0,
+        "isolated_interpreter": isolated,
+        "ready": len(missing) == 0 and (isolated or not isolated_required),
+        "limitations": [] if not isolated_required or isolated else ["fundus-lesion profile requires Python -I -s startup isolation"],
     }
     print(json.dumps(result))
 

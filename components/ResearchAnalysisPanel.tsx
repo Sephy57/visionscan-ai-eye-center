@@ -117,7 +117,16 @@ export default function ResearchAnalysisPanel({ studyId, originalImageUrl, eye }
     return () => { cancelled = true; };
   }, [studyId]);
 
-  if (unavailable) return null;
+  if (unavailable) {
+    return (
+      <div className="card" aria-live="polite">
+        <div className="card-title"><h3>Research anatomy analysis</h3><Badge tone="neutral">UNAVAILABLE</Badge></div>
+        <p className="small muted" style={{ marginBottom: 0 }}>
+          The isolated optic-disc/cup research service is unavailable or not authorized for this view. No anatomy finding or disease conclusion was inferred.
+        </p>
+      </div>
+    );
+  }
   if (result === null) return null;
   if (result.state === "NOT_A_STUDY") return null;
 
@@ -163,6 +172,7 @@ export default function ResearchAnalysisPanel({ studyId, originalImageUrl, eye }
               src={originalImageUrl}
               alt={`Research analysis scan${eye ? ` (${eye})` : ""}`}
               localizations={localizations}
+              overlayStatus="RESEARCH"
               infoOverlay={{ eye, analysisLabel: "RESEARCH ANALYSIS" }}
             />
           </div>

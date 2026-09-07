@@ -41,7 +41,7 @@ export interface FundusAbnormalityResult {
   quality_state: string;
   ood_state: "IN_DISTRIBUTION" | "OUT_OF_DISTRIBUTION" | "UNKNOWN";
   limitations: string[];
-  validation_state: "RESEARCH" | "VALIDATION_PENDING" | "MODEL_UNAVAILABLE" | "NOT_VALIDATED_FOR_IMAGE";
+  validation_state: "RESEARCH" | "VALIDATION_PENDING" | "CLINICALLY_VALIDATED" | "MODEL_UNAVAILABLE" | "NOT_VALIDATED_FOR_IMAGE";
 }
 
 const UNAVAILABLE_LIMITATION =

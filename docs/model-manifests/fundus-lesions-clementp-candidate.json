@@ -14,7 +14,7 @@
     "preprocessing": "Candidate source commit 76840bf2: RGB; crop non-black fundus field using source 5%-of-image-maximum threshold; OpenCV cubic resize longest side to 1024; zero-pad to square; scale 0..255 to 0..1; ImageNet mean [0.485,0.456,0.406] and std [0.229,0.224,0.225]. Source compatibility is recorded but not independently clinically validated.",
     "input_schema": "IMAGE_ONLY"
   },
-  "output_schema": "fundus-lesion-segmentation-contract/1",
+  "output_schema": "fundus-lesion-segmentation-contract/2-original-image-geometry",
   "supported_anatomy": ["retina"],
   "supported_findings": ["cotton_wool_spot", "hard_exudate", "retinal_hemorrhage", "microaneurysm_like_lesion"],
   "supported_conditions": [],
@@ -22,7 +22,7 @@
   "devices": [],
   "intended_use": "Offline technical research into segmentation of four reported lesion classes. Not clinical decision support, diagnosis, triage, or a general fundus-normality detector.",
   "contraindications": ["Any clinical use", "General retinal abnormality detection", "AMD, detachment, tumor, pigmented lesion, vascular-occlusion, or glaucoma inference", "Use without a verified local package and patient-separated validation"],
-  "limitations": ["CANDIDATE_ONLY: no patient-separated evaluation is recorded", "Training data provenance and license compatibility require legal review", "No calibration or validated threshold is available", "No external validation; target-negative result cannot establish normality"],
+  "limitations": ["CANDIDATE_ONLY: no patient-separated evaluation is recorded", "Training data provenance and license compatibility require legal review", "No calibration or validated threshold is available", "No external validation; target-negative result cannot establish normality", "Current dedicated runtime is not ready: torchseg, timm, and einops are absent", "Scratch artifact permissions are not immutable production packaging"],
   "training_dataset": {"name": "Publisher-reported mixed datasets", "version": "unverified", "provenance": "DDR, FGADR, IDRiD, MESSIDOR and RETLES reported by model card", "population": "not independently verified"},
   "validation_dataset": null,
   "calibration": null,
@@ -35,5 +35,5 @@
   "validation_status": "NOT_STARTED",
   "output_order": ["background", "cotton_wool_spot", "hard_exudate", "retinal_hemorrhage", "microaneurysm_like_lesion"],
   "thresholds": "No threshold has been selected. Raw softmax values have no calibrated probability semantics.",
-  "postprocessing": "No clinical post-processing is approved. Any future region extraction must validate finite masks, dimensions, class order, masks, boxes, and safe references before emitting an observation."
+  "postprocessing": "No clinical post-processing is approved. Offline technical probe only: force artificial letterbox pixels to background; split each non-background argmax class into 8-connected components with a bounded component count; map half-open model-pixel boxes and centroids through recorded crop/resize/padding to ORIGINAL_IMAGE_NORMALIZED; emit raw_score=null and UNFILTERED_ARGMAX_COMPONENT_NOT_VALIDATED_AS_LESION. No mask artifact is persisted."
 }

@@ -53,6 +53,14 @@ describe("model package manifest", () => {
     }
     expect(validateManifest({ ...goodManifest, contraindications: [] }).ok).toBe(false);
     expect(validateManifest({ ...goodManifest, input: { ...goodManifest.input, modalities: [] } }).ok).toBe(false);
+    expect(validateManifest({ ...goodManifest, artifact: { ...goodManifest.artifact, sha256: "not-a-sha" } }).ok).toBe(false);
+    expect(validateManifest({ ...goodManifest, artifact: { file: "../model.onnx", sha256: "a".repeat(64), format: "onnx" } }).ok).toBe(false);
+    expect(validateManifest({ ...goodManifest, artifact: { file: "model.pt", sha256: "a".repeat(64), format: "safetensors" } }).ok).toBe(false);
+    expect(() => validateManifest({ ...goodManifest, artifact: { format: "safetensors" } })).not.toThrow();
+    expect(validateManifest({ ...goodManifest, artifact: { format: "safetensors" } }).ok).toBe(false);
+    expect(validateManifest({ ...goodManifest, artifact: { file: {}, sha256: "a".repeat(64), format: "onnx" } }).ok).toBe(false);
+    expect(validateManifest({ ...goodManifest, artifact: { file: "model.bin", sha256: "a".repeat(64), format: "unknown" } }).ok).toBe(false);
+    expect(validateManifest({ ...goodManifest, input: { ...goodManifest.input, modalities: "FUNDUS" } }).ok).toBe(false);
     expect(validateManifest(null).ok).toBe(false);
   });
 

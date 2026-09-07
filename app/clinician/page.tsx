@@ -129,7 +129,7 @@ function ClinicianInner() {
                 <h3>Patient symptoms</h3>
                 {bundle.analysis.patient_context.red_flags.length > 0 && <Badge tone="bad">⚠ RED FLAG: {bundle.analysis.patient_context.red_flags.map((r) => r.replaceAll("_", " ")).join(", ")}</Badge>}
               </div>
-              <div className="table-wrap">
+              <div className="table-wrap" tabIndex={0}>
               <table className="table">
                 <thead><tr><th>Symptom</th><th>Onset</th><th>Duration</th><th>Severity</th><th>Eye</th></tr></thead>
                 <tbody>
@@ -163,7 +163,7 @@ function ClinicianInner() {
             </div>
           )}
 
-          <div className="grid stack-mobile" style={{ gridTemplateColumns: "1.2fr 1fr", alignItems: "start", marginTop: 16 }} >
+          <div className="grid stack-mobile clinician-review-grid" style={{ gridTemplateColumns: "1.2fr 1fr", alignItems: "start", marginTop: 16 }} >
           <div className="card" style={{ margin: 0 }}>
             <div className="card-title">
               <h3>Original scan — {bundle.study?.study_id}</h3>

@@ -38,7 +38,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     ladder: STATUS_LADDER,
     transition_requirements: TRANSITION_REQUIREMENTS,
     integrity: { trusted: integrity.trusted, checks: integrity.checks },
-    package: { installed: pkg.ok, reasons: pkg.reasons, manifest: pkg.ok ? pkg.manifest : null },
+    package: {
+      installed: pkg.ok,
+      integrity_verified: pkg.ok,
+      execution_authorized: pkg.ok && gate.allowed && integrity.trusted,
+      reasons: pkg.reasons,
+      manifest: pkg.ok ? pkg.manifest : null,
+      note: "Package integrity is not execution authorization; registry status and the full integrity gate must also pass.",
+    },
     evidence,
     transitions,
     evaluations: evaluations.map((r) => ({

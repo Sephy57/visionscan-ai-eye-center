@@ -31,6 +31,7 @@ export interface ScanViewerProps {
   region?: { x: number; y: number; w: number; h: number } | null; // simple demo highlight
   regionLabel?: string;
   localizations?: Localization[];      // validated-model overlays (none today)
+  overlayStatus?: "CLINICALLY_VALIDATED" | "RESEARCH" | "CANDIDATE_ONLY" | "DEMO";
   infoOverlay?: { eye?: string; modality?: string; analysisLabel?: string };
   overlayUnavailableNote?: string;
   showToolbar?: boolean;
@@ -44,7 +45,7 @@ export interface ScanViewerProps {
 export default function ScanViewer({
   src, alt, region = null, regionLabel = "AI-highlighted region",
   localizations, infoOverlay, overlayUnavailableNote = "No validated localization data available.",
-  showToolbar = true, viewerId, zoom: controlledZoom, onZoomChange, onReset,
+  overlayStatus, showToolbar = true, viewerId, zoom: controlledZoom, onZoomChange, onReset,
 }: ScanViewerProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -54,7 +55,7 @@ export default function ScanViewer({
   const [dragging, setDragging] = useState(false);
   const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
   const [loaded, setLoaded] = useState(false);
-  const [showOverlay, setShowOverlay] = useState(true);
+  const [viewMode, setViewMode] = useState<"original" | "overlay" | "side_by_side">((localizations?.length ?? 0) > 0 || region ? "overlay" : "original");
 
   const zoom = controlledZoom ?? internalZoom;
   const setZoom = (z: number) => {
@@ -67,21 +68,36 @@ export default function ScanViewer({
     const vp = viewportRef.current, img = imgRef.current;
     if (!vp || !img || !img.naturalWidth) return;
     const pad = 14;
-    const scale = Math.min((vp.clientWidth - pad) / img.naturalWidth, (vp.clientHeight - pad) / img.naturalHeight, 1);
+    const pane = vp.querySelector<HTMLElement>(".viewer-pane");
+    const paneWidth = pane?.clientWidth ?? vp.clientWidth;
+    const paneHeight = pane?.clientHeight ?? vp.clientHeight;
+    const scale = Math.min((paneWidth - pad) / img.naturalWidth, (paneHeight - pad) / img.naturalHeight, 1);
     setImgSize({ w: Math.round(img.naturalWidth * scale), h: Math.round(img.naturalHeight * scale) });
     setZoom(1);
     setOffset({ x: 0, y: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded]);
+  }, [loaded, viewMode]);
 
   useEffect(() => { fitToScreen(); }, [fitToScreen, loaded]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || typeof ResizeObserver === "undefined") return;
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(fitToScreen);
+    });
+    observer.observe(viewport);
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); };
+  }, [fitToScreen]);
 
   const zoomBy = (factor: number) => setZoom(zoom * factor);
 
   const onWheel = (e: React.WheelEvent) => { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.15 : 1 / 1.15); };
   const onPointerDown = (e: React.PointerEvent) => {
     setDragging(true);
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent) => { if (dragging) setOffset((o) => ({ x: o.x + e.movementX, y: o.y + e.movementY })); };
   const onPointerUp = () => setDragging(false);
@@ -92,10 +108,67 @@ export default function ScanViewer({
     else document.exitFullscreen?.();
   };
 
-  const hasValidatedOverlays = (localizations?.length ?? 0) > 0;
-  const regionStyle: React.CSSProperties | null = region && showOverlay && imgSize.w > 0
-    ? { left: `${region.x * 100}%`, top: `${region.y * 100}%`, width: `${region.w * 100}%`, height: `${region.h * 100}%`, position: "absolute" }
+  const boundedBox = (box: Localization["coordinates"]): box is NonNullable<Localization["coordinates"]> =>
+    !!box && [box.x, box.y, box.w, box.h].every(Number.isFinite) && box.x >= 0 && box.y >= 0 && box.w > 0 && box.h > 0 && box.x + box.w <= 1 && box.y + box.h <= 1;
+  const renderableOverlays = (localizations ?? []).filter((loc) => loc.kind === "bounding_box" && boundedBox(loc.coordinates));
+  const overlayStatusMissing = (localizations?.length ?? 0) > 0 && !overlayStatus;
+  const hasRenderableOverlays = renderableOverlays.length > 0 && !overlayStatusMissing;
+  const unsupportedOverlayCount = Math.max(0, (localizations?.length ?? 0) - renderableOverlays.length);
+  const boundedRegion = region && boundedBox(region) ? region : null;
+  const hasAnyOverlay = hasRenderableOverlays || boundedRegion !== null;
+  const overlayIssue = overlayStatusMissing
+    ? "Overlay hidden because its validation/research status was not provided."
+    : unsupportedOverlayCount > 0
+      ? `${unsupportedOverlayCount} localization layer${unsupportedOverlayCount === 1 ? " is" : "s are"} unavailable because no compatible, bounded geometry was supplied.`
+      : overlayUnavailableNote;
+  const regionStyle: React.CSSProperties | null = boundedRegion && imgSize.w > 0
+    ? { left: `${boundedRegion.x * 100}%`, top: `${boundedRegion.y * 100}%`, width: `${boundedRegion.w * 100}%`, height: `${boundedRegion.h * 100}%`, position: "absolute" }
     : null;
+
+  const renderPane = (showLayers: boolean, paneLabel: string, primary: boolean) => (
+    <div className="viewer-pane" role="group" aria-label={paneLabel}>
+      <span className="viewer-hint">{paneLabel}</span>
+      <div
+        className="viewer-img-wrap"
+        style={{
+          transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) scale(${zoom})`,
+          width: imgSize.w || undefined, height: imgSize.h || undefined,
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          ref={primary ? imgRef : undefined}
+          src={src}
+          alt={primary ? alt : ""}
+          aria-hidden={primary ? undefined : true}
+          draggable={false}
+          loading="lazy"
+          decoding="async"
+          style={{ width: imgSize.w || "auto", height: imgSize.h || "auto" }}
+          onLoad={primary ? () => setLoaded(true) : undefined}
+        />
+        {showLayers && regionStyle && (
+          <div className="viewer-overlay-box" style={regionStyle}>
+            <span>{regionLabel} (demo)</span>
+          </div>
+        )}
+        {showLayers && hasRenderableOverlays && renderableOverlays.map((loc) => loc.coordinates ? (
+          <div
+            key={loc.id}
+            className={`viewer-overlay-box loc-${loc.priority ?? "moderate"}`}
+            style={{
+              left: `${loc.coordinates.x * 100}%`, top: `${loc.coordinates.y * 100}%`,
+              width: `${loc.coordinates.w * 100}%`, height: `${loc.coordinates.h * 100}%`,
+              position: "absolute",
+            }}
+            title={loc.note}
+          >
+            <span>{loc.note}</span>
+          </div>
+        ) : null)}
+      </div>
+    </div>
+  );
 
   return (
     <div className="viewer-frame" id={viewerId}>
@@ -110,16 +183,18 @@ export default function ScanViewer({
 
       <div
         ref={viewportRef}
-        className={`viewer-viewport${dragging ? " dragging" : ""}`}
+        className={`viewer-viewport${dragging ? " dragging" : ""}${viewMode === "side_by_side" ? " side-by-side" : ""}`}
         onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
-        role="img"
-        aria-label={alt}
+        role="group"
+        aria-label={`Interactive scan viewer: ${alt}`}
         tabIndex={0}
         onKeyDown={(e) => {
+          const handled = ["+", "=", "-", "0", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key);
+          if (handled) e.preventDefault();
           if (e.key === "+" || e.key === "=") zoomBy(1.2);
           if (e.key === "-") zoomBy(1 / 1.2);
           if (e.key === "0") fitToScreen();
@@ -130,48 +205,9 @@ export default function ScanViewer({
           if (e.key === "ArrowDown") setOffset((o) => ({ ...o, y: o.y - step }));
         }}
       >
-        <span className="viewer-hint">Original scan — unmodified pixels</span>
-        <div
-          className="viewer-img-wrap"
-          style={{
-            transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) scale(${zoom})`,
-            width: imgSize.w || undefined, height: imgSize.h || undefined,
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            ref={imgRef}
-            src={src}
-            alt={alt}
-            draggable={false}
-            loading="lazy"
-            decoding="async"
-            style={{ width: imgSize.w || "auto", height: imgSize.h || "auto" }}
-            onLoad={() => setLoaded(true)}
-          />
-          {regionStyle && (
-            <div className="viewer-overlay-box" style={regionStyle}>
-              <span>{regionLabel} (demo)</span>
-            </div>
-          )}
-          {/* Provenance-bearing localization layers; no geometry is invented here. */}
-          {hasValidatedOverlays && showOverlay && localizations!.map((loc) =>
-            loc.kind === "bounding_box" && loc.coordinates ? (
-              <div
-                key={loc.id}
-                className={`viewer-overlay-box loc-${loc.priority ?? "moderate"}`}
-                style={{
-                  left: `${loc.coordinates.x * 100}%`, top: `${loc.coordinates.y * 100}%`,
-                  width: `${loc.coordinates.w * 100}%`, height: `${loc.coordinates.h * 100}%`,
-                  position: "absolute",
-                }}
-                title={loc.note}
-              >
-                <span>{loc.note}</span>
-              </div>
-            ) : null
-          )}
-        </div>
+        {viewMode === "side_by_side" ? (
+          <>{renderPane(false, "Original scan — unmodified pixels", true)}{renderPane(true, "Overlay — annotations rendered separately", false)}</>
+        ) : renderPane(viewMode === "overlay", viewMode === "overlay" ? "Overlay view — original pixels unchanged" : "Original scan — unmodified pixels", true)}
       </div>
 
       {showToolbar && (
@@ -181,18 +217,13 @@ export default function ScanViewer({
           <button className="vbtn" onClick={() => zoomBy(1.25)} aria-label="Zoom in"><Icon name="plus" size={12} /></button>
           <button className="vbtn" onClick={() => zoomBy(1 / 1.25)} aria-label="Zoom out"><Icon name="minus" size={12} /></button>
           <button className="vbtn" onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); onReset?.(); }}><Icon name="reset" size={12} /> Reset</button>
-          <button
-            className={`vbtn${showOverlay ? " on" : ""}`}
-            onClick={() => setShowOverlay((v) => !v)}
-            aria-pressed={showOverlay}
-            disabled={!hasValidatedOverlays && region == null}
-            title={!hasValidatedOverlays && region == null ? overlayUnavailableNote : "Toggle overlays"}
-          >
-            Overlay
-          </button>
+          <button className={`vbtn${viewMode === "original" ? " on" : ""}`} onClick={() => setViewMode("original")} aria-pressed={viewMode === "original"}>Original</button>
+          <button className={`vbtn${viewMode === "overlay" ? " on" : ""}`} onClick={() => setViewMode("overlay")} aria-pressed={viewMode === "overlay"} disabled={!hasAnyOverlay} title={!hasAnyOverlay ? overlayIssue : "Show annotations over the original scan"}>Overlay</button>
+          <button className={`vbtn${viewMode === "side_by_side" ? " on" : ""}`} onClick={() => setViewMode("side_by_side")} aria-pressed={viewMode === "side_by_side"} disabled={!hasAnyOverlay} title={!hasAnyOverlay ? overlayIssue : "Compare original and annotated views"}>Side-by-side</button>
           <span className="spacer" />
-          {!hasValidatedOverlays && region == null && <span className="tiny muted">{overlayUnavailableNote}</span>}
-          <span className="tiny muted" aria-live="polite">{Math.round(zoom * 100)}%</span>
+          {hasRenderableOverlays && overlayStatus && <span className="tiny viewer-layer-status">{overlayStatus.replaceAll("_", " ")} overlay</span>}
+          {!hasRenderableOverlays && boundedRegion == null && <span className="tiny muted">{overlayIssue}</span>}
+          <span className="tiny muted" aria-live="polite">Zoom {Math.round(zoom * 100)}%; pan {Math.round(offset.x)}, {Math.round(offset.y)}</span>
           <button className="vbtn" onClick={fullscreen} aria-label="Fullscreen"><Icon name="fullscreen" size={12} /> Fullscreen</button>
         </div>
       )}

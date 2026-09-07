@@ -6,7 +6,7 @@ const BASE = process.env.BASE_URL || "http://localhost:3000";
 const CHROME = process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const USERNAME = process.env.SMOKE_ADMIN_USERNAME || "smoke-admin";
 const PASSWORD = process.env.SMOKE_ADMIN_PASSWORD || "SmokeTest#Local1234";
-const VIEWPORTS = [375, 414, 768, 1024, 1280, 1440];
+const VIEWPORTS = [320, 375, 414, 768, 1024, 1280, 1440, 1920];
 const ROUTES = ["/login", "/dashboard", "/patients", "/analyze", "/history", "/result", "/report", "/clinician", "/settings", "/admin"];
 
 function fail(message) {

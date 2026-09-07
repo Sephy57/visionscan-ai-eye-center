@@ -95,7 +95,7 @@ export default function AdminPage() {
 
       <div className="card" style={{ marginTop: 20 }}>
         <div className="card-title"><h3>Pipeline component registry</h3></div>
-        <div style={{ overflowX: "auto" }}>
+        <div style={{ overflowX: "auto" }} tabIndex={0}>
           <table className="table">
             <thead><tr><th>Component</th><th>Version</th><th>Implementation</th><th>Validation status</th><th>Notes</th></tr></thead>
             <tbody>
@@ -126,7 +126,7 @@ export default function AdminPage() {
               <strong>{selftest.passed}/{selftest.total} checks passed</strong>{" "}
               {selftest.all_passed ? <Badge tone="ok">ALL PASSED</Badge> : <Badge tone="bad">FAILURES DETECTED</Badge>}
             </p>
-            <div style={{ overflowX: "auto" }}>
+            <div style={{ overflowX: "auto" }} tabIndex={0}>
               <table className="table">
                 <thead><tr><th>Check</th><th>Result</th><th>Detail</th></tr></thead>
                 <tbody>
@@ -146,7 +146,7 @@ export default function AdminPage() {
 
       <div className="card" style={{ marginTop: 20 }}>
         <div className="card-title"><h3>Audit trail</h3><Badge tone="neutral">append-only, metadata only</Badge></div>
-        <div style={{ overflowX: "auto", maxHeight: 420, overflowY: "auto" }}>
+        <div style={{ overflowX: "auto", maxHeight: 420, overflowY: "auto" }} tabIndex={0}>
           <table className="table">
             <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Study</th><th>Outcome</th><th>Detail</th></tr></thead>
             <tbody>

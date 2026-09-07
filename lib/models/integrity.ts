@@ -25,8 +25,8 @@ function pathWithin(parent: string, candidate: string): boolean {
 }
 
 function sha256File(p: string): string {
-  const stat = fs.statSync(p);
-  if (!stat.isFile() || stat.size > MAX_MODEL_ARTIFACT_BYTES) throw new Error("artifact is not a regular file within the size limit");
+  const stat = fs.lstatSync(p);
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_MODEL_ARTIFACT_BYTES) throw new Error("artifact is not a regular non-symlink file within the size limit");
   const hash = createHash("sha256");
   const fd = fs.openSync(p, "r");
   const chunk = Buffer.allocUnsafe(1024 * 1024);
@@ -73,6 +73,17 @@ export function verifyModelIntegrity(modelId: string): IntegrityResult {
   }
   if (!fs.existsSync(abs)) {
     push("artifact_exists", false, `Model file not found: ${model.file_path}`);
+    return { trusted: false, model, checks };
+  }
+  try {
+    const realRoot = fs.realpathSync(MODEL_ROOT);
+    const realArtifact = fs.realpathSync(abs);
+    if (!pathWithin(realRoot, realArtifact)) {
+      push("artifact_path", false, "Resolved artifact path escapes MODEL_ROOT.");
+      return { trusted: false, model, checks };
+    }
+  } catch (err) {
+    push("artifact_path", false, `Artifact path resolution failed: ${String(err instanceof Error ? err.message : err).slice(0, 180)}`);
     return { trusted: false, model, checks };
   }
   push("artifact_exists", true, "Model file located on disk.");

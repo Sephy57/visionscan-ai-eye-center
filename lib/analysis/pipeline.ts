@@ -184,6 +184,10 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     uncertainty: uncertainty.overall,
     modality: study.modality,
     ood: { detected: ood.detected, message: ood.message },
+    generalDetector: {
+      state: fundusAbnormality.state,
+      validation_state: fundusAbnormality.validation_state,
+    },
     // Structured red-flag symptoms escalate via deterministic rules - but they
     // never name a condition and never create findings.
     redFlagSymptoms: redFlagSymptoms(symptoms).map((d) => d.type),

@@ -27,6 +27,17 @@ interface HealthResult {
   steps: Array<{ step: string; passed: boolean; detail?: string }>;
 }
 
+interface CoverageData {
+  coverage_version: string;
+  production_coverage_count: number;
+  global_notice: string;
+  entries: Array<{
+    target_id: string; display_name: string; modality: string; task: string; state: string;
+    model_id: string | null; production_available: boolean; pipeline_enabled: boolean;
+    localization: string; calibration: string; result_semantics: string;
+  }>;
+}
+
 interface CandidateDossier {
   candidate_id: string;
   model_name: string;
@@ -144,10 +155,12 @@ function ModelRow({ m }: { m: ModelData["models"][number] }) {
 export default function ModelsPage() {
   const [data, setData] = useState<ModelData | null>(null);
   const [candidates, setCandidates] = useState<CandidateDossier[] | null>(null);
+  const [coverage, setCoverage] = useState<CoverageData | null>(null);
 
   useEffect(() => {
     fetch("/api/models").then((r) => r.json()).then(setData).catch(() => {});
     fetch("/api/models/candidates").then((r) => (r.ok ? r.json() : null)).then((j) => setCandidates(j?.candidates ?? null)).catch(() => {});
+    fetch("/api/models/coverage").then((r) => (r.ok ? r.json() : null)).then(setCoverage).catch(() => {});
   }, []);
 
   return (
@@ -179,6 +192,34 @@ export default function ModelsPage() {
         {(data?.models ?? []).map((m) => <ModelRow key={m.model_id} m={m} />)}
       </div>
 
+      {coverage && (
+        <div className="card" style={{ marginTop: 18 }}>
+          <div className="card-title">
+            <h3>Imaging capability coverage</h3>
+            <Badge tone={coverage.production_coverage_count === 0 ? "warn" : "ok"}>{coverage.production_coverage_count} production targets</Badge>
+          </div>
+          <p className="small" style={{ marginTop: 0 }}>{coverage.global_notice}</p>
+          <div className="table-wrap" tabIndex={0}>
+            <table className="table">
+              <caption className="sr-only">Ophthalmic imaging targets, model availability, calibration, and pipeline status</caption>
+              <thead><tr><th scope="col">Target</th><th scope="col">Modality / task</th><th scope="col">Coverage state</th><th scope="col">Model</th><th scope="col">Localization / calibration</th></tr></thead>
+              <tbody>
+                {coverage.entries.map((entry) => (
+                  <tr key={`${entry.modality}-${entry.target_id}`}>
+                    <td>{entry.display_name}</td>
+                    <td className="tiny">{entry.modality} · {entry.task.replaceAll("_", " ")}</td>
+                    <td><Badge tone={entry.state === "RESEARCH_ANATOMY_ONLY" ? "warn" : "bad"}>{entry.state.replaceAll("_", " ")}</Badge></td>
+                    <td className="tiny">{entry.model_id ?? "none"}<br />Pipeline: {entry.pipeline_enabled ? "enabled" : "disabled"}</td>
+                    <td className="tiny">{entry.localization.replaceAll("_", " ")}<br />{entry.calibration.replaceAll("_", " ")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="tiny muted" style={{ marginBottom: 0 }}>Registry version {coverage.coverage_version}. This is explicit negative-space disclosure, not a performance claim.</p>
+        </div>
+      )}
+
       {candidates && candidates.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <h2 style={{ fontSize: "1rem", marginBottom: 4 }}>Candidate models (research dossiers only)</h2>
@@ -196,7 +237,7 @@ export default function ModelsPage() {
 
       <div className="card" style={{ marginTop: 18 }}>
         <div className="card-title"><h3>Status ladder &amp; evidence requirements</h3></div>
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table">
             <thead><tr><th>Transition</th><th>Required evidence</th></tr></thead>
             <tbody>

@@ -27,15 +27,23 @@ keys with `strict=True`: zero missing, unexpected, or shape-mismatched keys.
 No `from_pretrained`, `trust_remote_code`, pickle loader, network request, or
 direct Git dependency was used.
 
-## Reproducible runtime probe
+## Historical reconstruction probe and current runtime readiness
 
-The isolated probe used Python 3.12.10, CPU-only PyTorch 2.14.0, TorchSeg
+The earlier isolated engineering probe used Python 3.12.10, CPU-only PyTorch 2.14.0, TorchSeg
 0.0.1a4, timm 0.9.16 and einops 0.7.0. At 1024x1024 it produced finite
 `(1,5,1024,1024)` output with per-pixel softmax sums of 1.0. Three warmed
 single-image measurements with four CPU threads were 2.318s, 2.240s and
 2.366s (p50 2.318s; observed max 2.366s). A separate one-run probe measured
 3.662s. These are engineering probes, not a production SLO or clinical
 performance claim.
+
+That dependency stack was supplied through a temporary overlay and is **not
+installed in the current `.venv-ophthalmic`**. A current isolated readiness
+check (`python -I -s scripts/inference/check_environment.py --profile
+fundus-lesion`) reports `ready=false`: `torchseg`, `timm`, and `einops` are
+missing, and the installed OpenCV is 5.0.0 rather than the previously probed
+4.11.0.86. Therefore the historical timing is not a currently reproducible
+runtime benchmark and no new lesion inference was run in this completion pass.
 
 The source preprocessing evidence is pinned to toolkit commit
 `07dfd63c94eb1dcc894595af53486b51d7ce22b6` / constants commit
@@ -52,18 +60,34 @@ dependencies are unpinned and the OpenCV 5 API changes the cropper's return
 shape, so this protocol is recorded as a candidate reproduction, not yet an
 approved runtime specification.
 
+The offline probe now requires `python -I -s`, rejects user/temporary-overlay
+dependencies, rejects symlinked model/image/artifact paths, pins the expected
+artifact hash without a command-line override, and returns a non-zero process
+status on failure. Its argmax output is explicitly
+`UNFILTERED_ARGMAX_COMPONENT_NOT_VALIDATED_AS_LESION`; the worker cannot
+self-promote from `CANDIDATE_ONLY` to `RESEARCH`.
+
 ## Local engineering-image result
 
 The only fundus image currently present in `scratch/test_images` is the
 existing non-PHI engineering image `example_fundus.jpg`; it is **not** the
 user-supplied abnormal failure image. With the pinned probe, the model
 produced finite output and an argmax-only 16-pixel
-`microaneurysm_like_lesion` region at normalized box
+`microaneurysm_like_lesion` candidate region at model-raster normalized box
 `x=.546875,y=.921875,w=.0048828125,h=.00390625`. No hemorrhage, exudate, or
 cotton-wool region was produced. Because argmax-only masks have no validated
 threshold or calibration and the checkpoint is candidate-only, this is
 recorded as an engineering observation/possible false positive—not as a
 lesion claim and not as a regression answer for the missing supplied image.
+
+That historical box was in the cropped/padded 1024-square coordinate space
+and is **not valid for display over the original image**. The hardened probe
+now records the exact crop, resize, and asymmetric padding, suppresses
+predictions in artificial padding, separates connected components, and maps
+half-open component boxes/centroids to `ORIGINAL_IMAGE_NORMALIZED`. The new
+mapping has deterministic portrait, landscape, square, crop-offset,
+letterbox, edge, multiple-component, zero-area, and full-frame tests; no new
+patient/example overlay is claimed because the current runtime is not ready.
 
 ## Why it remains disabled
 
@@ -79,6 +103,9 @@ lesion claim and not as a regression answer for the missing supplied image.
   specificity, confidence intervals, or false-negative review is recorded.
 - The supplied abnormal-image fixture is not present in this workspace, so no
   result is claimed for it and no filename/hash shortcut exists.
+- The dedicated environment currently lacks required reviewed dependencies,
+  and the scratch artifact directory is writable by ordinary authenticated
+  users. Hash-before/hash-after is not a substitute for immutable packaging.
 
 ## Required validation before `RESEARCH`
 

@@ -50,6 +50,10 @@ interface Report {
   limitations: string[];
   recommended_next_step: string;
   triage_priority: string;
+  coverage_snapshot?: {
+    registry_version: string; production_targets: string[]; general_detector_state: string;
+    candidate_targets_not_run: string[]; unsupported_targets: string[]; notice: string;
+  };
   review: { status: string; reviewer_id?: string; finalized_at?: string; clinician_changes?: Array<{ field: string; action: string; at: string }> };
   clinician_interpretation?: { reviewer_id: string; overall: string; notes?: string | null } | null;
   clinician_corrections?: Array<{ finding_id: string; original: { type: string; location: string; severity: string; explanation: string }; correction: Record<string, string>; reviewer_id: string; note?: string; at: string }>;
@@ -139,6 +143,19 @@ function ReportInner() {
         </p>
       </div>
 
+      {report.coverage_snapshot && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Automated imaging coverage</h2>
+          <dl className="kv">
+            <dt>General detector</dt><dd>{report.coverage_snapshot.general_detector_state.replaceAll("_", " ")}</dd>
+            <dt>Active production targets</dt><dd>{report.coverage_snapshot.production_targets.length ? report.coverage_snapshot.production_targets.join(", ") : "None"}</dd>
+            <dt>Candidate targets not run</dt><dd>{report.coverage_snapshot.candidate_targets_not_run.map((v) => v.replaceAll("_", " ")).join(", ") || "None"}</dd>
+            <dt>Unsupported / unavailable targets</dt><dd>{report.coverage_snapshot.unsupported_targets.map((v) => v.replaceAll("_", " ")).join(", ")}</dd>
+          </dl>
+          <p className="tiny muted" style={{ marginBottom: 0 }}>{report.coverage_snapshot.notice} Registry {report.coverage_snapshot.registry_version}.</p>
+        </div>
+      )}
+
       <div className="card">
         <h2 style={{ marginTop: 0 }}>Image quality <Badge tone={qp.blocked ? "bad" : report.image_quality.artifacts.length > 0 ? "warn" : "ok"}>{qp.overall_label}</Badge></h2>
         <dl className="kv">
@@ -173,7 +190,7 @@ function ReportInner() {
       {report.patient_context?.reported && (
         <div className="card">
           <h2 style={{ marginTop: 0 }}>Reported symptoms</h2>
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table">
               <thead><tr><th>Symptom</th><th>Onset</th><th>Duration</th><th>Severity</th><th>Eye</th><th>Progression</th></tr></thead>
               <tbody>
@@ -309,7 +326,7 @@ function ReportInner() {
 
       <div className="card">
         <h2 style={{ marginTop: 0 }}>AI model information</h2>
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0}>
           <table className="table">
             <thead><tr><th>Model</th><th>Version</th><th>Implementation</th><th>Validation status</th></tr></thead>
             <tbody>
@@ -393,7 +410,7 @@ function ReportInner() {
         {report.review.clinician_changes && report.review.clinician_changes.length > 0 && (
           <details className="tech" style={{ marginTop: 10 }}>
             <summary>Review trail ({report.review.clinician_changes.length} actions)</summary>
-            <div className="table-wrap">
+            <div className="table-wrap" tabIndex={0}>
               <table className="table">
                 <thead><tr><th>Field</th><th>Action</th><th>At</th></tr></thead>
                 <tbody>

@@ -2,6 +2,7 @@ import { AnalysisResult } from "../analysis/schema";
 import { dbGet, dbPut } from "../storage/db";
 import { writeJson } from "../storage/files";
 import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
+import { OPHTHALMIC_COVERAGE_REGISTRY, OPHTHALMIC_COVERAGE_VERSION } from "../models/ophthalmicCoverage";
 
 /**
  * Report Generator.
@@ -35,6 +36,14 @@ export interface ClinicalReport {
   limitations: string[];
   recommended_next_step: string;
   triage_priority: string;
+  coverage_snapshot: {
+    registry_version: string;
+    production_targets: string[];
+    general_detector_state: string;
+    candidate_targets_not_run: string[];
+    unsupported_targets: string[];
+    notice: string;
+  };
   // Report structure (Phase 5, Step 20): patient-reported symptoms, possible
   // conditions, symptom/finding correlation, and treatment information are
   // distinct sections, carried straight through from the AI-generated
@@ -210,6 +219,14 @@ export async function generateReport(
     limitations: buildLimitations(analysis),
     recommended_next_step: analysis.recommendation.action,
     triage_priority: analysis.recommendation.priority,
+    coverage_snapshot: {
+      registry_version: OPHTHALMIC_COVERAGE_VERSION,
+      production_targets: OPHTHALMIC_COVERAGE_REGISTRY.filter((entry) => entry.production_available && entry.pipeline_enabled).map((entry) => entry.target_id),
+      general_detector_state: analysis.fundus_abnormality?.state ?? "MODEL_UNAVAILABLE",
+      candidate_targets_not_run: OPHTHALMIC_COVERAGE_REGISTRY.filter((entry) => entry.state === "CANDIDATE_DISABLED").map((entry) => entry.target_id),
+      unsupported_targets: OPHTHALMIC_COVERAGE_REGISTRY.filter((entry) => entry.state === "NO_VALIDATED_MODEL_AVAILABLE" || entry.state === "UNSUPPORTED_IMAGE_ANALYSIS").map((entry) => entry.target_id),
+      notice: "Missing, disabled, or unsupported model coverage is not evidence of normality or absence of pathology.",
+    },
     patient_context: analysis.patient_context,
     symptom_correlation: analysis.symptom_correlation,
     possible_conditions: analysis.possible_conditions,

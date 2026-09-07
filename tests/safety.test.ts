@@ -93,9 +93,34 @@ describe("triage engine (deterministic, conservative)", () => {
   });
 
   it("routine follow-up only for clean high-quality scans, with mandatory caveat", () => {
-    const t = runTriage({ findings: [], qualityAcceptable: true, qualityScore: 0.95, uncertainty: 0.1, modality: "fundus" });
+    const t = runTriage({
+      findings: [], qualityAcceptable: true, qualityScore: 0.95, uncertainty: 0.1, modality: "fundus",
+      generalDetector: { state: "NO_TARGET_ABNORMALITY_DETECTED", validation_state: "CLINICALLY_VALIDATED" },
+    });
     expect(t.priority).toBe("routine_follow_up");
     expect(t.action).toContain("does not guarantee that no eye disease is present");
+  });
+
+  it("never converts a missing or unavailable broad detector into a normality claim", () => {
+    const omitted = runTriage({ findings: [], qualityAcceptable: true, qualityScore: 0.95, uncertainty: 0.1, modality: "fundus" });
+    const unavailable = runTriage({
+      findings: [], qualityAcceptable: true, qualityScore: 0.95, uncertainty: 0.1, modality: "fundus",
+      generalDetector: { state: "MODEL_UNAVAILABLE", validation_state: "MODEL_UNAVAILABLE" },
+    });
+    for (const outcome of [omitted, unavailable]) {
+      expect(outcome.priority).toBe("prompt_professional_review");
+      expect(outcome.action.toLowerCase()).not.toContain("no significant abnormality");
+      expect(outcome.triggered_rules).toContain("general_detector_unavailable_prevents_normality_claim");
+    }
+  });
+
+  it("keeps an unvalidated target-negative result out of the routine pathway", () => {
+    const t = runTriage({
+      findings: [], qualityAcceptable: true, qualityScore: 0.95, uncertainty: 0.1, modality: "fundus",
+      generalDetector: { state: "NO_TARGET_ABNORMALITY_DETECTED", validation_state: "RESEARCH" },
+    });
+    expect(t.priority).toBe("prompt_professional_review");
+    expect(t.triggered_rules).toContain("unvalidated_target_negative_requires_review");
   });
 });
 

@@ -101,7 +101,7 @@ export default function DashboardPage() {
       )}
       {studies && recent.length > 0 && (
         <div className="card" style={{ padding: "4px 14px" }}>
-          <div className="table-wrap">
+          <div className="table-wrap" tabIndex={0}>
             <table className="table">
               <thead>
                 <tr><th scope="col">Study</th><th scope="col">Date</th><th scope="col">Modality</th><th scope="col">Eye</th><th scope="col">Status</th><th scope="col" style={{ textAlign: "right" }}>Actions</th></tr>

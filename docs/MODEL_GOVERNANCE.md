@@ -12,7 +12,7 @@ versions, preprocessing caveat, legal/data provenance blockers, and exact
 promotion gate.
 
 > **STATUS: ALL GATES CLOSED.** No candidate model has been approved for
-> installation. `lib/models/candidateDossiers.ts` holds four researched,
+> installation. `lib/models/candidateDossiers.ts` holds seven researched,
 > due-diligence dossiers — nothing more. None of them is registered in
 > `MODELS` (`lib/models/registry.ts`), none has a `data/models/` package,
 > and none has been reviewed by a human decision-maker for license,
@@ -22,7 +22,7 @@ promotion gate.
 ## The dossier format and where dossiers live
 
 `lib/models/candidateDossiers.ts` defines `CandidateModelDossier` and
-exports `CANDIDATE_MODEL_DOSSIERS` (currently 4 entries) plus a lookup map.
+exports `CANDIDATE_MODEL_DOSSIERS` (currently 7 entries) plus a lookup map.
 Every field the type requires:
 
 | Field | Purpose |
@@ -33,7 +33,7 @@ Every field the type requires:
 | `training_dataset` / `validation_dataset` / `patient_level_split_confirmed` / `external_validation_performed` | Evidence-adjacent fields, each `boolean \| "UNKNOWN"` where unverified — never guessed |
 | `known_limitations` / `demographic_coverage` / `device_coverage` | Documented scope gaps |
 | `preprocessing_requirements` / `inference_runtime` / `hardware_requirements` | What running it would actually require |
-| `model_weights_integrity_hash` | **Always `null`** for a dossier — the type comment says why: "never populated for an uninstalled candidate" (`candidateDossiers.ts:46`) |
+| `model_weights_integrity_hash` | `null` until an artifact is acquired and independently hashed; a real hash records artifact identity but does not install, register, validate, or authorize the candidate |
 | `security_considerations` | Supply-chain and deserialization risk notes specific to this candidate |
 | `evidence_quality` | `"none" \| "single_publication" \| "peer_reviewed" \| "prospective_multi_site"` |
 | `clinical_claims` | What the source itself claims (usually: nothing clinical) |
@@ -49,7 +49,7 @@ physically separate from the live model registry — a different file, a
 different type, imported by nothing in the live analysis path. Populating
 this file is explicitly **not** the same as clearing a model for use.
 
-## The four example candidates and their license findings
+## Example candidates and their license findings
 
 License review is the first gate, because a license blocker makes every
 other review moot:
@@ -78,7 +78,7 @@ other review moot:
   redistribution of the dataset — and, by extension, of weights trained
   directly on it.
 - **ClementP fundus lesion segmentation**
-  (`clementp-fundus-lesions-unet-seresnext50`) — the artifact is tagged MIT,
+  (`fundus-lesions-clementp-unet-seresnext50`) — the artifact is tagged MIT,
   but the publisher reports DDR, FGADR, IDRiD, MESSIDOR, and RETLES in
   training. Underlying data-use rights, patient-level independence, and
   validation evidence remain unresolved; it is recorded as a candidate only
