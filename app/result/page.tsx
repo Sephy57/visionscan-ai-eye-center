@@ -35,6 +35,20 @@ interface Bundle {
       regions: Array<{ id: string; finding_type: string; localization: { kind: "bounding_box"; coordinates: { x: number; y: number; w: number; h: number } }; source_model_id: string; source_model_version: string; note: string }>;
       model_id: string | null; model_version: string | null; validation_state: string; limitations: string[];
     };
+    dr_assessment?: {
+      state: "GRADE_ESTIMATED" | "IMAGE_NOT_SUITABLE" | "OUT_OF_DISTRIBUTION" | "MODEL_UNAVAILABLE";
+      grade: number | null; grade_label: string | null; model_score: number | null;
+      score_semantics: string; referable_dr: boolean | null;
+      calibration_state: string; quality_state: string; ood_state: string;
+      limitations: string[]; validation_state: string;
+      model_id: string | null; model_version: string | null;
+    };
+    multi_model?: {
+      performed: boolean;
+      agreement: "CORROBORATED_RESEARCH_EVIDENCE" | "MODEL_DISAGREEMENT" | "CONSISTENT_RESEARCH_NEGATIVE" | "SINGLE_RESEARCH_MODEL" | "NO_RESEARCH_MODEL_OUTPUT";
+      models: Array<{ model_id: string; model_version: string; model_status: string; output_summary: string }>;
+      notes: string[];
+    };
     model_registry?: {
       model_id: string; model_version: string; model_status: string; display_label: string | null;
       integrity_checks: Array<{ check: string; passed: boolean; detail: string }>;
@@ -272,6 +286,42 @@ function ResultInner() {
           <p className="tiny muted" style={{ marginBottom: 0 }}>Missing or disabled coverage is never evidence of a normal fundus or absence of unlisted pathology.</p>
         </details>
       </div>
+
+      {a.dr_assessment && a.dr_assessment.state !== "MODEL_UNAVAILABLE" && (
+        <div className="card" style={{ margin: "14px 0" }}>
+          <div className="card-title"><h3>DR grade assessment</h3><Badge tone={a.dr_assessment.state === "GRADE_ESTIMATED" ? "warn" : "neutral"}>{a.dr_assessment.state.replaceAll("_", " ")}</Badge></div>
+          {a.dr_assessment.state === "GRADE_ESTIMATED" ? (
+            <>
+              <p className="small" style={{ margin: "0 0 6px" }}>
+                Research estimate: grade {a.dr_assessment.grade}/4 ({a.dr_assessment.grade_label?.replaceAll("_", " ")})
+                {" "}— referable threshold (≥2): <strong>{a.dr_assessment.referable_dr ? "met" : "not met"}</strong>.
+                This is not a diagnosis and not a referral decision.
+              </p>
+              <p className="tiny muted" style={{ margin: 0 }}>
+                Model score {typeof a.dr_assessment.model_score === "number" ? a.dr_assessment.model_score.toFixed(3) : "—"} (ranking score, NOT a probability) •
+                Calibration: not calibrated • Validation: {a.dr_assessment.validation_state} •
+                Model: {a.dr_assessment.model_id ?? "not installed"}{a.dr_assessment.model_version ? ` v${a.dr_assessment.model_version}` : ""}
+              </p>
+            </>
+          ) : (
+            <p className="small" style={{ margin: 0 }}>{a.dr_assessment.limitations?.[0] ?? "No DR grade result is recorded."}</p>
+          )}
+        </div>
+      )}
+
+      {a.multi_model && a.multi_model.performed && (
+        <div className="card" style={{ margin: "14px 0" }}>
+          <div className="card-title"><h3>Multi-model research agreement</h3><Badge tone={a.multi_model.agreement === "MODEL_DISAGREEMENT" ? "bad" : "neutral"}>{a.multi_model.agreement.replaceAll("_", " ")}</Badge></div>
+          {a.multi_model.models.map((m) => (
+            <p key={m.model_id} className="tiny muted" style={{ margin: "0 0 4px" }}>
+              <strong>{m.model_id}</strong> v{m.model_version} ({m.model_status}): {m.output_summary}
+            </p>
+          ))}
+          {a.multi_model.notes.map((n, i) => (
+            <p key={i} className="small" style={{ margin: "6px 0 0" }}>{n}</p>
+          ))}
+        </div>
+      )}
 
       {/* ---- Three-zone workstation ---- */}
       <div className="zone-3">

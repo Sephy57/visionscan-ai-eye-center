@@ -18,7 +18,7 @@ export interface OphthalmicCoverageEntry {
   target_id: string;
   display_name: string;
   modality: "FUNDUS" | "OCT" | "DICOM";
-  task: "GENERAL_ABNORMALITY" | "LESION_SEGMENTATION" | "ANATOMY_SEGMENTATION" | "DISEASE_SCREENING" | "PIXEL_ANALYSIS";
+  task: "GENERAL_ABNORMALITY" | "LESION_SEGMENTATION" | "ANATOMY_SEGMENTATION" | "DISEASE_SCREENING" | "DISEASE_GRADING" | "PIXEL_ANALYSIS";
   state: OphthalmicCoverageState;
   model_id: string | null;
   production_available: false;
@@ -57,8 +57,15 @@ export const OPHTHALMIC_COVERAGE_REGISTRY: readonly OphthalmicCoverageEntry[] = 
     limitations: ["RESEARCH status: real local inference, no clinical or independent external validation completed.", "Device compatibility unvalidated for every device; domain validation UNKNOWN.", "Argmax components have no operating threshold or calibration; false negatives and false positives occur."],
   })),
   {
-    target_id: "optic_disc_cup_anatomy", display_name: "Optic disc/cup anatomy", modality: "FUNDUS", task: "ANATOMY_SEGMENTATION",
-    state: "RESEARCH_ANATOMY_ONLY", model_id: "segformer-optic-disc-cup-refuge", production_available: false, pipeline_enabled: false,
+    target_id: "dr_grade_estimate", display_name: "dr grade estimate", modality: "FUNDUS", task: "DISEASE_GRADING",
+    state: "RESEARCH_PIPELINE", model_id: "fundus-dr-grading-effb0",
+    production_available: false, pipeline_enabled: true,
+    localization: "NONE", calibration: "NOT_CALIBRATED",
+    result_semantics: "Research DR grade estimate from a single uncalibrated regression logit; a low grade never excludes diabetic retinopathy",
+    limitations: ["RESEARCH status: real local inference, no clinical or independent external validation completed.", "Grade boundaries uncalibrated; raw logit is a ranking score, not a probability.", "Device compatibility unvalidated for every device; domain validation UNKNOWN."],
+  },
+  {
+    target_id: "optic_disc_cup_anatomy", display_name: "Optic disc/cup anatomy", modality: "FUNDUS", task: "ANATOMY_SEGMENTATION",    state: "RESEARCH_ANATOMY_ONLY", model_id: "segformer-optic-disc-cup-refuge", production_available: false, pipeline_enabled: false,
     localization: "RESEARCH_BOUNDING_BOX", calibration: "NOT_CALIBRATED",
     result_semantics: "Isolated research anatomy localization; not a glaucoma or disease result",
     limitations: ["Not part of the clinical analysis pipeline.", "No diagnosis, disease exclusion, or calibrated confidence."],

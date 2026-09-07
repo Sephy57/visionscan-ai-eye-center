@@ -69,6 +69,14 @@ export const RETINAL_FINDINGS: FindingDefinition[] = [
     high_risk: false,
   },
   {
+    type: "dr_grade_estimate",
+    level: "observation",
+    label: "DR grade estimate (research)",
+    modalities: ["FUNDUS"],
+    associations: ["diabetic retinal disease pattern (association, not diagnosis)"],
+    high_risk: false,
+  },
+  {
     type: "vascular_abnormality",
     level: "observation",
     label: "Vascular abnormality",

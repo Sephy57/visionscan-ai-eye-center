@@ -9,9 +9,42 @@ Model: `fundus-lesions-clementp-unet-seresnext50` @ `a2cfcb594e483`
 components, no operating threshold, no calibration. Every region the model
 emits carries `UNFILTERED_ARGMAX_COMPONENT_NOT_VALIDATED_AS_LESION`.
 
-## What was measured
+## External validation: DeepDRiD (non-overlapping, patient-separated, with negatives)
 
-Overlap-disclosed evaluation on the IDRiD Segmentation Task-2 TEST split
+Cohort: DeepDRiD regular fundus, CC-BY-SA-4.0, Shanghai sites — no overlap
+with publisher-reported training sets. Publisher splits kept and
+patient-disjointness verified (300 + 100 patients, zero shared IDs):
+validation 400 images / 100 patients (endpoint), training 1189 images /
+299 patients. Per-eye ICDR grades from dataset CSVs. Full per-image data:
+`docs/evaluations/deepdr-external-20260908-raw.json`.
+
+Image-level lesion detection rate by ground-truth eye grade (VAL endpoint):
+
+| GT grade | detected/total | rate | patients |
+| --- | --- | --- | --- |
+| 0 (negatives) | 113/174 | 0.649 | 57 |
+| 1 | 40/46 | 0.870 | 21 |
+| 2 | 92/92 | 1.000 | 33 |
+| 3 | 68/68 | 1.000 | 24 |
+| 4 | 19/20 | 0.950 | 10 |
+
+Training split (same protocol): grade 0: 326/532 (0.613, 179 patients);
+grade 1: 0.892; grade 2: 0.996; grade 3: 1.000; grade 4: 0.986 — consistent
+across splits.
+
+Load-bearing conclusions:
+
+- Lesion-present sensitivity is excellent (grade ≥1: 0.87–1.00).
+- Lesion-absent specificity is poor: ~61–65% of DR grade-0 eyes still get
+  ≥1 argmax region (specificity ≈ 0.35–0.39 at image level). The argmax-only
+  rule fires on vessel/reflection content in healthy eyes. Any UI or report
+  wording implying discriminative ability on healthy eyes is therefore
+  forbidden; NO_TARGET_ABNORMALITY_DETECTED states carry the mandatory
+  other-pathology disclaimer.
+- Output-state distribution (VAL): MULTIPLE_ABNORMALITIES 285,
+  SUSPICIOUS_ABNORMALITY 47, NO_TARGET_ABNORMALITY_DETECTED 68.
+
+## Overlap-disclosed measurement (IDRiD)
 (27 images, CC-BY-4.0; archive.org item `idrid`, `A. Segmentation.zip`, MD5
 `804ca21196beecf7f3a433dc59d37256`). GT masks were warped into the 1024²
 model raster with the probe's own recorded crop/resize/pad transform

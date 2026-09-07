@@ -17,6 +17,7 @@ import { ModelRecord, getModel, gateModelUse, ModelGateResult } from "./registry
 import { verifyModelIntegrity, IntegrityResult } from "./integrity";
 import { checkModalitySupported } from "./modalities";
 import { FundusLesionLocalProvider } from "./fundusLesionLocalProvider";
+import { DrGradeLocalProvider } from "./drGradeLocalProvider";
 
 export interface ModelCapabilities {
   model_id: string;
@@ -173,11 +174,13 @@ function lesionProvider(): EyeModelProvider {
 
 export function getProvider(providerId: string): EyeModelProvider | null {
   if (providerId === "local-fundus-lesion") return lesionProvider();
+  if (providerId === "local-dr-grade") return new DrGradeLocalProvider();
   return PROVIDERS[providerId] ?? null;
 }
 
 export function getProviderForModel(modelId: string): EyeModelProvider | null {
   if (modelId === "fundus-lesions-clementp-unet-seresnext50") return lesionProvider();
+  if (modelId === "fundus-dr-grading-effb0") return new DrGradeLocalProvider();
   return Object.values(PROVIDERS).find((p) => p.modelId === modelId) ?? null;
 }
 

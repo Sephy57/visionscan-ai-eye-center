@@ -18,7 +18,9 @@ import { PatientSymptom, SYMPTOM_MAP, redFlagSymptoms } from "../clinical/sympto
 import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
 import { canDisplayDiagnosis, unvalidatedGateResult, DiagnosisGateInput } from "../models/diagnosisGate";
 import { unavailableFundusAbnormalityResult, resultFromResearchDetector } from "../models/fundusAbnormality";
+import { unavailableDrAssessmentResult, resultFromResearchGrader } from "../models/drAssessment";
 import type { FundusLesionResearchRun } from "../models/fundusLesionLocalProvider";
+import type { DrGradeResearchRun } from "../models/drGradeLocalProvider";
 
 /**
  * S12 - maps this deployment's registry ModelStatus onto the diagnosis
@@ -181,25 +183,95 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     researchAttemptNote = `Research lesion detector gated off: ${(lesionGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
   }
 
+  // ---- Stage 1d: research DR grade estimation (before any disease reasoning) ----
+  // Same scoping and honesty rules as Stage 1c: FUNDUS + quality-pass input
+  // only, IMAGE_ONLY model so device metadata is disclosed (not gated), and
+  // any worker failure keeps the original quality/OOD verdict with a labeled
+  // DEMO fallback. Runs after the lesion detector (sequentially, never
+  // stacked in RAM) so the two research outputs can corroborate or disagree.
+  let drAssessment = unavailableDrAssessmentResult(quality, ood, study.modality);
+  let drRun: DrGradeResearchRun | null = null;
+  let drAttemptNote: string | null = null;
+  const drRecord = getModel("fundus-dr-grading-effb0");
+  const drGate = drRecord ? gateModelUse(drRecord) : null;
+  const researchScopeOk =
+    qualityAcceptable &&
+    canonicalModality(study.modality) === "FUNDUS" &&
+    drRecord &&
+    drGate?.allowed &&
+    supportsModality(drRecord, study.modality);
+  if (researchScopeOk) {
+    try {
+      const { runDrGradeResearchAnalysis } = await import("../models/drGradeLocalProvider");
+      const run = await runDrGradeResearchAnalysis(study, {
+        qualityScore: quality.quality_score,
+        eye: study.eye,
+        device: deviceInfo,
+        imageBytes: originalBytes,
+      });
+      if (run.raw.inference_status !== "completed" || !run.grade) {
+        drAttemptNote = run.notes[0] ?? "Research DR grader failed; no grade was estimated.";
+      } else {
+        drRun = run;
+        const researchOod = assessOod({
+          modality: study.modality,
+          quality,
+          model: drRecord,
+          device: deviceInfo,
+          metadataProvided: study.metadata.providedBy !== "none",
+          deviceUnknownIsDomainUnknown: true,
+        });
+        drAssessment = resultFromResearchGrader({
+          grade: drRun.grade,
+          raw: drRun.raw,
+          quality,
+          ood: researchOod,
+          modelId: drRecord.model_id,
+          modelVersion: drRecord.version,
+        });
+      }
+    } catch (err) {
+      drRun = null;
+      drAttemptNote = `Research DR grader could not run: ${String(err instanceof Error ? err.message : err).slice(0, 200)}`;
+    }
+  } else if (canonicalModality(study.modality) === "FUNDUS" && qualityAcceptable && drRecord && !drGate?.allowed) {
+    drAttemptNote = `Research DR grader gated off: ${(drGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
+  }
+
   // ---- Stage 2: anatomical segmentation (placeholder) ----
   // Emits no structures or measurements. Recorded for provenance.
 
   // ---- Stage 3: specialized detectors ----
   // Fundus studies use REAL research-detector output when it completed;
   // every other path keeps the labeled DEMO/synthetic behavior exactly.
+  // When both research models complete, both contribute findings (each keeps
+  // its own model provenance); the lesion detector remains the primary
+  // registry model because it localizes.
   let findings: Finding[] = [];
   let activeModelRecord = modelRecord;
   let activeModelGate = modelGate;
-  const usedResearch = !!researchRun && researchRun.raw.inference_status === "completed";
-  if (usedResearch && researchRun && lesionRecord && lesionGate) {
-    activeModelRecord = lesionRecord;
-    activeModelGate = lesionGate;
-    findings = researchRun.findings.flatMap((f) => {
+  const usedLesionResearch = !!researchRun && researchRun.raw.inference_status === "completed";
+  const usedDrResearch = !!drRun && drRun.raw.inference_status === "completed" && !!drRun.grade;
+  const usedResearch = usedLesionResearch || usedDrResearch;
+  const tagResearch = (list: Finding[]) =>
+    list.flatMap((f) => {
       const gate = mayEmitFinding(f.type, canonicalModality(study.modality), "RESEARCH");
       if (!gate.ok) return []; // refuse to emit a finding the taxonomy forbids
       return [{ ...f, taxonomy_level: "observation" as const, model_status: "RESEARCH" as const }];
     });
-  } else if (qualityAcceptable && modelGate?.allowed) {
+  if (usedLesionResearch && researchRun && lesionRecord && lesionGate) {
+    activeModelRecord = lesionRecord;
+    activeModelGate = lesionGate;
+    findings = [...findings, ...tagResearch(researchRun.findings)];
+  }
+  if (usedDrResearch && drRun && drRecord && drGate) {
+    if (!usedLesionResearch) {
+      activeModelRecord = drRecord;
+      activeModelGate = drGate;
+    }
+    findings = [...findings, ...tagResearch(drRun.findings)];
+  }
+  if (!usedResearch && qualityAcceptable && modelGate?.allowed) {
     const scenario = pickDemoScenario(originalBytes);
     findings = buildDemoFindings(scenario, quality.quality_score);
     // Taxonomy + provenance tagging; enforce taxonomy/modality/status rules.
@@ -252,6 +324,43 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   const treatmentInformation = getTreatmentInformation(
     conditions.conditions.map((c) => ({ id: c.id, label: c.label }))
   );
+
+  // ---- Stage 5e: multi-model research agreement (no score averaging) ----
+  // Compares the lesion detector (regions present?) with the DR grader
+  // (referable grade?) when BOTH completed. Corroboration strengthens
+  // evidence visibility; disagreement stays visible with no automatic
+  // winner; consistent negatives are still not normality.
+  const lesionPositive = usedLesionResearch && !!researchRun ? researchRun.findings.length > 0 : false;
+  const drReferable = usedDrResearch && !!drRun?.grade ? drRun.grade.referable_dr : null;
+  const drGradeValue = usedDrResearch && !!drRun?.grade ? drRun.grade.predicted_grade : null;
+  let multiModelAgreement: "CORROBORATED_RESEARCH_EVIDENCE" | "MODEL_DISAGREEMENT" | "CONSISTENT_RESEARCH_NEGATIVE" | "SINGLE_RESEARCH_MODEL" | "NO_RESEARCH_MODEL_OUTPUT";
+  const multiModelNotes: string[] = [];
+  if (usedLesionResearch && usedDrResearch) {
+    if (drReferable && lesionPositive) {
+      multiModelAgreement = "CORROBORATED_RESEARCH_EVIDENCE";
+      multiModelNotes.push(
+        `CORROBORATED_RESEARCH_EVIDENCE (not a confirmed diagnosis): the DR grader estimated grade ${drGradeValue}/4 (referable threshold met) and the lesion detector localized ${researchRun!.findings.length} lesion-like region(s). Two uncalibrated research outputs agree; ophthalmic review is still required.`
+      );
+    } else if (drReferable !== lesionPositive) {
+      multiModelAgreement = "MODEL_DISAGREEMENT";
+      multiModelNotes.push(
+        `MODEL_DISAGREEMENT (no automatic winner): DR grader ${drReferable ? `estimated grade ${drGradeValue}/4 (referable)` : "did not reach the referable threshold"} while the lesion detector ${lesionPositive ? `localized ${researchRun!.findings.length} region(s)` : "found no target regions"}. Both outputs are uncalibrated research evidence; a clinician must reconcile them.`
+      );
+    } else {
+      multiModelAgreement = "CONSISTENT_RESEARCH_NEGATIVE";
+      multiModelNotes.push(
+        "CONSISTENT_RESEARCH_NEGATIVE: DR grader below the referable threshold and no target lesion regions. Other ocular abnormalities may still be present; this is not a normal-fundus result."
+      );
+    }
+  } else if (usedResearch) {
+    multiModelAgreement = "SINGLE_RESEARCH_MODEL";
+    multiModelNotes.push(
+      `Only one research model completed (${usedLesionResearch ? "lesion detector" : "DR grader"}); no cross-model agreement statement is possible.`
+    );
+  } else {
+    multiModelAgreement = "NO_RESEARCH_MODEL_OUTPUT";
+    multiModelNotes.push("No research imaging model completed for this study.");
+  }
 
   // ---- Stage 6: clinical rule engine / triage ----
   const triage = runTriage({
@@ -329,6 +438,20 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       message: ood.message,
     },
     fundus_abnormality: fundusAbnormality,
+    dr_assessment: drAssessment,
+    multi_model: {
+      performed: usedLesionResearch || usedDrResearch,
+      agreement: multiModelAgreement,
+      models: [
+        ...(usedLesionResearch && researchRun
+          ? [{ model_id: researchRun.model.model_id, model_version: researchRun.model.version, model_status: researchRun.model.status, output_summary: `${researchRun.findings.length} lesion-like region(s)` }]
+          : []),
+        ...(usedDrResearch && drRun && drRun.grade
+          ? [{ model_id: drRun.model.model_id, model_version: drRun.model.version, model_status: drRun.model.status, output_summary: `grade ${drRun.grade.predicted_grade}/4 (${drRun.grade.grade_label}), referable=${drRun.grade.referable_dr}` }]
+          : []),
+      ],
+      notes: multiModelNotes,
+    },
     model_registry: {
       model_id: activeModelRecord?.model_id ?? "none",
       model_version: activeModelRecord?.version ?? "none",
@@ -336,12 +459,17 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       display_label: activeModelGate?.label ?? DEMO_LABEL,
       integrity_checks: [
         { check: "registry", passed: !!activeModelRecord, detail: activeModelRecord ? "Registered model in use." : "No registered model." },
-        usedResearch
-          ? { check: "artifact", passed: researchRun!.integrity.trusted, detail: researchRun!.integrity.checks.map((c) => `${c.check}:${c.passed ? "pass" : "FAIL"}`).join(" ") || "Research artifact integrity verification." }
-          : { check: "artifact", passed: true, detail: "Placeholder DEMO model: no artifact on disk by design (data/models is empty)." },
+        (() => {
+          const primaryRun = researchRun ?? drRun;
+          return usedResearch && primaryRun
+            ? { check: "artifact", passed: primaryRun.integrity.trusted, detail: primaryRun.integrity.checks.map((c) => `${c.check}:${c.passed ? "pass" : "FAIL"}`).join(" ") || "Research artifact integrity verification." }
+            : { check: "artifact", passed: true, detail: "Placeholder DEMO model: no artifact on disk by design (data/models is empty)." };
+        })(),
         { check: "status_gate", passed: !!activeModelGate?.allowed, detail: activeModelGate ? activeModelGate.reasons.join(" ") || (usedResearch ? "Status permits research use only." : "Status permits demo use only.") : "No gate result." },
         ...(researchAttemptNote ? [{ check: "research_detector_attempt" as const, passed: false, detail: researchAttemptNote }] : []),
         ...((researchRun?.notes ?? []).map((n) => ({ check: "research_detector_note" as const, passed: true, detail: n.slice(0, 300) }))),
+        ...(drAttemptNote ? [{ check: "dr_grader_attempt" as const, passed: false, detail: drAttemptNote }] : []),
+        ...((drRun?.notes ?? []).map((n) => ({ check: "dr_grader_note" as const, passed: true, detail: n.slice(0, 300) }))),
       ],
       device_compatibility: activeModelRecord ? deviceCompatible(activeModelRecord, deviceInfo) : { compatible: false, note: "Device compatibility has not been validated. No registered model in use." },
       model_input: activeModelRecord?.input_schema ?? "IMAGE_ONLY",

@@ -199,6 +199,15 @@ export function buildLimitations(r: AnalysisResult): string[] {
   if (r.fundus_abnormality?.state === "MODEL_UNAVAILABLE") {
     l.push("No general fundus-abnormality detector was available for this image. The report does not claim a normal fundus.");
   }
+  if (r.dr_assessment?.state === "GRADE_ESTIMATED") {
+    l.push(
+      `A research DR grader estimated grade ${r.dr_assessment.grade}/4 (${r.dr_assessment.grade_label?.replaceAll("_", " ")}; uncalibrated model score, not a probability). ` +
+      "Grade estimates do not establish or exclude diabetic retinopathy and are not referral decisions."
+    );
+  }
+  if (r.multi_model && r.multi_model.performed) {
+    l.push(`Multi-model research comparison: ${r.multi_model.agreement.replaceAll("_", " ")} — ${r.multi_model.notes[0] ?? "see result detail."}`.slice(0, 500));
+  }
   return l;
 }
 

@@ -336,8 +336,13 @@ describe.skipIf(!HAS_PACKAGE || !HAS_VENV || !HAS_TEST_IMAGE)("live pipeline res
     expect(analysis.fundus_abnormality?.state).toBe("SUSPICIOUS_ABNORMALITY");
     expect(analysis.fundus_abnormality?.validation_state).toBe("RESEARCH");
     expect(analysis.fundus_abnormality?.regions).toHaveLength(1);
-    expect(analysis.findings).toHaveLength(1);
-    expect(analysis.findings[0].type).toBe("microaneurysm_like_lesion");
+    expect(analysis.findings.some((f) => f.type === "microaneurysm_like_lesion" && f.synthetic === false)).toBe(true);
+    // A second research model (DR grader) may contribute its own finding;
+    // every finding stays non-synthetic with RESEARCH provenance.
+    for (const f of analysis.findings) {
+      expect(f.synthetic).toBe(false);
+      expect(f.model_status).toBe("RESEARCH");
+    }
     // Safety boundaries hold on the research path.
     expect(analysis.possible_conditions?.conditions ?? []).toEqual([]);
     expect(analysis.diagnosis_gate!.allowed).toBe(false);

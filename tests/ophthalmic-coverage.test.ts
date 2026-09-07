@@ -7,8 +7,7 @@ describe("ophthalmic coverage negative-space registry", () => {
     expect(OPHTHALMIC_COVERAGE_REGISTRY.every((entry) => !entry.production_available)).toBe(true);
   });
 
-  it("marks the four ClementP lesion targets RESEARCH_PIPELINE and not calibrated", () => {
-    const candidates = coverageForModality("fundus").filter((entry) => entry.model_id === "fundus-lesions-clementp-unet-seresnext50");
+  it("marks the four ClementP lesion targets RESEARCH_PIPELINE and not calibrated", () => {    const candidates = coverageForModality("fundus").filter((entry) => entry.model_id === "fundus-lesions-clementp-unet-seresnext50");
     expect(candidates.map((entry) => entry.target_id)).toEqual(["cotton_wool_spot", "hard_exudate", "retinal_hemorrhage", "microaneurysm_like_lesion"]);
     expect(candidates.every((entry) => entry.state === "RESEARCH_PIPELINE" && entry.calibration === "NOT_CALIBRATED")).toBe(true);
     expect(candidates.every((entry) => entry.pipeline_enabled && !entry.production_available)).toBe(true);

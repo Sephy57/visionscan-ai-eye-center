@@ -27,10 +27,11 @@ describe("GET /api/models/coverage", () => {
     expect(body.production_coverage_count).toBe(0);
     expect(body.entries).toHaveLength(OPHTHALMIC_COVERAGE_REGISTRY.length);
     // No production coverage anywhere; exactly the four RESEARCH lesion
-    // targets are pipeline-enabled (research, never production).
+    // targets plus the RESEARCH DR grading target are pipeline-enabled
+    // (research, never production).
     const enabled = body.entries.filter((entry: { pipeline_enabled: boolean }) => entry.pipeline_enabled);
     expect(enabled.map((entry: { target_id: string }) => entry.target_id).sort()).toEqual(
-      ["cotton_wool_spot", "hard_exudate", "microaneurysm_like_lesion", "retinal_hemorrhage"]
+      ["cotton_wool_spot", "dr_grade_estimate", "hard_exudate", "microaneurysm_like_lesion", "retinal_hemorrhage"]
     );
     expect(enabled.every((entry: { state: string }) => entry.state === "RESEARCH_PIPELINE")).toBe(true);
   });

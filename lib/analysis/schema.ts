@@ -94,6 +94,15 @@ export interface AnalysisResult {
   };
   /** Dedicated, pre-diagnosis fundus safety layer. It is never a global-normal claim. */
   fundus_abnormality?: import("../models/fundusAbnormality").FundusAbnormalityResult;
+  /** Dedicated DR grade-estimate layer. A low grade never excludes disease. */
+  dr_assessment?: import("../models/drAssessment").DrAssessmentResult;
+  /** Cross-model research agreement. Scores are never averaged; disagreement has no automatic winner. */
+  multi_model?: {
+    performed: boolean;
+    agreement: "CORROBORATED_RESEARCH_EVIDENCE" | "MODEL_DISAGREEMENT" | "CONSISTENT_RESEARCH_NEGATIVE" | "SINGLE_RESEARCH_MODEL" | "NO_RESEARCH_MODEL_OUTPUT";
+    models: Array<{ model_id: string; model_version: string; model_status: string; output_summary: string }>;
+    notes: string[];
+  };
   model_registry?: {
     model_id: string;
     model_version: string;
@@ -347,6 +356,38 @@ export function validateAnalysisResult(r: unknown): { valid: boolean; errors: Va
       if (!c || ![c.x, c.y, c.w, c.h].every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1) || c.x + c.w > 1 || c.y + c.h > 1) {
         errors.push({ path: `fundus_abnormality.regions[${i}].localization`, message: "must contain finite, in-bounds normalized coordinates" });
       }
+    }
+  }
+
+  if (o.dr_assessment) {
+    const dr = o.dr_assessment;
+    const validDrStates = ["GRADE_ESTIMATED", "IMAGE_NOT_SUITABLE", "OUT_OF_DISTRIBUTION", "MODEL_UNAVAILABLE"];
+    need(validDrStates.includes(dr.state), "dr_assessment.state", "invalid state");
+    if (dr.state === "GRADE_ESTIMATED") {
+      need(Number.isInteger(dr.grade) && (dr.grade as number) >= 0 && (dr.grade as number) <= 4, "dr_assessment.grade", "must be an integer grade 0..4");
+      need(typeof dr.grade_label === "string" && dr.grade_label.length > 0, "dr_assessment.grade_label", "required");
+      need(typeof dr.referable_dr === "boolean", "dr_assessment.referable_dr", "must be a boolean");
+      need(dr.model_score === null || (typeof dr.model_score === "number" && Number.isFinite(dr.model_score)), "dr_assessment.model_score", "must be null or finite (MODEL_SCORE, never a probability)");
+      need(dr.calibration_state === "NOT_CALIBRATED", "dr_assessment.calibration_state", "DR grades may not claim calibration");
+      need(dr.validation_state === "RESEARCH", "dr_assessment.validation_state", "estimated grades are RESEARCH only");
+    } else if (dr.grade !== null || dr.grade_label !== null || dr.referable_dr !== null) {
+      errors.push({ path: "dr_assessment", message: "unavailable/blocked DR state cannot carry a grade" });
+    }
+  }
+
+  if (o.multi_model) {
+    const mm = o.multi_model;
+    const validAgreements = ["CORROBORATED_RESEARCH_EVIDENCE", "MODEL_DISAGREEMENT", "CONSISTENT_RESEARCH_NEGATIVE", "SINGLE_RESEARCH_MODEL", "NO_RESEARCH_MODEL_OUTPUT"];
+    need(validAgreements.includes(mm.agreement), "multi_model.agreement", "invalid agreement state");
+    need(Array.isArray(mm.models), "multi_model.models", "must be array");
+    need(Array.isArray(mm.notes) && mm.notes.length > 0 && mm.notes.every((n) => typeof n === "string" && n.length > 0), "multi_model.notes", "at least one explicit agreement note is required");
+    for (const [i, m] of (mm.models ?? []).entries()) {
+      if (!m.model_id || !m.model_version || !m.output_summary) {
+        errors.push({ path: `multi_model.models[${i}]`, message: "model provenance (id/version/output summary) required" });
+      }
+    }
+    if (mm.agreement === "NO_RESEARCH_MODEL_OUTPUT" && (mm.models?.length ?? 0) > 0) {
+      errors.push({ path: "multi_model.models", message: "no-output agreement cannot list models" });
     }
   }
 

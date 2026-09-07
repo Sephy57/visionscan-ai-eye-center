@@ -346,6 +346,59 @@ export const MODELS: Record<string, ModelRecord> = {
     supported_conditions: [], // RESEARCH model claims no conditions - associations stay empty, never diagnoses
     notes: "Registered RESEARCH model. Real local SafeTensors inference via FundusLesionLocalProvider; output is uncalibrated research observations only.",
   },
+  "fundus-dr-grading-effb0": {
+    model_id: "fundus-dr-grading-effb0",
+    model_name: "ClementP fundus DR grading EfficientNet-B0 (regression head)",
+    version: "aa5741419b90",
+    sha256: "0d9a18b0cb6c90d1f30bf2e66153b368bd7ff0bcb45b6690e8d5ce14fa19f69b",
+    format: "safetensors",
+    file_path: "fundus-dr-grading-effb0/model.safetensors",
+    modalities: ["FUNDUS"],
+    supported_anatomy: ["retina"],
+    supported_findings: ["dr_grade_estimate"],
+    intended_use: "Offline technical research only: image-level diabetic-retinopathy grade estimation as a decision-support observation requiring ophthalmic review. Never a diagnosis, never a normality claim, never a probability.",
+    contraindications: [
+      "Any clinical use, diagnosis, referral, treatment, or prescribing decision",
+      "Any claim of absence of diabetic retinopathy or of a normal fundus",
+      "Use of the raw logit as a calibrated probability or confidence",
+      "Use without hash-verified package, reviewed runtime, and clinician review of every output",
+    ],
+    limitations: [
+      "RESEARCH status; no clinical validation and no independent external validation completed.",
+      "Single regression logit rounded to an integer grade; grade boundaries are uncalibrated.",
+      "No calibrated confidence exists for any grade; the raw logit is a ranking score only.",
+      "Device compatibility is unvalidated for every device; domain validation is UNKNOWN for every study.",
+      "Publisher-reported training data (EyePACS/APTOS/DDR/IDRiD) overlaps common benchmarks; only non-overlapping cohorts validate generalization.",
+    ],
+    training_dataset: {
+      name: "EyePACS + APTOS + DDR + IDRiD (per publisher collection page; exact manifests unavailable)",
+      version: "as-reported-by-publisher",
+      size_studies: null,
+      size_patients: null,
+      population: "not documented by publisher; must not be assumed",
+      devices: [],
+      provenance_reference: "https://huggingface.co/collections/ClementP/fundus-grading",
+    },
+    validation_dataset: null,
+    patient_level_split: null,
+    performance: {
+      sensitivity: null, specificity: null, ppv: null, npv: null, auroc: null, auprc: null,
+      calibration: null, evidence_reference: null,
+    },
+    validation_date: null,
+    external_validation_status: "none",
+    clinical_validation_status: "none",
+    regulatory_status: "research_only",
+    status: "RESEARCH",
+    devices: [], // no device compatibility has been established for any device
+    uses_symptoms: false,
+    input_schema: "IMAGE_ONLY",
+    supported_symptom_types: [],
+    performance_with_symptoms: null,
+    performance_without_symptoms: null,
+    supported_conditions: [], // RESEARCH model claims no conditions - associations stay empty, never diagnoses
+    notes: "Registered RESEARCH model. Real local SafeTensors inference via DrGradeLocalProvider; output is an uncalibrated research grade estimate only.",
+  },
 };
 
 export function getModel(modelId: string): ModelRecord | null {

@@ -113,6 +113,33 @@ export const EVIDENCE_CONDITIONS: EvidenceConditionDef[] = [
     evidence_thresholds: { min_independent_supportive_for_supported: 2 },
     version: EVIDENCE_TAXONOMY_VERSION,
   },
+  {
+    condition_id: "diabetic_retinal_disease_pattern",
+    canonical_name: "Diabetic retinal disease evidence pattern",
+    category: "retina",
+    aliases: ["diabetic_retinopathy_pattern"],
+    // No single required item: this pattern only ever assembles
+    // multi-source research evidence. AI findings here are UNVERIFIED trust,
+    // so the assessment can reach at most POSSIBLE without clinician
+    // verification — never SUPPORTED, never a diagnosis. See
+    // docs/FUNDUS_LESION_FAILURE_ANALYSIS.md for model limits.
+    required_evidence: [],
+    supportive_evidence: [
+      { source_type: "AI_FINDING", category: "dr_grade_estimate" },
+      { source_type: "AI_FINDING", category: "retinal_hemorrhage" },
+      { source_type: "AI_FINDING", category: "microaneurysm_like_lesion" },
+      { source_type: "AI_FINDING", category: "hard_exudate" },
+      { source_type: "AI_FINDING", category: "cotton_wool_spot" },
+      { source_type: "SYMPTOM", category: "blurred_vision" },
+      { source_type: "SYMPTOM", category: "reduced_central_vision" },
+    ],
+    contradictory_evidence: [],
+    laterality_behavior: "per_eye",
+    differential_relationships: ["diabetic_macular_edema", "retinal_vein_occlusion", "age_related_macular_degeneration"],
+    red_flags: ["sudden_vision_loss"],
+    evidence_thresholds: { min_independent_supportive_for_supported: 3 },
+    version: EVIDENCE_TAXONOMY_VERSION,
+  },
 ];
 
 export const EVIDENCE_CONDITION_MAP: Record<string, EvidenceConditionDef> = Object.fromEntries(

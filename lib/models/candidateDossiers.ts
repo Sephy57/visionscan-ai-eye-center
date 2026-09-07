@@ -26,6 +26,11 @@
  *  - fundus-lesions-clementp-unet-seresnext50 -> MODELS (RESEARCH) on
  *    2026-09-08; see lib/models/registry.ts, data/models/<id>/manifest.json
  *    (gitignored artifact), and docs/FUNDUS_LESION_MODEL_INTEGRATION.md.
+ *  - clementp-fundus-dr-grading-efficientnet -> MODELS as
+ *    fundus-dr-grading-effb0 (RESEARCH) on 2026-09-08; see
+ *    lib/models/registry.ts, data/models/fundus-dr-grading-effb0/
+ *    manifest.json (gitignored artifact), and
+ *    docs/DR_GRADE_MODEL_INTEGRATION.md (incl. the S8 legal-review nuance).
  */
 
 export type CandidateStatus = "CANDIDATE_ONLY";
@@ -363,54 +368,6 @@ export const CANDIDATE_MODEL_DOSSIERS: CandidateModelDossier[] = [
     sources: [
       "https://huggingface.co/pamixsun/segformer_for_optic_disc_cup_segmentation",
       "https://huggingface.co/api/models/pamixsun/segformer_for_optic_disc_cup_segmentation",
-    ],
-    researched_at: "2026-09-02",
-  },
-  {
-    candidate_id: "clementp-fundus-dr-grading-efficientnet",
-    model_name: "FundusDRGrading EfficientNet-B0 (diabetic retinopathy severity grading)",
-    version_or_release: "ClementP/FundusDRGrading-efficientnet_b0 (Hugging Face)",
-    source: "https://huggingface.co/ClementP/FundusDRGrading-efficientnet_b0",
-    license: "MIT (HF model-card tag on the weights page, verified directly) - but S8 legal audit found this likely covers only the wrapper/packaging, not a clearance of the underlying training-data restrictions (see unresolved_blockers). Classified REVIEW_REQUIRED, not PASS, by the independent license audit.",
-    license_compatible_for_commercial_clinical_use: "UNKNOWN", // MIT tag says yes; APTOS/EyePACS training-data terms say non-commercial/no-redistribution - genuinely unresolved, not optimistically assumed either way
-    modality: ["FUNDUS"],
-    intended_task: "5-class diabetic retinopathy severity grading (no DR / mild / moderate / severe / proliferative).",
-    input_requirements: "Color fundus photographs.",
-    output_format: "Single ordinal severity class.",
-    training_dataset: "Pooled APTOS 2019 + EyePACS + DDR + IDRiD.",
-    validation_dataset: "Each dataset's own held-out test partition (EyePACS, IDRiD, DDR) - evaluated per-dataset, not on a cohort excluded from the entire training pool.",
-    patient_level_split_confirmed: "UNKNOWN", // no explicit patient-level de-duplication statement found; risk of image-level leakage cannot be ruled out
-    external_validation_performed: false, // independently confirmed: per-dataset internal test partitions only, not true external validation on a fully held-out-from-training cohort
-    known_limitations: [
-      "Reported metric is quadratic kappa ONLY (EyePACS 0.751, IDRiD 0.751, DDR 0.712) - no sensitivity, specificity, PPV, NPV, AUROC, AUPRC, or calibration reported anywhere, including the author's own related papers.",
-      "Validation is internal per-dataset (same pool as training), not genuine external validation - independently confirmed weaker than the MONAI RPD candidate's multi-institution external validation.",
-      "APTOS 2019's own dataset terms state 'Competition Use and Non-Commercial & Academic Research' (explicitly non-commercial); EyePACS's Kaggle terms do not permit redistribution of the raw data. Two of the four training datasets carry restrictions the MIT weights-license tag does not obviously clear.",
-      "No ground-truth/grading-methodology disclosure (single grader vs. adjudicated) found on the model card.",
-    ],
-    demographic_coverage: "UNKNOWN - inherits whatever the 4 pooled public datasets cover; not independently re-verified in this dossier.",
-    device_coverage: "UNKNOWN.",
-    preprocessing_requirements: "Standard transformers/EfficientNet preprocessing pipeline (author also publishes a companion `fundus-data-toolkit` package).",
-    inference_runtime: "PyTorch via transformers (EfficientNet-B0, ~4.05M params - small).",
-    hardware_requirements: "Very small model; CPU inference is very likely feasible, though not yet benchmarked on this deployment.",
-    model_weights_integrity_hash: null,
-    security_considerations: [
-      "S8 independent security audit: BOTH model.safetensors AND pytorch_model.bin are present - the safetensors file must be loaded explicitly; the pickle-based .bin sibling must never be loaded.",
-      "No custom code / trust_remote_code required - native transformers EfficientNet class.",
-      "Uploader is an unverified individual account (moderate usage: 576 downloads, last modified June 2024) - not institutionally vetted.",
-    ],
-    evidence_quality: "single_publication",
-    clinical_claims: "None explicit beyond the reported kappa scores; not presented as a validated diagnostic tool.",
-    unresolved_blockers: [
-      "LICENSE AMBIGUITY: the MIT tag on the weights does not obviously clear APTOS's explicit non-commercial terms or EyePACS's no-redistribution terms for the underlying training data - a human legal reviewer should resolve this before any use beyond the currently-authorized internal, non-commercial research/evaluation scope (S8 legal audit: REVIEW_REQUIRED, not PASS).",
-      "No sensitivity/specificity/AUROC/calibration reported - kappa alone is insufficient evidence for any clinical framing.",
-      "Validation is internal-only (same pool as training) - not externally validated by any strict definition.",
-      "Patient-level split not confirmed - image-level leakage cannot be ruled out.",
-      "No artifact has been downloaded; SHA-256 not yet computed.",
-    ],
-    status: "CANDIDATE_ONLY",
-    sources: [
-      "https://huggingface.co/ClementP/FundusDRGrading-efficientnet_b0",
-      "https://github.com/ClementPla/fundus-data-toolkit",
     ],
     researched_at: "2026-09-02",
   },
