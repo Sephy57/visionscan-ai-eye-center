@@ -6,9 +6,10 @@
  *  - Validation status comes ONLY from registry records with recorded
  *    evidence references. Developers cannot type "validated=true" without
  *    an evidence reference (validation run id / external dataset id).
- *  - No model is installed in this deployment; data\models\ is intentionally
- *    empty. The demo detector is registered with status DEMO and is the only
- *    provider allowed to produce findings.
+ *  - The DEMO detector produces synthetic output only. The fundus lesion
+ *    checkpoint (status RESEARCH) runs real local inference from a
+ *    hash-verified package; its output is uncalibrated research observations
+ *    only, never clinical findings.
  */
 
 import fs from "fs";
@@ -170,11 +171,11 @@ export const COMPONENTS: Record<string, ComponentDescriptor> = {
     id: "fundus-lesion-detector",
     name: "Fundus Lesion Detector",
     role: "detector",
-    version: "0.1.0",
-    implementation: "placeholder",
+    version: "0.2.0",
+    implementation: "ml_model",
     validationStatus: "not_validated",
-    checksum: v("fd-0.1.0-demo-provider"),
-    notes: "DEMO provider. Synthetic findings only, labeled DEMO / SYNTHETIC.",
+    checksum: v("fd-0.2.0-lesion-research-provider"),
+    notes: "RESEARCH provider (FundusLesionLocalProvider): real local SafeTensors inference, uncalibrated observations only, DEMO fallback when unavailable. NOT clinically validated.",
   },
   vascularAnalyzer: {
     id: "retinal-vascular-analyzer",
@@ -286,6 +287,64 @@ export const MODELS: Record<string, ModelRecord> = {
     performance_without_symptoms: null,
     supported_conditions: [], // DEMO model supports no conditions - none can ever be displayed
     notes: "Registered DEMO model. Produces labeled synthetic output only.",
+  },
+  "fundus-lesions-clementp-unet-seresnext50": {
+    model_id: "fundus-lesions-clementp-unet-seresnext50",
+    model_name: "ClementP fundus lesion segmentation U-Net SE-ResNeXt50 32x4d",
+    version: "a2cfcb594e483",
+    sha256: "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+    format: "safetensors",
+    file_path: "fundus-lesions-clementp-unet-seresnext50/model.safetensors",
+    modalities: ["FUNDUS"],
+    supported_anatomy: ["retina"],
+    supported_findings: [
+      "cotton_wool_spot",
+      "hard_exudate",
+      "retinal_hemorrhage",
+      "microaneurysm_like_lesion",
+    ],
+    intended_use: "Offline technical research only: lesion-like region localization on fundus photographs as decision-support observations requiring ophthalmic review. Never a diagnosis, never a normality claim.",
+    contraindications: [
+      "Any clinical use, diagnosis, treatment, or prescribing decision",
+      "Any claim of a normal/healthy fundus or absence of disease",
+      "AMD, retinal detachment/tear, vascular occlusion, tumors, glaucoma assessment, or any pathology outside the four supported lesion-like classes",
+      "Use without hash-verified package, reviewed runtime, and clinician review of every finding",
+    ],
+    limitations: [
+      "RESEARCH status; no clinical validation and no independent external validation completed.",
+      "Connected components are unfiltered argmax regions, not validated lesions.",
+      "Argmax masks are not calibrated probabilities; no calibrated confidence is ever produced.",
+      "Device compatibility is unvalidated for every device; domain validation is UNKNOWN for every study.",
+      "Only four lesion-like classes are covered; many sight-threatening conditions are explicitly unsupported.",
+    ],
+    training_dataset: {
+      name: "DDR + FGADR + IDRiD + MESSIDOR + RETLES (as reported on the publisher model card)",
+      version: "as-reported-by-publisher",
+      size_studies: null,
+      size_patients: null,
+      population: "not documented by publisher; must not be assumed",
+      devices: [],
+      provenance_reference: "https://huggingface.co/ClementP/fundus-lesions-segmentation-unet_seresnext50_32x4d",
+    },
+    validation_dataset: null,
+    patient_level_split: null,
+    performance: {
+      sensitivity: null, specificity: null, ppv: null, npv: null, auroc: null, auprc: null,
+      calibration: null, evidence_reference: null,
+    },
+    validation_date: null,
+    external_validation_status: "none",
+    clinical_validation_status: "none",
+    regulatory_status: "research_only",
+    status: "RESEARCH",
+    devices: [], // no device compatibility has been established for any device
+    uses_symptoms: false,
+    input_schema: "IMAGE_ONLY",
+    supported_symptom_types: [],
+    performance_with_symptoms: null,
+    performance_without_symptoms: null,
+    supported_conditions: [], // RESEARCH model claims no conditions - associations stay empty, never diagnoses
+    notes: "Registered RESEARCH model. Real local SafeTensors inference via FundusLesionLocalProvider; output is uncalibrated research observations only.",
   },
 };
 

@@ -17,7 +17,8 @@ import { getTreatmentInformation } from "../treatment/treatmentInfo";
 import { PatientSymptom, SYMPTOM_MAP, redFlagSymptoms } from "../clinical/symptoms";
 import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
 import { canDisplayDiagnosis, unvalidatedGateResult, DiagnosisGateInput } from "../models/diagnosisGate";
-import { unavailableFundusAbnormalityResult } from "../models/fundusAbnormality";
+import { unavailableFundusAbnormalityResult, resultFromResearchDetector } from "../models/fundusAbnormality";
+import type { FundusLesionResearchRun } from "../models/fundusLesionLocalProvider";
 
 /**
  * S12 - maps this deployment's registry ModelStatus onto the diagnosis
@@ -113,16 +114,83 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   // ---- Stage 1c: general fundus-abnormality gate (before any disease reasoning) ----
   // A reviewed detector plugs in here. There is intentionally no fallback to
   // SegFormer: optic-disc/cup segmentation has no lesion-detection scope.
-  // Until a hash-verified detector completes local validation, this returns a
+  // When the hash-verified RESEARCH lesion detector runs, its genuine output
+  // flows through resultFromResearchDetector(); otherwise this returns a
   // transparent MODEL_UNAVAILABLE state rather than a reassuring "normal".
-  const fundusAbnormality = unavailableFundusAbnormalityResult(quality, ood, study.modality);
+  // The RESEARCH lesion model is attempted for in-scope fundus input only.
+  // Device compatibility is intentionally NOT a block here: the IMAGE_ONLY
+  // lesion computation does not branch on device metadata, so an absent
+  // device is disclosed as DOMAIN_VALIDATION_UNKNOWN (see provider notes),
+  // never silently passed or failed. The context-free registry gate below
+  // still enforces registration, checksum presence, modality declaration,
+  // and RESEARCH status before any inference is attempted.
+  let fundusAbnormality = unavailableFundusAbnormalityResult(quality, ood, study.modality);
+  let researchRun: FundusLesionResearchRun | null = null;
+  let researchAttemptNote: string | null = null;
+  const lesionRecord = getModel("fundus-lesions-clementp-unet-seresnext50");
+  const lesionGate = lesionRecord ? gateModelUse(lesionRecord) : null;
+  if (
+    qualityAcceptable &&
+    canonicalModality(study.modality) === "FUNDUS" &&
+    lesionRecord &&
+    lesionGate?.allowed &&
+    supportsModality(lesionRecord, study.modality)
+  ) {
+    try {
+      // Lazy import: the DEMO/quality/OOD path never loads the ML worker module.
+      const { runFundusLesionResearchAnalysis } = await import("../models/fundusLesionLocalProvider");
+      researchRun = await runFundusLesionResearchAnalysis(study, {
+        qualityScore: quality.quality_score,
+        eye: study.eye,
+        device: deviceInfo,
+        imageBytes: originalBytes,
+      });
+      // Lesion-domain OOD: image characteristics and modality still block;
+      // missing device metadata is DOMAIN_VALIDATION_UNKNOWN (disclosed in
+      // provider notes), never conflated into OUT_OF_DISTRIBUTION.
+      const lesionOod = assessOod({
+        modality: study.modality,
+        quality,
+        model: lesionRecord,
+        device: deviceInfo,
+        metadataProvided: study.metadata.providedBy !== "none",
+        deviceUnknownIsDomainUnknown: true,
+      });
+      fundusAbnormality = resultFromResearchDetector({
+        raw: researchRun.raw,
+        quality,
+        ood: lesionOod,
+        modelId: lesionRecord.model_id,
+        modelVersion: lesionRecord.version,
+        supportedFindingTypes: new Set(lesionRecord.supported_findings),
+      });
+    } catch (err) {
+      researchRun = null;
+      researchAttemptNote = `Research lesion detector could not run: ${String(err instanceof Error ? err.message : err).slice(0, 200)}`;
+    }
+  } else if (canonicalModality(study.modality) === "FUNDUS" && qualityAcceptable && lesionRecord && !lesionGate?.allowed) {
+    researchAttemptNote = `Research lesion detector gated off: ${(lesionGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
+  }
 
   // ---- Stage 2: anatomical segmentation (placeholder) ----
   // Emits no structures or measurements. Recorded for provenance.
 
-  // ---- Stage 3: specialized detectors (DEMO / SYNTHETIC ONLY) ----
+  // ---- Stage 3: specialized detectors ----
+  // Fundus studies use REAL research-detector output when it completed;
+  // every other path keeps the labeled DEMO/synthetic behavior exactly.
   let findings: Finding[] = [];
-  if (qualityAcceptable && modelGate?.allowed) {
+  let activeModelRecord = modelRecord;
+  let activeModelGate = modelGate;
+  const usedResearch = !!researchRun && researchRun.raw.inference_status === "completed";
+  if (usedResearch && researchRun && lesionRecord && lesionGate) {
+    activeModelRecord = lesionRecord;
+    activeModelGate = lesionGate;
+    findings = researchRun.findings.flatMap((f) => {
+      const gate = mayEmitFinding(f.type, canonicalModality(study.modality), "RESEARCH");
+      if (!gate.ok) return []; // refuse to emit a finding the taxonomy forbids
+      return [{ ...f, taxonomy_level: "observation" as const, model_status: "RESEARCH" as const }];
+    });
+  } else if (qualityAcceptable && modelGate?.allowed) {
     const scenario = pickDemoScenario(originalBytes);
     findings = buildDemoFindings(scenario, quality.quality_score);
     // Taxonomy + provenance tagging; enforce taxonomy/modality/status rules.
@@ -154,18 +222,18 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         symptoms,
         findings,
         qualityAcceptable,
-        modelStatus: modelRecord?.status ?? "DEMO",
-        modelUsesSymptoms: modelRecord?.uses_symptoms ?? false,
+        modelStatus: activeModelRecord?.status ?? "DEMO",
+        modelUsesSymptoms: activeModelRecord?.uses_symptoms ?? false,
         qualityScore: quality.quality_score,
       })
     : null;
 
   // ---- Stage 5c: possible conditions (associations only; empty for unvalidated models) ----
   const conditions = possibleConditions({
-    supported_conditions: modelRecord?.supported_conditions ?? [],
+    supported_conditions: activeModelRecord?.supported_conditions ?? [],
     modality: study.modality,
-    modelStatus: modelRecord?.status ?? "DEMO",
-    hasValidationEvidence: !!modelRecord?.performance.evidence_reference,
+    modelStatus: activeModelRecord?.status ?? "DEMO",
+    hasValidationEvidence: !!activeModelRecord?.performance.evidence_reference,
     findings,
   });
 
@@ -204,13 +272,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   // derived from real pipeline state; the gate is closed by modelValidation
   // alone today (DEMO is never CLINICALLY_VALIDATED), regardless.
   const diagnosisGateResult = canDisplayDiagnosis({
-    modelValidation: mapModelValidationStatus(modelRecord?.status),
+    modelValidation: mapModelValidationStatus(activeModelRecord?.status),
     intendedUseMatches: false, // no formally documented/approved intended use exists in this deployment
-    modalityMatches: !!modelRecord && supportsModality(modelRecord, study.modality),
+    modalityMatches: !!activeModelRecord && supportsModality(activeModelRecord, study.modality),
     qualityStatus: quality.quality_status,
     oodDetected: ood.detected,
     calibrationAvailable: false, // no documented calibration evidence exists in this deployment
-    evidenceSufficient: conditions.conditions.length > 0 && !!modelRecord?.performance.evidence_reference,
+    evidenceSufficient: conditions.conditions.length > 0 && !!activeModelRecord?.performance.evidence_reference,
   });
 
   // ---- Assemble structured result ----
@@ -253,17 +321,21 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     },
     fundus_abnormality: fundusAbnormality,
     model_registry: {
-      model_id: modelRecord?.model_id ?? "none",
-      model_version: modelRecord?.version ?? "none",
-      model_status: modelRecord?.status ?? "DEMO",
-      display_label: modelGate?.label ?? DEMO_LABEL,
+      model_id: activeModelRecord?.model_id ?? "none",
+      model_version: activeModelRecord?.version ?? "none",
+      model_status: activeModelRecord?.status ?? "DEMO",
+      display_label: activeModelGate?.label ?? DEMO_LABEL,
       integrity_checks: [
-        { check: "registry", passed: !!modelRecord, detail: modelRecord ? "Registered model in use." : "No registered model." },
-        { check: "artifact", passed: true, detail: "Placeholder DEMO model: no artifact on disk by design (data/models is empty)." },
-        { check: "status_gate", passed: !!modelGate?.allowed, detail: modelGate ? modelGate.reasons.join(" ") || "Status permits demo use only." : "No gate result." },
+        { check: "registry", passed: !!activeModelRecord, detail: activeModelRecord ? "Registered model in use." : "No registered model." },
+        usedResearch
+          ? { check: "artifact", passed: researchRun!.integrity.trusted, detail: researchRun!.integrity.checks.map((c) => `${c.check}:${c.passed ? "pass" : "FAIL"}`).join(" ") || "Research artifact integrity verification." }
+          : { check: "artifact", passed: true, detail: "Placeholder DEMO model: no artifact on disk by design (data/models is empty)." },
+        { check: "status_gate", passed: !!activeModelGate?.allowed, detail: activeModelGate ? activeModelGate.reasons.join(" ") || (usedResearch ? "Status permits research use only." : "Status permits demo use only.") : "No gate result." },
+        ...(researchAttemptNote ? [{ check: "research_detector_attempt" as const, passed: false, detail: researchAttemptNote }] : []),
+        ...((researchRun?.notes ?? []).map((n) => ({ check: "research_detector_note" as const, passed: true, detail: n.slice(0, 300) }))),
       ],
-      device_compatibility: modelRecord ? deviceCompatible(modelRecord, deviceInfo) : { compatible: false, note: "Device compatibility has not been validated. No registered model in use." },
-      model_input: modelRecord?.input_schema ?? "IMAGE_ONLY",
+      device_compatibility: activeModelRecord ? deviceCompatible(activeModelRecord, deviceInfo) : { compatible: false, note: "Device compatibility has not been validated. No registered model in use." },
+      model_input: activeModelRecord?.input_schema ?? "IMAGE_ONLY",
     },
     patient_context: {
       reported: symptoms.length > 0,
@@ -294,8 +366,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       note: ensemble.note,
     },
     demo: {
-      synthetic_result: true,
-      label: DEMO_LABEL,
+      synthetic_result: !usedResearch,
+      label: activeModelGate?.label ?? DEMO_LABEL,
     },
     diagnosis_gate: {
       allowed: diagnosisGateResult.allowed,
@@ -316,7 +388,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       quality_gate_enforced: true,
       disclaimers: [
         VALIDATION_STATUS_BANNER,
-        DEMO_LABEL,
+        activeModelGate?.label ?? DEMO_LABEL,
         "This system is a screening/decision-support architecture. It does not establish diagnoses. Only a qualified eye-care professional can diagnose eye disease.",
         "A negative automated result does not guarantee that no eye disease is present.",
       ],

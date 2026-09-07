@@ -85,8 +85,15 @@ interface Bundle {
   error?: string;
 }
 
-function ResultSkeleton() {
-  return (
+/** Data-driven artifact/integrity note: never hard-code a placeholder claim. */
+function checksumNote(a: NonNullable<Bundle["analysis"]>): string {
+  const checks = a.model_registry?.integrity_checks ?? [];
+  const artifact = checks.find((c) => c.check === "artifact" || c.check === "checksum");
+  if (artifact) return `${artifact.passed ? "Verified" : "FAILED"} — ${artifact.detail}`;
+  return "No artifact integrity evidence recorded for this result.";
+}
+
+function ResultSkeleton() {  return (
     <div className="zone-3" aria-busy="true" aria-label="Loading study">
       <div className="zone-viewer"><div className="skel" style={{ height: 420 }} /></div>
       <div>
@@ -102,8 +109,7 @@ function ResultSkeleton() {
 }
 
 function ResultInner() {
-  const params = useSearchParams();
-  const study = params.get("study") ?? "";
+  const params = useSearchParams();  const study = params.get("study") ?? "";
   const [data, setData] = useState<Bundle | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [activeRegion, setActiveRegion] = useState<Finding["region"]>(null);
@@ -166,6 +172,7 @@ function ResultInner() {
   const redFlags = a.patient_context?.red_flags ?? [];
   const hasRedFlag = redFlags.length > 0;
   const fundusCoverage = coverageForModality("FUNDUS");
+  const researchPipelineTargets = fundusCoverage.filter((entry) => entry.state === "RESEARCH_PIPELINE").map((entry) => entry.display_name);
   const disabledCandidateTargets = fundusCoverage.filter((entry) => entry.state === "CANDIDATE_DISABLED").map((entry) => entry.display_name);
   const unsupportedDiseaseTargets = fundusCoverage.filter((entry) => entry.task === "DISEASE_SCREENING").map((entry) => entry.display_name);
 
@@ -257,7 +264,10 @@ function ResultInner() {
         <details className="tech" style={{ marginTop: 8 }}>
           <summary>What this deployment did and did not evaluate</summary>
           <p className="tiny muted"><strong>Active production imaging targets:</strong> none.</p>
-          <p className="tiny muted"><strong>Downloaded candidate, disabled and not executed here:</strong> {disabledCandidateTargets.join(", ")}.</p>
+          {researchPipelineTargets.length > 0 && (
+            <p className="tiny muted"><strong>Research lesion detection {fundus?.model_id ? "executed for this image" : "available in this deployment"} (uncalibrated, not validated):</strong> {researchPipelineTargets.join(", ")}.</p>
+          )}
+          <p className="tiny muted"><strong>Downloaded candidate, disabled and not executed here:</strong> {disabledCandidateTargets.length ? disabledCandidateTargets.join(", ") : "none"}.</p>
           <p className="tiny muted"><strong>No validated disease model available:</strong> {unsupportedDiseaseTargets.join(", ")}.</p>
           <p className="tiny muted" style={{ marginBottom: 0 }}>Missing or disabled coverage is never evidence of a normal fundus or absence of unlisted pathology.</p>
         </details>
@@ -326,7 +336,7 @@ function ResultInner() {
                   <dt>Laterality</dt><dd>{a.study?.eye}</dd>
                   <dt>Model</dt><dd>{f.model_id}</dd>
                   <dt>Validation</dt><dd>Not clinically validated</dd>
-                  <dt>Localization</dt><dd>Not available</dd>
+                  <dt>Localization</dt><dd>{f.region ? "Bounding box (research overlay — View on scan)" : "Not available"}</dd>
                   <dt>Priority</dt><dd>{f.severity === "severe" || f.severity === "moderate" ? "Requires clinician review" : "Routine review"}</dd>
                 </dl>
                 <ConfidenceIndicator finding={f} />
@@ -428,7 +438,7 @@ function ResultInner() {
                 <dt>Input type</dt><dd>{a.model_registry?.model_input ?? "IMAGE_ONLY"}</dd>
                 <dt>Uses symptoms</dt><dd>{a.model_registry?.model_input === "IMAGE_AND_SYMPTOMS" ? "YES" : "NO"}</dd>
                 <dt>Supported conditions</dt><dd>None registered</dd>
-                <dt>Checksum</dt><dd className="tiny">Placeholder model — no artifact on disk (data\models is empty)</dd>
+                <dt>Checksum</dt><dd className="tiny">{checksumNote(a)}</dd>
                 <dt>Validation</dt><dd style={{ color: "var(--danger)", fontWeight: 650 }}>NOT VALIDATED</dd>
                 <dt>Device compatibility</dt><dd>{a.model_registry?.device_compatibility.note}</dd>
               </dl>

@@ -26,6 +26,16 @@ export function assessOod(params: {
   model: ModelRecord | null;
   device: { manufacturer?: string; model?: string } | null;
   metadataProvided: boolean;
+  /**
+   * When true, missing acquisition metadata and unvalidated device
+   * compatibility are NOT reported as out-of-distribution reasons. Use this
+   * only for IMAGE_ONLY models whose computation does not branch on device
+   * metadata: for those models an absent device means DOMAIN_VALIDATION_UNKNOWN
+   * (disclosed separately, never assumed), not true OOD. Wrong modality,
+   * quality characteristics, and atypical image features are still OOD.
+   * Defaults to false (strict: every distribution uncertainty is OOD).
+   */
+  deviceUnknownIsDomainUnknown?: boolean;
 }): OodResult {
   const reasons: string[] = [];
 
@@ -36,12 +46,19 @@ export function assessOod(params: {
   if (params.model && !params.model.modalities.includes(canonical)) {
     reasons.push(`Modality ${canonical} is not supported by the current model.`);
   }
-  if (!params.metadataProvided) {
-    reasons.push("Acquisition metadata (device/protocol) is missing; distribution cannot be verified.");
-  }
-  if (params.model) {
-    const dev = deviceCompatible(params.model, params.device);
-    if (!dev.compatible) reasons.push(dev.note);
+  if (params.deviceUnknownIsDomainUnknown) {
+    // Deliberately no metadata/device reasons here: the caller discloses
+    // DOMAIN_VALIDATION_UNKNOWN through model notes and result limitations.
+    // Collapsing "no device metadata" into OOD would reject visually valid
+    // fundus photographs the model can genuinely process.
+  } else {
+    if (!params.metadataProvided) {
+      reasons.push("Acquisition metadata (device/protocol) is missing; distribution cannot be verified.");
+    }
+    if (params.model) {
+      const dev = deviceCompatible(params.model, params.device);
+      if (!dev.compatible) reasons.push(dev.note);
+    }
   }
 
   // Image-characteristics heuristics (coarse, honest, unvalidated):

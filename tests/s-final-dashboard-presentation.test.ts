@@ -5,6 +5,7 @@ import sharp from "sharp";
 import {
   createStudy, analyzeStudy, deleteStudy, submitReview, setStudySymptoms, listStudiesWithStatus,
 } from "@/lib/studies/service";
+import { PROJECT_ROOT } from "@/lib/config";
 import type { DeviceMetadata } from "@/lib/devices/adapter";
 import type { PatientSymptom } from "@/lib/clinical/symptoms";
 
@@ -39,6 +40,25 @@ afterAll(async () => {
   for (const id of createdStudyIds) await deleteStudy(id).catch(() => {});
 });
 
+/** True when fundus analyses take the real-inference RESEARCH path on this machine. */
+const RESEARCH_LIVE =
+  fs.existsSync(path.join(PROJECT_ROOT, "data", "models", "fundus-lesions-clementp-unet-seresnext50", "manifest.json")) &&
+  fs.existsSync(path.join(PROJECT_ROOT, "data", "models", "fundus-lesions-clementp-unet-seresnext50", "model.safetensors")) &&
+  fs.existsSync(
+    path.join(PROJECT_ROOT, ".venv-ophthalmic", process.platform === "win32" ? "Scripts" : "bin", process.platform === "win32" ? "python.exe" : "python3")
+  );
+
+/** Deterministic zero-finding RESEARCH fixture: quality-passing non-red
+ *  geometry the verified worker reports NO_TARGET_ABNORMALITY_DETECTED for. */
+async function makeGreenDiscImage(): Promise<Buffer> {
+  const w = 1024, h = 768;
+  const svg = Buffer.from(
+    `<svg width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="#0a2810"/>` +
+    `<circle cx="512" cy="384" r="300" fill="#196e2d"/></svg>`
+  );
+  return sharp(svg).png().toBuffer();
+}
+
 /**
  * pickDemoScenario() is a pure function of the raw bytes, but createStudy()
  * may re-encode/normalize the uploaded image before it reaches the
@@ -48,6 +68,22 @@ afterAll(async () => {
  * matches what's needed, deleting the rest.
  */
 async function studyWithFindings(wantFindings: boolean): Promise<{ studyId: string; findingsCount: number }> {
+  // On RESEARCH_LIVE machines the red fixture deterministically yields real
+  // hemorrhage-like regions and the green-disc fixture deterministically
+  // yields zero findings, so seek at most 2 analyses. On DEMO-only machines
+  // keep the original demo-scenario seek (fast, no model inference).
+  if (RESEARCH_LIVE) {
+    const bytes = wantFindings ? await makeFundusLikeImage(0) : await makeGreenDiscImage();
+    const study = await createStudy(`final-seek-${wantFindings}-r.png`, "image/png", bytes, DECLARED);
+    const { analysis } = await analyzeStudy(study.study_id);
+    const has = analysis.findings.length > 0;
+    if (has === wantFindings) {
+      createdStudyIds.push(study.study_id);
+      return { studyId: study.study_id, findingsCount: analysis.findings.length };
+    }
+    await deleteStudy(study.study_id).catch(() => {});
+    throw new Error(`research-path fixture mismatch: wantFindings=${wantFindings} got ${analysis.findings.length}`);
+  }
   for (let v = 0; v < 40; v++) {
     const bytes = await makeFundusLikeImage(v);
     const study = await createStudy(`final-seek-${wantFindings}-${v}.png`, "image/png", bytes, DECLARED);
@@ -76,7 +112,7 @@ describe("Final phase - listStudiesWithStatus() dashboard buckets are real, serv
     const row = rows.find((r) => r.study_id === studyId);
     expect(row).toBeDefined();
     expect(row!.dashboard_status).toBe("URGENT_REVIEW");
-  }, 60000);
+  }, 120000);
 
   it("an analyzed study with real findings, closed diagnosis gate, not yet reviewed -> CLINICAL_CORRELATION_REQUIRED", async () => {
     const { studyId, findingsCount } = await studyWithFindings(true);
@@ -85,7 +121,7 @@ describe("Final phase - listStudiesWithStatus() dashboard buckets are real, serv
     const rows = await listStudiesWithStatus();
     const row = rows.find((r) => r.study_id === studyId);
     expect(row!.dashboard_status).toBe("CLINICAL_CORRELATION_REQUIRED");
-  }, 60000);
+  }, 120000);
 
   it("an analyzed study with zero findings, no red flags -> REVIEW_REQUIRED (not CLINICAL_CORRELATION_REQUIRED, since there is no clinical content to correlate)", async () => {
     const { studyId } = await studyWithFindings(false);
@@ -93,7 +129,7 @@ describe("Final phase - listStudiesWithStatus() dashboard buckets are real, serv
     const rows = await listStudiesWithStatus();
     const row = rows.find((r) => r.study_id === studyId);
     expect(row!.dashboard_status).toBe("REVIEW_REQUIRED");
-  }, 60000);
+  }, 120000);
 
   it("once a clinician confirms the report, status becomes REVIEWED - a real end-to-end review action, not a client-side flag", async () => {
     const { studyId } = await studyWithFindings(true);
@@ -105,7 +141,7 @@ describe("Final phase - listStudiesWithStatus() dashboard buckets are real, serv
 
     rows = await listStudiesWithStatus();
     expect(rows.find((r) => r.study_id === studyId)!.dashboard_status).toBe("REVIEWED");
-  }, 60000);
+  }, 120000);
 
   it("a quality-rejected study -> IMAGE_NOT_SUITABLE, never conflated with a real analyzed result", async () => {
     // A tiny, low-quality image reliably fails the real quality gate.

@@ -10,6 +10,7 @@
 export type OphthalmicCoverageState =
   | "NO_VALIDATED_MODEL_AVAILABLE"
   | "CANDIDATE_DISABLED"
+  | "RESEARCH_PIPELINE"
   | "RESEARCH_ANATOMY_ONLY"
   | "UNSUPPORTED_IMAGE_ANALYSIS";
 
@@ -21,7 +22,8 @@ export interface OphthalmicCoverageEntry {
   state: OphthalmicCoverageState;
   model_id: string | null;
   production_available: false;
-  pipeline_enabled: false;
+  /** True once the live analysis pipeline actually executes a model for this target. */
+  pipeline_enabled: boolean;
   localization: "NONE" | "RESEARCH_BOUNDING_BOX" | "CANDIDATE_ORIGINAL_IMAGE_GEOMETRY_NOT_EXPOSED";
   calibration: "NOT_CALIBRATED" | "NOT_APPLICABLE";
   result_semantics: string;
@@ -45,14 +47,14 @@ export const OPHTHALMIC_COVERAGE_REGISTRY: readonly OphthalmicCoverageEntry[] = 
     display_name: target.replaceAll("_", " "),
     modality: "FUNDUS" as const,
     task: "LESION_SEGMENTATION" as const,
-    state: "CANDIDATE_DISABLED" as const,
+    state: "RESEARCH_PIPELINE" as const,
     model_id: "fundus-lesions-clementp-unet-seresnext50",
     production_available: false as const,
-    pipeline_enabled: false as const,
-    localization: "CANDIDATE_ORIGINAL_IMAGE_GEOMETRY_NOT_EXPOSED" as const,
+    pipeline_enabled: true as const,
+    localization: "RESEARCH_BOUNDING_BOX" as const,
     calibration: "NOT_CALIBRATED" as const,
-    result_semantics: "Offline engineering candidate only; argmax components are not validated lesions",
-    limitations: ["License/data-rights review unresolved.", "No independent patient-separated internal or external validation.", "No pre-registered component rule or operating threshold."],
+    result_semantics: "Research lesion-like region detection; unfiltered argmax components are not validated lesions and a target-negative result is never a healthy-eye claim",
+    limitations: ["RESEARCH status: real local inference, no clinical or independent external validation completed.", "Device compatibility unvalidated for every device; domain validation UNKNOWN.", "Argmax components have no operating threshold or calibration; false negatives and false positives occur."],
   })),
   {
     target_id: "optic_disc_cup_anatomy", display_name: "Optic disc/cup anatomy", modality: "FUNDUS", task: "ANATOMY_SEGMENTATION",
@@ -89,7 +91,7 @@ export const OPHTHALMIC_COVERAGE_REGISTRY: readonly OphthalmicCoverageEntry[] = 
   },
 ] as const;
 
-export const OPHTHALMIC_COVERAGE_VERSION = "2026-09-07.1";
+export const OPHTHALMIC_COVERAGE_VERSION = "2026-09-08.1";
 
 export function activeProductionCoverage(): readonly OphthalmicCoverageEntry[] {
   return OPHTHALMIC_COVERAGE_REGISTRY.filter((entry) => entry.production_available && entry.pipeline_enabled);

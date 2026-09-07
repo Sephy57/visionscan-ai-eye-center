@@ -4,13 +4,14 @@ import { activeProductionCoverage, coverageForModality, OPHTHALMIC_COVERAGE_REGI
 describe("ophthalmic coverage negative-space registry", () => {
   it("reports zero active production imaging targets", () => {
     expect(activeProductionCoverage()).toEqual([]);
-    expect(OPHTHALMIC_COVERAGE_REGISTRY.every((entry) => !entry.production_available && !entry.pipeline_enabled)).toBe(true);
+    expect(OPHTHALMIC_COVERAGE_REGISTRY.every((entry) => !entry.production_available)).toBe(true);
   });
 
-  it("keeps all four ClementP targets candidate-only and not calibrated", () => {
+  it("marks the four ClementP lesion targets RESEARCH_PIPELINE and not calibrated", () => {
     const candidates = coverageForModality("fundus").filter((entry) => entry.model_id === "fundus-lesions-clementp-unet-seresnext50");
     expect(candidates.map((entry) => entry.target_id)).toEqual(["cotton_wool_spot", "hard_exudate", "retinal_hemorrhage", "microaneurysm_like_lesion"]);
-    expect(candidates.every((entry) => entry.state === "CANDIDATE_DISABLED" && entry.calibration === "NOT_CALIBRATED")).toBe(true);
+    expect(candidates.every((entry) => entry.state === "RESEARCH_PIPELINE" && entry.calibration === "NOT_CALIBRATED")).toBe(true);
+    expect(candidates.every((entry) => entry.pipeline_enabled && !entry.production_available)).toBe(true);
   });
 
   it("explicitly records common unsupported pathologies and non-fundus pixel analysis", () => {

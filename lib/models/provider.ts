@@ -16,6 +16,7 @@ import { Finding } from "../analysis/schema";
 import { ModelRecord, getModel, gateModelUse, ModelGateResult } from "./registry";
 import { verifyModelIntegrity, IntegrityResult } from "./integrity";
 import { checkModalitySupported } from "./modalities";
+import { FundusLesionLocalProvider } from "./fundusLesionLocalProvider";
 
 export interface ModelCapabilities {
   model_id: string;
@@ -30,6 +31,12 @@ export interface ModelAnalysisContext {
   qualityScore: number;
   eye: string;
   device?: { manufacturer?: string; model?: string } | null;
+  /**
+   * Raw study image bytes for providers that run REAL pixel inference.
+   * Optional so byte-free providers (e.g. the DEMO generator) are unaffected.
+   * A provider that needs pixels but receives none must fail closed.
+   */
+  imageBytes?: Buffer;
 }
 
 export interface ModelAnalysisOutput {
@@ -74,8 +81,9 @@ export async function gateOrThrow(modelId: string, device?: { manufacturer?: str
 }
 
 /**
- * The ONLY provider installed in this deployment. Deterministic synthetic
- * output for pipeline exercise. Registered as status DEMO.
+ * Deterministic synthetic DEMO provider and pipeline default. Registered as
+ * status DEMO. A second provider ("local-fundus-lesion", RESEARCH) exists for
+ * the hash-verified lesion checkpoint - see fundusLesionLocalProvider.ts.
  */
 export class PlaceholderDemoProvider implements EyeModelProvider {
   readonly providerId = "placeholder-demo";
@@ -148,16 +156,28 @@ export class PlaceholderDemoProvider implements EyeModelProvider {
   }
 }
 
-/** Provider registry - extend as real providers (ONNX, remote servers) are added. */
+/**
+ * Installed providers in this deployment:
+ *  - "placeholder-demo": deterministic synthetic DEMO generator (default).
+ *  - "local-fundus-lesion": real local SafeTensors lesion inference
+ *    (RESEARCH status, fundus only). Lazily imported so the DEMO path never
+ *    pays for - or depends on - the ML worker module.
+ */
 const PROVIDERS: Record<string, EyeModelProvider> = {
   "placeholder-demo": new PlaceholderDemoProvider(),
 };
 
+function lesionProvider(): EyeModelProvider {
+  return new FundusLesionLocalProvider();
+}
+
 export function getProvider(providerId: string): EyeModelProvider | null {
+  if (providerId === "local-fundus-lesion") return lesionProvider();
   return PROVIDERS[providerId] ?? null;
 }
 
 export function getProviderForModel(modelId: string): EyeModelProvider | null {
+  if (modelId === "fundus-lesions-clementp-unet-seresnext50") return lesionProvider();
   return Object.values(PROVIDERS).find((p) => p.modelId === modelId) ?? null;
 }
 

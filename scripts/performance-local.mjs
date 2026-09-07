@@ -1,7 +1,35 @@
 // Local-only synthetic performance sample. It records observed wall-clock
 // timings, not an SLO and not clinical model performance.
 import sharp from "sharp";
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import { performance } from "node:perf_hooks";
+import { fileURLToPath } from "node:url";
+
+const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const VENV_PYTHON = path.join(ROOT, ".venv-ophthalmic", process.platform === "win32" ? "Scripts" : "bin", process.platform === "win32" ? "python.exe" : "python3");
+const LESION_PKG = path.join(ROOT, "data", "models", "fundus-lesions-clementp-unet-seresnext50");
+const LESION_PROBE = path.join(ROOT, "scripts", "inference", "fundus_lesion_probe.py");
+const LESION_IMAGE = path.join(ROOT, "scratch", "test_images", "example_fundus.jpg");
+
+function timeLesionWorker() {
+  // One cold end-to-end worker run (spawn + torch import + load + infer) on
+  // the pinned engineering image, when the installed package and dedicated
+  // runtime are present. Null (with notice) on unequipped machines.
+  if (!fs.existsSync(VENV_PYTHON) || !fs.existsSync(path.join(LESION_PKG, "model.safetensors")) || !fs.existsSync(LESION_IMAGE)) {
+    return { measurement: null, notice: "Lesion worker not installed on this machine; no worker timing measured." };
+  }
+  const started = performance.now();
+  const run = spawnSync(VENV_PYTHON, ["-I", "-s", LESION_PROBE, LESION_PKG, LESION_IMAGE, "--threads", "4"], { timeout: 240000, encoding: "utf8" });
+  const elapsed_ms = Number((performance.now() - started).toFixed(1));
+  let summary = null;
+  try { summary = JSON.parse(String(run.stdout || "").trim()).image_level_summary ?? null; } catch { summary = null; }
+  if (run.status !== 0 || summary === null) {
+    return { measurement: null, notice: `Lesion worker run failed (exit ${run.status}); no worker timing promoted.` };
+  }
+  return { measurement: { samples: 1, elapsed_ms, image_level_summary: summary, note: "cold single-run wall time incl. interpreter start; warmed forward ~2.3s/1024px CPU, peak RSS ~1.3GB, inference serialized by provider mutex" }, notice: null };
+}
 
 const BASE = process.env.BASE_URL || "http://localhost:3000";
 const USERNAME = process.env.SMOKE_ADMIN_USERNAME || "smoke-admin";
@@ -80,9 +108,10 @@ async function main() {
   } finally {
     if (studyId) await request(`/api/studies/${encodeURIComponent(studyId)}`, { method: "DELETE" });
   }
-  results.metrics.clementp_model_load = null;
-  results.metrics.clementp_inference = null;
-  results.model_timing_notice = "Current candidate runtime is not ready; historical timings are not reproduced or promoted here.";
+  const lesion = timeLesionWorker();
+  results.metrics.clementp_model_load = lesion.measurement;
+  results.metrics.clementp_inference = lesion.measurement;
+  results.model_timing_notice = lesion.notice ?? "Measured cold worker run above; not an SLO or clinical performance claim.";
   console.log(JSON.stringify(results, null, 2));
 }
 

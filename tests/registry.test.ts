@@ -27,13 +27,21 @@ function goodQuality(): QualityResult {
 }
 
 describe("model registry", () => {
-  it("has exactly one registered model with DEMO status and no artifact", () => {
+  it("registers the DEMO synthetic model with no artifact", () => {
     const ids = Object.keys(MODELS);
     expect(ids).toContain("demo-fundus-synthetic-v0");
     expect(demo.status).toBe("DEMO");
     expect(demo.sha256).toBeNull();
     expect(demo.performance.sensitivity).toBeNull();
     expect(demo.performance.evidence_reference).toBeNull();
+  });
+
+  it("registers the RESEARCH lesion model with a pinned artifact checksum", () => {
+    const lesion = getModel("fundus-lesions-clementp-unet-seresnext50")!;
+    expect(lesion.status).toBe("RESEARCH");
+    expect(lesion.sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(lesion.supported_conditions).toEqual([]);
+    expect(auditRegistryConsistency()).toEqual([]);
   });
 
   it("DEMO models are allowed only for demo use with a mandatory label", () => {

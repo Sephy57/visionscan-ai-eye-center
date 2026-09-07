@@ -26,6 +26,12 @@ describe("GET /api/models/coverage", () => {
     const body = await response.json();
     expect(body.production_coverage_count).toBe(0);
     expect(body.entries).toHaveLength(OPHTHALMIC_COVERAGE_REGISTRY.length);
-    expect(body.entries.every((entry: { pipeline_enabled: boolean }) => !entry.pipeline_enabled)).toBe(true);
+    // No production coverage anywhere; exactly the four RESEARCH lesion
+    // targets are pipeline-enabled (research, never production).
+    const enabled = body.entries.filter((entry: { pipeline_enabled: boolean }) => entry.pipeline_enabled);
+    expect(enabled.map((entry: { target_id: string }) => entry.target_id).sort()).toEqual(
+      ["cotton_wool_spot", "hard_exudate", "microaneurysm_like_lesion", "retinal_hemorrhage"]
+    );
+    expect(enabled.every((entry: { state: string }) => entry.state === "RESEARCH_PIPELINE")).toBe(true);
   });
 });

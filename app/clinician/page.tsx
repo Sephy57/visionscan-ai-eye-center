@@ -19,6 +19,10 @@ interface Bundle {
     findings: Finding[];
     quality: { acceptable: boolean; status: string; score: number; artifacts: string[]; metrics: Record<string, number | boolean> };
     model_registry?: { model_id: string; model_version: string; model_status: string; device_compatibility: { compatible: boolean; note: string } };
+    fundus_abnormality?: {
+      state: string; validation_state: string;
+      regions: Array<{ id: string; finding_type: string; localization: { kind: "bounding_box"; coordinates: { x: number; y: number; w: number; h: number } }; note: string }>;
+    };
     patient_context?: { reported: boolean; symptoms: Array<{ type: string; label?: string; onset: string; duration: string; severity: string; laterality: string; progression: string; free_text?: string | null }>; red_flags: string[]; note: string };
     symptom_correlation?: { state: string; urgency: string; items: Array<{ symptom_type: string; symptom_label: string; state: string; matched_finding_types: string[]; note: string }>; notes: string[]; label: string };
     treatment_information?: {
@@ -173,8 +177,9 @@ function ClinicianInner() {
               src={`/api/studies/${encodeURIComponent(studyId)}/image`}
               alt={`Original scan ${bundle.study?.study_id}`}
               region={activeRegion}
-              localizations={[]}
-              overlayUnavailableNote="AI localization is not available for this model."
+              localizations={(bundle.analysis.fundus_abnormality?.regions ?? []).map((r) => ({ id: r.id, finding_id: r.id, kind: r.localization.kind, coordinates: r.localization.coordinates, priority: "high" as const, note: `SUSPICIOUS REGION — ${r.finding_type.replaceAll("_", " ")}` }))}
+              overlayStatus={(bundle.analysis.fundus_abnormality?.regions ?? []).length ? (bundle.analysis.fundus_abnormality?.validation_state === "CLINICALLY_VALIDATED" ? "CLINICALLY_VALIDATED" : "RESEARCH") : undefined}
+              overlayUnavailableNote={(bundle.analysis.fundus_abnormality?.regions ?? []).length ? undefined : "AI localization is not available for this result."}
             />
             <p className="tiny muted" style={{ marginBottom: 0, marginTop: 8 }}>
               SHA-256: {bundle.study?.original_sha256.slice(0, 24)}… — original preserved unchanged.

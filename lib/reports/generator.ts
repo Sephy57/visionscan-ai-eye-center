@@ -180,10 +180,15 @@ export function buildOverallResult(r: AnalysisResult): string {
 }
 
 export function buildLimitations(r: AnalysisResult): string[] {
+  const researchPath = r.model_registry?.model_status === "RESEARCH" && r.demo?.synthetic_result === false;
   const l: string[] = [
     VALIDATION_STATUS_BANNER,
-    "All detection and segmentation components in this deployment are unvalidated placeholders or heuristics.",
-    "Findings are synthetic demo outputs generated to exercise the pipeline; they do not derive from a validated medical model.",
+    researchPath
+      ? "The lesion detector is a RESEARCH model running real local inference; it is not clinically validated and its output consists of uncalibrated observations only."
+      : "All detection and segmentation components in this deployment are unvalidated placeholders or heuristics.",
+    researchPath
+      ? "Findings are research-model localizations from real image pixels; they are not validated lesions, carry no calibrated confidence, and require ophthalmic review."
+      : "Findings are synthetic demo outputs generated to exercise the pipeline; they do not derive from a validated medical model.",
     "No validated reference databases are installed; measurements are not compared against population references.",
     "Device-specific calibration and per-device validation have not been performed.",
     "This system is not a medical device and is not authorized for clinical use.",
@@ -207,7 +212,9 @@ export async function generateReport(
     generated_at: new Date().toISOString(),
     report_version: "1.0.0",
     validation_banner: VALIDATION_STATUS_BANNER,
-    demo_label: DEMO_LABEL,
+    demo_label: analysis.demo?.synthetic_result === false
+      ? (analysis.model_registry?.display_label ?? VALIDATION_STATUS_BANNER)
+      : DEMO_LABEL,
     patient: patient ?? { identifier: null, age_band: null, notes: null },
     study: analysis.study,
     image_quality: analysis.quality,

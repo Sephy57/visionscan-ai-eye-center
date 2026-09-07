@@ -1,8 +1,11 @@
 import { describe, it, expect, afterAll } from "vitest";
+import fs from "fs";
+import path from "path";
 import sharp from "sharp";
 import { NextRequest } from "next/server";
 import { createStudy, analyzeStudy, deleteStudy, submitReview } from "@/lib/studies/service";
 import { createSession, SESSION_COOKIE, CSRF_COOKIE } from "@/lib/auth/sessions";
+import { PROJECT_ROOT } from "@/lib/config";
 import type { DeviceMetadata } from "@/lib/devices/adapter";
 
 /**
@@ -14,6 +17,20 @@ import type { DeviceMetadata } from "@/lib/devices/adapter";
  */
 
 const DECLARED: DeviceMetadata = { scanType: "fundus", eye: "OD", providedBy: "none" };
+
+/**
+ * True when this machine has the installed RESEARCH lesion package AND the
+ * dedicated runtime, i.e. fundus analyses take the real-inference research
+ * path instead of the labeled DEMO fallback. Labeling assertions must then
+ * expect RESEARCH labeling (still mandatory, still fail-closed) rather than
+ * DEMO labeling. Fresh checkouts (no package/runtime) keep DEMO expectations.
+ */
+const RESEARCH_LIVE =
+  fs.existsSync(path.join(PROJECT_ROOT, "data", "models", "fundus-lesions-clementp-unet-seresnext50", "manifest.json")) &&
+  fs.existsSync(path.join(PROJECT_ROOT, "data", "models", "fundus-lesions-clementp-unet-seresnext50", "model.safetensors")) &&
+  fs.existsSync(
+    path.join(PROJECT_ROOT, ".venv-ophthalmic", process.platform === "win32" ? "Scripts" : "bin", process.platform === "win32" ? "python.exe" : "python3")
+  );
 
 async function makeFundusLikeImage(variant = 0): Promise<Buffer> {
   const w = 1024, h = 768;
@@ -290,23 +307,37 @@ describe("S-FINAL scenario 3 - review and evidence-workspace trust/condition sta
 /* ------------------------------------------------------------------------ */
 
 describe("S-FINAL scenario 4 - demo/synthetic results are always labeled through to the report and API response", () => {
-  it("every real, end-to-end demo-pipeline analysis carries demo.synthetic_result true and a DEMO disclaimer in both the analysis and the report", async () => {
+  it("every real, end-to-end analysis carries mandatory honest labeling (DEMO or RESEARCH) in both the analysis and the report", async () => {
     const bytes = await makeFundusLikeImage(4);
     const study = await createStudy("sf-demo-label.png", "image/png", bytes, DECLARED);
     createdStudyIds.push(study.study_id);
     const { analysis, report } = await analyzeStudy(study.study_id);
 
-    expect(analysis.demo?.synthetic_result).toBe(true);
-    expect(analysis.safety.disclaimers.some((d) => /demo/i.test(d))).toBe(true);
-    expect(report.limitations.some((d) => /synthetic|demo/i.test(d))).toBe(true);
-    // Any finding produced by the DEMO placeholder detector must itself be
-    // individually flagged synthetic (defense-in-depth beyond the top-level flag).
-    for (const f of analysis.findings) {
-      if (f.model_id === "fundus-lesion-detector") expect(f.synthetic).toBe(true);
+    if (RESEARCH_LIVE) {
+      // Research path: real local inference, RESEARCH labeling throughout.
+      expect(analysis.demo?.synthetic_result).toBe(false);
+      expect(analysis.model_registry?.model_status).toBe("RESEARCH");
+      expect(analysis.safety.disclaimers.some((d) => /research/i.test(d))).toBe(true);
+      expect(report.limitations.some((d) => /research/i.test(d))).toBe(true);
+      // Every research finding is individually flagged non-synthetic with
+      // RESEARCH provenance (defense-in-depth beyond the top-level flag).
+      for (const f of analysis.findings) {
+        expect(f.synthetic).toBe(false);
+        expect(f.model_status).toBe("RESEARCH");
+      }
+    } else {
+      expect(analysis.demo?.synthetic_result).toBe(true);
+      expect(analysis.safety.disclaimers.some((d) => /demo/i.test(d))).toBe(true);
+      expect(report.limitations.some((d) => /synthetic|demo/i.test(d))).toBe(true);
+      // Any finding produced by the DEMO placeholder detector must itself be
+      // individually flagged synthetic (defense-in-depth beyond the top-level flag).
+      for (const f of analysis.findings) {
+        if (f.model_id === "fundus-lesion-detector") expect(f.synthetic).toBe(true);
+      }
     }
-  }, 30000);
+  }, 120000);
 
-  it("the API response surface (/api/analyze) never omits demo/synthetic context that would let a caller present the result as real", async () => {
+  it("the API response surface (/api/analyze) never omits honest labeling context that would let a caller present the result as validated", async () => {
     const ANALYZE_ROUTE = (await import("@/app/api/analyze/route")) as typeof import("@/app/api/analyze/route");
     const bytes = await makeFundusLikeImage(5);
     const study = await createStudy("sf-demo-api.png", "image/png", bytes, DECLARED);
@@ -318,11 +349,16 @@ describe("S-FINAL scenario 4 - demo/synthetic results are always labeled through
     expect(res.status).toBe(200);
     const json = await res.json();
     // overall_result must never read as an unqualified clean/validated claim
-    // for a DEMO-status model with no diagnosis-gate approval.
+    // for an unvalidated model with no diagnosis-gate approval.
     expect(json.overall_result).not.toMatch(/\bDIAGNOS(IS|ED)\b/i);
     // The full record backing this response is properly labeled (checked
     // independently since the summary response is intentionally terse).
     const { analysis } = await analyzeStudy(study.study_id);
-    expect(analysis.demo?.synthetic_result).toBe(true);
-  }, 30000);
+    if (RESEARCH_LIVE) {
+      expect(analysis.demo?.synthetic_result).toBe(false);
+      expect(analysis.model_registry?.model_status).toBe("RESEARCH");
+    } else {
+      expect(analysis.demo?.synthetic_result).toBe(true);
+    }
+  }, 120000);
 });

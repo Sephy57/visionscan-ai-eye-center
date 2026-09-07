@@ -51,8 +51,8 @@ describe("S12 - diagnosis gate wired into the real DEMO pipeline", () => {
   });
 
   it(
-    "a real end-to-end createStudy + analyzeStudy run (demo-fundus-synthetic-v0, the only " +
-      "registered model, is never CLINICALLY_VALIDATED) always yields REQUIRES_CLINICAL_CORRELATION, never DIAGNOSIS",
+    "a real end-to-end createStudy + analyzeStudy run (no registered model is ever CLINICALLY_VALIDATED) " +
+      "always yields REQUIRES_CLINICAL_CORRELATION, never DIAGNOSIS",
     async () => {
       const bytes = await makeFundusLikeImage();
       const study = await createStudy("s12-integration.png", "image/png", bytes, DECLARED);
@@ -67,9 +67,10 @@ describe("S12 - diagnosis gate wired into the real DEMO pipeline", () => {
       expect(analysis.diagnosis_gate!.allowed).toBe(false);
       expect(analysis.diagnosis_gate!.clinical_interpretation).toBe("REQUIRES_CLINICAL_CORRELATION");
       expect(analysis.diagnosis_gate!.reasons.length).toBeGreaterThan(0);
-      // The reason must correctly reflect that the DEMO model itself is
-      // the (at minimum) disqualifying condition - not some unrelated field.
-      expect(analysis.diagnosis_gate!.reasons.join(" ")).toMatch(/NOT_VALIDATED/);
+      // The reason must correctly reflect that the producing model (DEMO with
+      // NOT_VALIDATED status, or RESEARCH with RESEARCH_ONLY status) is the
+      // (at minimum) disqualifying condition - not some unrelated field.
+      expect(analysis.diagnosis_gate!.reasons.join(" ")).toMatch(/NOT_VALIDATED|RESEARCH_ONLY/);
 
       expect(report.diagnosis_gate).toBeDefined();
       expect(report.diagnosis_gate!.clinical_interpretation).toBe("REQUIRES_CLINICAL_CORRELATION");
@@ -81,7 +82,7 @@ describe("S12 - diagnosis gate wired into the real DEMO pipeline", () => {
       // Never a bare "diagnosis" claim in the overall result headline.
       expect(report.overall_result).not.toMatch(/\bDIAGNOS/i);
     },
-    30000
+    120000 // research-path inference runs a real local model on equipped machines
   );
 
   it("a pre-S12 result missing diagnosis_gate entirely is treated as closed (fail-closed default), never open", () => {

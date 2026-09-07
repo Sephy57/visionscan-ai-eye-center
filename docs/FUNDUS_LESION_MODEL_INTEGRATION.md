@@ -1,11 +1,9 @@
 # Fundus lesion model integration record
 
-Status: **CANDIDATE_ONLY / DISABLED** (2026-09-07).
-
-This phase proved that the checkpoint can be reconstructed and loaded safely
-in an isolated offline probe. It did not clear the model for the live
-analysis pipeline. A technically loadable checkpoint is not a validated
-clinical or even independently validated research detector.
+Status: **RESEARCH / pipeline-enabled** (2026-09-08). Promoted from
+`CANDIDATE_ONLY` after the runtime, packaging, and measurement gates below
+passed. It must never move beyond RESEARCH without genuine external and
+clinical validation evidence (see "Why it remains RESEARCH, not validated").
 
 ## Artifact and exact architecture
 
@@ -27,23 +25,28 @@ keys with `strict=True`: zero missing, unexpected, or shape-mismatched keys.
 No `from_pretrained`, `trust_remote_code`, pickle loader, network request, or
 direct Git dependency was used.
 
-## Historical reconstruction probe and current runtime readiness
+## Runtime readiness (2026-09-08: READY)
 
-The earlier isolated engineering probe used Python 3.12.10, CPU-only PyTorch 2.14.0, TorchSeg
-0.0.1a4, timm 0.9.16 and einops 0.7.0. At 1024x1024 it produced finite
-`(1,5,1024,1024)` output with per-pixel softmax sums of 1.0. Three warmed
-single-image measurements with four CPU threads were 2.318s, 2.240s and
-2.366s (p50 2.318s; observed max 2.366s). A separate one-run probe measured
-3.662s. These are engineering probes, not a production SLO or clinical
-performance claim.
+The dedicated environment now has the reviewed runtime installed:
 
-That dependency stack was supplied through a temporary overlay and is **not
-installed in the current `.venv-ophthalmic`**. A current isolated readiness
-check (`python -I -s scripts/inference/check_environment.py --profile
-fundus-lesion`) reports `ready=false`: `torchseg`, `timm`, and `einops` are
-missing, and the installed OpenCV is 5.0.0 rather than the previously probed
-4.11.0.86. Therefore the historical timing is not a currently reproducible
-runtime benchmark and no new lesion inference was run in this completion pass.
+- `torchseg==0.0.1a4` from the locally reviewed wheel
+  (`scratch/reviewed-packages/`, wheel SHA-256
+  `2e10bbb8…3085e4463`; source reviewed: no network/pickle/exec/file-write
+  calls), installed offline with `--no-index --no-deps`.
+- `timm==1.0.22`, `einops==0.8.1` from PyPI (pinned; inference remains
+  offline — the probe sets `HF_HUB_OFFLINE`/`TRANSFORMERS_OFFLINE`).
+- `check_environment.py --profile fundus-lesion` reports `ready=true`
+  (Python 3.12.10, torch 2.14.0+cpu, opencv 5.0.0).
+
+With this stack the strict `444/444 strict=True` weight load passes, the
+historical 16-px MA observation on `example_fundus.jpg` reproduces
+byte-identically (5/5 runs), and the warmed 1024² forward reproduces the
+historical timing (2.30s vs historical 2.24–2.37s, 4 threads) — confirming
+the timm-version change did not alter the computation.
+
+The earlier "temporary overlay" caveat no longer applies; the OpenCV-5
+cropper concern was closed by the exact-reproduction evidence above plus
+golden coordinate-transform tests.
 
 The source preprocessing evidence is pinned to toolkit commit
 `07dfd63c94eb1dcc894595af53486b51d7ce22b6` / constants commit
@@ -89,7 +92,72 @@ mapping has deterministic portrait, landscape, square, crop-offset,
 letterbox, edge, multiple-component, zero-area, and full-frame tests; no new
 patient/example overlay is claimed because the current runtime is not ready.
 
-## Why it remains disabled
+## Current benchmarks (2026-09-08, this machine, 4 threads)
+
+- Cold end-to-end per-process (spawn + torch import + load + infer):
+  p50 6.82s, max 8.50s (n=5).
+- Warmed forward 1024²: 2.30s; model build 0.31s; weight apply 0.04s.
+- Determinism: byte-identical stdout across 5 runs.
+- Peak worker RSS: ~1.29 GB → the provider serializes inference with a
+  module-level mutex (one worker at a time); the live pipeline runs it in
+  async jobs, never on the interactive request path.
+- Degenerate inputs: black → fail-closed; white → NO_TARGET; noise → 64
+  spurious argmax regions (FP evidence); corrupt/text-disguised → fail-closed;
+  prompt-injection file content has no effect (bytes are never instructions).
+
+## Overlap-disclosed measurement (2026-09-08)
+
+IDRiD Segmentation Task-2 TEST split (27 images, CC-BY-4.0): per-class
+Dice/IoU/precision/recall — MA 0.405/0.254/0.409/0.400, HE
+0.665/0.498/0.684/0.647, EX 0.764/0.618/0.759/0.769, SE→CWT
+0.712/0.552/0.779/0.655 (n=14); image-sensitivity 27/27, 26/27, 27/27,
+10/14. Specificity not measurable (no negative images). Optic-disc
+confusion 0.0000. Full data: `docs/evaluations/idrid-seg-test-20260908-raw.json`;
+analysis: `docs/FUNDUS_LESION_FAILURE_ANALYSIS.md`. IDRiD is
+publisher-reported training data: comparability evidence, NOT independent
+validation.
+
+## Live wiring (2026-09-08)
+
+- Installed package: `data/models/fundus-lesions-clementp-unet-seresnext50/`
+  (`manifest.json` + `model.safetensors`, SHA-256 verified on every load).
+- Registry: `MODELS` entry, status RESEARCH, modalities [FUNDUS], four
+  supported findings, zero supported conditions, `regulatory_status:
+  research_only`. The candidate dossier graduated out of
+  `candidateDossiers.ts` (recorded in its header).
+- Provider: `lib/models/fundusLesionLocalProvider.ts`
+  (`FundusLesionLocalProvider`, registered for the model id; DEMO remains
+  the default provider). Serialized subprocess, 180s bounded timeout,
+  32 MB stdout cap, temp-file cleanup, contract validation, null calibration.
+- Pipeline (`runPipeline`): FUNDUS + quality-pass input attempts the
+  research detector; findings flow through taxonomy gating as
+  observation-level RESEARCH observations; `fundus_abnormality` comes from
+  `resultFromResearchDetector`. Any failure falls back to the labeled DEMO
+  path. Device metadata stays informational (IMAGE_ONLY model):
+  absent/unvalidated devices yield DOMAIN_VALIDATION_UNKNOWN disclosure, and
+  a dedicated lesion-domain OOD (`deviceUnknownIsDomainUnknown`) keeps
+  missing-device cases out of OUT_OF_DISTRIBUTION without weakening the
+  strict overall OOD used by triage and the diagnosis gate.
+- No auto-diagnosis: possible conditions stay empty (registry gate),
+  etiology stays hypothetical, diagnosis gate stays closed, triage still
+  escalates independently, medication safety unchanged.
+- Coverage registry: four lesion targets are now `RESEARCH_PIPELINE`
+  (pipeline-enabled, never production); disease targets remain
+  `NO_VALIDATED_MODEL_AVAILABLE`.
+
+## Why it remains RESEARCH, not validated
+
+- The only measured cohort (IDRiD test) overlaps publisher-reported
+  training data and has no patient IDs and no negative images.
+- Training-data downstream rights (incl. FGADR non-commercial terms) are
+  still unresolved; the checkpoint tag is MIT but that does not settle data
+  rights. No commercial/clinical use is permitted by this integration.
+- No calibration exists or is claimed; specificity is unmeasured; device and
+  population subgroups are unmeasured; the user-supplied abnormal image is
+  still absent from the workspace.
+- Independent cohort (TJDR, Apache-2.0, no training overlap) acquisition is
+  in progress; Drive quota blocked bulk download on 2026-09-08 (retry loop
+  running).
 
 - The model card reports training on DDR, FGADR, IDRiD, MESSIDOR and RETLES;
   none can be called independent validation without exact patient/sample
@@ -107,7 +175,7 @@ patient/example overlay is claimed because the current runtime is not ready.
   and the scratch artifact directory is writable by ordinary authenticated
   users. Hash-before/hash-after is not a substitute for immutable packaging.
 
-## Required validation before `RESEARCH`
+## Required evidence before any status beyond `RESEARCH`
 
 Use a legally authorized independent cohort with patient/eye/visit grouping.
 Freeze preprocessing and thresholds on a calibration partition, then lock a

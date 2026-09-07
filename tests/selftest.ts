@@ -76,10 +76,18 @@ export async function runSelfTest(): Promise<SelfTestReport> {
     const s = runSafetyChecks(analysis);
     t("safety_checks_pass", s.ok, JSON.stringify(s.checks.filter((c) => !c.passed)));
 
-    // 4. All findings labeled synthetic + demo label present.
+    // 4. Findings honestly labeled for whichever path ran: DEMO findings are
+    // all synthetic with the demo label; RESEARCH findings are all real
+    // (non-synthetic), RESEARCH-status, and carry the research label.
+    const researchPath =
+      analysis.demo.synthetic_result === false && analysis.model_registry?.model_status === "RESEARCH";
     t(
-      "findings_labeled_synthetic",
-      analysis.findings.every((f) => f.synthetic) && analysis.demo.synthetic_result === true
+      "findings_honestly_labeled",
+      researchPath
+        ? analysis.findings.every((f) => f.synthetic === false && f.model_status === "RESEARCH") &&
+          (analysis.model_registry?.display_label ?? "").includes("RESEARCH USE ONLY")
+        : analysis.findings.every((f) => f.synthetic) && analysis.demo.synthetic_result === true,
+      researchPath ? "research path labeling" : "demo path labeling"
     );
 
     // 5. Report exists with mandatory wording when negative.

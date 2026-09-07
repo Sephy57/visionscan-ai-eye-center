@@ -1,0 +1,962 @@
+{
+ "dataset": "IDRiD Segmentation Task 2 (lesion) TEST split",
+ "license": "CC-BY-4.0 (shipped LICENSE in archive)",
+ "provenance": "archive.org item idrid, A. Segmentation.zip, md5 804ca21196beecf7f3a433dc59d37256",
+ "overlap_disclosure": "IDRiD is named in the publisher-reported training sets of the evaluated checkpoint; these metrics are overlap-disclosed comparability evidence, NOT independent validation.",
+ "patient_split": "image-level only; IDRiD publishes no patient/eye IDs, so patient-separated partitioning cannot be verified",
+ "model": {
+  "id": "fundus-lesions-clementp-unet-seresnext50",
+  "version": "a2cfcb594e483",
+  "artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+  "rule": "argmax components, no threshold, no calibration"
+ },
+ "class_map": {
+  "MA": "microaneurysm_like_lesion",
+  "HE": "retinal_hemorrhage",
+  "EX": "hard_exudate",
+  "SE->CWT": "cotton_wool_spot"
+ },
+ "micro_stats": {
+  "MA": {
+   "tp": 10987,
+   "fp": 15878,
+   "fn": 16457,
+   "det_tp": 27,
+   "det_fp": 0,
+   "det_fn": 0,
+   "det_tn": 0,
+   "n": 27
+  },
+  "HE": {
+   "tp": 194380,
+   "fp": 89809,
+   "fn": 106080,
+   "det_tp": 26,
+   "det_fp": 0,
+   "det_fn": 1,
+   "det_tn": 0,
+   "n": 27
+  },
+  "EX": {
+   "tp": 233081,
+   "fp": 74021,
+   "fn": 69928,
+   "det_tp": 27,
+   "det_fp": 0,
+   "det_fn": 0,
+   "det_tn": 0,
+   "n": 27
+  },
+  "SE": {
+   "tp": 32614,
+   "fp": 9231,
+   "fn": 17213,
+   "det_tp": 10,
+   "det_fp": 0,
+   "det_fn": 4,
+   "det_tn": 0,
+   "n": 14
+  }
+ },
+ "optic_disc_confusion": {
+  "predicted_pixels_total": 663942,
+  "predicted_pixels_inside_disc": 19,
+  "fraction": 2.861695750532426e-05
+ },
+ "per_image": [
+  {
+   "image": "IDRiD_55",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 918,
+     "pred_px": 550,
+     "tp": 372,
+     "fp": 178,
+     "fn": 546
+    },
+    "HE": {
+     "gt_px": 9173,
+     "pred_px": 12360,
+     "tp": 7625,
+     "fp": 4735,
+     "fn": 1548
+    },
+    "EX": {
+     "gt_px": 44489,
+     "pred_px": 45224,
+     "tp": 36619,
+     "fp": 8605,
+     "fn": 7870
+    },
+    "SE": {
+     "gt_px": 256,
+     "pred_px": 0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 256
+    }
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 58134
+  },
+  {
+   "image": "IDRiD_56",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 921,
+     "pred_px": 937,
+     "tp": 386,
+     "fp": 551,
+     "fn": 535
+    },
+    "HE": {
+     "gt_px": 17592,
+     "pred_px": 10334,
+     "tp": 6646,
+     "fp": 3688,
+     "fn": 10946
+    },
+    "EX": {
+     "gt_px": 1147,
+     "pred_px": 1350,
+     "tp": 822,
+     "fp": 528,
+     "fn": 325
+    },
+    "SE": {
+     "gt_px": 5000,
+     "pred_px": 4216,
+     "tp": 3131,
+     "fp": 1085,
+     "fn": 1869
+    }
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 16837
+  },
+  {
+   "image": "IDRiD_57",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 155,
+     "pred_px": 26,
+     "tp": 0,
+     "fp": 26,
+     "fn": 155
+    },
+    "HE": {
+     "gt_px": 204,
+     "pred_px": 0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 204
+    },
+    "EX": {
+     "gt_px": 3127,
+     "pred_px": 2341,
+     "tp": 1457,
+     "fp": 884,
+     "fn": 1670
+    },
+    "SE": "GT_MISSING"
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 2367
+  },
+  {
+   "image": "IDRiD_58",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 621,
+     "pred_px": 538,
+     "tp": 210,
+     "fp": 328,
+     "fn": 411
+    },
+    "HE": {
+     "gt_px": 6729,
+     "pred_px": 5038,
+     "tp": 3105,
+     "fp": 1933,
+     "fn": 3624
+    },
+    "EX": {
+     "gt_px": 5783,
+     "pred_px": 5771,
+     "tp": 4281,
+     "fp": 1490,
+     "fn": 1502
+    },
+    "SE": "GT_MISSING"
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 11347
+  },
+  {
+   "image": "IDRiD_59",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 920,
+     "pred_px": 926,
+     "tp": 411,
+     "fp": 515,
+     "fn": 509
+    },
+    "HE": {
+     "gt_px": 5787,
+     "pred_px": 5343,
+     "tp": 3849,
+     "fp": 1494,
+     "fn": 1938
+    },
+    "EX": {
+     "gt_px": 7165,
+     "pred_px": 8650,
+     "tp": 5587,
+     "fp": 3063,
+     "fn": 1578
+    },
+    "SE": {
+     "gt_px": 14061,
+     "pred_px": 11785,
+     "tp": 10522,
+     "fp": 1263,
+     "fn": 3539
+    }
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 26704
+  },
+  {
+   "image": "IDRiD_60",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 862,
+     "pred_px": 860,
+     "tp": 300,
+     "fp": 560,
+     "fn": 562
+    },
+    "HE": {
+     "gt_px": 3402,
+     "pred_px": 3480,
+     "tp": 1924,
+     "fp": 1556,
+     "fn": 1478
+    },
+    "EX": {
+     "gt_px": 4479,
+     "pred_px": 4287,
+     "tp": 2755,
+     "fp": 1532,
+     "fn": 1724
+    },
+    "SE": {
+     "gt_px": 6817,
+     "pred_px": 7825,
+     "tp": 5979,
+     "fp": 1846,
+     "fn": 838
+    }
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 16452
+  },
+  {
+   "image": "IDRiD_61",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 1627,
+     "pred_px": 1016,
+     "tp": 465,
+     "fp": 551,
+     "fn": 1162
+    },
+    "HE": {
+     "gt_px": 99999,
+     "pred_px": 92815,
+     "tp": 70205,
+     "fp": 22610,
+     "fn": 29794
+    },
+    "EX": {
+     "gt_px": 2913,
+     "pred_px": 2965,
+     "tp": 2061,
+     "fp": 904,
+     "fn": 852
+    },
+    "SE": {
+     "gt_px": 1567,
+     "pred_px": 1555,
+     "tp": 1448,
+     "fp": 107,
+     "fn": 119
+    }
+   },
+   "od_overlap_px": 19,
+   "pred_px_total": 98351
+  },
+  {
+   "image": "IDRiD_62",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 243,
+     "pred_px": 377,
+     "tp": 75,
+     "fp": 302,
+     "fn": 168
+    },
+    "HE": {
+     "gt_px": 807,
+     "pred_px": 1170,
+     "tp": 288,
+     "fp": 882,
+     "fn": 519
+    },
+    "EX": {
+     "gt_px": 3329,
+     "pred_px": 4929,
+     "tp": 2941,
+     "fp": 1988,
+     "fn": 388
+    },
+    "SE": "GT_MISSING"
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 6476
+  },
+  {
+   "image": "IDRiD_63",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 180,
+     "pred_px": 642,
+     "tp": 172,
+     "fp": 470,
+     "fn": 8
+    },
+    "HE": {
+     "gt_px": 1066,
+     "pred_px": 1975,
+     "tp": 806,
+     "fp": 1169,
+     "fn": 260
+    },
+    "EX": {
+     "gt_px": 7838,
+     "pred_px": 10890,
+     "tp": 7177,
+     "fp": 3713,
+     "fn": 661
+    },
+    "SE": "GT_MISSING"
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 13639
+  },
+  {
+   "image": "IDRiD_64",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 1066,
+     "pred_px": 870,
+     "tp": 476,
+     "fp": 394,
+     "fn": 590
+    },
+    "HE": {
+     "gt_px": 2077,
+     "pred_px": 1662,
+     "tp": 710,
+     "fp": 952,
+     "fn": 1367
+    },
+    "EX": {
+     "gt_px": 5923,
+     "pred_px": 11323,
+     "tp": 5269,
+     "fp": 6054,
+     "fn": 654
+    },
+    "SE": {
+     "gt_px": 3539,
+     "pred_px": 2039,
+     "tp": 1898,
+     "fp": 141,
+     "fn": 1641
+    }
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 15894
+  },
+  {
+   "image": "IDRiD_65",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 1228,
+     "pred_px": 2332,
+     "tp": 768,
+     "fp": 1564,
+     "fn": 460
+    },
+    "HE": {
+     "gt_px": 3080,
+     "pred_px": 3428,
+     "tp": 2283,
+     "fp": 1145,
+     "fn": 797
+    },
+    "EX": {
+     "gt_px": 5107,
+     "pred_px": 8557,
+     "tp": 4411,
+     "fp": 4146,
+     "fn": 696
+    },
+    "SE": "GT_MISSING"
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 14317
+  },
+  {
+   "image": "IDRiD_66",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 727,
+     "pred_px": 751,
+     "tp": 312,
+     "fp": 439,
+     "fn": 415
+    },
+    "HE": {
+     "gt_px": 1960,
+     "pred_px": 861,
+     "tp": 30,
+     "fp": 831,
+     "fn": 1930
+    },
+    "EX": {
+     "gt_px": 74515,
+     "pred_px": 63598,
+     "tp": 58368,
+     "fp": 5230,
+     "fn": 16147
+    },
+    "SE": "GT_MISSING"
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 65210
+  },
+  {
+   "image": "IDRiD_67",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 1152,
+     "pred_px": 1473,
+     "tp": 697,
+     "fp": 776,
+     "fn": 455
+    },
+    "HE": {
+     "gt_px": 28575,
+     "pred_px": 30082,
+     "tp": 21751,
+     "fp": 8331,
+     "fn": 6824
+    },
+    "EX": {
+     "gt_px": 2770,
+     "pred_px": 2798,
+     "tp": 1724,
+     "fp": 1074,
+     "fn": 1046
+    },
+    "SE": {
+     "gt_px": 3332,
+     "pred_px": 5145,
+     "tp": 2522,
+     "fp": 2623,
+     "fn": 810
+    }
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 39498
+  },
+  {
+   "image": "IDRiD_68",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 639,
+     "pred_px": 1000,
+     "tp": 281,
+     "fp": 719,
+     "fn": 358
+    },
+    "HE": {
+     "gt_px": 25437,
+     "pred_px": 29138,
+     "tp": 17715,
+     "fp": 11423,
+     "fn": 7722
+    },
+    "EX": {
+     "gt_px": 1615,
+     "pred_px": 4009,
+     "tp": 1466,
+     "fp": 2543,
+     "fn": 149
+    },
+    "SE": {
+     "gt_px": 5914,
+     "pred_px": 5769,
+     "tp": 4406,
+     "fp": 1363,
+     "fn": 1508
+    }
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 39916
+  },
+  {
+   "image": "IDRiD_69",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 950,
+     "pred_px": 1278,
+     "tp": 401,
+     "fp": 877,
+     "fn": 549
+    },
+    "HE": {
+     "gt_px": 25910,
+     "pred_px": 27980,
+     "tp": 17580,
+     "fp": 10400,
+     "fn": 8330
+    },
+    "EX": {
+     "gt_px": 5086,
+     "pred_px": 4391,
+     "tp": 1468,
+     "fp": 2923,
+     "fn": 3618
+    },
+    "SE": "GT_MISSING"
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 36758
+  },
+  {
+   "image": "IDRiD_70",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 724,
+     "pred_px": 634,
+     "tp": 264,
+     "fp": 370,
+     "fn": 460
+    },
+    "HE": {
+     "gt_px": 8528,
+     "pred_px": 11825,
+     "tp": 7487,
+     "fp": 4338,
+     "fn": 1041
+    },
+    "EX": {
+     "gt_px": 5217,
+     "pred_px": 171,
+     "tp": 157,
+     "fp": 14,
+     "fn": 5060
+    },
+    "SE": {
+     "gt_px": 1815,
+     "pred_px": 502,
+     "tp": 0,
+     "fp": 502,
+     "fn": 1815
+    }
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 13132
+  },
+  {
+   "image": "IDRiD_71",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 1632,
+     "pred_px": 1127,
+     "tp": 614,
+     "fp": 513,
+     "fn": 1018
+    },
+    "HE": {
+     "gt_px": 3899,
+     "pred_px": 3307,
+     "tp": 2155,
+     "fp": 1152,
+     "fn": 1744
+    },
+    "EX": {
+     "gt_px": 21593,
+     "pred_px": 25873,
+     "tp": 18446,
+     "fp": 7427,
+     "fn": 3147
+    },
+    "SE": {
+     "gt_px": 1384,
+     "pred_px": 0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 1384
+    }
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 30307
+  },
+  {
+   "image": "IDRiD_72",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 734,
+     "pred_px": 509,
+     "tp": 266,
+     "fp": 243,
+     "fn": 468
+    },
+    "HE": {
+     "gt_px": 739,
+     "pred_px": 1153,
+     "tp": 434,
+     "fp": 719,
+     "fn": 305
+    },
+    "EX": {
+     "gt_px": 14222,
+     "pred_px": 15513,
+     "tp": 12014,
+     "fp": 3499,
+     "fn": 2208
+    },
+    "SE": {
+     "gt_px": 1392,
+     "pred_px": 0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 1392
+    }
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 17175
+  },
+  {
+   "image": "IDRiD_73",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 832,
+     "pred_px": 1360,
+     "tp": 412,
+     "fp": 948,
+     "fn": 420
+    },
+    "HE": {
+     "gt_px": 2078,
+     "pred_px": 2525,
+     "tp": 1381,
+     "fp": 1144,
+     "fn": 697
+    },
+    "EX": {
+     "gt_px": 860,
+     "pred_px": 1264,
+     "tp": 652,
+     "fp": 612,
+     "fn": 208
+    },
+    "SE": {
+     "gt_px": 2551,
+     "pred_px": 2285,
+     "tp": 1985,
+     "fp": 300,
+     "fn": 566
+    }
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 7434
+  },
+  {
+   "image": "IDRiD_74",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 1413,
+     "pred_px": 2326,
+     "tp": 640,
+     "fp": 1686,
+     "fn": 773
+    },
+    "HE": {
+     "gt_px": 8294,
+     "pred_px": 6199,
+     "tp": 4195,
+     "fp": 2004,
+     "fn": 4099
+    },
+    "EX": {
+     "gt_px": 2136,
+     "pred_px": 3199,
+     "tp": 1558,
+     "fp": 1641,
+     "fn": 578
+    },
+    "SE": {
+     "gt_px": 949,
+     "pred_px": 0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 949
+    }
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 11724
+  },
+  {
+   "image": "IDRiD_75",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 2278,
+     "pred_px": 1516,
+     "tp": 759,
+     "fp": 757,
+     "fn": 1519
+    },
+    "HE": {
+     "gt_px": 12943,
+     "pred_px": 11156,
+     "tp": 8363,
+     "fp": 2793,
+     "fn": 4580
+    },
+    "EX": {
+     "gt_px": 1816,
+     "pred_px": 1625,
+     "tp": 1027,
+     "fp": 598,
+     "fn": 789
+    },
+    "SE": {
+     "gt_px": 1250,
+     "pred_px": 724,
+     "tp": 723,
+     "fp": 1,
+     "fn": 527
+    }
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 15021
+  },
+  {
+   "image": "IDRiD_76",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 2264,
+     "pred_px": 2886,
+     "tp": 1384,
+     "fp": 1502,
+     "fn": 880
+    },
+    "HE": {
+     "gt_px": 7286,
+     "pred_px": 4631,
+     "tp": 3535,
+     "fp": 1096,
+     "fn": 3751
+    },
+    "EX": {
+     "gt_px": 6387,
+     "pred_px": 6218,
+     "tp": 4894,
+     "fp": 1324,
+     "fn": 1493
+    },
+    "SE": "GT_MISSING"
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 14188
+  },
+  {
+   "image": "IDRiD_77",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 1069,
+     "pred_px": 895,
+     "tp": 375,
+     "fp": 520,
+     "fn": 694
+    },
+    "HE": {
+     "gt_px": 3194,
+     "pred_px": 2973,
+     "tp": 1784,
+     "fp": 1189,
+     "fn": 1410
+    },
+    "EX": {
+     "gt_px": 8280,
+     "pred_px": 6878,
+     "tp": 5077,
+     "fp": 1801,
+     "fn": 3203
+    },
+    "SE": "GT_MISSING"
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 10746
+  },
+  {
+   "image": "IDRiD_78",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 1262,
+     "pred_px": 963,
+     "tp": 477,
+     "fp": 486,
+     "fn": 785
+    },
+    "HE": {
+     "gt_px": 5768,
+     "pred_px": 1732,
+     "tp": 950,
+     "fp": 782,
+     "fn": 4818
+    },
+    "EX": {
+     "gt_px": 8448,
+     "pred_px": 9343,
+     "tp": 6376,
+     "fp": 2967,
+     "fn": 2072
+    },
+    "SE": "GT_MISSING"
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 12038
+  },
+  {
+   "image": "IDRiD_79",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 1861,
+     "pred_px": 587,
+     "tp": 257,
+     "fp": 330,
+     "fn": 1604
+    },
+    "HE": {
+     "gt_px": 10244,
+     "pred_px": 8146,
+     "tp": 6504,
+     "fp": 1642,
+     "fn": 3740
+    },
+    "EX": {
+     "gt_px": 29500,
+     "pred_px": 30118,
+     "tp": 23706,
+     "fp": 6412,
+     "fn": 5794
+    },
+    "SE": "GT_MISSING"
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 39098
+  },
+  {
+   "image": "IDRiD_80",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 61,
+     "pred_px": 81,
+     "tp": 33,
+     "fp": 48,
+     "fn": 28
+    },
+    "HE": {
+     "gt_px": 1536,
+     "pred_px": 1061,
+     "tp": 936,
+     "fp": 125,
+     "fn": 600
+    },
+    "EX": {
+     "gt_px": 625,
+     "pred_px": 76,
+     "tp": 68,
+     "fp": 8,
+     "fn": 557
+    },
+    "SE": "GT_MISSING"
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 1218
+  },
+  {
+   "image": "IDRiD_81",
+   "summary": "MULTIPLE_ABNORMALITIES",
+   "classes": {
+    "MA": {
+     "gt_px": 1105,
+     "pred_px": 405,
+     "tp": 180,
+     "fp": 225,
+     "fn": 925
+    },
+    "HE": {
+     "gt_px": 4153,
+     "pred_px": 3815,
+     "tp": 2139,
+     "fp": 1676,
+     "fn": 2014
+    },
+    "EX": {
+     "gt_px": 28639,
+     "pred_px": 25741,
+     "tp": 22700,
+     "fp": 3041,
+     "fn": 5939
+    },
+    "SE": "GT_MISSING"
+   },
+   "od_overlap_px": 0,
+   "pred_px_total": 29961
+  }
+ ]
+}

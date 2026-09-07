@@ -153,6 +153,13 @@ def main() -> None:
     parser.add_argument("model_dir", type=Path)
     parser.add_argument("image", type=Path)
     parser.add_argument("--threads", type=int, default=4)
+    parser.add_argument(
+        "--save-masks",
+        type=Path,
+        default=None,
+        help="Optional operator-owned directory receiving per-class argmax PNG masks "
+        "(model raster, letterbox-suppressed). Default: no mask artifact is written.",
+    )
     args = parser.parse_args()
     # Reject before importing any third-party package: otherwise a malicious
     # user-site/overlay module could execute before isolation is checked.
@@ -231,6 +238,18 @@ def main() -> None:
         content = np.zeros((1024, 1024), dtype=bool)
         content[top:top + resized_h, left:left + resized_w] = True
         labels[~content] = 0
+        if args.save_masks is not None:
+            mask_dir = args.save_masks
+            if mask_dir.exists() and not mask_dir.is_dir():
+                fail("mask output path exists and is not a directory")
+            if path_contains_reparse_point(mask_dir):
+                fail("symbolic-link/reparse-point mask output paths are not accepted")
+            mask_dir.mkdir(parents=True, exist_ok=True)
+            for mask_index, mask_class in enumerate(EXPECTED_OUTPUT_ORDER):
+                mask_path = mask_dir / f"{image_id}_cls{mask_index}_{mask_class}.png"
+                if mask_path.exists():
+                    fail("mask output would overwrite an existing file")
+                Image.fromarray(((labels == mask_index) * 255).astype(np.uint8)).save(mask_path)
         regions = []
         masks = []
         component_count = 0
