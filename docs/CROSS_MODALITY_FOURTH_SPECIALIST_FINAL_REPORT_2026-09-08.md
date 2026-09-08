@@ -123,3 +123,199 @@ CI run [34236530299](https://github.com/Sephy57/visionscan-ai-eye-center/actions
 completed successfully with typecheck, unit/integration tests, filesystem
 audit, and production build green. No clinical validation is inferred from a
 green engineering suite.
+
+## 2026-09-09 clinical-intelligence expansion addendum
+
+This addendum records the work performed after the prior report and is scoped
+to the shared checkout at `D:\\AI EYE ANALYSIS PLATFORM`. It does not replace
+the prior 50-item record or change its clinical-use limitations.
+
+### A. Revision, preservation, and implementation scope
+
+1. **Starting revision.** The verified starting revision for this phase was
+   `f72222a6ad2e1b38b3a2ee28b6e2c928f7c7cd70` on `main`.
+
+2. **Implementation revision.** The implementation was committed as
+   `e5c9101` (`feat: expand clinical extraction and specialist evidence`). No
+   reset, clean, checkout, or destructive workspace operation was used.
+
+3. **Changed surface.** The commit contains 46 files, including clinical
+   extraction, objective test parsing, evidence projection/conflict handling,
+   specialist packages, report/result UI exposure, research-provider caching,
+   Next 16 route compatibility overloads, and a dedicated clinical-intelligence
+   test file (1,012 insertions and 93 deletions).
+
+4. **Safety boundary.** The phase remains research/evidence-review support.
+   Source-document diagnoses remain source-attributed; structured evidence is
+   not promoted to an AI diagnosis; unavailable, unsupported, and uncertain
+   states remain visible.
+
+### B. Clinical document extraction
+
+5. **Version and provenance.** `clinical-extraction-1.1.0` now emits assertion,
+   source-section, extraction-method, page, and character-offset metadata for
+   extracted facts. OCR/text-layer provenance is retained at record and entity
+   level.
+
+6. **Sections and visit context.** Chief complaint/reason-for-visit, history,
+   assessment, plan, and follow-up sections are recognized. Plan and follow-up
+   candidates are exposed as separate evidence categories instead of being
+   interpreted as findings.
+
+7. **Symptoms.** The extractor records symptom type, onset/duration/severity
+   and progression language when present, with span-local laterality. Explicit
+   negation and uncertainty are separate from present symptoms; possible
+   associated symptoms are not silently merged with image findings.
+
+8. **Negation and uncertainty.** Negated symptoms, medications, histories, and
+   allergies are represented as explicit absent/unreviewed assertions. “Rule
+   out,” “possible,” “suspect,” and similar source language is marked uncertain.
+   Negative source claims such as “negative for diabetic retinopathy” remain
+   absent source claims, not a new AI conclusion.
+
+9. **History, medication, and allergy safeguards.** Ocular surgery, systemic
+   history, diabetes, medication use, allergy reactions, `NKDA`, and plain
+   “no allergies” are handled with exception-safe parsing. Disease adjectives
+   such as “diabetic retinopathy” do not create a systemic diabetes history.
+
+10. **Entity projection.** Annotation updates reproject generic structured
+    entities so reviewer edits cannot leave a stale entity view behind the
+    canonical record extraction.
+
+11. **Partial documents.** OCR failures and incomplete page coverage produce a
+    `PARTIAL` record state with warnings rather than a falsely complete chart.
+    Stale record extraction is removed at extraction start, matching the
+    existing test-result supersession boundary.
+
+### C. Objective ophthalmic test extraction
+
+12. **Measurements covered.** The parser now handles IOP, Snellen/logMAR and
+    categorical visual acuity, cup-to-disc ratio, central subfield thickness,
+    pachymetry, visual-field metrics, refraction, and OCT/RNFL measurements.
+
+13. **Eye-pair safety.** Explicit OD/OS rows and same-line pairs are split into
+    independent results. Bare or contradictory laterality remains unknown;
+    laterality is never inferred from an adjacent eye's symptom or measurement.
+
+14. **Units and ambiguity.** Incompatible units are retained as raw values with
+    an `unexpected_unit` ambiguity flag; they are not normalized into a valid
+    clinical unit. OCT header dates are not mistaken for measurement dates.
+
+15. **Metric subtypes.** Visual-field MD and PSD and related metric subtypes are
+    carried through the test-result, evidence, conflict, and trend keys so
+    different metrics do not conflict merely because they share a category.
+
+16. **Verification boundary.** Extracted measurements remain
+    `AUTO_EXTRACTED`/unreviewed until the existing human verification workflow;
+    no parsed value is connected directly to treatment, diagnosis, or triage.
+
+### D. Deterministic specialist hand-off packages
+
+17. **Four packages.** `lib/clinical/specialistPackages.ts` builds explicit
+    RETINA, GLAUCOMA, MACULA_OCT, and COMPREHENSIVE packages from stored
+    evidence and optional analysis output.
+
+18. **Package contents.** Each package contains available model/status,
+    observed findings, supporting and contradicting evidence, missing evidence,
+    possible condition patterns, urgency notes, limitations, source evidence
+    IDs, and an unconditional clinician-review requirement.
+
+19. **No opaque synthesis.** Packages contain no diagnosis field, probability,
+    confidence score, or score fusion. They are deterministic evidence
+    organization over already-produced observations.
+
+20. **Glaucoma status.** The glaucoma package explicitly reports
+    `NO_VALIDATED_MODEL_AVAILABLE`, requests IOP/visual-field/optic-nerve
+    correlation and clinician-authored longitudinal assessment, and cannot
+    manufacture a glaucoma result or normality claim.
+
+21. **API and UI exposure.** The specialist-analysis API returns the packages;
+    `SpecialistConsensusPanel` renders model state, findings, evidence,
+    missing information, urgency notes, limitations, and review status. The
+    report and patient views expose extraction metadata, plan/follow-up, and the
+    evidence workspace without collapsing provenance.
+
+### E. Runtime and performance hardening
+
+22. **No auth-path inference.** Authentication and initial page routes do not
+    execute machine-learning inference. Research analysis remains asynchronous
+    and provider-serialized.
+
+23. **Duplicate-work reduction.** Heavy SegFormer research calls use a short
+    in-process result TTL and in-flight deduplication. Specialist orchestration
+    reuses existing research evidence references rather than creating duplicate
+    random references for the same result.
+
+24. **Measured local latency.** `npm run performance:local` passed on the
+    running service at `http://localhost:3000`: login page p50 4.6 ms/p95 6.2
+    ms (one 57.3 ms max sample), login API p50 68.9 ms/p95 75.5 ms, dashboard
+    p95 6.2 ms, study-list API p95 3.9 ms, upload 22.3 ms, result-bundle API
+    p95 4.2 ms, result page p95 4.8 ms, and report page p95 3.6 ms.
+
+25. **Model cost.** The ClementP model cold load/inference measured 8,548.2 ms;
+    a warmed 1024-pixel CPU forward was about 2.3 s, with approximately 1.3 GB
+    peak worker RSS and serialized provider execution. This is the principal
+    remaining local lag source and is intentionally kept off the auth path.
+
+### F. Compatibility, verification, and QA record
+
+26. **Next 16 route contract.** Dynamic API handlers now accept both the
+    generated Next 16 `Promise` params contract and synchronous test contexts
+    through overloads, while every implementation awaits the params value.
+
+27. **Typecheck/build.** `npx tsc --noEmit` passed. The default Turbopack
+    `npm run build` passed with TypeScript and 20/20 static pages generated;
+    the long wall time was host contention, not a compile failure. Only the
+    existing middleware-convention and Edge `process.cwd` warnings remained.
+
+28. **Focused regression.** The seven-file clinical/evidence focus passed
+    117/117 tests. The dedicated expansion file passed 9/9, and a later
+    two-file evidence/specialist rerun passed 32/32.
+
+29. **Full regression.** The final serialized Vitest run completed 51 files:
+    907 passed, 2 skipped, and 1 timeout (910 tests total) in 1,967.69 s.
+    The timeout was the OD-IOP/OS-symptom isolation case in
+    `s5-evidence-critical.test.ts`; running that exact case alone passed in
+    3.6 s. It is therefore recorded as suite-level host contention, not
+    treated as a green full-suite claim.
+
+30. **Smoke.** `npm run smoke` passed 16/16, including authenticated upload,
+    symptom validation/rejection, real research analysis, red-flag triage,
+    report generation, clinician finalize, temporal comparison, self-test,
+    deletion, unauthenticated denial, and cross-role checks.
+
+31. **Static/security audits.** `npm run audit:fs` passed (source/data on D:;
+    approximately 430.3 GB free). Both `npm audit --audit-level=high` and
+    `npm audit --omit=dev --audit-level=high` reported zero vulnerabilities.
+
+32. **Browser QA.** `npm run visual-qa` passed its 10-route structure gate;
+    `npm run browser:responsive` passed 80/80 checks across 320–1920 px; and
+    `npm run browser:a11y` passed 20/20 axe WCAG A/AA checks at mobile and
+    desktop widths.
+
+33. **Lint limitation.** `npm run lint` remains non-actionable because this
+    checkout's script invokes removed Next 16 `next lint` and no ESLint config
+    is installed. The command fails with “Invalid project directory ...\\lint”;
+    no false lint pass is claimed.
+
+34. **Service smoke.** A direct request to the running local service returned
+    HTTP 200 for `/login` and included the research/not-a-medical-device banner.
+    The local-only smoke account remains `smoke-admin` /
+    `SmokeTest#Local1234`; it is not a deployment credential.
+
+### G. Current release classification
+
+35. **Engineering state.** The implementation is suitable for local research
+    and evidence-review testing with the disclosed full-suite timeout and lint
+    limitation. The isolated timed-out case, all focused tests, build, smoke,
+    browser QA, audits, and performance gates have direct recorded results.
+
+36. **Clinical state.** Clinical deployment remains **BLOCKED**. Unresolved
+    gates include rights for training data/derived weights, locked dependency
+    and SBOM governance, OS/resource/network sandboxing, patient-separated
+    multi-device validation, calibration and operating-point freeze, and
+    regulatory/clinical governance review.
+
+37. **Push/CI state.** This addendum was written before the remote push for
+    `e5c9101`; the remote CI result for this phase must be observed after push
+    and is not inferred from the prior report's green run.
