@@ -4,6 +4,7 @@ import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { Badge, EmptyState, ErrorState, TriageBadge } from "@/components/ui";
 import { authFetch } from "@/lib/auth/clientFetch";
+import CrossModalityPanel from "@/components/CrossModalityPanel";
 
 /**
  * Patient profile (eye-center workspace): encounters, timeline, linked
@@ -227,6 +228,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 Linked studies: {e.linked_study_ids.map((sid) => <Link key={sid} href={`/result?study=${sid}`} style={{ marginRight: 8 }}>{sid}</Link>)}
               </p>
             )}
+            <CrossModalityPanel encounterId={e.encounter_id} />
             {(() => {
               const pkg = e.linked_study_ids?.length ? recordPackages[e.linked_study_ids[0]] : undefined;
               const urgency = pkg?.stages?.urgency as unknown as { result?: { priority?: string } } | undefined;

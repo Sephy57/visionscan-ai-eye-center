@@ -201,7 +201,14 @@ describe("S-FINAL scenario 2 - client-supplied validation/confidence/treatment/m
     // see scenario 3 below).
     expect(report.review?.reviewer_id).not.toBe("attacker");
     expect(json.overall_result).not.toMatch(/proliferative diabetic retinopathy/i);
-  }, 30000);
+  // The endpoint performs a real, hash-verified research inference on this
+  // equipped checkout. The route is intentionally synchronous for this
+  // direct handler test, so two full runs (the POST plus the independent
+  // persisted-result re-fetch) can exceed the old 30-second DEMO budget on a
+  // cold CPU worker. Keep the security assertion intact while allowing the
+  // bounded research runtime to complete; the production UI uses async=true
+  // and polls the job instead of blocking a browser request.
+  }, 120000);
 
   it("the model registry status backing model_status is never client-writable via any studies/analyze route", async () => {
     // model_status is sourced from lib/models/registry.ts's real registered

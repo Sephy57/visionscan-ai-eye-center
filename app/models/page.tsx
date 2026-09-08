@@ -38,6 +38,20 @@ interface CoverageData {
   }>;
 }
 
+interface ValidationData {
+  registry_version: string;
+  notice: string;
+  entries: Array<{
+    model_id: string; model_version: string; artifact_sha256: string; status: string;
+    datasets: Array<{
+      name: string; split: string; license: string; n_images: number | null; n_patients: number | null;
+      patient_separation: string; external_to_training: boolean; overlap_note: string; evidence_doc: string;
+    }>;
+    metrics_summary: string; calibration: string; device_scope: string; population_scope: string;
+    limitations: string[]; last_review_date: string;
+  }>;
+}
+
 interface CandidateDossier {
   candidate_id: string;
   model_name: string;
@@ -156,11 +170,13 @@ export default function ModelsPage() {
   const [data, setData] = useState<ModelData | null>(null);
   const [candidates, setCandidates] = useState<CandidateDossier[] | null>(null);
   const [coverage, setCoverage] = useState<CoverageData | null>(null);
+  const [validation, setValidation] = useState<ValidationData | null>(null);
 
   useEffect(() => {
     fetch("/api/models").then((r) => r.json()).then(setData).catch(() => {});
     fetch("/api/models/candidates").then((r) => (r.ok ? r.json() : null)).then((j) => setCandidates(j?.candidates ?? null)).catch(() => {});
     fetch("/api/models/coverage").then((r) => (r.ok ? r.json() : null)).then(setCoverage).catch(() => {});
+    fetch("/api/models/validation").then((r) => (r.ok ? r.json() : null)).then(setValidation).catch(() => {});
   }, []);
 
   return (
@@ -183,7 +199,7 @@ export default function ModelsPage() {
         <span className="alert-icon" aria-hidden="true">◈</span>
         <div className="alert-body">
           <strong>Model store</strong>
-          {data?.model_store_status.note ?? "data\\models is intentionally empty. No validated medical model is installed."}
+          {data?.model_store_status.note ?? "Model store status is unavailable; no clinical model is presumed validated."}
           <div className="tiny" style={{ marginTop: 4 }}>Packages are installed under <code>data\models\&lt;model_id&gt;\manifest.json</code> + artifact, verified by SHA-256 on every load (fail-closed).</div>
         </div>
       </div>
@@ -220,12 +236,57 @@ export default function ModelsPage() {
         </div>
       )}
 
+      {validation && (
+        <div className="card" style={{ marginTop: 18 }}>
+          <div className="card-title">
+            <h3>Validation evidence (research only)</h3>
+            <Badge tone="warn">NOT CLINICAL VALIDATION</Badge>
+          </div>
+          <p className="small" style={{ marginTop: 0 }}>{validation.notice}</p>
+          {validation.entries.map((v) => (
+            <details key={v.model_id} style={{ marginTop: 10 }}>
+              <summary style={{ cursor: "pointer", fontWeight: 650 }} className="small">
+                {v.model_id} · v{v.model_version} · {v.status}
+              </summary>
+              <dl className="kv tiny" style={{ gridTemplateColumns: "150px 1fr", marginTop: 8 }}>
+                <dt>Artifact SHA-256</dt><dd style={{ fontFamily: "var(--mono)", wordBreak: "break-all" }}>{v.artifact_sha256}</dd>
+                <dt>Metrics</dt><dd>{v.metrics_summary}</dd>
+                <dt>Calibration</dt><dd>{v.calibration}</dd>
+                <dt>Device scope</dt><dd>{v.device_scope}</dd>
+                <dt>Population scope</dt><dd>{v.population_scope}</dd>
+                <dt>Last review</dt><dd>{v.last_review_date}</dd>
+              </dl>
+              <div className="table-wrap" tabIndex={0}>
+                <table className="table">
+                  <caption className="sr-only">Evaluation datasets for {v.model_id}</caption>
+                  <thead><tr><th scope="col">Dataset</th><th scope="col">Split / n</th><th scope="col">Patient separation</th><th scope="col">Overlap note</th></tr></thead>
+                  <tbody>
+                    {v.datasets.map((d) => (
+                      <tr key={`${v.model_id}-${d.name}`}>
+                        <td className="tiny">{d.name}<br />{d.license}</td>
+                        <td className="tiny">{d.split}<br />{d.n_images ?? "?"} images{d.n_patients != null ? ` / ${d.n_patients} patients` : ""}</td>
+                        <td><Badge tone={d.patient_separation === "VERIFIED_DISJOINT" ? "info" : "warn"}>{d.patient_separation.replaceAll("_", " ")}</Badge><br /><span className="tiny muted">{d.external_to_training ? "external to training" : "OVERLAP-DISCLOSED"}</span></td>
+                        <td className="tiny">{d.overlap_note}<br />Evidence: <code>{d.evidence_doc}</code></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <ul className="tiny" style={{ paddingLeft: 18 }}>
+                {v.limitations.map((l, i) => <li key={i}>{l}</li>)}
+              </ul>
+            </details>
+          ))}
+          <p className="tiny muted" style={{ marginBottom: 0 }}>Registry version {validation.registry_version}. Machine-readable source: <code>lib/models/validationRegistry.ts</code>.</p>
+        </div>
+      )}
+
       {candidates && candidates.length > 0 && (
         <div style={{ marginTop: 24 }}>
           <h2 style={{ fontSize: "1rem", marginBottom: 4 }}>Candidate models (research dossiers only)</h2>
           <p className="tiny muted" style={{ marginTop: 0 }}>
             Real-world models researched for a possible future S6+ installation. None are installed, registered, or
-            reachable by the analysis pipeline — <code>data\models\</code> remains empty and Gate A remains CLOSED.
+            reachable by the analysis pipeline — research artifacts are hash-verified, while Gate A for clinical deployment remains CLOSED.
             Every entry lists unresolved blockers that must be cleared by a human before installation could even be
             considered.
           </p>

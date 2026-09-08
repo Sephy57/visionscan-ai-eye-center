@@ -7,8 +7,8 @@ const CAPABILITIES: Array<[string, "IMPLEMENTED" | "DEMO" | "RESEARCH" | "NOT IM
   ["DICOM detection", "IMPLEMENTED", "Part 10 detection; parsing NOT implemented — safely refused"],
   ["DICOM parsing / PACS / device connectivity", "NOT IMPLEMENTED", "Integration placeholders"],
   ["Anatomical segmentation", "NOT IMPLEMENTED", "Placeholder component; emits nothing"],
-  ["Lesion / vascular detection", "DEMO", "Synthetic findings only, always labeled"],
-  ["OCT analysis & measurements", "NOT IMPLEMENTED", "Schema prepared (taxonomy); no detection"],
+  ["Lesion / vascular detection", "RESEARCH", "Real local lesion/DR research inference; uncalibrated and not clinically validated"],
+  ["OCT analysis & measurements", "RESEARCH", "Real local OCT class research inference; no pixel measurements or clinical validation"],
   ["Structured schema-validated output", "IMPLEMENTED", "Strict validator; invalid results are rejected"],
   ["Uncertainty & OOD layer", "IMPLEMENTED", "Honest uncertainty; normality never claimed on OOD"],
   ["Model registry, integrity & gates", "IMPLEMENTED", "Checksums, statuses, evidence references required"],
@@ -18,7 +18,7 @@ const CAPABILITIES: Array<[string, "IMPLEMENTED" | "DEMO" | "RESEARCH" | "NOT IM
   ["Temporal comparison", "IMPLEMENTED", "Finding-type counts only; no fabricated quantitative claims"],
   ["Dataset management & multi-grader labeling", "RESEARCH", "Patient-level split enforcement; locked test sets read-only"],
   ["Performance evaluation tooling", "RESEARCH", "Sens/spec/PPV/NPV/AUROC/AUPRC/calibration — research-only"],
-  ["Authentication / RBAC / encryption-at-rest", "NOT IMPLEMENTED", "Documented honestly; do not expose to untrusted networks"],
+  ["Authentication / RBAC / encryption-at-rest", "IMPLEMENTED", "Authentication/RBAC is implemented; encryption at rest is still not implemented"],
   ["Consent capture / retention schedules", "NOT IMPLEMENTED", "Planned"],
 ];
 
@@ -36,7 +36,7 @@ export default function SettingsPage() {
           <dt>Reports</dt><dd><code>data\reports\</code></dd>
           <dt>Database</dt><dd><code>data\database\</code></dd>
           <dt>Logs</dt><dd><code>data\logs\</code> — audit events only; images and full reports never logged</dd>
-          <dt>Models</dt><dd><code>data\models\</code> — intentionally empty</dd>
+          <dt>Models</dt><dd><code>data\models\</code> — hash-verified RESEARCH packages; no clinical model</dd>
         </dl>
       </div>
 
@@ -52,9 +52,9 @@ export default function SettingsPage() {
         <div className="alert warn" style={{ marginBottom: 0 }}>
           <span className="alert-icon" aria-hidden="true">☂</span>
           <div className="alert-body">
-            <strong>Encryption at rest: NOT IMPLEMENTED. Authentication: NOT IMPLEMENTED.</strong>
-            These are documented honestly rather than faked. This build has no authentication and must not be
-            exposed to untrusted networks. Storing real patient data in this build is strongly discouraged.
+            <strong>Encryption at rest: NOT IMPLEMENTED.</strong>
+            Authentication and role-based access control are implemented for this local workspace, but the build
+            must still not be exposed to untrusted networks. Storing real patient data remains strongly discouraged.
           </div>
         </div>
       </div>
@@ -90,9 +90,10 @@ export default function SettingsPage() {
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Analysis behavior</h3>
         <p className="small" style={{ marginBottom: 0 }}>
-          The platform runs in <strong>demo mode</strong>: detection components are placeholders and findings are
-          synthetic. This is deliberately honest — the platform refuses to fake medical capability. The validation
-          pathway is documented in <code>docs/VALIDATION.md</code>.
+          The equipped local deployment runs hash-verified <strong>RESEARCH-only fundus, DR, and OCT models</strong>
+          when image quality and model gates permit; outputs remain uncalibrated observations and can fail closed to
+          an unavailable state. The synthetic DEMO path remains available only as a labeled fallback for pipeline
+          exercises. The validation pathway is documented in <code>docs/VALIDATION.md</code>.
         </p>
       </div>
     </div>

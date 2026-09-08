@@ -127,7 +127,12 @@ describe("S13 scenario 1 - spoofed client-supplied diagnosis_gate is never trust
     expect(analysis.diagnosis_gate!.clinical_interpretation).toBe("REQUIRES_CLINICAL_CORRELATION");
     expect(report.diagnosis_gate!.clinical_interpretation).toBe("REQUIRES_CLINICAL_CORRELATION");
     expect(json.overall_result).not.toMatch(/\bDIAGNOS/i);
-  }, 30000);
+  // Equipped checkouts execute the real hash-verified research workers. The
+  // synchronous POST plus the independent persisted-result re-run can exceed
+  // the old DEMO-only 30-second budget on a cold CPU; production UI requests
+  // use async jobs. Keep the spoofing assertion while allowing that bounded
+  // research path to finish.
+  }, 120000);
 });
 
 /* ------------------------------------------------------------------------ */

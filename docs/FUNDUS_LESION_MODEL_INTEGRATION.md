@@ -58,10 +58,12 @@ The source preprocessing evidence is pinned to toolkit commit
 4. Convert 0..255 to 0..1 and normalize with ImageNet mean
    `[0.485,0.456,0.406]` and std `[0.229,0.224,0.225]`.
 
-The artifact itself does not store preprocessing. The original helper's
-dependencies are unpinned and the OpenCV 5 API changes the cropper's return
-shape, so this protocol is recorded as a candidate reproduction, not yet an
-approved runtime specification.
+The artifact itself does not store preprocessing. The live probe is a pinned
+reconstruction of the helper (including `INTER_CUBIC`, ImageNet constants,
+crop/resize/pad geometry, and explicit output metadata); its transport and
+coordinate contracts are covered by tests. This is an engineering-compatible
+research protocol, not a claim that the publisher's training environment or
+clinical performance has been reproduced.
 
 The offline probe now requires `python -I -s`, rejects user/temporary-overlay
 dependencies, rejects symlinked model/image/artifact paths, pins the expected
@@ -89,8 +91,9 @@ now records the exact crop, resize, and asymmetric padding, suppresses
 predictions in artificial padding, separates connected components, and maps
 half-open component boxes/centroids to `ORIGINAL_IMAGE_NORMALIZED`. The new
 mapping has deterministic portrait, landscape, square, crop-offset,
-letterbox, edge, multiple-component, zero-area, and full-frame tests; no new
-patient/example overlay is claimed because the current runtime is not ready.
+letterbox, edge, multiple-component, zero-area, and full-frame tests; no
+patient/example overlay is claimed because this fixture is engineering data
+and the output remains research-only.
 
 ## Current benchmarks (2026-09-08, this machine, 4 threads)
 
@@ -188,5 +191,5 @@ remain ranking scores, not probabilities; calibration is `NOT_CALIBRATED`.
 
 Only after those gates, offline network isolation, adversarial mask tests,
 CPU/concurrency benchmarks, and legal review pass may a human reviewer
-consider moving the status to `RESEARCH`. It must never move directly to
+consider any status beyond `RESEARCH`. It must never move directly to
 `CLINICALLY_VALIDATED`.

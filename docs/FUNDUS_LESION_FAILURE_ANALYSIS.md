@@ -10,7 +10,6 @@ components, no operating threshold, no calibration. Every region the model
 emits carries `UNFILTERED_ARGMAX_COMPONENT_NOT_VALIDATED_AS_LESION`.
 
 ## External validation: DeepDRiD (non-overlapping, patient-separated, with negatives)
-
 Cohort: DeepDRiD regular fundus, CC-BY-SA-4.0, Shanghai sites — no overlap
 with publisher-reported training sets. Publisher splits kept and
 patient-disjointness verified (300 + 100 patients, zero shared IDs):
@@ -31,6 +30,14 @@ Image-level lesion detection rate by ground-truth eye grade (VAL endpoint):
 Training split (same protocol): grade 0: 326/532 (0.613, 179 patients);
 grade 1: 0.892; grade 2: 0.996; grade 3: 1.000; grade 4: 0.986 — consistent
 across splits.
+
+Third population (APTOS 2019 train, India, capped deterministic sample
+n=350, CC-BY-4.0 mirror, no patient IDs): grade-0 FP 148/250 = 0.592
+(specificity 0.408); grades 1–4 detected 100/100. Same FP-rate band as
+DeepDRiD (0.61–0.65) on a third population and device mix — the
+sensitivity-oriented / specificity-poor operating character reproduces
+across cohorts. Full data:
+`docs/evaluations/aptos-capped-20260908-raw.json`.
 
 Load-bearing conclusions:
 

@@ -19,7 +19,17 @@ function CompareInner() {
   const [curBundle, setCurBundle] = useState<Bundle | null>(null);
   const [sync, setSync] = useState(true);
   const [zoom, setZoom] = useState(1);
-  const [outcome, setOutcome] = useState<{ note: string; quantitative_comparison: string; finding_type_changes: Array<{ type: string; previous: number; current: number; direction: string }> } | null>(null);
+  const [outcome, setOutcome] = useState<{
+    note: string; quantitative_comparison: string;
+    finding_type_changes: Array<{ type: string; previous: number; current: number; direction: string }>;
+    prior_current?: {
+      eye: string;
+      finding_states: Array<{ finding_type: string; state: string; note: string }>;
+      dr_transition: { state: string; prior_grade: number | null; current_grade: number | null; grade_delta: number | null; note: string } | null;
+      oct_transition: { state: string; prior_class: string | null; current_class: string | null; note: string } | null;
+      limitations: string[];
+    } | null;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -141,6 +151,49 @@ function CompareInner() {
               {outcome.quantitative_comparison}
             </p>
           </div>
+          {outcome.prior_current && (
+            <div className="card" style={{ marginTop: 14 }}>
+              <h3 style={{ marginTop: 0 }}>Detected differences — not progression</h3>
+              <p className="tiny muted" style={{ marginTop: 0 }}>Same-eye AI comparison ({outcome.prior_current.eye}). States describe observed detection differences under the same model, device, and eye — never disease progression, worsening, improvement, or resolution.</p>
+              <div className="table-wrap" tabIndex={0}>
+                <table className="table">
+                  <thead><tr><th scope="col">Finding type</th><th scope="col">State</th><th scope="col">Note</th></tr></thead>
+                  <tbody>
+                    {outcome.prior_current.finding_states.map((s, i) => (
+                      <tr key={i}>
+                        <td>{s.finding_type.replaceAll("_", " ")}</td>
+                        <td><Badge tone={s.state === "PERSISTENT" ? "neutral" : s.state === "NEW" ? "info" : "warn"}>{s.state.replaceAll("_", " ")}</Badge></td>
+                        <td className="tiny">{s.note}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {outcome.prior_current.dr_transition && (
+                <p className="small" style={{ margin: "8px 0 0" }}>
+                  <strong>DR target class:</strong>{" "}
+                  <Badge tone="neutral">{outcome.prior_current.dr_transition.state.replaceAll("_", " ")}</Badge>{" "}
+                  <span className="tiny muted">
+                    {outcome.prior_current.dr_transition.prior_grade ?? "—"} → {outcome.prior_current.dr_transition.current_grade ?? "—"}
+                    {outcome.prior_current.dr_transition.note}
+                  </span>
+                </p>
+              )}
+              {outcome.prior_current.oct_transition && (
+                <p className="small" style={{ margin: "8px 0 0" }}>
+                  <strong>OCT target class:</strong>{" "}
+                  <Badge tone="neutral">{outcome.prior_current.oct_transition.state.replaceAll("_", " ")}</Badge>{" "}
+                  <span className="tiny muted">
+                    {outcome.prior_current.oct_transition.prior_class ?? "—"} → {outcome.prior_current.oct_transition.current_class ?? "—"}
+                    {outcome.prior_current.oct_transition.note}
+                  </span>
+                </p>
+              )}
+              <ul className="tiny muted" style={{ paddingLeft: 18, marginBottom: 0 }}>
+                {outcome.prior_current.limitations.map((l, i) => <li key={i}>{l}</li>)}
+              </ul>
+            </div>
+          )}
         </>
       )}
     </div>

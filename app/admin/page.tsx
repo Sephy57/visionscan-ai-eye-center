@@ -52,7 +52,7 @@ export default function AdminPage() {
         <StatusCard label="Database" value="Operational" tone="ok" detail="JSON store on D: (SQLite-ready interface)" />
         <StatusCard label="Storage" value="Operational" tone="ok" detail="uploads / processed / reports on D:" />
         <StatusCard label="Image Quality Engine" value="Operational" tone="ok" detail="Thresholds not clinically validated" />
-        <StatusCard label="AI Model" value="NOT VALIDATED" tone="warn" detail="Demo/synthetic only — data\models is empty" />
+        <StatusCard label="AI Model" value="RESEARCH ONLY" tone="warn" detail="Hash-verified fundus/DR/OCT artifacts; no clinical validation" />
         <StatusCard label="Safety Engine" value="Operational" tone="ok" detail="Triage rules, safety validator" />
         <StatusCard label="Audit Logging" value="Operational" tone="ok" detail="Append-only NDJSON on D:" />
         <StatusCard label="Auth / RBAC" value="NOT IMPLEMENTED" tone="bad" detail="Do not expose to untrusted networks" />
@@ -61,7 +61,7 @@ export default function AdminPage() {
       <div className="card" style={{ marginTop: 20 }}>
         <div className="card-title">
           <h3>Model registry</h3>
-          {models?.model_store_status && <Badge tone={models.model_store_status.populated ? "ok" : "neutral"}>data\models: {models.model_store_status.populated ? "populated" : "empty by design"}</Badge>}
+          {models?.model_store_status && <Badge tone={models.model_store_status.populated ? "ok" : "neutral"}>data\models: {models.model_store_status.populated ? "research artifacts" : "empty"}</Badge>}
         </div>
         {models?.consistency_problems && models.consistency_problems.length > 0 && (
           <div className="alert danger"><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body"><strong>Registry consistency problems</strong>{JSON.stringify(models.consistency_problems)}</div></div>

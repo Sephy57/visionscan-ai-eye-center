@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
       model_card: generateModelCard(m),
     };
   });
+  const installedResearchArtifacts = models.filter((m) => Boolean(m.file_path && m.sha256 && m.integrity.trusted));
   return NextResponse.json({
     models,
     consistency_problems: consistencyProblems,
@@ -32,8 +33,10 @@ export async function GET(req: NextRequest) {
     adapters: ADAPTER_REGISTRY,
     model_store_status: {
       path: "D:\\AI EYE ANALYSIS PLATFORM\\data\\models",
-      populated: false,
-      note: "data\\models is intentionally empty. No validated medical model is installed. This is a correct and acceptable state.",
+      populated: installedResearchArtifacts.length > 0,
+      note: installedResearchArtifacts.length > 0
+        ? `${installedResearchArtifacts.length} hash-verified research artifact(s) are installed. All remain RESEARCH-only; no clinical validation is claimed.`
+        : "No model artifacts are installed. This deployment exposes only the synthetic DEMO path.",
     },
   });
 }

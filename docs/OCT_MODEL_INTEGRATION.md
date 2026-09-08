@@ -58,6 +58,22 @@ path). Author's ECE 0.0024 claim applies to their hybrid system, never
 quoted as ours. Decision: **remain NOT_CALIBRATED** (measured rationale;
 see docs/CALIBRATION_AND_THRESHOLD_GOVERNANCE.md).
 
+## Independent measurement: Duke Srinivasan (second distribution)
+
+Cohort: Duke Srinivasan BOE 2014, Spectralis SD-OCT, Duke/Harvard/Michigan,
+research-only license, 45 subjects (15 Normal / 15 dry-AMD / 15 DME), 3231
+TIFF B-scans, subject folder = ID surrogate. Class mapping (disclosed
+approximate): NORMAL→NORMAL, DME→DME, dry-AMD→DRUSEN proxy; no CNV in set
+(CNV outputs counted as errors). Full data:
+`docs/evaluations/duke-oct-external-20260908-raw.json`.
+
+Scan-level accuracy **0.844** (vs 0.977 Kermany) — reported as DOMAIN_SHIFT:
+NORMAL 1148/1407 (234→DME, 25→DRUSEN), DME 1018/1101, dry-AMD→DRUSEN-proxy
+560/723 (112→CNV, 48→DME). Subject-majority vote: **42/45 (0.933)** —
+NORMAL 15/15, DME 15/15, proxy 12/15. Per-scan noise averages out at subject
+level, but single-scan cross-scanner outputs stay weak evidence; the NORMAL
+→DME overcall direction is the operational risk (false alarm, not miss).
+
 ## Live wiring
 
 - Package `data/models/oct-retinal-weights-fp32/` (manifest + artifact, verified every load).
@@ -77,16 +93,16 @@ fundus workers on the same image). Interactive traffic unaffected.
 
 ## Why it remains RESEARCH, not validated
 
-Single external test distribution measured, and it overlaps the author's
-training distribution (comparability, not independence); cross-scanner
-behavior unvalidated; no calibration; no clinical validation; single-author
-MSc provenance (unreviewed). A NORMAL estimate never means a healthy macula.
-Independent OCT cohort (Duke/OCTID/RETOUCH) is future work — RETOUCH needs a
-signed DSA, Duke volumes need MATLAB-slice extraction.
+Duke is one independent, subject-separated research cohort, while the Kermany
+mirror remains an overlap-disclosed comparability set.  The observed Duke
+domain shift, uncalibrated backbone output, and single-author MSc provenance
+keep this model RESEARCH-only; no clinical validation is claimed. A NORMAL
+estimate never means a healthy macula. OCTID/RETOUCH remain future work and
+would require their own licensing/DSA and reproducible extraction evidence.
 
 ## Rejected alternatives (this phase)
 
-Glaucoma: NO_DEFENSIBLE_GLACOMA_MODEL (pamixsun: no metrics; Mjolnirslams:
+Glaucoma: NO_DEFENSIBLE_GLAUCOMA_MODEL_FOUND (pamixsun: no metrics; Mjolnirslams:
 val-only + paired-input + custom-code exec; GARDNet/GlaucomaNet: no weights;
 5t4l1n: no license + pickle-only; ONNX options: no metrics or no weights).
 OCT fluid/layer segmentation: test Dice 0.27 (unreviewed 500MB weights) or

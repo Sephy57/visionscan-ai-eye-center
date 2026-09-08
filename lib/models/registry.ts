@@ -238,7 +238,8 @@ export const RULESET_VERSION = "clinical-rules-0.2.0";
 
 // ---------------------------------------------------------------------------
 // Registered models (the model registry proper).
-// data\models\ is intentionally EMPTY: no real model artifact exists.
+// data\models\ contains only the hash-verified research packages listed
+// below.  Presence on disk never changes a model's safety status.
 // ---------------------------------------------------------------------------
 
 export const MODELS: Record<string, ModelRecord> = {
@@ -311,7 +312,7 @@ export const MODELS: Record<string, ModelRecord> = {
       "Use without hash-verified package, reviewed runtime, and clinician review of every finding",
     ],
     limitations: [
-      "RESEARCH status; no clinical validation and no independent external validation completed.",
+      "RESEARCH status; independent research evaluation evidence is recorded separately, but no clinical validation has been completed.",
       "Connected components are unfiltered argmax regions, not validated lesions.",
       "Argmax masks are not calibrated probabilities; no calibrated confidence is ever produced.",
       "Device compatibility is unvalidated for every device; domain validation is UNKNOWN for every study.",
@@ -364,7 +365,7 @@ export const MODELS: Record<string, ModelRecord> = {
       "Use without hash-verified package, reviewed runtime, and clinician review of every output",
     ],
     limitations: [
-      "RESEARCH status; no clinical validation and no independent external validation completed.",
+      "RESEARCH status; DeepDRiD is an independent research evaluation, but no clinical validation has been completed and sensitivity is weak.",
       "Single regression logit rounded to an integer grade; grade boundaries are uncalibrated.",
       "No calibrated confidence exists for any grade; the raw logit is a ranking score only.",
       "Device compatibility is unvalidated for every device; domain validation is UNKNOWN for every study.",
@@ -418,10 +419,10 @@ export const MODELS: Record<string, ModelRecord> = {
       "Use without hash-verified package, reviewed runtime, and clinician review",
     ],
     limitations: [
-      "RESEARCH status; no clinical validation; single external test distribution measured (overlap-disclosed).",
+      "RESEARCH status; one overlap-disclosed comparability set and one independent Duke cohort are measured, but no clinical validation has been completed.",
       "Backbone argmax only; the author's XGBoost hybrid head is not executed.",
       "No calibrated confidence exists for any class; logits are ranking scores only.",
-      "Single-scanner training distribution; cross-scanner behavior unvalidated.",
+      "Single-scanner training distribution; Duke provides one cross-scanner research check, but broader cross-scanner behavior remains unvalidated.",
       "Device compatibility is unvalidated for every device; domain validation is UNKNOWN for every study.",
     ],
     training_dataset: {

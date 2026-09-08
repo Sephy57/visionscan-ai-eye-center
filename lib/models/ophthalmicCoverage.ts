@@ -54,7 +54,7 @@ export const OPHTHALMIC_COVERAGE_REGISTRY: readonly OphthalmicCoverageEntry[] = 
     localization: "RESEARCH_BOUNDING_BOX" as const,
     calibration: "NOT_CALIBRATED" as const,
     result_semantics: "Research lesion-like region detection; unfiltered argmax components are not validated lesions and a target-negative result is never a healthy-eye claim",
-    limitations: ["RESEARCH status: real local inference, no clinical or independent external validation completed.", "Device compatibility unvalidated for every device; domain validation UNKNOWN.", "Argmax components have no operating threshold or calibration; false negatives and false positives occur."],
+    limitations: ["RESEARCH status: real local inference; independent research evaluations are recorded separately, but no clinical validation is completed.", "Device compatibility unvalidated for every device; domain validation UNKNOWN.", "Argmax components have no operating threshold or calibration; false negatives and false positives occur."],
   })),
   {
     target_id: "dr_grade_estimate", display_name: "dr grade estimate", modality: "FUNDUS", task: "DISEASE_GRADING",
@@ -62,7 +62,7 @@ export const OPHTHALMIC_COVERAGE_REGISTRY: readonly OphthalmicCoverageEntry[] = 
     production_available: false, pipeline_enabled: true,
     localization: "NONE", calibration: "NOT_CALIBRATED",
     result_semantics: "Research DR grade estimate from a single uncalibrated regression logit; a low grade never excludes diabetic retinopathy",
-    limitations: ["RESEARCH status: real local inference, no clinical or independent external validation completed.", "Grade boundaries uncalibrated; raw logit is a ranking score, not a probability.", "Device compatibility unvalidated for every device; domain validation UNKNOWN."],
+    limitations: ["RESEARCH status: real local inference; DeepDRiD is an independent research evaluation, but no clinical validation is completed and sensitivity is weak.", "Grade boundaries uncalibrated; raw logit is a ranking score, not a probability.", "Device compatibility unvalidated for every device; domain validation UNKNOWN."],
   },
   {
     target_id: "optic_disc_cup_anatomy", display_name: "Optic disc/cup anatomy", modality: "FUNDUS", task: "ANATOMY_SEGMENTATION",    state: "RESEARCH_ANATOMY_ONLY", model_id: "segformer-optic-disc-cup-refuge", production_available: false, pipeline_enabled: false,
@@ -96,7 +96,7 @@ export const OPHTHALMIC_COVERAGE_REGISTRY: readonly OphthalmicCoverageEntry[] = 
     production_available: false, pipeline_enabled: true,
     localization: "NONE", calibration: "NOT_CALIBRATED",
     result_semantics: "Research OCT class estimate (CNV/DME/DRUSEN/NORMAL) from uncalibrated backbone logits; a NORMAL estimate never means a healthy macula",
-    limitations: ["RESEARCH status: real local inference, no clinical validation; single external test distribution measured (overlap-disclosed).", "Backbone argmax only; hybrid head not executed; no calibrated confidence.", "Single-scanner training distribution; cross-scanner behavior unvalidated."],
+    limitations: ["RESEARCH status: real local inference; one overlap-disclosed comparability set and one independent Duke cohort are measured, but no clinical validation is completed.", "Backbone argmax only; hybrid head not executed; no calibrated confidence.", "Single-scanner training distribution; Duke provides one cross-scanner research check, but broader cross-scanner behavior remains unvalidated."],
   },
   {
     target_id: "dicom_pixel_analysis", display_name: "DICOM pixel-level interpretation", modality: "DICOM", task: "PIXEL_ANALYSIS",
@@ -106,7 +106,7 @@ export const OPHTHALMIC_COVERAGE_REGISTRY: readonly OphthalmicCoverageEntry[] = 
   },
 ] as const;
 
-export const OPHTHALMIC_COVERAGE_VERSION = "2026-09-08.1";
+export const OPHTHALMIC_COVERAGE_VERSION = "2026-09-08.2";
 
 export function activeProductionCoverage(): readonly OphthalmicCoverageEntry[] {
   return OPHTHALMIC_COVERAGE_REGISTRY.filter((entry) => entry.production_available && entry.pipeline_enabled);

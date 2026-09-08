@@ -4,9 +4,9 @@ A medical-grade **architecture** for AI-assisted analysis of ophthalmic images �
 clinical decision-support system with mandatory human oversight, not as a diagnostic product.
 
 > **Honest status: NOT VALIDATED — NOT A MEDICAL DEVICE — NOT FOR CLINICAL USE.**
-> Every detection/segmentation component in this deployment is an unvalidated placeholder or heuristic.
-> The demo analysis engine generates **synthetic findings** so the full safety-critical pipeline can be exercised.
-> No fabricated capability is presented as real. `data\models\` is intentionally empty.
+> The equipped deployment runs three hash-verified **RESEARCH-only** local models (fundus lesions, DR grade, and OCT
+> class) when their gates permit; outputs are uncalibrated observations and are never diagnoses. The synthetic DEMO
+> fallback remains explicitly labeled for pipeline exercises. No clinical validation or medical-device claim is made.
 
 ## Phase 2 additions (clinical validation readiness)
 

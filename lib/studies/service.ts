@@ -12,6 +12,7 @@ import { deleteTestResultsForDocument } from "../documents/extraction/testResult
 import { pickDemoScenario } from "../analysis/findings";
 import { PatientSymptom, validateSymptoms, SYMPTOM_MAP } from "../clinical/symptoms";
 import { ensurePatient, createEncounter } from "../patients/service";
+import { getModel } from "../models/registry";
 
 export interface StudyRecord {
   study_id: string;
@@ -150,12 +151,19 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
   await writeJson("processed", analysisRecord.analysis_id, analysisRecord);
 
   // Append-only audit record with full provenance (Phase 2).
+  // The primary model is taken from the validated pipeline provenance rather
+  // than a legacy DEMO constant.  Multi-model runs still retain their full
+  // per-component provenance in `analysis.multi_model`; the audit schema has
+  // one primary model slot, so use the model registry entry selected by the
+  // pipeline and resolve its exact artifact checksum here.
+  const auditModel = analysis.model_registry;
+  const auditModelRecord = auditModel ? getModel(auditModel.model_id) : null;
   await appendAnalysisAudit({
     study_id: studyId,
     image_sha256: record.original_sha256,
-    model_id: "demo-fundus-synthetic-v0",
-    model_version: "0.1.0",
-    model_checksum: "n/a-placeholder",
+    model_id: auditModel?.model_id ?? "unknown-model",
+    model_version: auditModel?.model_version ?? "unknown-version",
+    model_checksum: auditModelRecord?.sha256 ?? "n/a-placeholder",
     device: record.metadata.manufacturer && record.metadata.model ? `${record.metadata.manufacturer} ${record.metadata.model}` : "unspecified",
     modality: record.modality,
     quality_score: analysis.quality.score,
@@ -507,6 +515,8 @@ export interface CompareOutcome {
   note: string;
   finding_type_changes: Array<{ type: string; previous: number; current: number; direction: string }>;
   quantitative_comparison: string;
+  /** Same-eye AI comparison (additive; legacy fields above are unchanged). */
+  prior_current?: import("../evidence/priorCurrentComparison").PriorCurrentComparison;
 }
 
 /**
@@ -547,6 +557,32 @@ export async function compareStudies(previousStudyId: string, currentStudyId: st
       "Not available - no validated quantitative measurement components are implemented. " +
       "Any numeric progression claims would be fabrication and are disabled by design.",
   };
+
+  // Additive same-eye AI comparison (never breaks the legacy fields above:
+  // any failure here leaves prior_current undefined and is audited).
+  try {
+    const { comparePriorCurrent } = await import("../evidence/priorCurrentComparison");
+    const prevStudy = await dbGet<StudyRecord>("studies", previousStudyId);
+    const curStudy = await dbGet<StudyRecord>("studies", currentStudyId);
+    if (prevStudy && curStudy) {
+      outcome.prior_current = comparePriorCurrent({
+        prior_study_id: previousStudyId,
+        current_study_id: currentStudyId,
+        prior_eye: prevStudy.eye,
+        current_eye: curStudy.eye,
+        prior_analysis: prev.result,
+        current_analysis: cur.result,
+        prior_device: prevStudy.metadata.manufacturer || prevStudy.metadata.model
+          ? { manufacturer: prevStudy.metadata.manufacturer, model: prevStudy.metadata.model }
+          : null,
+        current_device: curStudy.metadata.manufacturer || curStudy.metadata.model
+          ? { manufacturer: curStudy.metadata.manufacturer, model: curStudy.metadata.model }
+          : null,
+      });
+    }
+  } catch (err) {
+    await audit({ actor: "user", action: "compare", outcome: "error", detail: `prior_current unavailable: ${String(err instanceof Error ? err.message : err).slice(0, 150)}` });
+  }
 
   await dbPut("comparisons", `${previousStudyId}__${currentStudyId}`, outcome);
   await audit({ actor: "user", action: "compare", outcome: "ok", detail: `${previousStudyId} vs ${currentStudyId}` });
