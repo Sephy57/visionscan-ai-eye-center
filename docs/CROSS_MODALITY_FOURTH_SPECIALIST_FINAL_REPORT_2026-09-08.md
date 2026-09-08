@@ -316,6 +316,11 @@ the prior 50-item record or change its clinical-use limitations.
     multi-device validation, calibration and operating-point freeze, and
     regulatory/clinical governance review.
 
-37. **Push/CI state.** This addendum was written before the remote push for
-    `e5c9101`; the remote CI result for this phase must be observed after push
-    and is not inferred from the prior report's green run.
+37. **Push/CI state.** The implementation and addendum were pushed to
+    `origin/main` (`f72222a..ed40a0d`). GitHub Actions run
+    [34267304170](https://github.com/Sephy57/visionscan-ai-eye-center/actions/runs/34267304170)
+    completed successfully in 1m35s with typecheck, unit/integration tests,
+    filesystem audit, and production build green. GitHub also annotated the
+    run because the checkout/setup actions target deprecated Node.js 20 and are
+    being forced onto Node.js 24; this is an infrastructure warning, not a
+    failed application gate.
