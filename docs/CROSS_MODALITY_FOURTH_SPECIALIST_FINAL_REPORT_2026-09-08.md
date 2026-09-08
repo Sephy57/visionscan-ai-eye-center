@@ -104,7 +104,7 @@ research-only model packages and the untrusted/dirty worktree preserved.
 
 49. **Release decision.** Engineering release is **GREEN for local research/evidence-review use**: real research workers are hash-verified, cross-modality and longitudinal paths are scoped and fail closed, and no glaucoma capability is fabricated. Clinical deployment remains **BLOCKED**.
 
-50. **Remaining gates and handoff.** Before any clinical or broader deployment: resolve training-data/derived-weight rights, lock dependencies and an SBOM, harden ACLs and OS resource/network sandboxing, complete patient-separated multi-device clinical validation, freeze/calibrate operating points, obtain governance/regulatory review, and verify the pushed CI run. The application remains NOT A MEDICAL DEVICE / NOT FOR CLINICAL USE.
+50. **Remaining gates and handoff.** The pushed engineering workflow is verified; before any clinical or broader deployment, resolve training-data/derived-weight rights, lock dependencies and an SBOM, harden ACLs and OS resource/network sandboxing, complete patient-separated multi-device clinical validation, freeze/calibrate operating points, and obtain governance/regulatory review. The application remains NOT A MEDICAL DEVICE / NOT FOR CLINICAL USE.
 
 ## Evidence locations
 
@@ -117,6 +117,9 @@ research-only model packages and the untrusted/dirty worktree preserved.
 
 ## Final test/CI record
 
-The full-suite count above is from the final local run. The commit, push, and
-GitHub Actions URL are appended after the remote workflow completes. No clinical
-validation is inferred from a green engineering suite.
+The full-suite count above is from the final local run. The implementation was
+pushed as commit `6f884ff8e3e3d5fc2cacee764e2733bb1a554ff5`; its GitHub Actions
+CI run [34236530299](https://github.com/Sephy57/visionscan-ai-eye-center/actions/runs/34236530299)
+completed successfully with typecheck, unit/integration tests, filesystem
+audit, and production build green. No clinical validation is inferred from a
+green engineering suite.
