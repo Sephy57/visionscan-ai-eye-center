@@ -19,6 +19,7 @@ import type { DeviceMetadata } from "@/lib/devices/adapter";
 
 const DECLARED_FUNDUS: DeviceMetadata = { scanType: "fundus", eye: "OD", providedBy: "none" };
 const DECLARED_OCT: DeviceMetadata = { scanType: "oct", eye: "OD", providedBy: "none" };
+const OCT_FIXTURE_PATH = path.join(PROJECT_ROOT, "scratch", "test_images", "oct_kermany_0.png");
 const RESEARCH_LIVE =
   fs.existsSync(path.join(PROJECT_ROOT, "data", "models", "fundus-lesions-clementp-unet-seresnext50", "manifest.json")) &&
   fs.existsSync(path.join(PROJECT_ROOT, ".venv-ophthalmic", process.platform === "win32" ? "Scripts" : "bin", process.platform === "win32" ? "python.exe" : "python3"));
@@ -38,6 +39,14 @@ async function makeRedImage(): Promise<Buffer> {
   return sharp(svg).png().toBuffer();
 }
 
+async function loadOctFixture(): Promise<Buffer> {
+  if (fs.existsSync(OCT_FIXTURE_PATH)) return fs.readFileSync(OCT_FIXTURE_PATH);
+  // The external OCT fixture is intentionally untracked.  CI still exercises
+  // encounter scoping and the unavailable-model path with a non-PHI synthetic
+  // image instead of failing on a developer-only file.
+  return makeRedImage();
+}
+
 const createdStudyIds: string[] = [];
 afterAll(async () => {
   for (const id of createdStudyIds) await deleteStudy(id).catch(() => {});
@@ -48,7 +57,7 @@ describe("Acceptance A/B - encounter cross-modality comparison on real analyses"
     const ref = `VS-XMOD-${Date.now().toString(36)}`;
     const patient = await ensurePatient(ref, "tester", "CLINICIAN_CREATED");
     const fundus = await createStudy("xmod-f.png", "image/png", await makeRedImage(), DECLARED_FUNDUS, ref);
-    const octBytes = fs.readFileSync(path.join(PROJECT_ROOT, "scratch", "test_images", "oct_kermany_0.png"));
+    const octBytes = await loadOctFixture();
     const oct = await createStudy("xmod-o.png", "image/png", octBytes, DECLARED_OCT, ref);
     createdStudyIds.push(fundus.study_id, oct.study_id);
     await analyzeStudy(fundus.study_id);
