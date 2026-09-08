@@ -44,6 +44,28 @@ Load-bearing conclusions:
 - Output-state distribution (VAL): MULTIPLE_ABNORMALITIES 285,
   SUSPICIOUS_ABNORMALITY 47, NO_TARGET_ABNORMALITY_DETECTED 68.
 
+## False-positive taxonomy (DeepDRiD grade-0 eyes, VAL n=174)
+
+- Image-level FP rate 0.649; regions per negative image: mean 2.50,
+  median 1, p95 10, max 23.
+- Images containing each FP class: hard_exudate 74, microaneurysm 48,
+  retinal_hemorrhage 45, cotton-wool 11. Bright exudate-like responses
+  dominate (consistent with reflection/vessel-sheen confusion); cotton-wool
+  FPs are rare.
+- No quality dependence: FP rate 0.643 (quality 0) vs 0.661 (quality 1).
+- Optic-disc pixel confusion remains ~0 (IDRiD: 19/663942 px).
+- Per §9: NO postprocessing suppression rule (size/disc-adjacency/color)
+  was added — none is validated as beneficial and safe. If one is ever
+  proposed, it must be measured, versioned, and re-validated here first.
+
+## False-negative stratification (DeepDRiD VAL)
+
+- Zero-region images by GT grade: grade 1: 6/46; grade 2: 0/92; grade 3:
+  0/68; grade 4: 1/20. Misses concentrate in grade 1 (early/minimal
+  disease) plus one grade-4 case under review.
+- IDRiD pixel-level: MA recall ≤0.35 on 8/27; SE image-level 4/14 misses;
+  HE 1 miss (IDRiD_57, 204 px).
+
 ## Overlap-disclosed measurement (IDRiD)
 (27 images, CC-BY-4.0; archive.org item `idrid`, `A. Segmentation.zip`, MD5
 `804ca21196beecf7f3a433dc59d37256`). GT masks were warped into the 1024²

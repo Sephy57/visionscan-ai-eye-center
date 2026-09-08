@@ -114,8 +114,7 @@ export const EVIDENCE_CONDITIONS: EvidenceConditionDef[] = [
     version: EVIDENCE_TAXONOMY_VERSION,
   },
   {
-    condition_id: "diabetic_retinal_disease_pattern",
-    canonical_name: "Diabetic retinal disease evidence pattern",
+    condition_id: "diabetic_retinal_disease_pattern",    canonical_name: "Diabetic retinal disease evidence pattern",
     category: "retina",
     aliases: ["diabetic_retinopathy_pattern"],
     // No single required item: this pattern only ever assembles
@@ -136,6 +135,28 @@ export const EVIDENCE_CONDITIONS: EvidenceConditionDef[] = [
     contradictory_evidence: [],
     laterality_behavior: "per_eye",
     differential_relationships: ["diabetic_macular_edema", "retinal_vein_occlusion", "age_related_macular_degeneration"],
+    red_flags: ["sudden_vision_loss"],
+    evidence_thresholds: { min_independent_supportive_for_supported: 3 },
+    version: EVIDENCE_TAXONOMY_VERSION,
+  },
+  {
+    condition_id: "oct_macular_class_pattern",
+    canonical_name: "OCT macular class evidence pattern",
+    category: "macula",
+    aliases: [],
+    // Research OCT class estimates only (UNVERIFIED trust): caps at POSSIBLE
+    // without clinician verification. Covers only the classifier's four
+    // classes; any other macular pathology is out of scope.
+    required_evidence: [],
+    supportive_evidence: [
+      { source_type: "AI_FINDING", category: "oct_retinal_class_estimate" },
+      { source_type: "SYMPTOM", category: "distorted_vision" },
+      { source_type: "SYMPTOM", category: "reduced_central_vision" },
+      { source_type: "SYMPTOM", category: "blurred_vision" },
+    ],
+    contradictory_evidence: [],
+    laterality_behavior: "per_eye",
+    differential_relationships: ["diabetic_macular_edema", "age_related_macular_degeneration", "choroidal_neovascularization"],
     red_flags: ["sudden_vision_loss"],
     evidence_thresholds: { min_independent_supportive_for_supported: 3 },
     version: EVIDENCE_TAXONOMY_VERSION,

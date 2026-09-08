@@ -19,8 +19,10 @@ import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
 import { canDisplayDiagnosis, unvalidatedGateResult, DiagnosisGateInput } from "../models/diagnosisGate";
 import { unavailableFundusAbnormalityResult, resultFromResearchDetector } from "../models/fundusAbnormality";
 import { unavailableDrAssessmentResult, resultFromResearchGrader } from "../models/drAssessment";
+import { unavailableOctAssessmentResult, resultFromResearchOct } from "../models/octAssessment";
 import type { FundusLesionResearchRun } from "../models/fundusLesionLocalProvider";
 import type { DrGradeResearchRun } from "../models/drGradeLocalProvider";
+import type { OctResearchRun } from "../models/octLocalProvider";
 
 /**
  * S12 - maps this deployment's registry ModelStatus onto the diagnosis
@@ -238,6 +240,60 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     drAttemptNote = `Research DR grader gated off: ${(drGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
   }
 
+  // ---- Stage 1e: research OCT classification (OCT input only) ----
+  // Same honesty rules as Stages 1c/1d. The OCT model classifies whole
+  // B-scans; it performs no pixel segmentation and produces no localization,
+  // so no overlay is ever rendered for it. Classification-only output can
+  // never become a measurement or a diagnosis.
+  let octAssessment = unavailableOctAssessmentResult(quality, ood, study.modality);
+  let octRun: OctResearchRun | null = null;
+  let octAttemptNote: string | null = null;
+  const octRecord = getModel("oct-retinal-weights-fp32");
+  const octGate = octRecord ? gateModelUse(octRecord) : null;
+  const octScopeOk =
+    qualityAcceptable &&
+    canonicalModality(study.modality) === "OCT" &&
+    octRecord &&
+    octGate?.allowed &&
+    supportsModality(octRecord, study.modality);
+  if (octScopeOk) {
+    try {
+      const { runOctResearchAnalysis } = await import("../models/octLocalProvider");
+      const run = await runOctResearchAnalysis(study, {
+        qualityScore: quality.quality_score,
+        eye: study.eye,
+        device: deviceInfo,
+        imageBytes: originalBytes,
+      });
+      if (run.raw.inference_status !== "completed" || !run.oct) {
+        octAttemptNote = run.notes[0] ?? "Research OCT classifier failed; no class was estimated.";
+      } else {
+        octRun = run;
+        const octOod = assessOod({
+          modality: study.modality,
+          quality,
+          model: octRecord,
+          device: deviceInfo,
+          metadataProvided: study.metadata.providedBy !== "none",
+          deviceUnknownIsDomainUnknown: true,
+        });
+        octAssessment = resultFromResearchOct({
+          oct: octRun.oct,
+          raw: octRun.raw,
+          quality,
+          ood: octOod,
+          modelId: octRecord.model_id,
+          modelVersion: octRecord.version,
+        });
+      }
+    } catch (err) {
+      octRun = null;
+      octAttemptNote = `Research OCT classifier could not run: ${String(err instanceof Error ? err.message : err).slice(0, 200)}`;
+    }
+  } else if (canonicalModality(study.modality) === "OCT" && qualityAcceptable && octRecord && !octGate?.allowed) {
+    octAttemptNote = `Research OCT classifier gated off: ${(octGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
+  }
+
   // ---- Stage 2: anatomical segmentation (placeholder) ----
   // Emits no structures or measurements. Recorded for provenance.
 
@@ -252,7 +308,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   let activeModelGate = modelGate;
   const usedLesionResearch = !!researchRun && researchRun.raw.inference_status === "completed";
   const usedDrResearch = !!drRun && drRun.raw.inference_status === "completed" && !!drRun.grade;
-  const usedResearch = usedLesionResearch || usedDrResearch;
+  const usedOctResearch = !!octRun && octRun.raw.inference_status === "completed" && !!octRun.oct;
+  const usedResearch = usedLesionResearch || usedDrResearch || usedOctResearch;
   const tagResearch = (list: Finding[]) =>
     list.flatMap((f) => {
       const gate = mayEmitFinding(f.type, canonicalModality(study.modality), "RESEARCH");
@@ -270,6 +327,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       activeModelGate = drGate;
     }
     findings = [...findings, ...tagResearch(drRun.findings)];
+  }
+  if (usedOctResearch && octRun && octRecord && octGate) {
+    if (!usedLesionResearch && !usedDrResearch) {
+      activeModelRecord = octRecord;
+      activeModelGate = octGate;
+    }
+    findings = [...findings, ...tagResearch(octRun.findings)];
   }
   if (!usedResearch && qualityAcceptable && modelGate?.allowed) {
     const scenario = pickDemoScenario(originalBytes);
@@ -354,8 +418,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     }
   } else if (usedResearch) {
     multiModelAgreement = "SINGLE_RESEARCH_MODEL";
+    const onlyModel = usedLesionResearch ? "lesion detector" : usedDrResearch ? "DR grader" : "OCT classifier";
     multiModelNotes.push(
-      `Only one research model completed (${usedLesionResearch ? "lesion detector" : "DR grader"}); no cross-model agreement statement is possible.`
+      `Only one research model completed (${onlyModel}); no cross-model agreement statement is possible.`
     );
   } else {
     multiModelAgreement = "NO_RESEARCH_MODEL_OUTPUT";
@@ -439,6 +504,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     },
     fundus_abnormality: fundusAbnormality,
     dr_assessment: drAssessment,
+    oct_assessment: octAssessment,
     multi_model: {
       performed: usedLesionResearch || usedDrResearch,
       agreement: multiModelAgreement,
@@ -448,6 +514,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
           : []),
         ...(usedDrResearch && drRun && drRun.grade
           ? [{ model_id: drRun.model.model_id, model_version: drRun.model.version, model_status: drRun.model.status, output_summary: `grade ${drRun.grade.predicted_grade}/4 (${drRun.grade.grade_label}), referable=${drRun.grade.referable_dr}` }]
+          : []),
+        ...(usedOctResearch && octRun && octRun.oct
+          ? [{ model_id: octRun.model.model_id, model_version: octRun.model.version, model_status: octRun.model.status, output_summary: `class ${octRun.oct.predicted_class} (backbone argmax, uncalibrated)` }]
           : []),
       ],
       notes: multiModelNotes,
@@ -460,7 +529,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       integrity_checks: [
         { check: "registry", passed: !!activeModelRecord, detail: activeModelRecord ? "Registered model in use." : "No registered model." },
         (() => {
-          const primaryRun = researchRun ?? drRun;
+          const primaryRun = researchRun ?? drRun ?? octRun;
           return usedResearch && primaryRun
             ? { check: "artifact", passed: primaryRun.integrity.trusted, detail: primaryRun.integrity.checks.map((c) => `${c.check}:${c.passed ? "pass" : "FAIL"}`).join(" ") || "Research artifact integrity verification." }
             : { check: "artifact", passed: true, detail: "Placeholder DEMO model: no artifact on disk by design (data/models is empty)." };
@@ -470,6 +539,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         ...((researchRun?.notes ?? []).map((n) => ({ check: "research_detector_note" as const, passed: true, detail: n.slice(0, 300) }))),
         ...(drAttemptNote ? [{ check: "dr_grader_attempt" as const, passed: false, detail: drAttemptNote }] : []),
         ...((drRun?.notes ?? []).map((n) => ({ check: "dr_grader_note" as const, passed: true, detail: n.slice(0, 300) }))),
+        ...(octAttemptNote ? [{ check: "oct_classifier_attempt" as const, passed: false, detail: octAttemptNote }] : []),
+        ...((octRun?.notes ?? []).map((n) => ({ check: "oct_classifier_note" as const, passed: true, detail: n.slice(0, 300) }))),
       ],
       device_compatibility: activeModelRecord ? deviceCompatible(activeModelRecord, deviceInfo) : { compatible: false, note: "Device compatibility has not been validated. No registered model in use." },
       model_input: activeModelRecord?.input_schema ?? "IMAGE_ONLY",

@@ -172,6 +172,7 @@ export const RETINAL_FINDINGS: FindingDefinition[] = [
 const OCT = ["OCT", "OCTA"];
 
 export const OCT_FINDINGS: FindingDefinition[] = [
+  { type: "oct_retinal_class_estimate", level: "observation", label: "OCT retinal class estimate (research)", modalities: ["OCT"], associations: ["macular disease pattern limited to the model's four classes (association, not diagnosis)"], high_risk: false },
   { type: "retinal_thickening", level: "observation", label: "Retinal thickening", modalities: OCT, measurement_schema: [{ key: "central_subfield_thickness", unit: "µm", description: "Central subfield retinal thickness" }], associations: ["macular edema pattern (association, not diagnosis)"], high_risk: false },
   { type: "retinal_thinning", level: "observation", label: "Retinal thinning", modalities: OCT, measurement_schema: [{ key: "central_subfield_thickness", unit: "µm", description: "Central subfield retinal thickness" }], associations: ["atrophy pattern (association, not diagnosis)"], high_risk: false },
   { type: "intraretinal_fluid", level: "observation", label: "Intraretinal fluid", modalities: OCT, associations: ["exudative change (association, not diagnosis)"], high_risk: false },

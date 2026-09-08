@@ -208,6 +208,12 @@ export function buildLimitations(r: AnalysisResult): string[] {
   if (r.multi_model && r.multi_model.performed) {
     l.push(`Multi-model research comparison: ${r.multi_model.agreement.replaceAll("_", " ")} — ${r.multi_model.notes[0] ?? "see result detail."}`.slice(0, 500));
   }
+  if (r.oct_assessment?.state === "CLASS_ESTIMATED") {
+    l.push(
+      `A research OCT classifier estimated class ${r.oct_assessment.predicted_class} (uncalibrated backbone argmax, not a probability). ` +
+      "Class estimates do not establish or exclude macular disease and are not diagnoses."
+    );
+  }
   return l;
 }
 

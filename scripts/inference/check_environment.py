@@ -19,6 +19,7 @@ import sys
 REQUIRED_PROFILES = {
     "base": ["torch", "torchvision", "numpy", "PIL"],
     "fundus-lesion": ["torch", "torchvision", "numpy", "PIL", "cv2", "safetensors", "torchseg", "timm", "einops"],
+    "oct": ["onnxruntime", "numpy", "PIL", "cv2"],
 }
 
 
@@ -35,7 +36,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--profile", choices=sorted(REQUIRED_PROFILES), default="base")
     args = parser.parse_args()
-    isolated_required = args.profile == "fundus-lesion"
+    isolated_required = args.profile in ("fundus-lesion", "oct")
     isolated = bool(sys.flags.isolated and sys.flags.no_user_site)
     if isolated_required and not isolated:
         packages = {name: {"available": False, "error": "not imported because interpreter isolation is required"} for name in REQUIRED_PROFILES[args.profile]}

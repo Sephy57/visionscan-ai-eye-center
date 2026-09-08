@@ -49,6 +49,14 @@ interface Bundle {
       models: Array<{ model_id: string; model_version: string; model_status: string; output_summary: string }>;
       notes: string[];
     };
+    oct_assessment?: {
+      state: "CLASS_ESTIMATED" | "IMAGE_NOT_SUITABLE" | "OUT_OF_DISTRIBUTION" | "MODEL_UNAVAILABLE";
+      predicted_class: string | null; predicted_index: number | null;
+      model_scores: number[] | null; score_semantics: string;
+      calibration_state: string; quality_state: string; ood_state: string;
+      limitations: string[]; validation_state: string;
+      model_id: string | null; model_version: string | null;
+    };
     model_registry?: {
       model_id: string; model_version: string; model_status: string; display_label: string | null;
       integrity_checks: Array<{ check: string; passed: boolean; detail: string }>;
@@ -309,8 +317,29 @@ function ResultInner() {
         </div>
       )}
 
-      {a.multi_model && a.multi_model.performed && (
+      {a.oct_assessment && a.oct_assessment.state !== "MODEL_UNAVAILABLE" && (
         <div className="card" style={{ margin: "14px 0" }}>
+          <div className="card-title"><h3>OCT classification</h3><Badge tone={a.oct_assessment.state === "CLASS_ESTIMATED" ? "warn" : "neutral"}>{a.oct_assessment.state.replaceAll("_", " ")}</Badge></div>
+          {a.oct_assessment.state === "CLASS_ESTIMATED" ? (
+            <>
+              <p className="small" style={{ margin: "0 0 6px" }}>
+                Research estimate: <strong>{a.oct_assessment.predicted_class}</strong> (backbone argmax over CNV/DME/DRUSEN/NORMAL).
+                This is not a diagnosis; a NORMAL estimate does not mean a healthy macula.
+              </p>
+              <p className="tiny muted" style={{ margin: 0 }}>
+                Model scores [{(a.oct_assessment.model_scores ?? []).map((v) => v.toFixed(2)).join(", ")}] (ranking scores, NOT probabilities) •
+                Calibration: not calibrated • Validation: {a.oct_assessment.validation_state} •
+                Model: {a.oct_assessment.model_id ?? "not installed"}{a.oct_assessment.model_version ? ` v${a.oct_assessment.model_version}` : ""} •
+                No overlay: classification-only output has no localization.
+              </p>
+            </>
+          ) : (
+            <p className="small" style={{ margin: 0 }}>{a.oct_assessment.limitations?.[0] ?? "No OCT result is recorded."}</p>
+          )}
+        </div>
+      )}
+
+      {a.multi_model && a.multi_model.performed && (        <div className="card" style={{ margin: "14px 0" }}>
           <div className="card-title"><h3>Multi-model research agreement</h3><Badge tone={a.multi_model.agreement === "MODEL_DISAGREEMENT" ? "bad" : "neutral"}>{a.multi_model.agreement.replaceAll("_", " ")}</Badge></div>
           {a.multi_model.models.map((m) => (
             <p key={m.model_id} className="tiny muted" style={{ margin: "0 0 4px" }}>

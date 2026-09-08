@@ -87,8 +87,16 @@ export const OPHTHALMIC_COVERAGE_REGISTRY: readonly OphthalmicCoverageEntry[] = 
   {
     target_id: "oct_pixel_analysis", display_name: "OCT pixel-level interpretation", modality: "OCT", task: "PIXEL_ANALYSIS",
     state: "UNSUPPORTED_IMAGE_ANALYSIS", model_id: null, production_available: false, pipeline_enabled: false,
-    localization: "NONE", calibration: "NOT_APPLICABLE", result_semantics: "Unsupported; structured OCT values may only come from provenance-bearing records",
-    limitations: ["No OCT pixel model is installed.", "Document-extracted values remain unreviewed until clinician verification."],
+    localization: "NONE", calibration: "NOT_APPLICABLE", result_semantics: "Unsupported; structured OCT values may only come from provenance-bearing records. Whole-B-scan research classification is covered separately (oct_macular_classification).",
+    limitations: ["No OCT pixel segmentation/measurement model is installed.", "Document-extracted values remain unreviewed until clinician verification."],
+  },
+  {
+    target_id: "oct_macular_classification", display_name: "oct macular classification", modality: "OCT", task: "DISEASE_GRADING",
+    state: "RESEARCH_PIPELINE", model_id: "oct-retinal-weights-fp32",
+    production_available: false, pipeline_enabled: true,
+    localization: "NONE", calibration: "NOT_CALIBRATED",
+    result_semantics: "Research OCT class estimate (CNV/DME/DRUSEN/NORMAL) from uncalibrated backbone logits; a NORMAL estimate never means a healthy macula",
+    limitations: ["RESEARCH status: real local inference, no clinical validation; single external test distribution measured (overlap-disclosed).", "Backbone argmax only; hybrid head not executed; no calibrated confidence.", "Single-scanner training distribution; cross-scanner behavior unvalidated."],
   },
   {
     target_id: "dicom_pixel_analysis", display_name: "DICOM pixel-level interpretation", modality: "DICOM", task: "PIXEL_ANALYSIS",

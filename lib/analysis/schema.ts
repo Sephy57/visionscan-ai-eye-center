@@ -96,6 +96,8 @@ export interface AnalysisResult {
   fundus_abnormality?: import("../models/fundusAbnormality").FundusAbnormalityResult;
   /** Dedicated DR grade-estimate layer. A low grade never excludes disease. */
   dr_assessment?: import("../models/drAssessment").DrAssessmentResult;
+  /** Dedicated OCT class-estimate layer. A NORMAL estimate never means a healthy macula. */
+  oct_assessment?: import("../models/octAssessment").OctAssessmentResult;
   /** Cross-model research agreement. Scores are never averaged; disagreement has no automatic winner. */
   multi_model?: {
     performed: boolean;
@@ -372,6 +374,20 @@ export function validateAnalysisResult(r: unknown): { valid: boolean; errors: Va
       need(dr.validation_state === "RESEARCH", "dr_assessment.validation_state", "estimated grades are RESEARCH only");
     } else if (dr.grade !== null || dr.grade_label !== null || dr.referable_dr !== null) {
       errors.push({ path: "dr_assessment", message: "unavailable/blocked DR state cannot carry a grade" });
+    }
+  }
+  if (o.oct_assessment) {
+    const oc = o.oct_assessment;
+    const validOctStates = ["CLASS_ESTIMATED", "IMAGE_NOT_SUITABLE", "OUT_OF_DISTRIBUTION", "MODEL_UNAVAILABLE"];
+    need(validOctStates.includes(oc.state), "oct_assessment.state", "invalid state");
+    if (oc.state === "CLASS_ESTIMATED") {
+      need(["CNV", "DME", "DRUSEN", "NORMAL"].includes(oc.predicted_class as string), "oct_assessment.predicted_class", "must be one of CNV/DME/DRUSEN/NORMAL");
+      need(Number.isInteger(oc.predicted_index) && (oc.predicted_index as number) >= 0 && (oc.predicted_index as number) <= 3, "oct_assessment.predicted_index", "must be 0..3");
+      need(oc.model_scores === null || (Array.isArray(oc.model_scores) && oc.model_scores.length === 4 && oc.model_scores.every((v) => typeof v === "number" && Number.isFinite(v))), "oct_assessment.model_scores", "must be null or 4 finite MODEL_SCOREs, never probabilities");
+      need(oc.calibration_state === "NOT_CALIBRATED", "oct_assessment.calibration_state", "OCT classes may not claim calibration");
+      need(oc.validation_state === "RESEARCH", "oct_assessment.validation_state", "estimated classes are RESEARCH only");
+    } else if (oc.predicted_class !== null || oc.predicted_index !== null) {
+      errors.push({ path: "oct_assessment", message: "unavailable/blocked OCT state cannot carry a class" });
     }
   }
 

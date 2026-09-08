@@ -399,6 +399,60 @@ export const MODELS: Record<string, ModelRecord> = {
     supported_conditions: [], // RESEARCH model claims no conditions - associations stay empty, never diagnoses
     notes: "Registered RESEARCH model. Real local SafeTensors inference via DrGradeLocalProvider; output is an uncalibrated research grade estimate only.",
   },
+  "oct-retinal-weights-fp32": {
+    model_id: "oct-retinal-weights-fp32",
+    model_name: "OCT retinal classifier (EfficientNetV2L+MHA backbone, ONNX)",
+    version: "hf-main-2026",
+    sha256: "22b1fffb5a0ab88284d4c5817c581bedb1b54c09011d87c3f6472cb2c36b2b1f",
+    format: "onnx",
+    file_path: "oct-retinal-weights-fp32/human_eye_fp32.onnx",
+    modalities: ["OCT"],
+    supported_anatomy: ["retina", "macula"],
+    supported_findings: ["oct_retinal_class_estimate"],
+    intended_use: "Offline technical research only: SD-OCT B-scan classification into CNV/DME/DRUSEN/NORMAL as a decision-support observation requiring ophthalmic review. Never a diagnosis, never a normality claim, never a probability.",
+    contraindications: [
+      "Any clinical use, diagnosis, referral, treatment, or prescribing decision",
+      "Any claim of a healthy macula or absence of macular disease",
+      "Use of raw logits as calibrated probabilities or confidences",
+      "Use on non-OCT images or other OCT vendors/protocols without validation",
+      "Use without hash-verified package, reviewed runtime, and clinician review",
+    ],
+    limitations: [
+      "RESEARCH status; no clinical validation; single external test distribution measured (overlap-disclosed).",
+      "Backbone argmax only; the author's XGBoost hybrid head is not executed.",
+      "No calibrated confidence exists for any class; logits are ranking scores only.",
+      "Single-scanner training distribution; cross-scanner behavior unvalidated.",
+      "Device compatibility is unvalidated for every device; domain validation is UNKNOWN for every study.",
+    ],
+    training_dataset: {
+      name: "Kermany et al. Cell 2018 OCT set (per publisher; exact manifests unavailable)",
+      version: "as-reported-by-publisher",
+      size_studies: null,
+      size_patients: null,
+      population: "UCSD/Shiley + China; not independently re-verified",
+      devices: [],
+      provenance_reference: "https://huggingface.co/animeshakr/oct-retinal-weights",
+    },
+    validation_dataset: null,
+    patient_level_split: null,
+    performance: {
+      sensitivity: null, specificity: null, ppv: null, npv: null, auroc: null, auprc: null,
+      calibration: null, evidence_reference: null,
+    },
+    validation_date: null,
+    external_validation_status: "none",
+    clinical_validation_status: "none",
+    regulatory_status: "research_only",
+    status: "RESEARCH",
+    devices: [], // no device compatibility has been established for any device
+    uses_symptoms: false,
+    input_schema: "IMAGE_ONLY",
+    supported_symptom_types: [],
+    performance_with_symptoms: null,
+    performance_without_symptoms: null,
+    supported_conditions: [], // RESEARCH model claims no conditions - associations stay empty, never diagnoses
+    notes: "Registered RESEARCH model. Real local ONNX inference via OctLocalProvider (CPUExecutionProvider only); output is an uncalibrated research class estimate only.",
+  },
 };
 
 export function getModel(modelId: string): ModelRecord | null {

@@ -376,10 +376,10 @@ describe.skipIf(!HAS_PACKAGE || !HAS_VENV || !HAS_TEST_IMAGE)("live pipeline dua
     expect(text).not.toContain("no diabetic retinopathy");
   }, 240_000);
 
-  it("keeps the labeled DEMO path for non-fundus modalities", async () => {
+  it("keeps the labeled DEMO path for modalities no research model claims", async () => {
     const { runPipeline } = await import("@/lib/analysis/pipeline");
     const imageBytes = fs.readFileSync(TEST_IMAGE);
-    const study = { ...fundusStudy(), modality: "oct" } as NormalizedStudy;
+    const study = { ...fundusStudy(), modality: "slit_lamp" } as NormalizedStudy;
     const { analysis } = await runPipeline({ study, originalBytes: imageBytes });
     expect(analysis.model_registry?.model_status).toBe("DEMO");
     expect(analysis.demo.synthetic_result).toBe(true);
