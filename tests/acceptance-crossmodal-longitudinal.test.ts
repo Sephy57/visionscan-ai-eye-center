@@ -88,7 +88,10 @@ describe("Acceptance A/B - encounter cross-modality comparison on real analyses"
       expect(pair.notes.join(" ").toLowerCase()).not.toContain("confirmed diagnosis");
     } else {
       expect(pair.agreement).toBe("NOT_COMPARABLE");
-      expect(pair.notComparableReason).toBe("MODEL_UNAVAILABLE");
+      // A fresh CI checkout has neither the ignored model package nor the
+      // external fixture.  The synthetic fallback may be rejected by the OOD
+      // gate before model availability is consulted; both outcomes fail closed.
+      expect(["MODEL_UNAVAILABLE", "OUT_OF_DISTRIBUTION"]).toContain(pair.notComparableReason);
     }
   }, 240000);
 
