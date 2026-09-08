@@ -18,6 +18,8 @@ export const dynamic = "force-dynamic";
 const VIEW_ROLES = ["ADMIN", "CLINICIAN", "REVIEWER", "TECHNICIAN"] as const;
 const DELETE_ROLES = ["ADMIN", "CLINICIAN"] as const;
 
+export function GET(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function GET(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function GET(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, [...VIEW_ROLES]);
@@ -30,6 +32,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ document: toSummary(doc) });
 }
 
+export function DELETE(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, [...DELETE_ROLES]);

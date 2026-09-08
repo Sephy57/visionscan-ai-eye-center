@@ -12,7 +12,7 @@ import { readExtractionArtifact, writeExtractionArtifact, deleteExtractionArtifa
 import { createDefaultOcrProvider } from "./ocr";
 import { persistTestResults, deleteTestResultsForDocument } from "./testResultService";
 import { extractClinicalFromPages } from "./clinicalExtraction";
-import { saveRecordExtraction } from "./recordExtractionStore";
+import { saveRecordExtraction, deleteRecordExtraction } from "./recordExtractionStore";
 import {
   ExtractionArtifact, PageExtraction, PageExtractionMethod, OCRProvider,
   ExtractionCancelledError, DocumentLevel,
@@ -101,6 +101,10 @@ export async function extractDocument(documentId: string, actor: string, opts: E
   // Previous test results belong to the previous extraction generation -
   // they are removed FIRST so stale results can never outlive their artifact.
   await deleteTestResultsForDocument(documentId);
+  // Clinical candidates are tied to the same artifact generation. Remove the
+  // prior row before processing so a failed/cancelled retry cannot leak stale
+  // symptoms, assessments, or measurements into the evidence workspace.
+  await deleteRecordExtraction(documentId);
   const started = Date.now();
   await auditDocumentEvent("document.extraction_started", doc, actor, `parser=${EXTRACTION_VERSION}`);
 
@@ -260,7 +264,7 @@ export async function extractDocument(documentId: string, actor: string, opts: E
     // marked FAILED and can be regenerated.
     try {
       const recordExtraction = extractClinicalFromPages(
-        artifact.pages.map((p) => ({ page: p.page, text: p.text ?? "" })),
+        artifact.pages.map((p) => ({ page: p.page, text: p.text ?? "", method: p.method, confidence: p.confidence })),
         { document_id: documentId, study_id: doc.study_id, patient_ref: doc.patient_ref }
       );
       await saveRecordExtraction(recordExtraction);

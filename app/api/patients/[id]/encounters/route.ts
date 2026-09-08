@@ -12,6 +12,8 @@ export const dynamic = "force-dynamic";
  * POST - create a validated encounter (fail-closed validation; linked
  *        studies must exist and match the patient's ref).
  */
+export function GET(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function GET(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function GET(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "REVIEWER"]);
@@ -23,6 +25,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ encounters });
 }
 
+export function POST(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function POST(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function POST(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN"]);

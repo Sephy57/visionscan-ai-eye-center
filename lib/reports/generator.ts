@@ -3,6 +3,7 @@ import { dbGet, dbPut } from "../storage/db";
 import { writeJson } from "../storage/files";
 import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
 import { OPHTHALMIC_COVERAGE_REGISTRY, OPHTHALMIC_COVERAGE_VERSION } from "../models/ophthalmicCoverage";
+import { canonicalModality } from "../models/modalities";
 
 /**
  * Report Generator.
@@ -152,16 +153,22 @@ export function buildOverallResult(r: AnalysisResult): string {
   if (r.quality.acceptable === false) {
     return "IMAGE QUALITY INSUFFICIENT FOR RELIABLE AUTOMATED ANALYSIS";
   }
+  const modality = canonicalModality(r.study.modality);
+  if (modality === "OCT") {
+    if (r.oct_assessment?.state === "CLASS_ESTIMATED") return "OCT TARGET CLASS ESTIMATED BY RESEARCH AI — CLINICIAN REVIEW REQUIRED";
+    if (r.oct_assessment?.state === "OUT_OF_DISTRIBUTION") return "OCT INPUT OUT OF DISTRIBUTION — AUTOMATED INTERPRETATION INCONCLUSIVE";
+    if (r.oct_assessment?.state === "MODEL_UNAVAILABLE") return "OCT RESEARCH MODEL UNAVAILABLE — CLINICAL INTERPRETATION NOT AVAILABLE";
+  }
   // A missing general detector is an availability limitation, never a
   // negative screening result. This check intentionally precedes legacy demo
   // findings so a synthetic scenario cannot make a real image appear covered.
-  if (r.fundus_abnormality?.state === "MODEL_UNAVAILABLE" || r.fundus_abnormality?.state === "MODEL_NOT_VALIDATED_FOR_IMAGE") {
+  if (modality === "FUNDUS" && (r.fundus_abnormality?.state === "MODEL_UNAVAILABLE" || r.fundus_abnormality?.state === "MODEL_NOT_VALIDATED_FOR_IMAGE")) {
     return "GENERAL FUNDUS ABNORMALITY MODEL UNAVAILABLE — CLINICAL INTERPRETATION NOT AVAILABLE";
   }
-  if (r.fundus_abnormality?.state === "OUT_OF_DISTRIBUTION") {
+  if (modality === "FUNDUS" && r.fundus_abnormality?.state === "OUT_OF_DISTRIBUTION") {
     return "INPUT OUT OF DISTRIBUTION — AUTOMATED FUNDUS INTERPRETATION INCONCLUSIVE";
   }
-  if (r.fundus_abnormality?.state === "SUSPICIOUS_ABNORMALITY" || r.fundus_abnormality?.state === "MULTIPLE_ABNORMALITIES") {
+  if (modality === "FUNDUS" && (r.fundus_abnormality?.state === "SUSPICIOUS_ABNORMALITY" || r.fundus_abnormality?.state === "MULTIPLE_ABNORMALITIES")) {
     return "SUSPICIOUS FUNDUS ABNORMALITY DETECTED BY RESEARCH AI — OPHTHALMIC REVIEW REQUIRED";
   }
   if (r.findings.length === 0) {
@@ -181,13 +188,14 @@ export function buildOverallResult(r: AnalysisResult): string {
 
 export function buildLimitations(r: AnalysisResult): string[] {
   const researchPath = r.model_registry?.model_status === "RESEARCH" && r.demo?.synthetic_result === false;
+  const researchLabel = /oct/i.test(r.model_registry?.model_id ?? "") ? "OCT classifier" : /dr|grading/i.test(r.model_registry?.model_id ?? "") ? "DR grader" : "fundus lesion detector";
   const l: string[] = [
     VALIDATION_STATUS_BANNER,
     researchPath
-      ? "The lesion detector is a RESEARCH model running real local inference; it is not clinically validated and its output consists of uncalibrated observations only."
+      ? `The ${researchLabel} is a RESEARCH model running real local inference; it is not clinically validated and its output consists of uncalibrated observations only.`
       : "All detection and segmentation components in this deployment are unvalidated placeholders or heuristics.",
     researchPath
-      ? "Findings are research-model localizations from real image pixels; they are not validated lesions, carry no calibrated confidence, and require ophthalmic review."
+      ? `Findings are ${researchLabel} outputs from real image pixels; they are not validated clinical conclusions, carry no calibrated confidence, and require ophthalmic review.`
       : "Findings are synthetic demo outputs generated to exercise the pipeline; they do not derive from a validated medical model.",
     "No validated reference databases are installed; measurements are not compared against population references.",
     "Device-specific calibration and per-device validation have not been performed.",

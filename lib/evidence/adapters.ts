@@ -50,6 +50,7 @@ export function evidenceFromTestResults(results: TestResult[]): EvidenceItem[] {
       source_type: "TEST_RESULT",
       source_id: r.result_id,
       category: r.test_type,
+      metric_subtype: r.metric_subtype,
       laterality: lateralityFromTestResult(laterality),
       laterality_source: "explicit",
       value,
@@ -124,12 +125,13 @@ export function evidenceFromExtractedSymptoms(
       laterality: lateralityFromSymptomReport(s.laterality ?? "unknown"),
       laterality_source: "mapped_from_symptom_report" as const,
       qualitative_finding: SYMPTOM_MAP[s.type]?.label ?? s.type,
-      presence: "PRESENT" as const,
+      presence: s.assertion === "ABSENT" ? "ABSENT" as const : s.assertion === "UNKNOWN" ? "UNKNOWN" as const : "PRESENT" as const,
       trust_level: trust,
       confidence: s.extraction_confidence,
       uncertainty: [
         "document_extracted",
         ...(s.certainty === "UNCERTAIN" ? ["explicit_uncertainty"] : []),
+        ...(s.assertion === "HISTORICAL" ? ["historical_context"] : []),
         ...(s.verification === "UNREVIEWED" ? ["clinician_review_required"] : []),
       ],
       provenance: {
@@ -137,7 +139,7 @@ export function evidenceFromExtractedSymptoms(
         document_id: extraction.document_id,
         page: s.page_index,
         source_text: s.raw_text,
-        extraction_method: `clinical-extraction:${extraction.extraction_version}`,
+        extraction_method: s.extraction_method ?? `clinical-extraction:${extraction.extraction_version}`,
       },
       conflict_ids: [],
     };
@@ -167,10 +169,10 @@ export function evidenceFromSourceDocumentDiagnoses(
       source_type: "SOURCE_DOCUMENT_DIAGNOSIS" as const,
       source_id: `document-diagnosis:${extraction.document_id}:${d.item_id}`,
       category: "source_document_diagnosis",
-      laterality: "UNKNOWN" as const,
-      laterality_source: "unknown" as const,
+      laterality: d.laterality ? lateralityFromSymptomReport(d.laterality) : "UNKNOWN" as const,
+      laterality_source: d.laterality ? "mapped_from_symptom_report" as const : "unknown" as const,
       qualitative_finding: d.diagnosis_raw,
-      presence: "PRESENT" as const,
+      presence: d.assertion === "ABSENT" || d.negated ? "ABSENT" as const : d.assertion === "UNKNOWN" ? "UNKNOWN" as const : "PRESENT" as const,
       trust_level: trust,
       date_raw: d.date_raw,
       uncertainty: [
@@ -183,7 +185,7 @@ export function evidenceFromSourceDocumentDiagnoses(
         page: d.page_index,
         source_text: d.raw_text,
         source_clinician_raw: d.source_clinician_raw,
-        extraction_method: `clinical-extraction:${extraction.extraction_version}`,
+        extraction_method: d.extraction_method ?? `clinical-extraction:${extraction.extraction_version}`,
       },
       conflict_ids: [],
     };
@@ -202,14 +204,14 @@ export function evidenceFromExtractedNegations(
   return (extraction.explicit_negations ?? []).map((n) => {
     const isSymptom = n.kind === "SYMPTOM" && !!n.type && !!SYMPTOM_MAP[n.type];
     const category = isSymptom ? n.type! : n.kind.toLowerCase();
-    const sourceType: EvidenceSourceType = isSymptom ? "SYMPTOM" : n.kind === "ALLERGY" ? "ALLERGY" : "HISTORY";
+    const sourceType: EvidenceSourceType = isSymptom ? "SYMPTOM" : n.kind === "ALLERGY" ? "ALLERGY" : n.kind === "MEDICATION" ? "MEDICATION" : "HISTORY";
     return {
       id: newId("ev"),
       study_id: studyId,
       source_type: sourceType,
       source_id: `document-negation:${extraction.document_id}:${n.item_id}`,
       category,
-      laterality: "UNKNOWN" as const,
+      laterality: n.laterality ? lateralityFromSymptomReport(n.laterality) : "UNKNOWN" as const,
       laterality_source: "unknown" as const,
       qualitative_finding: "explicitly absent",
       presence: "ABSENT" as const,
@@ -220,7 +222,7 @@ export function evidenceFromExtractedNegations(
         document_id: extraction.document_id,
         page: n.page_index,
         source_text: n.raw_text,
-        extraction_method: `clinical-extraction:${extraction.extraction_version}`,
+        extraction_method: n.extraction_method ?? `clinical-extraction:${extraction.extraction_version}`,
       },
       conflict_ids: [],
     };
@@ -240,16 +242,16 @@ export function evidenceFromExtractedMedications(
     category: m.form_hint === "eye_drops" ? "ocular_medication" : "medication",
     laterality: "UNKNOWN" as const,
     laterality_source: "unknown" as const,
-    qualitative_finding: [m.name_raw, m.dose_raw].filter(Boolean).join(" "),
-    presence: "PRESENT" as const,
+      qualitative_finding: [m.name_raw, m.dose_raw].filter(Boolean).join(" "),
+      presence: m.assertion === "ABSENT" ? "ABSENT" as const : m.assertion === "UNKNOWN" ? "UNKNOWN" as const : "PRESENT" as const,
     trust_level: m.verification === "REJECTED_BY_CLINICIAN" ? "REJECTED" as const :
       m.verification === "VERIFIED_BY_CLINICIAN" || m.verification === "CORRECTED_BY_CLINICIAN" ? "HUMAN_VERIFIED" as const : "AUTO_EXTRACTED" as const,
-    uncertainty: ["document_extracted", "identity_unresolved", ...(m.verification === "UNREVIEWED" ? ["clinician_review_required"] : [])],
+      uncertainty: ["document_extracted", "identity_unresolved", ...(m.assertion === "UNCERTAIN" ? ["explicit_uncertainty"] : []), ...(m.assertion === "HISTORICAL" ? ["historical_context"] : []), ...(m.verification === "UNREVIEWED" ? ["clinician_review_required"] : [])],
     provenance: {
       study_id: studyId,
       document_id: extraction.document_id,
       page: m.page_index,
-      extraction_method: `clinical-extraction:${extraction.extraction_version}`,
+      extraction_method: m.extraction_method ?? `clinical-extraction:${extraction.extraction_version}`,
     },
     conflict_ids: [],
   }));
@@ -269,15 +271,15 @@ export function evidenceFromExtractedAllergies(
     laterality: "UNKNOWN" as const,
     laterality_source: "unknown" as const,
     qualitative_finding: [a.allergen_raw, a.reaction_raw].filter(Boolean).join(" "),
-    presence: "PRESENT" as const,
+    presence: a.assertion === "ABSENT" ? "ABSENT" as const : a.assertion === "UNKNOWN" ? "UNKNOWN" as const : "PRESENT" as const,
     trust_level: a.verification === "REJECTED_BY_CLINICIAN" ? "REJECTED" as const :
       a.verification === "VERIFIED_BY_CLINICIAN" || a.verification === "CORRECTED_BY_CLINICIAN" ? "HUMAN_VERIFIED" as const : "AUTO_EXTRACTED" as const,
-    uncertainty: ["document_extracted", "identity_unresolved", ...(a.verification === "UNREVIEWED" ? ["clinician_review_required"] : [])],
+    uncertainty: ["document_extracted", "identity_unresolved", ...(a.assertion === "UNCERTAIN" ? ["explicit_uncertainty"] : []), ...(a.assertion === "HISTORICAL" ? ["historical_context"] : []), ...(a.verification === "UNREVIEWED" ? ["clinician_review_required"] : [])],
     provenance: {
       study_id: studyId,
       document_id: extraction.document_id,
       page: a.page_index,
-      extraction_method: `clinical-extraction:${extraction.extraction_version}`,
+      extraction_method: a.extraction_method ?? `clinical-extraction:${extraction.extraction_version}`,
     },
     conflict_ids: [],
   }));
@@ -297,6 +299,8 @@ export function evidenceFromExtractedHistory(
     ...(extraction.ocular_history_candidates ?? []),
     ...(extraction.family_history_candidates ?? []),
     ...(extraction.exam_findings ?? []),
+    ...(extraction.plan_candidates ?? []),
+    ...(extraction.follow_up_candidates ?? []),
   ];
   const items: EvidenceItem[] = history.map((h) => ({
     id: newId("ev"),
@@ -307,16 +311,16 @@ export function evidenceFromExtractedHistory(
     laterality: lateralityFromSymptomReport(h.laterality ?? "unknown"),
     laterality_source: h.laterality ? "mapped_from_symptom_report" as const : "unknown" as const,
     qualitative_finding: h.value_raw,
-    presence: "PRESENT" as const,
+    presence: h.assertion === "ABSENT" ? "ABSENT" as const : h.assertion === "UNKNOWN" ? "UNKNOWN" as const : "PRESENT" as const,
     trust_level: trustOf(h.verification),
     date_raw: h.date_raw,
-    uncertainty: ["document_extracted", ...(h.verification === "UNREVIEWED" ? ["clinician_review_required"] : [])],
+    uncertainty: ["document_extracted", ...(h.assertion === "UNCERTAIN" ? ["explicit_uncertainty"] : []), ...(h.assertion === "HISTORICAL" ? ["historical_context"] : []), ...(h.verification === "UNREVIEWED" ? ["clinician_review_required"] : [])],
     provenance: {
       study_id: studyId,
       document_id: extraction.document_id,
       page: h.page_index,
       source_text: h.raw_text,
-      extraction_method: `clinical-extraction:${extraction.extraction_version}`,
+      extraction_method: h.extraction_method ?? `clinical-extraction:${extraction.extraction_version}`,
     },
     conflict_ids: [],
   }));
@@ -333,13 +337,13 @@ export function evidenceFromExtractedHistory(
       qualitative_finding: cc.value_raw,
       presence: "PRESENT" as const,
       trust_level: trustOf(cc.verification),
-      uncertainty: ["document_extracted", ...(cc.verification === "UNREVIEWED" ? ["clinician_review_required"] : [])],
+      uncertainty: ["document_extracted", ...(cc.extraction_method ? [`source_method:${cc.extraction_method}`] : []), ...(cc.verification === "UNREVIEWED" ? ["clinician_review_required"] : [])],
       provenance: {
         study_id: studyId,
         document_id: extraction.document_id,
         page: cc.page_index,
         source_text: cc.raw_text,
-        extraction_method: `clinical-extraction:${extraction.extraction_version}`,
+        extraction_method: cc.extraction_method ?? `clinical-extraction:${extraction.extraction_version}`,
       },
       conflict_ids: [],
     });

@@ -16,6 +16,8 @@ export const dynamic = "force-dynamic";
  * failed) the response says so honestly - it never fabricates an empty
  * "no findings" result.
  */
+export function GET(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function GET(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function GET(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "REVIEWER"]);

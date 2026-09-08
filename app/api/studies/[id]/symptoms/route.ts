@@ -7,6 +7,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Structured symptom intake for a study. Symptoms are context only - they never create findings. */
+export function POST(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function POST(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function POST(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "TECHNICIAN"]);
@@ -24,6 +26,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 }
 
+export function GET(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function GET(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function GET(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "REVIEWER"]);

@@ -15,6 +15,8 @@ export const dynamic = "force-dynamic";
  * Corrections NEVER overwrite the original extraction; they are stored as a
  * clinician-authored correction with full history. Every action is audited.
  */
+export function POST(req: NextRequest, context: { params: { resultId: string } }): Promise<NextResponse>;
+export function POST(req: NextRequest, context: { params: Promise<{ resultId: string }> }): Promise<NextResponse>;
 export async function POST(req: NextRequest, { params }: { params: { resultId: string } | Promise<{ resultId: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "REVIEWER"]);

@@ -46,6 +46,7 @@ export type AmbiguityFlag =
   | "missing_unit"          // no unit token -> never assumed
   | "missing_laterality"
   | "contradictory_laterality" // snippet contains more than one distinct laterality
+  | "unexpected_unit"        // known unit is incompatible with this metric
   | "unconvertible_scale"   // e.g. Snellen vs logMAR - intentionally not converted
   | "ambiguous_date";
 
@@ -78,6 +79,8 @@ export interface TestResult {
   document_id: string;
   study_id: string;
   test_type: TestType;
+  /** Metric subtype prevents e.g. visual-field MD and PSD from conflicting. */
+  metric_subtype?: string;
   // --- value (original ALWAYS preserved alongside normalized) ---
   value_raw: string;             // exactly as extracted (e.g. "2l", "21", "0,4")
   value?: number;                // ONLY when strict numeric grammar passes

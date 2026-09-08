@@ -168,7 +168,7 @@ export async function buildEvidenceWorkspace(studyId: string): Promise<EvidenceW
   // a supported condition (assessConditions applies the trust gate).
   for (const document of await listDocumentsByStudy(studyId)) {
     const extraction = await getRecordExtraction(document.document_id);
-    if (extraction?.status === "COMPLETE") {
+    if (extraction?.status === "COMPLETE" || extraction?.status === "PARTIAL") {
       extractedSymptomItems.push(...evidenceFromExtractedSymptoms(studyId, extraction));
       extractedNegationItems.push(...evidenceFromExtractedNegations(studyId, extraction));
       extractedMedicationItems.push(...evidenceFromExtractedMedications(studyId, extraction));

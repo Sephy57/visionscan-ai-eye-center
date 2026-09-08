@@ -141,6 +141,12 @@ async function wrapResearchAnalysisResult(
   // assessments (never re-derive clinical logic here) and reframe through
   // Phase 1's etiology engine - both already fail-closed.
   const findingEvidence = evidenceFromFindings(studyId, "unknown", research.findings);
+  // Prefer the evidence ids already present in the research workspace. The
+  // old path created a second set of random ids here, leaving specialist
+  // bundles pointing at evidence that was not in StructuredClinicalEvidence.
+  const workspaceEvidenceIds = research.evidence_workspace
+    ? research.findings.map((f) => research.evidence_workspace!.evidence.find((e) => e.source_type === "AI_FINDING" && e.source_id === f.id)?.id).filter((id): id is string => !!id)
+    : [];
   const assessments = research.evidence_workspace
     ? assessConditions(research.evidence_workspace.evidence)
     : assessConditions(findingEvidence);
@@ -148,7 +154,7 @@ async function wrapResearchAnalysisResult(
 
   return {
     specialty_id, capability_id,
-    input_evidence_ids: findingEvidence.map((e) => e.id),
+    input_evidence_ids: workspaceEvidenceIds.length > 0 ? workspaceEvidenceIds : findingEvidence.map((e) => e.id),
     model_outputs_ref: research.findings.map((f) => f.id),
     findings: research.findings,
     possible_conditions: possibleConditions,

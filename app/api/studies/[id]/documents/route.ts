@@ -22,6 +22,8 @@ export const dynamic = "force-dynamic";
 const UPLOAD_ROLES = ["ADMIN", "CLINICIAN", "TECHNICIAN"] as const;
 const VIEW_ROLES = ["ADMIN", "CLINICIAN", "REVIEWER", "TECHNICIAN"] as const;
 
+export function POST(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function POST(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function POST(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, [...UPLOAD_ROLES]);
@@ -69,6 +71,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 }
 
+export function GET(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function GET(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function GET(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, [...VIEW_ROLES]);

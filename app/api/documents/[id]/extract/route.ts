@@ -18,6 +18,8 @@ export const dynamic = "force-dynamic";
  * Response: { job_id, status: "queued" } - poll /api/jobs/[id] or
  * /api/documents/[id]/status.
  */
+export function POST(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function POST(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function POST(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "TECHNICIAN"]);
@@ -48,6 +50,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 }
 
 /** GET = convenience: recent extraction jobs for this document (metadata only, no text). */
+export function GET(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function GET(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function GET(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "TECHNICIAN", "REVIEWER"]);

@@ -79,6 +79,8 @@ export interface EvidenceItem {
   source_id: string;
   /** What this evidence is about: a TestType, a symptom type, or a finding type - source-specific vocab. */
   category: string;
+  /** Optional metric discriminator for tests that produce multiple values under one category (for example VF MD vs PSD, or OCT RNFL vs GCC). */
+  metric_subtype?: string;
   laterality: EvidenceLaterality;
   laterality_source: EvidenceLateralitySource;
   value?: number;

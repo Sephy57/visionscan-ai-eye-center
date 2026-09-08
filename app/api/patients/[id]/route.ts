@@ -12,6 +12,8 @@ export const dynamic = "force-dynamic";
  * (chronological) + the longitudinal study timeline built from REAL stored
  * study timestamps. Read-only; 404 for unknown patients.
  */
+export function GET(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function GET(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function GET(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "REVIEWER"]);

@@ -66,7 +66,32 @@ const SAFETY_BANNER =
  * Runs the full research-analysis pipeline for one study. Every non-COMPLETED
  * state is a fail-closed outcome, never a fabricated "normal" result.
  */
+const RESEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
+const researchCache = new Map<string, { result: ResearchAnalysisResult; expiresAt: number }>();
+const researchInFlight = new Map<string, Promise<ResearchAnalysisResult>>();
+
+/** Shared, short-lived memoization prevents the result page's research panel
+ * and specialist hand-off from spawning duplicate CPU-heavy SegFormer
+ * subprocesses for the same immutable study. No PHI is logged or persisted;
+ * entries expire and are scoped to this process. */
 export async function runResearchAnalysis(studyId: string): Promise<ResearchAnalysisResult> {
+  const cached = researchCache.get(studyId);
+  if (cached && cached.expiresAt > Date.now()) return cached.result;
+  if (cached) researchCache.delete(studyId);
+  const existing = researchInFlight.get(studyId);
+  if (existing) return existing;
+  const promise = runResearchAnalysisUncached(studyId);
+  researchInFlight.set(studyId, promise);
+  try {
+    const result = await promise;
+    researchCache.set(studyId, { result, expiresAt: Date.now() + RESEARCH_CACHE_TTL_MS });
+    return result;
+  } finally {
+    researchInFlight.delete(studyId);
+  }
+}
+
+async function runResearchAnalysisUncached(studyId: string): Promise<ResearchAnalysisResult> {
   const now = () => new Date().toISOString();
   const base = { findings: [] as Finding[], evidence_workspace: null, safety_banner: SAFETY_BANNER, generated_at: now() };
 

@@ -9,6 +9,7 @@ import {
   ExplicitNegation,
   SourceDocumentDiagnosis,
   ExtractedHistoryCandidate,
+  buildClinicalEntities,
 } from "./clinicalExtraction";
 import { SYMPTOM_MAP } from "../../clinical/symptoms";
 
@@ -27,7 +28,7 @@ import { SYMPTOM_MAP } from "../../clinical/symptoms";
  *    rejected items out of any downstream use.
  */
 
-export type ExtractionItemCategory = "symptoms" | "medications" | "allergies" | "systemic_candidates" | "explicit_negations" | "source_document_diagnoses" | "ocular_history_candidates" | "family_history_candidates" | "exam_findings";
+export type ExtractionItemCategory = "symptoms" | "medications" | "allergies" | "systemic_candidates" | "explicit_negations" | "source_document_diagnoses" | "ocular_history_candidates" | "family_history_candidates" | "exam_findings" | "plan_candidates" | "follow_up_candidates";
 
 export type AnnotationAction = "VERIFY" | "CORRECT" | "REJECT";
 
@@ -80,6 +81,8 @@ const MUTABLE_FIELDS: Record<ExtractionItemCategory, string[]> = {
   ocular_history_candidates: ["value_raw", "laterality", "date_raw"],
   family_history_candidates: ["value_raw", "laterality", "date_raw"],
   exam_findings: ["value_raw", "laterality", "date_raw"],
+  plan_candidates: ["value_raw", "laterality", "date_raw"],
+  follow_up_candidates: ["value_raw", "laterality", "date_raw"],
 };
 
 const LATERALITIES = new Set(["right", "left", "both", "unknown"]);
@@ -133,6 +136,8 @@ function validCorrection(category: ExtractionItemCategory, value: Record<string,
     case "ocular_history_candidates":
     case "family_history_candidates":
     case "exam_findings":
+    case "plan_candidates":
+    case "follow_up_candidates":
       if (!stringIfPresent("value_raw", 160)) return false;
       if ("laterality" in value && (typeof value.laterality !== "string" || !LATERALITIES.has(value.laterality))) return false;
       if ("date_raw" in value && value.date_raw !== null && !stringIfPresent("date_raw", 80)) return false;
@@ -179,6 +184,10 @@ export async function annotateExtractionItem(
   };
   stored.annotations[input.item_id] = [...(stored.annotations[input.item_id] ?? []), annotation];
   (item as unknown as { verification?: string }).verification = VERIFICATION_BY_ACTION[input.action];
+  // Keep the interop entity projection in lock-step with the annotated
+  // category item. Existing raw extraction fields remain untouched; this is
+  // only a derived view used by API/UI consumers.
+  stored.entities = buildClinicalEntities(stored);
 
   await dbPut("record_extractions", documentId, stored);
   await audit({

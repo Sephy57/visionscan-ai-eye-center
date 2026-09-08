@@ -18,17 +18,21 @@ export function detectConflicts(items: EvidenceItem[]): EvidenceConflict[] {
   const trusted = items.filter((i) => i.trust_level !== "REJECTED");
   const conflicts: EvidenceConflict[] = [];
 
-  // VALUE_CONFLICT: same category + same known laterality, distinct numeric values.
+  // VALUE_CONFLICT: same category + metric subtype + same known laterality,
+  // distinct numeric values. A subtype is part of the identity because a
+  // visual-field MD and PSD (or OCT RNFL and GCC) are not competing values.
   const byValueKey = new Map<string, EvidenceItem[]>();
   for (const it of trusted) {
     if (it.value === undefined || it.laterality === "UNKNOWN") continue;
-    const key = `${it.category}|${it.laterality}`;
+    const key = `${it.category}|${it.metric_subtype ?? ""}|${it.laterality}`;
     byValueKey.set(key, [...(byValueKey.get(key) ?? []), it]);
   }
-  for (const [key, group] of byValueKey) {
+  for (const group of byValueKey.values()) {
     const distinct = new Set(group.map((g) => g.value));
     if (group.length > 1 && distinct.size > 1) {
-      const [category, laterality] = key.split("|") as [string, EvidenceItem["laterality"]];
+      const category = group[0].category;
+      const metricLabel = group[0].metric_subtype ? ` ${group[0].metric_subtype}` : "";
+      const laterality = group[0].laterality;
       conflicts.push({
         id: newId("conf"),
         conflict_type: "VALUE_CONFLICT",
@@ -37,7 +41,7 @@ export function detectConflicts(items: EvidenceItem[]): EvidenceConflict[] {
         evidence_ids: group.map((g) => g.id),
         severity: "medium",
         resolution_state: "UNRESOLVED",
-        note: `${group.length} evidence item(s) disagree on ${category} (${laterality}); no value was chosen automatically - human resolution required.`,
+        note: `${group.length} evidence item(s) disagree on ${category}${metricLabel} (${laterality}); no value was chosen automatically - human resolution required.`,
       });
     }
   }
@@ -64,14 +68,16 @@ export function detectConflicts(items: EvidenceItem[]): EvidenceConflict[] {
   const byQualKey = new Map<string, EvidenceItem[]>();
   for (const it of trusted) {
     if (!it.qualitative_finding || it.laterality === "UNKNOWN") continue;
-    const key = `${it.category}|${it.laterality}`;
+    const key = `${it.category}|${it.metric_subtype ?? ""}|${it.laterality}`;
     byQualKey.set(key, [...(byQualKey.get(key) ?? []), it]);
   }
-  for (const [key, group] of byQualKey) {
+  for (const group of byQualKey.values()) {
     const distinctSources = new Set(group.map((g) => g.source_type));
     const distinctLabels = new Set(group.map((g) => g.qualitative_finding));
     if (distinctSources.size > 1 && distinctLabels.size > 1) {
-      const [category, laterality] = key.split("|") as [string, EvidenceItem["laterality"]];
+      const category = group[0].category;
+      const metricLabel = group[0].metric_subtype ? ` ${group[0].metric_subtype}` : "";
+      const laterality = group[0].laterality;
       conflicts.push({
         id: newId("conf"),
         conflict_type: "QUALITATIVE_CONFLICT",
@@ -80,7 +86,7 @@ export function detectConflicts(items: EvidenceItem[]): EvidenceConflict[] {
         evidence_ids: group.map((g) => g.id),
         severity: "low",
         resolution_state: "UNRESOLVED",
-        note: `Different sources reported different qualitative findings for ${category} (${laterality}); no finding was preferred automatically.`,
+        note: `Different sources reported different qualitative findings for ${category}${metricLabel} (${laterality}); no finding was preferred automatically.`,
       });
     }
   }

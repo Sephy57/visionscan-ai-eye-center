@@ -26,6 +26,7 @@ export type MeasurementChangeState =
 
 export interface MeasurementComparison {
   category: string;
+  metric_subtype?: string;
   laterality: EvidenceLaterality;
   state: MeasurementChangeState;
   prior_value: number | null;
@@ -46,7 +47,7 @@ function trustedNumeric(items: EvidenceItem[]): EvidenceItem[] {
 }
 
 function key(i: EvidenceItem): string {
-  return `${i.category}|${i.laterality}`;
+  return `${i.category}|${i.metric_subtype ?? ""}|${i.laterality}`;
 }
 
 /**
@@ -67,11 +68,16 @@ export function compareMeasurements(prior: EvidenceItem[], current: EvidenceItem
   const results: MeasurementComparison[] = [];
 
   for (const k of allKeys) {
-    const [category, laterality] = k.split("|") as [string, EvidenceLaterality];
+    const [category, metricSubtype, laterality] = k.split("|") as [string, string, EvidenceLaterality];
     const priorItems = priorByKey.get(k) ?? [];
     const currentItems = currentByKey.get(k) ?? [];
 
-    const base = { category, laterality, clinically_significant_progression: false as const };
+    const base = {
+      category,
+      ...(metricSubtype ? { metric_subtype: metricSubtype } : {}),
+      laterality,
+      clinically_significant_progression: false as const,
+    };
 
     if (priorItems.length === 0 && currentItems.length > 0) {
       const c = currentItems[0];

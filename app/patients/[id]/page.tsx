@@ -52,6 +52,11 @@ interface ExtractedItem {
   laterality?: string;
   onset?: string;
   duration?: string;
+  severity?: string;
+  certainty?: string;
+  assertion?: string;
+  source_section?: string;
+  extraction_method?: string;
 }
 
 interface ExtractionRecord {
@@ -65,6 +70,8 @@ interface ExtractionRecord {
   ocular_history_candidates?: ExtractedItem[];
   family_history_candidates?: ExtractedItem[];
   exam_findings?: ExtractedItem[];
+  plan_candidates?: ExtractedItem[];
+  follow_up_candidates?: ExtractedItem[];
   chief_complaint?: ExtractedItem;
 }
 
@@ -190,6 +197,10 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         {item.laterality && <Badge tone="neutral">{item.laterality}</Badge>}
         {item.onset && <Badge tone="neutral">onset: {item.onset}</Badge>}
         {item.duration && <Badge tone="neutral">duration: {item.duration}</Badge>}
+        {item.severity && <Badge tone="neutral">severity: {item.severity}</Badge>}
+        {item.certainty === "UNCERTAIN" && <Badge tone="warn">uncertain</Badge>}
+        {item.assertion === "ABSENT" && <Badge tone="neutral">absent</Badge>}
+        {item.source_section && item.source_section !== "UNKNOWN" && <span className="text-muted" style={{ fontSize: "0.75em" }}>{item.source_section}</span>}
         {item.raw_text && <span className="text-muted" style={{ fontSize: "0.85em", flex: 1, minWidth: 160 }}>“{item.raw_text}”</span>}
         {verificationBadge(item.verification)}
         {allowActions && item.verification === "UNREVIEWED" && (
@@ -307,6 +318,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
               ["ocular_history_candidates", "Ocular history candidates"],
               ["family_history_candidates", "Family history candidates"],
               ["exam_findings", "Exam findings (document-extracted)"],
+              ["plan_candidates", "Plan (document-extracted)"],
+              ["follow_up_candidates", "Follow-up (document-extracted)"],
             ] as Array<[string, string]>).map(([cat, title]) => {
               const items = (ext as unknown as Record<string, ExtractedItem[]>)[cat] ?? [];
               if (items.length === 0) return null;

@@ -13,6 +13,8 @@ export const dynamic = "force-dynamic";
  * output into a diagnosis. The independent triage result remains the urgency
  * authority.
  */
+export function GET(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function GET(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function GET(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "REVIEWER"]);
@@ -27,6 +29,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     study_id: params.id,
     specialist_consensus: evidence.specialist_consensus ?? null,
     specialist_bundles: evidence.specialist_bundles,
+    specialist_packages: evidence.specialist_packages ?? [],
     safety_banner: evidence.safety_banner,
     requires_clinician_review: true,
   });

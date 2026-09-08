@@ -22,6 +22,8 @@ export const dynamic = "force-dynamic";
  * S4 endpoints, which is the only place that produces a HUMAN_VERIFIED
  * trust level for this workspace to read back.
  */
+export function GET(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function GET(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function GET(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "REVIEWER"]);

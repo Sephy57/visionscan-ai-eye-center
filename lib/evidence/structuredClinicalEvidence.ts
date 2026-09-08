@@ -25,6 +25,7 @@ import type { SpecialistAnalysisResult } from "../models/specialistOutputTypes";
 import { canonicalModality } from "../models/modalities";
 import { buildSpecialistConsensus, type SpecialistConsensus } from "../clinical/specialistConsensus";
 import type { PatientSymptom } from "../clinical/symptoms";
+import { buildSpecialistEvidencePackages, type SpecialistEvidencePackage } from "../clinical/specialistPackages";
 
 export interface SpecialistEvidenceBundle {
   specialty_id: SpecialistAnalysisResult["specialty_id"];
@@ -45,6 +46,8 @@ export interface StructuredClinicalEvidence {
   conflicts: EvidenceConflict[];
   possible_conditions: ConditionAssessment[];
   specialist_bundles: SpecialistEvidenceBundle[];
+  /** Deterministic clinician hand-off views over the same evidence array. */
+  specialist_packages?: SpecialistEvidencePackage[];
   /** Present on newly-built packages; optional for compatibility with older
    * persisted/test fixtures created before the consensus layer existed. */
   specialist_consensus?: SpecialistConsensus;
@@ -117,6 +120,8 @@ export async function buildStructuredClinicalEvidence(
   const conflicts = detectConflicts(evidence);
   attachConflictIds(evidence, conflicts);
   const possibleConditions = assessConditions(evidence);
+  const analysisRecord = await dbGet<{ result?: import("../analysis/schema").AnalysisResult }>("analyses", `anl_${studyId}`);
+  const specialistPackages = buildSpecialistEvidencePackages({ analysis: analysisRecord?.result ?? null, evidence, possible_conditions: possibleConditions });
 
   const specialistBundles: SpecialistEvidenceBundle[] = [];
   let specialistConsensus: SpecialistConsensus;
@@ -161,6 +166,7 @@ export async function buildStructuredClinicalEvidence(
     conflicts,
     possible_conditions: possibleConditions,
     specialist_bundles: specialistBundles,
+    specialist_packages: specialistPackages,
     specialist_consensus: specialistConsensus,
     safety_banner: SAFETY_BANNER,
   };

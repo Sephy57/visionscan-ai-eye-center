@@ -28,8 +28,21 @@ type Consensus = {
   note: string;
 };
 
+type EvidencePackage = {
+  specialty: string;
+  model_status: string;
+  observed_findings: Array<{ category: string; laterality: string; summary: string }>;
+  supporting_evidence: Array<{ evidence_id: string; source_type: string; category: string; laterality: string; summary: string }>;
+  contradicting_evidence: Array<{ evidence_id: string; source_type: string; category: string; laterality: string; summary: string }>;
+  missing_evidence: string[];
+  possible_conditions: Array<{ canonical_name: string; laterality: string; state: string; note: string }>;
+  urgency_notes: string[];
+  limitations: string[];
+};
+
 export default function SpecialistConsensusPanel({ studyId }: { studyId: string }) {
   const [consensus, setConsensus] = useState<Consensus | null>(null);
+  const [packages, setPackages] = useState<EvidencePackage[]>([]);
   const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
@@ -38,8 +51,9 @@ export default function SpecialistConsensusPanel({ studyId }: { studyId: string 
       const response = await authFetch(`/api/studies/${encodeURIComponent(studyId)}/specialist-analysis`);
       if (cancelled) return;
       if (!response.ok) { setUnavailable(true); return; }
-      const body = await response.json() as { specialist_consensus?: Consensus | null };
+      const body = await response.json() as { specialist_consensus?: Consensus | null; specialist_packages?: EvidencePackage[] };
       setConsensus(body.specialist_consensus ?? null);
+      setPackages(body.specialist_packages ?? []);
     })();
     return () => { cancelled = true; };
   }, [studyId]);
@@ -83,6 +97,25 @@ export default function SpecialistConsensusPanel({ studyId }: { studyId: string 
           <ul className="tiny muted" style={{ margin: "6px 0 0", paddingLeft: 18 }}>
             {consensus.missing_confirmation.map((item, i) => <li key={i}>{item}</li>)}
           </ul>
+        </details>
+      )}
+      {packages.length > 0 && (
+        <details style={{ marginTop: 12 }} open>
+          <summary className="small" style={{ cursor: "pointer", fontWeight: 650 }}>Specialist evidence packages ({packages.length})</summary>
+          <p className="tiny muted" style={{ margin: "6px 0" }}>Deterministic hand-offs over documented tests, symptoms, and research observations. No package is a diagnosis.</p>
+          <div style={{ display: "grid", gap: 8 }}>
+            {packages.map((p) => (
+              <div key={p.specialty} style={{ borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+                <div className="small" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <strong>{p.specialty.replaceAll("_", " ")}</strong><Badge tone={p.model_status === "NO_VALIDATED_MODEL_AVAILABLE" ? "neutral" : "warn"}>{p.model_status.replaceAll("_", " ")}</Badge>
+                </div>
+                {p.observed_findings.length > 0 && <div className="tiny">Observed: {p.observed_findings.map((f) => `${f.category} (${f.laterality})`).join(" · ")}</div>}
+                {p.contradicting_evidence.length > 0 && <div className="tiny" style={{ color: "var(--warn, #a05a00)" }}>Conflicts: {p.contradicting_evidence.map((e) => `${e.category} (${e.laterality})`).join(" · ")}</div>}
+                <div className="tiny muted">Missing: {p.missing_evidence.join("; ")}</div>
+                <div className="tiny muted">{p.urgency_notes.join(" ")}</div>
+              </div>
+            ))}
+          </div>
         </details>
       )}
       <p className="tiny muted" style={{ marginBottom: 0 }}>Independent symptom triage and clinician final assessment remain authoritative. This panel never confirms a diagnosis.</p>

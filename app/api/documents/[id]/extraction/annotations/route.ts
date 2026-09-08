@@ -20,6 +20,8 @@ const CATEGORIES: ExtractionItemCategory[] = [
   "ocular_history_candidates",
   "family_history_candidates",
   "exam_findings",
+  "plan_candidates",
+  "follow_up_candidates",
 ];
 const ACTIONS: AnnotationAction[] = ["VERIFY", "CORRECT", "REJECT"];
 
@@ -37,6 +39,8 @@ const ACTIONS: AnnotationAction[] = ["VERIFY", "CORRECT", "REJECT"];
  * The original extraction is never overwritten wholesale; corrections
  * create provenance (handoff §26).
  */
+export function POST(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function POST(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function POST(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN"]);

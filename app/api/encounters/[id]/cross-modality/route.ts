@@ -16,6 +16,8 @@ export const dynamic = "force-dynamic";
  * The endpoint never starts inference and returns only categorical,
  * provenance-bearing comparison states.
  */
+export function GET(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function GET(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } | Promise<{ id: string }> }
@@ -47,4 +49,3 @@ export async function GET(
     notice: "Categorical research comparison only. No score fusion, diagnosis, normality claim, or implicit analysis execution.",
   });
 }
-

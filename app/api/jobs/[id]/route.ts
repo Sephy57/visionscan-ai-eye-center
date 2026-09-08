@@ -6,6 +6,8 @@ import { requireJobScope } from "@/lib/auth/scope";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+export function GET(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function GET(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function GET(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "TECHNICIAN", "REVIEWER"]);
@@ -19,6 +21,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 /** POST = retry a failed job, or { action: "cancel" } to cancel queued/running (S2). */
+export function POST(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function POST(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function POST(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "TECHNICIAN", "REVIEWER"]);

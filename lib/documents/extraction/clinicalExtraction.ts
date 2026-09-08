@@ -1,4 +1,5 @@
-import { SYMPTOM_MAP, SymptomTypeDef, DurationBand, Onset, Laterality } from "../../clinical/symptoms";
+import { SYMPTOM_MAP, SymptomTypeDef, DurationBand, Onset, Laterality, Progression, Frequency } from "../../clinical/symptoms";
+import type { PageExtractionMethod } from "./types";
 
 /**
  * Automatic clinical extraction (eye-center workspace).
@@ -38,7 +39,7 @@ import { SYMPTOM_MAP, SymptomTypeDef, DurationBand, Onset, Laterality } from "..
  *    them to HUMAN_VERIFIED evidence.
  */
 
-export const CLINICAL_EXTRACTION_VERSION = "clinical-extraction-1.0.0";
+export const CLINICAL_EXTRACTION_VERSION = "clinical-extraction-1.1.0";
 
 export type ExtractionVerification = "UNREVIEWED" | "VERIFIED_BY_CLINICIAN" | "CORRECTED_BY_CLINICIAN" | "REJECTED_BY_CLINICIAN";
 
@@ -46,17 +47,33 @@ export type ExtractionVerification = "UNREVIEWED" | "VERIFIED_BY_CLINICIAN" | "C
  * such as "possible flashes" remains useful review evidence, but is not an
  * explicit report. This is never a clinical/model confidence score. */
 export type ExtractionCertainty = "EXPLICIT" | "UNCERTAIN";
+export type ExtractionAssertion = "PRESENT" | "ABSENT" | "UNCERTAIN" | "HISTORICAL" | "UNKNOWN";
+export type ClinicalSection =
+  | "UNKNOWN" | "CHIEF_COMPLAINT" | "HISTORY" | "OCULAR_HISTORY" | "FAMILY_HISTORY"
+  | "MEDICATIONS" | "ALLERGIES" | "EXAM" | "INVESTIGATION" | "ASSESSMENT" | "PLAN" | "FOLLOW_UP";
+
+/** How the page text was obtained. Kept separate from extraction_method so a
+ * reviewer can distinguish OCR input from the deterministic clinical parser. */
+export type ClinicalExtractionMethod = PageExtractionMethod | "rule_based" | "unknown";
 
 export interface ExtractedSymptom {
   item_id: string;
   type: string;                 // always a key of SYMPTOM_MAP (controlled vocabulary)
   raw_text: string;             // quoted from the document - the provenance anchor
   page_index: number;           // 0-based page the sentence came from
+  page?: number;                // 1-based alias for API/report consumers
   laterality?: Laterality;      // only when the document states it in the same sentence
   onset?: Onset;                // only when the document states it
   duration?: DurationBand;      // only when the document states it
   severity?: "mild" | "moderate" | "severe"; // only when the document states it
+  progression?: Progression;
+  frequency?: Frequency;
+  assertion?: ExtractionAssertion;
   certainty?: ExtractionCertainty; // UNCERTAIN for "possible/may have" language
+  source_section?: ClinicalSection;
+  extraction_method?: ClinicalExtractionMethod;
+  source_start?: number;
+  source_end?: number;
   extraction_confidence: number; // 0..1 EXTRACTION confidence (pattern-match quality), NOT clinical
   confidence_basis: "EXACT_PHRASE" | "SENTENCE_CO_OCCURRENCE";
   source: "DOCUMENT_EXTRACTED";
@@ -65,10 +82,17 @@ export interface ExtractedSymptom {
 
 export interface ExplicitNegation {
   item_id: string;
-  kind: "SYMPTOM" | "ALLERGY" | "SYSTEMIC_CONDITION";
+  kind: "SYMPTOM" | "ALLERGY" | "SYSTEMIC_CONDITION" | "MEDICATION" | "HISTORY";
   type?: string;                // symptom vocabulary key, when resolvable
+  condition?: string;
+  laterality?: Laterality;
   raw_text: string;
   page_index: number;
+  page?: number;
+  source_section?: ClinicalSection;
+  extraction_method?: ClinicalExtractionMethod;
+  assertion?: "ABSENT";
+  verification?: ExtractionVerification;
 }
 
 export interface ExtractedMedication {
@@ -77,6 +101,10 @@ export interface ExtractedMedication {
   form_hint?: "eye_drops" | "oral" | "injection" | "unknown"; // only from explicit wording
   dose_raw?: string;            // only when written next to the name
   page_index: number;
+  page?: number;
+  assertion?: ExtractionAssertion;
+  source_section?: ClinicalSection;
+  extraction_method?: ClinicalExtractionMethod;
   normalization_status: "UNNORMALIZED"; // normalization is a separate explicit step
   source: "DOCUMENT_EXTRACTED";
   verification: ExtractionVerification;
@@ -87,6 +115,10 @@ export interface ExtractedAllergy {
   allergen_raw: string;
   reaction_raw?: string;        // only when the document states the reaction
   page_index: number;
+  page?: number;
+  assertion?: ExtractionAssertion;
+  source_section?: ClinicalSection;
+  extraction_method?: ClinicalExtractionMethod;
   source: "DOCUMENT_EXTRACTED";
   verification: ExtractionVerification;
 }
@@ -94,21 +126,29 @@ export interface ExtractedAllergy {
 /** A non-diagnostic history/exam candidate copied from a source document. */
 export interface ExtractedHistoryCandidate {
   item_id: string;
-  kind: "OCULAR_HISTORY" | "OCULAR_SURGERY" | "FAMILY_HISTORY" | "EXAM_FINDING";
+  kind: "OCULAR_HISTORY" | "OCULAR_SURGERY" | "FAMILY_HISTORY" | "EXAM_FINDING" | "PLAN" | "FOLLOW_UP";
   value_raw: string;
   raw_text: string;
   page_index: number;
+  page?: number;
   laterality?: Laterality;
   date_raw?: string;
+  assertion?: ExtractionAssertion;
+  source_section?: ClinicalSection;
+  extraction_method?: ClinicalExtractionMethod;
   source: "DOCUMENT_EXTRACTED";
   verification: ExtractionVerification;
 }
 
 /** A labelled chief-complaint field, retained separately from symptoms. */
 export interface ExtractedChiefComplaint {
+  item_id?: string;
   value_raw: string;
   raw_text: string;
   page_index: number;
+  page?: number;
+  source_section?: ClinicalSection;
+  extraction_method?: ClinicalExtractionMethod;
   source: "DOCUMENT_EXTRACTED";
   verification: ExtractionVerification;
 }
@@ -122,6 +162,12 @@ export interface SourceDocumentDiagnosis {
   page_index: number;
   /** 1-based page alias for reviewers and API consumers. */
   page: number;
+  laterality?: Laterality;
+  certainty?: ExtractionCertainty;
+  assertion?: ExtractionAssertion;
+  negated?: boolean;
+  source_section?: ClinicalSection;
+  extraction_method?: ClinicalExtractionMethod;
   /** Optional source-document labels; absent means the document did not state them. */
   date_raw?: string;
   source_clinician_raw?: string;
@@ -134,8 +180,30 @@ export interface SystemicCandidate {
   condition: "diabetes" | "hypertension";
   raw_text: string;
   page_index: number;
+  page?: number;
+  assertion?: ExtractionAssertion;
+  source_section?: ClinicalSection;
+  extraction_method?: ClinicalExtractionMethod;
   source: "DOCUMENT_EXTRACTED";
   verification: ExtractionVerification;
+}
+
+/** Common, provenance-complete entity view used by downstream APIs. Category
+ * arrays above remain for backwards compatibility; this array is the stable
+ * interop contract for new clients. */
+export interface ExtractedClinicalEntity {
+  entity_id: string;
+  entity_type: string;
+  canonical_type: string;
+  raw_text: string;
+  laterality: Laterality;
+  certainty: ExtractionCertainty;
+  negated: boolean;
+  source_document_id: string;
+  page: number;
+  source_section: ClinicalSection;
+  extraction_method: ClinicalExtractionMethod;
+  verification_status: ExtractionVerification;
 }
 
 export interface RecordExtraction {
@@ -144,7 +212,7 @@ export interface RecordExtraction {
   patient_ref?: string;
   extracted_at: string;
   extraction_version: string;
-  status: "COMPLETE" | "FAILED";
+  status: "COMPLETE" | "PARTIAL" | "FAILED";
   error_code?:
     | "NO_TEXT_EXTRACTED"
     | "EXTRACTION_FAILED";
@@ -157,7 +225,10 @@ export interface RecordExtraction {
   ocular_history_candidates: ExtractedHistoryCandidate[];
   family_history_candidates: ExtractedHistoryCandidate[];
   exam_findings: ExtractedHistoryCandidate[];
+  plan_candidates: ExtractedHistoryCandidate[];
+  follow_up_candidates: ExtractedHistoryCandidate[];
   chief_complaint?: ExtractedChiefComplaint;
+  entities: ExtractedClinicalEntity[];
   counts: { pages_scanned: number; sentences_scanned: number };
 }
 
@@ -172,11 +243,11 @@ type SymptomPhraseSpec = {
 };
 
 const SYMPTOM_PHRASES: SymptomPhraseSpec[] = [
-  { type: "blurred_vision", phrases: ["blurred vision", "blurring of vision", "blurring", "vision is blurry", "blurry vision", "hazy vision"] },
+  { type: "blurred_vision", phrases: ["blurred vision", "blurring of vision", "blurring", "vision is blurry", "blurry vision", "hazy vision", "decreased vision", "reduced visual acuity", "decreased visual acuity", "vision is reduced"] },
   { type: "sudden_vision_loss", phrases: ["sudden loss of vision", "sudden vision loss", "sudden painless loss of vision", "painless loss of vision", "sudden decrease in vision", "sudden deterioration of vision", "acutely lost vision"] },
   { type: "gradual_vision_loss", phrases: ["gradual loss of vision", "gradual vision loss", "progressive vision loss", "gradually worsening vision", "slowly worsening vision"] },
-  { type: "reduced_central_vision", phrases: ["central vision is reduced", "loss of central vision", "central scotoma"] },
-  { type: "reduced_peripheral_vision", phrases: ["peripheral vision", "side vision is reduced", "loss of side vision", "peripheral field loss"] },
+  { type: "reduced_central_vision", phrases: ["central vision is reduced", "loss of central vision", "central scotoma", "central vision loss", "central field defect"] },
+  { type: "reduced_peripheral_vision", phrases: ["peripheral vision", "side vision is reduced", "loss of side vision", "peripheral field loss", "peripheral field defect", "visual field defect", "field defect", "scotoma"] },
   { type: "distorted_vision", phrases: ["distorted vision", "metamorphopsia", "distortion of vision", "straight lines appear wavy"] },
   { type: "double_vision", phrases: ["double vision", "diplopia", "seeing double"] },
   { type: "night_vision_difficulty", phrases: ["night vision", "difficulty seeing at night", "difficulty driving at night", "nyctalopia"] },
@@ -184,7 +255,7 @@ const SYMPTOM_PHRASES: SymptomPhraseSpec[] = [
   { type: "transient_vision_changes", phrases: ["transient vision", "transient loss of vision", "transient blurring", "vision comes and goes"] },
   { type: "floaters", phrases: ["floaters"] },
   { type: "new_floaters", phrases: ["new floaters", "new onset of floaters", "recent floaters", "sudden floaters"] },
-  { type: "flashes", phrases: ["flashes of light", "flashing lights", "photopsia", "flashes in", "light flashes", "flashes"] },
+  { type: "flashes", phrases: ["flashes of light", "flashing lights", "photopsia", "flashes in", "light flashes", "flashes", "flashers"] },
   { type: "curtain_shadow", phrases: ["curtain", "shadow over", "shade over", "dark curtain", "veil over"] },
   { type: "spots_in_vision", phrases: ["spots in", "black spots", "dark spots in"] },
   { type: "wavy_lines", phrases: ["wavy lines", "lines look wavy", "wavy vision"] },
@@ -213,9 +284,9 @@ const CO_OCCURRENCE_RULES: Array<{
   { type: "trauma_with_vision_loss", requires: [["trauma", "injury", "injured", "hit in the eye", "struck"], ["vision loss", "loss of vision", "cannot see", "can't see", "decreased vision", "reduced vision"]], phraseForProvenance: "trauma" },
 ];
 
-const NEGATION_TRIGGERS = /\b(no|not|denies|denied|deny|without|free of|negative for|never had)\b/i;
-const UNCERTAINTY_TRIGGERS = /\b(possible|possibly|questionable|uncertain|may have|might have|could have|cannot exclude|can't exclude)\b/i;
-const NKDA_PATTERNS = [/\bnkda\b/i, /\bno known (drug )?allerg/i, /\bdenies allerg/i];
+const NEGATION_TRIGGERS = /\b(no|not|denies|denied|deny|without|free of|free from|negative for|negative|absent|never had)\b/i;
+const UNCERTAINTY_TRIGGERS = /(?:\bpossible\b|\bpossibly\b|\bquestionable\b|\buncertain\b|\bmay have\b|\bmight have\b|\bcould have\b|\bcannot exclude\b|\bcan't exclude\b|\b(?:rule|r\/o)\s*out\b|\bsuspicious for\b|\bsuspect(?:ed)?\b|\bquery\b|\blikely\b|\?)/i;
+const NKDA_PATTERNS = [/\bnkda\b/i, /\bno known (drug )?allerg/i, /\bdenies allerg/i, /\bno allergies?\b/i];
 
 const MEDICATION_NAMES = [
   // ophthalmic
@@ -246,18 +317,25 @@ const ALLERGY_PATTERNS: Array<{ re: RegExp; allergenGroup: number; reactionGroup
   { re: /([a-z0-9\-\s]{2,40}?)\s+allergy\s+with\s+([a-z0-9\-\s]{2,40}?)(?:[.,;]|$)/gi, allergenGroup: 1, reactionGroup: 2 },
 ];
 
-const DIABETES_PATTERN = /\b(history of diabetes|known diabetic|diabetic|diabetes mellitus|type 2 diabetes|type 1 diabetes|diabetes)\b/i;
+// Do not treat a disease adjective such as "diabetic retinopathy" as proof
+// that the patient history contains diabetes. The record may state that an
+// eye finding is diabetic-patterned while omitting (or even denying) the
+// systemic history.
+const DIABETES_PATTERN = /\b(?:history of diabetes|known diabetic|diabetic(?!\s+(?:retinopathy|macular|macular\s+edema|eye|changes))|diabetes mellitus|type 2 diabetes|type 1 diabetes|diabetes|DM)\b/i;
 const HYPERTENSION_PATTERN = /\b(history of hypertension|hypertension|high blood pressure|htn)\b/i;
 // Only capture an explicitly labelled source claim. Free prose such as
 // "diagnosis was considered" is intentionally not normalized into a claim.
-const SOURCE_DIAGNOSIS_PATTERN = /\b(?:diagnosis|diagnoses|assessment)\s*:\s*([^\n.;]{2,120})/i;
+const SOURCE_DIAGNOSIS_PATTERN = /\b(?:diagnosis|diagnoses|assessment|impression|clinical impression)\s*:\s*([^\n.;]{2,120})/i;
+const SOURCE_NEGATED_DIAGNOSIS_PATTERN = /\b(?:negative for|no evidence of|no signs of|without evidence of)\s+([^\n.;]{2,120})/i;
 const SOURCE_DATE_PATTERN = /\b(?:date|dated|encounter date|visit date)\s*[:=-]?\s*([^\s,.;]{2,30})/i;
 const SOURCE_CLINICIAN_PATTERN = /\b(?:clinician|provider|physician|author)\s*[:=-]\s*([^\n.;]{2,100})/i;
-const CHIEF_COMPLAINT_PATTERN = /\bchief\s+complaint\s*[:=-]\s*([^\n.;]{2,160})/i;
+const CHIEF_COMPLAINT_PATTERN = /(?:\bchief\s+complaint|\bCC|\bC\/O|\breason\s+for\s+(?:visit|referral)|\bpresenting\s+complaint)\s*[:=-]\s*([^\n.;]{2,160})/i;
 const FAMILY_HISTORY_PATTERN = /\bfamily\s+history\s*(?:of|:|-)?\s*([^\n.;]{2,160})/i;
 const OCULAR_SURGERY_PATTERN = /\b(?:status\s+post|s\/p|prior|previous|history\s+of|hx\s+of)\s+([^\n.;]{2,120}\b(?:surgery|procedure|vitrectomy|laser|injection|transplant|lasik|prk))\b/i;
 const OCULAR_HISTORY_PATTERN = /\b(?:prior|previous|history\s+of|hx\s+of|known)\s+([^\n.;]{2,120})/i;
 const EXAM_FINDING_PATTERN = /\b(?:exam(?:ination)?|slit[- ]lamp|fundus|optic\s+disc|external\s+exam)\s*(?:findings?|exam)?\s*[:=-]\s*([^\n.;]{2,180})/i;
+const PLAN_PATTERN = /\bplan\s*[:=-]\s*([^\n.;]{2,220})/i;
+const FOLLOW_UP_PATTERN = /\b(?:follow[- ]?up|return|rtc|review)\s*(?:in|:|[-=])?\s*([^\n.;]{2,160})/i;
 
 const MAX_ITEMS_PER_CATEGORY = 50;
 const MAX_RAW_LEN = 160;
@@ -269,17 +347,57 @@ const MAX_RAW_LEN = 160;
 interface Sentence {
   page: number;
   text: string;
+  source_section: ClinicalSection;
+  extraction_method: ClinicalExtractionMethod;
+  source_start?: number;
+  source_end?: number;
 }
 
-function splitSentences(pages: { page: number; text: string }[]): Sentence[] {
+function sectionFromText(text: string): ClinicalSection | undefined {
+  const t = text.trim().replace(/[:\-]+$/, "");
+  if (/^(?:chief\s+complaint|cc|c\/o|reason\s+for\s+(?:visit|referral)|presenting\s+complaint)\b/i.test(t)) return "CHIEF_COMPLAINT";
+  if (/^(?:hpi|history\s+of\s+present\s+illness|history|subjective)\b/i.test(t)) return "HISTORY";
+  if (/^(?:ocular\s+history|eye\s+history|past\s+ocular|surgical\s+history)\b/i.test(t)) return "OCULAR_HISTORY";
+  if (/^(?:family\s+history|fhx)\b/i.test(t)) return "FAMILY_HISTORY";
+  if (/^(?:medications?|meds?|current\s+medications?)\b/i.test(t)) return "MEDICATIONS";
+  if (/^(?:allerg(?:y|ies)|allergies?)\b/i.test(t)) return "ALLERGIES";
+  if (/^(?:exam(?:ination)?|slit[- ]lamp|fundus|optic\s+disc|external\s+exam)\b/i.test(t)) return "EXAM";
+  if (/^(?:investigations?|tests?|imaging|oct|visual\s+field|vf)\b/i.test(t)) return "INVESTIGATION";
+  if (/^(?:assessment|impression|diagnos(?:is|es)|clinical\s+impression)\b/i.test(t)) return "ASSESSMENT";
+  if (/^plan\b/i.test(t)) return "PLAN";
+  if (/^(?:follow[- ]?up|return|rtc|review)\b/i.test(t)) return "FOLLOW_UP";
+  return undefined;
+}
+
+function sourceMethod(method: PageExtractionMethod | undefined): ClinicalExtractionMethod {
+  if (method === "ocr" || method === "text_layer" || method === "ocr_failed" || method === "empty") return method;
+  return "rule_based";
+}
+
+function splitSentences(pages: Array<{ page: number; text: string; method?: PageExtractionMethod; confidence?: number }>): Sentence[] {
   const out: Sentence[] = [];
   for (const p of pages) {
     if (!p.text) continue;
     // Keep a `Diagnosis: ...` label in one sentence; a colon is a field
     // separator, not a clinical sentence boundary.
+    let currentSection: ClinicalSection = "UNKNOWN";
+    let offset = 0;
     for (const raw of p.text.split(/(?<=[.!?;\n])\s+|\n+/)) {
       const t = raw.trim();
-      if (t.length >= 3) out.push({ page: p.page, text: t });
+      const detected = sectionFromText(t);
+      if (detected) currentSection = detected;
+      if (t.length >= 3) {
+        const start = p.text.indexOf(t, offset);
+        out.push({
+          page: p.page,
+          text: t,
+          source_section: detected ?? currentSection,
+          extraction_method: sourceMethod(p.method),
+          source_start: start >= 0 ? start : undefined,
+          source_end: start >= 0 ? start + t.length : undefined,
+        });
+        if (start >= 0) offset = start + t.length;
+      }
     }
   }
   return out;
@@ -310,6 +428,10 @@ function findPhraseMatch(sentence: string, phrases: string[]): PhraseMatch | nul
 
 function isNegated(sentence: string, matchIndex: number): boolean {
   if (matchIndex < 0) return false;
+  const after = sentence.slice(matchIndex).slice(0, 36);
+  // Post-mention negation is common in exam tables and dictated notes:
+  // "floaters, now absent" / "pain - negative".
+  if (/^.{0,18}(?:,|[-–:])?\s*(?:now\s+)?(?:absent|not\s+present|negative)\b/i.test(after)) return true;
   const prefix = sentence.slice(0, matchIndex);
   // Keep commas inside a negated list ("no pain, flashes, or floaters"),
   // while treating contrast/positive assertion cues as a new clause
@@ -350,6 +472,37 @@ function extractLaterality(sentence: string): Laterality | undefined {
   return undefined;
 }
 
+/** Resolve eye tokens to the matched phrase, never to the whole sentence.
+ * If both eyes occur in the same local clause, return unknown rather than
+ * silently assigning the first eye to every symptom. */
+function extractLateralityForSpan(sentence: string, matchIndex: number, matchLength: number): Laterality | undefined {
+  const phrase = sentence.slice(matchIndex, matchIndex + matchLength);
+  if (/\b(bilateral|both eyes|both OU|OU\b|both eye)/i.test(phrase)) return "both";
+  const separatorsBefore = [sentence.lastIndexOf(".", matchIndex), sentence.lastIndexOf(";", matchIndex), sentence.lastIndexOf("\n", matchIndex), ...[...sentence.slice(0, matchIndex).matchAll(/\b(?:and|or|but|with)\b/gi)].map((m) => m.index ?? -1)];
+  const leftBound = Math.max(0, Math.max(...separatorsBefore) + 1);
+  const rightCandidates = [sentence.indexOf(".", matchIndex + matchLength), sentence.indexOf(";", matchIndex + matchLength), sentence.indexOf("\n", matchIndex + matchLength), ...[...sentence.slice(matchIndex + matchLength).matchAll(/\b(?:and|or|but|with)\b/gi)].map((m) => m.index === undefined ? -1 : matchIndex + matchLength + m.index)].filter((n) => n >= 0);
+  const rightBound = rightCandidates.length ? Math.min(...rightCandidates) : sentence.length;
+  const clause = sentence.slice(leftBound, rightBound);
+  const eyeMatches = [...clause.matchAll(/\b(OD|OS|OU|right(?:\s+eye)?|left(?:\s+eye)?|both\s+eyes?)\b/gi)].map((m) => ({ token: m[1].toUpperCase(), index: (m.index ?? 0) + leftBound }));
+  if (!eyeMatches.length) return undefined;
+  const nearby = eyeMatches.filter((e) => Math.abs(e.index - matchIndex) <= 60);
+  const candidates = nearby.length ? nearby : eyeMatches;
+  const ranked = candidates
+    .map((e) => ({ ...e, distance: Math.abs(e.index - (matchIndex + matchLength / 2)) }))
+    .sort((a, b) => a.distance - b.distance);
+  const toLat = (token: string): Laterality => token.startsWith("OD") || token.startsWith("RIGHT") ? "right" : token.startsWith("OS") || token.startsWith("LEFT") ? "left" : "both";
+  const nearest = toLat(ranked[0].token);
+  if (ranked[1] && toLat(ranked[1].token) !== nearest && Math.abs(ranked[1].distance - ranked[0].distance) <= 8) return "unknown";
+  return nearest;
+}
+
+function inferAssertion(sentence: string, matchIndex: number, matchLength = 0): ExtractionAssertion {
+  if (isNegated(sentence, matchIndex)) return "ABSENT";
+  if (isUncertain(sentence, matchIndex, matchLength)) return "UNCERTAIN";
+  if (/\b(?:history\s+of|prior|previous|remote|status\s+post|s\/p|years?\s+ago)\b/i.test(sentence)) return "HISTORICAL";
+  return "PRESENT";
+}
+
 function extractOnset(sentence: string): Onset | undefined {
   if (/\b(sudden|suddenly|acute onset|abruptly|this morning|since morning|began today|started today)\b/i.test(sentence)) return "sudden";
   if (/\b(gradual|gradually|progressive|progressively|over the past|over weeks|over months|slow onset|insidious)\b/i.test(sentence)) return "gradual";
@@ -387,6 +540,40 @@ function clip(s: string): string {
   return s.length > MAX_RAW_LEN ? s.slice(0, MAX_RAW_LEN) + "…" : s;
 }
 
+export function buildClinicalEntities(record: RecordExtraction): ExtractedClinicalEntity[] {
+  const entities: ExtractedClinicalEntity[] = [];
+  const push = (entity: ExtractedClinicalEntity) => {
+    if (entities.length < MAX_ITEMS_PER_CATEGORY * 12) entities.push(entity);
+  };
+  const add = (input: {
+    id: string; type: string; canonical: string; raw: string; page: number; lat?: Laterality;
+    assertion?: ExtractionAssertion; certainty?: ExtractionCertainty; negated?: boolean;
+    section?: ClinicalSection; method?: ClinicalExtractionMethod; verification: ExtractionVerification;
+  }) => push({
+    entity_id: input.id,
+    entity_type: input.type,
+    canonical_type: input.canonical,
+    raw_text: clip(input.raw),
+    laterality: input.lat ?? "unknown",
+    certainty: input.certainty ?? (input.assertion === "UNCERTAIN" ? "UNCERTAIN" : "EXPLICIT"),
+    negated: input.negated ?? input.assertion === "ABSENT",
+    source_document_id: record.document_id,
+    page: input.page,
+    source_section: input.section ?? "UNKNOWN",
+    extraction_method: input.method ?? "rule_based",
+    verification_status: input.verification,
+  });
+  for (const s of record.symptoms) add({ id: s.item_id, type: "SYMPTOM", canonical: s.type, raw: s.raw_text, page: s.page ?? s.page_index, lat: s.laterality, assertion: s.assertion, certainty: s.certainty, section: s.source_section, method: s.extraction_method, verification: s.verification });
+  for (const n of record.explicit_negations) add({ id: n.item_id, type: n.kind, canonical: n.type ?? n.condition ?? n.kind.toLowerCase(), raw: n.raw_text, page: n.page ?? n.page_index, lat: n.laterality, assertion: "ABSENT", certainty: "EXPLICIT", section: n.source_section, method: n.extraction_method, verification: n.verification ?? "UNREVIEWED" });
+  for (const m of record.medications) add({ id: m.item_id, type: "MEDICATION", canonical: m.name_raw.toLowerCase(), raw: m.name_raw, page: m.page ?? m.page_index, assertion: m.assertion, section: m.source_section, method: m.extraction_method, verification: m.verification });
+  for (const a of record.allergies) add({ id: a.item_id, type: "ALLERGY", canonical: a.allergen_raw.toLowerCase(), raw: a.allergen_raw, page: a.page ?? a.page_index, assertion: a.assertion, section: a.source_section, method: a.extraction_method, verification: a.verification });
+  for (const c of record.systemic_candidates) add({ id: c.item_id, type: "SYSTEMIC_CONDITION", canonical: c.condition, raw: c.raw_text, page: c.page ?? c.page_index, assertion: c.assertion, section: c.source_section, method: c.extraction_method, verification: c.verification });
+  for (const d of record.source_document_diagnoses) add({ id: d.item_id, type: "SOURCE_CLINICAL_ASSESSMENT", canonical: "source_document_diagnosis", raw: d.raw_text, page: d.page, lat: d.laterality, assertion: d.assertion, certainty: d.certainty, negated: d.negated, section: d.source_section ?? "ASSESSMENT", method: d.extraction_method, verification: d.verification });
+  for (const h of [...record.ocular_history_candidates, ...record.family_history_candidates, ...record.exam_findings, ...record.plan_candidates, ...record.follow_up_candidates]) add({ id: h.item_id, type: h.kind, canonical: h.kind.toLowerCase(), raw: h.raw_text, page: h.page ?? h.page_index, lat: h.laterality, assertion: h.assertion, section: h.source_section, method: h.extraction_method, verification: h.verification });
+  if (record.chief_complaint) add({ id: record.chief_complaint.item_id ?? `${record.document_id}:chief_complaint`, type: "CHIEF_COMPLAINT", canonical: "chief_complaint", raw: record.chief_complaint.raw_text, page: record.chief_complaint.page ?? record.chief_complaint.page_index, section: "CHIEF_COMPLAINT", method: record.chief_complaint.extraction_method, verification: record.chief_complaint.verification });
+  return entities;
+}
+
 let idCounter = 0;
 function nextItemId(): string {
   idCounter = (idCounter + 1) % 1_000_000;
@@ -399,7 +586,7 @@ function nextItemId(): string {
  * text) yields an empty result, never an error or invented content.
  */
 export function extractClinicalFromPages(
-  pages: Array<{ page: number; text: string }>,
+  pages: Array<{ page: number; text: string; method?: PageExtractionMethod; confidence?: number }>,
   context: { document_id: string; study_id: string; patient_ref?: string }
 ): RecordExtraction {
   const base: RecordExtraction = {
@@ -418,6 +605,9 @@ export function extractClinicalFromPages(
     ocular_history_candidates: [],
     family_history_candidates: [],
     exam_findings: [],
+    plan_candidates: [],
+    follow_up_candidates: [],
+    entities: [],
     counts: { pages_scanned: 0, sentences_scanned: 0 },
   };
 
@@ -430,6 +620,7 @@ export function extractClinicalFromPages(
     }
     const sentences = splitSentences(withText);
     base.counts.sentences_scanned = sentences.length;
+    if (pages.some((p) => p.method === "ocr_failed" || p.method === "empty")) base.status = "PARTIAL";
 
     for (const sentence of sentences) {
       // --- explicitly labelled chief complaint --------------------------
@@ -439,9 +630,13 @@ export function extractClinicalFromPages(
         const cc = CHIEF_COMPLAINT_PATTERN.exec(sentence.text);
         if (cc?.[1]) {
           base.chief_complaint = {
+            item_id: nextItemId(),
             value_raw: clip(cc[1].trim()),
             raw_text: clip(sentence.text),
             page_index: sentence.page,
+            page: sentence.page,
+            source_section: "CHIEF_COMPLAINT",
+            extraction_method: sentence.extraction_method,
             source: "DOCUMENT_EXTRACTED",
             verification: "UNREVIEWED",
           };
@@ -456,15 +651,21 @@ export function extractClinicalFromPages(
         const family = FAMILY_HISTORY_PATTERN.exec(sentence.text);
         if (family?.[1]) {
           const value = family[1].trim();
+          const familyIndex = family.index ?? 0;
+          const familyAssertion = inferAssertion(sentence.text, familyIndex, family[1].length);
           if (!/^none\b|^negative\b|^no known\b/i.test(value)) {
             const duplicate = base.family_history_candidates.some((h) => h.value_raw.toLowerCase() === value.toLowerCase() && h.page_index === sentence.page);
             if (!duplicate) {
               base.family_history_candidates.push({
                 item_id: nextItemId(), kind: "FAMILY_HISTORY", value_raw: clip(value), raw_text: clip(sentence.text),
-                page_index: sentence.page, laterality: extractLaterality(sentence.text),
-                date_raw: SOURCE_DATE_PATTERN.exec(sentence.text)?.[1], source: "DOCUMENT_EXTRACTED", verification: "UNREVIEWED",
+                page_index: sentence.page, page: sentence.page, laterality: extractLateralityForSpan(sentence.text, familyIndex, family[1].length),
+                date_raw: SOURCE_DATE_PATTERN.exec(sentence.text)?.[1], assertion: familyAssertion,
+                source_section: sentence.source_section, extraction_method: sentence.extraction_method,
+                source: "DOCUMENT_EXTRACTED", verification: "UNREVIEWED",
               });
             }
+          } else if (base.explicit_negations.length < MAX_ITEMS_PER_CATEGORY && /\b(?:negative|no|none|without|denies)\b/i.test(value)) {
+            base.explicit_negations.push({ item_id: nextItemId(), kind: "HISTORY", type: value.replace(/^(?:negative\s+for|no|none)\s*/i, "").trim() || undefined, raw_text: clip(sentence.text), page_index: sentence.page, page: sentence.page, laterality: extractLateralityForSpan(sentence.text, familyIndex, family[1].length), source_section: "FAMILY_HISTORY", extraction_method: sentence.extraction_method, assertion: "ABSENT", verification: "UNREVIEWED" });
           }
         }
       }
@@ -476,15 +677,17 @@ export function extractClinicalFromPages(
           if (!duplicate) {
             base.exam_findings.push({
               item_id: nextItemId(), kind: "EXAM_FINDING", value_raw: clip(value), raw_text: clip(sentence.text),
-              page_index: sentence.page, laterality: extractLaterality(sentence.text),
-              date_raw: SOURCE_DATE_PATTERN.exec(sentence.text)?.[1], source: "DOCUMENT_EXTRACTED", verification: "UNREVIEWED",
+              page_index: sentence.page, page: sentence.page, laterality: extractLateralityForSpan(sentence.text, exam.index ?? 0, exam[1].length),
+              date_raw: SOURCE_DATE_PATTERN.exec(sentence.text)?.[1], assertion: inferAssertion(sentence.text, exam.index ?? 0, exam[1].length),
+              source_section: sentence.source_section, extraction_method: sentence.extraction_method,
+              source: "DOCUMENT_EXTRACTED", verification: "UNREVIEWED",
             });
           }
         }
       }
       if (base.ocular_history_candidates.length < MAX_ITEMS_PER_CATEGORY) {
         const surgery = OCULAR_SURGERY_PATTERN.exec(sentence.text);
-        const history = surgery || /\bfamily\s+history\b/i.test(sentence.text) ? null : OCULAR_HISTORY_PATTERN.exec(sentence.text);
+        const history = surgery || /\bfamily\s+history\b|\ballerg(?:y|ies)\b|\bmedications?\b/i.test(sentence.text) ? null : OCULAR_HISTORY_PATTERN.exec(sentence.text);
         const match = surgery ?? history;
         if (match?.[1]) {
           const value = match[1].trim();
@@ -492,29 +695,64 @@ export function extractClinicalFromPages(
           if (!/^none\b|^negative\b|^no known\b|^present illness\b|^family history\b|^diabetes\b|^hypertension\b|^high blood pressure\b|^htn\b/i.test(value)) {
             const kind = surgery ? "OCULAR_SURGERY" : "OCULAR_HISTORY";
             const duplicate = base.ocular_history_candidates.some((h) => h.kind === kind && h.value_raw.toLowerCase() === value.toLowerCase() && h.page_index === sentence.page);
-            if (!duplicate) {
+            if (!duplicate && !isNegated(sentence.text, match.index ?? 0)) {
               base.ocular_history_candidates.push({
                 item_id: nextItemId(), kind, value_raw: clip(value), raw_text: clip(sentence.text),
-                page_index: sentence.page, laterality: extractLaterality(sentence.text),
-                date_raw: SOURCE_DATE_PATTERN.exec(sentence.text)?.[1], source: "DOCUMENT_EXTRACTED", verification: "UNREVIEWED",
+                page_index: sentence.page, page: sentence.page, laterality: extractLateralityForSpan(sentence.text, match.index ?? 0, match[1].length),
+                date_raw: SOURCE_DATE_PATTERN.exec(sentence.text)?.[1], assertion: inferAssertion(sentence.text, match.index ?? 0, match[1].length),
+                source_section: sentence.source_section, extraction_method: sentence.extraction_method,
+                source: "DOCUMENT_EXTRACTED", verification: "UNREVIEWED",
               });
+            }
+            else if (!duplicate && base.explicit_negations.length < MAX_ITEMS_PER_CATEGORY) {
+              base.explicit_negations.push({ item_id: nextItemId(), kind: "HISTORY", raw_text: clip(sentence.text), page_index: sentence.page, page: sentence.page, laterality: extractLateralityForSpan(sentence.text, match.index ?? 0, match[1].length), source_section: sentence.source_section, extraction_method: sentence.extraction_method, assertion: "ABSENT", verification: "UNREVIEWED" });
             }
           }
         }
+      }
+
+      // --- plan and follow-up -------------------------------------------
+      for (const candidate of [
+        { kind: "PLAN" as const, re: PLAN_PATTERN, target: base.plan_candidates },
+        { kind: "FOLLOW_UP" as const, re: FOLLOW_UP_PATTERN, target: base.follow_up_candidates },
+      ]) {
+        if (candidate.target.length >= MAX_ITEMS_PER_CATEGORY) continue;
+        const m = candidate.re.exec(sentence.text);
+        if (!m?.[1]) continue;
+        const value = m[1].trim();
+        if (!value) continue;
+        const duplicate = candidate.target.some((h) => h.value_raw.toLowerCase() === value.toLowerCase() && h.page_index === sentence.page);
+        if (!duplicate) candidate.target.push({
+          item_id: nextItemId(), kind: candidate.kind, value_raw: clip(value), raw_text: clip(sentence.text),
+          page_index: sentence.page, page: sentence.page, laterality: extractLateralityForSpan(sentence.text, m.index ?? 0, m[1].length),
+          assertion: "PRESENT", source_section: candidate.kind === "PLAN" ? "PLAN" : "FOLLOW_UP", extraction_method: sentence.extraction_method,
+          source: "DOCUMENT_EXTRACTED", verification: "UNREVIEWED",
+        });
       }
 
       // --- source-document diagnosis claim -------------------------------
       // This is a provenance-preserving copy only. It is not added to the
       // VisionScan differential and cannot open the diagnosis gate.
       if (base.source_document_diagnoses.length < MAX_ITEMS_PER_CATEGORY) {
-        const diagnosis = SOURCE_DIAGNOSIS_PATTERN.exec(sentence.text);
+        const labelledDiagnosis = SOURCE_DIAGNOSIS_PATTERN.exec(sentence.text);
+        const negatedDiagnosis = SOURCE_NEGATED_DIAGNOSIS_PATTERN.exec(sentence.text);
+        const unlabelledDiagnosis = /\b(?:rule\s+out|r\/o|possible|suspect(?:ed)?|query|cannot\s+exclude)\s+([^\n.;]{2,120})/i.exec(sentence.text);
+        const unlabelledLooksLikeSymptom = !!unlabelledDiagnosis && SYMPTOM_PHRASES.some((spec) => findPhraseMatch(unlabelledDiagnosis[1], spec.phrases));
+        // A negative source statement is still a source claim, but it must
+        // remain ABSENT rather than being dropped or turned into a positive
+        // diagnosis. Keep it narrowly scoped to the explicit language above.
+        const diagnosis = labelledDiagnosis ?? negatedDiagnosis ?? (unlabelledDiagnosis && !unlabelledLooksLikeSymptom ? unlabelledDiagnosis : null);
         if (diagnosis && diagnosis[1]) {
           const diagnosisRaw = diagnosis[1].trim();
-          if (!/^none\b|^negative\b|^no diagnosis\b/i.test(diagnosisRaw)) {
+          const isNegatedSourceClaim = diagnosis === negatedDiagnosis || /^negative\s+for\b|^no\s+evidence\s+of\b|^no\s+signs\s+of\b|^without\s+evidence\s+of\b/i.test(diagnosis[0]);
+          if (!/^none\b|^no diagnosis\b/i.test(diagnosisRaw)) {
             const duplicate = base.source_document_diagnoses.some(
               (d) => d.diagnosis_raw.toLowerCase() === diagnosisRaw.toLowerCase() && d.page_index === sentence.page,
             );
             if (!duplicate) {
+              const diagnosisIndex = (diagnosis.index ?? 0) + Math.max(0, diagnosis[0].lastIndexOf(diagnosis[1]));
+              const uncertain = !isNegatedSourceClaim && (isUncertain(sentence.text, diagnosisIndex, diagnosis[1].length) || UNCERTAINTY_TRIGGERS.test(diagnosisRaw));
+              const negated = isNegatedSourceClaim || isNegated(sentence.text, diagnosisIndex);
               base.source_document_diagnoses.push({
                 item_id: nextItemId(),
                 document_id: context.document_id,
@@ -522,6 +760,12 @@ export function extractClinicalFromPages(
                 raw_text: clip(sentence.text),
                 page_index: sentence.page,
                 page: sentence.page,
+                laterality: extractLateralityForSpan(sentence.text, diagnosisIndex, diagnosis[1].length),
+                certainty: uncertain ? "UNCERTAIN" : "EXPLICIT",
+                assertion: negated ? "ABSENT" : uncertain ? "UNCERTAIN" : "PRESENT",
+                negated,
+                source_section: sentence.source_section === "UNKNOWN" ? "ASSESSMENT" : sentence.source_section,
+                extraction_method: sentence.extraction_method,
                 date_raw: SOURCE_DATE_PATTERN.exec(sentence.text)?.[1],
                 source_clinician_raw: SOURCE_CLINICIAN_PATTERN.exec(sentence.text)?.[1]?.trim(),
                 source: "DOCUMENT_EXTRACTED",
@@ -551,6 +795,12 @@ export function extractClinicalFromPages(
               type: spec.type,
               raw_text: clip(sentence.text),
               page_index: sentence.page,
+              page: sentence.page,
+              laterality: extractLateralityForSpan(sentence.text, idx, match.raw.length),
+              source_section: sentence.source_section,
+              extraction_method: sentence.extraction_method,
+              assertion: "ABSENT",
+              verification: "UNREVIEWED",
             });
           }
           continue;
@@ -562,11 +812,19 @@ export function extractClinicalFromPages(
           type: spec.type,
           raw_text: clip(sentence.text),
           page_index: sentence.page,
-          laterality: extractLaterality(sentence.text),
+          page: sentence.page,
+          laterality: extractLateralityForSpan(sentence.text, idx, match.raw.length),
           onset: extractOnset(sentence.text),
           duration: extractDuration(sentence.text),
           severity: extractSeverity(sentence.text),
+          progression: /\b(?:worsening|worse|progressive|progressively)\b/i.test(sentence.text) ? "worsening" : /\b(?:improving|better|resolved)\b/i.test(sentence.text) ? "improving" : /\b(?:stable|unchanged)\b/i.test(sentence.text) ? "stable" : undefined,
+          frequency: /\b(?:constant|continuous|always)\b/i.test(sentence.text) ? "constant" : /\b(?:intermittent|comes and goes|episodic|occasional)\b/i.test(sentence.text) ? "intermittent" : undefined,
+          assertion: isUncertain(sentence.text, idx, match.raw.length) ? "UNCERTAIN" : "PRESENT",
           certainty: isUncertain(sentence.text, idx, match.raw.length) ? "UNCERTAIN" : "EXPLICIT",
+          source_section: sentence.source_section,
+          extraction_method: sentence.extraction_method,
+          source_start: sentence.source_start !== undefined ? sentence.source_start + idx : undefined,
+          source_end: sentence.source_start !== undefined ? sentence.source_start + idx + match.raw.length : undefined,
           extraction_confidence: 0.9,
           confidence_basis: "EXACT_PHRASE",
           source: "DOCUMENT_EXTRACTED",
@@ -596,6 +854,12 @@ export function extractClinicalFromPages(
               type: rule.type,
               raw_text: clip(sentence.text),
               page_index: sentence.page,
+              page: sentence.page,
+              laterality: extractLateralityForSpan(sentence.text, matchedParts[0].index, matchedParts[0].raw.length),
+              source_section: sentence.source_section,
+              extraction_method: sentence.extraction_method,
+              assertion: "ABSENT",
+              verification: "UNREVIEWED",
             });
           }
           continue;
@@ -606,11 +870,15 @@ export function extractClinicalFromPages(
           type: rule.type,
           raw_text: clip(sentence.text),
           page_index: sentence.page,
-          laterality: extractLaterality(sentence.text),
+          page: sentence.page,
+          laterality: extractLateralityForSpan(sentence.text, firstPart.index, firstPart.raw.length),
           onset: extractOnset(sentence.text),
           duration: extractDuration(sentence.text),
           severity: extractSeverity(sentence.text),
+          assertion: isUncertain(sentence.text, firstPart.index, firstPart.raw.length) ? "UNCERTAIN" : "PRESENT",
           certainty: isUncertain(sentence.text, firstPart.index, firstPart.raw.length) ? "UNCERTAIN" : "EXPLICIT",
+          source_section: sentence.source_section,
+          extraction_method: sentence.extraction_method,
           extraction_confidence: 0.6,
           confidence_basis: "SENTENCE_CO_OCCURRENCE",
           source: "DOCUMENT_EXTRACTED",
@@ -621,9 +889,19 @@ export function extractClinicalFromPages(
       // --- medications ----------------------------------------------------
       for (const name of MEDICATION_NAMES) {
         if (base.medications.length >= MAX_ITEMS_PER_CATEGORY) break;
+        // Allergy lists often contain medication names (e.g. "penicillin").
+        // Do not misclassify an allergen as a current medication.
+        if (sentence.source_section === "ALLERGIES" || /\b(?:allerg(?:y|ies)|NKDA|no known drug)\b/i.test(sentence.text)) continue;
         const re = new RegExp(`\\b${escapeRegExp(name)}\\b`, "i");
         const m = re.exec(sentence.text);
         if (!m) continue;
+        if (isNegated(sentence.text, m.index)) {
+          if (base.explicit_negations.length < MAX_ITEMS_PER_CATEGORY) base.explicit_negations.push({
+            item_id: nextItemId(), kind: "MEDICATION", raw_text: clip(sentence.text), page_index: sentence.page, page: sentence.page,
+            source_section: sentence.source_section, extraction_method: sentence.extraction_method, assertion: "ABSENT", verification: "UNREVIEWED",
+          });
+          continue;
+        }
         const alreadyOnPage = base.medications.some((med) => med.name_raw.toLowerCase() === name.toLowerCase() && med.page_index === sentence.page);
         if (alreadyOnPage) continue;
         const formHint = /\b(drops?|eye drops)\b/i.test(sentence.text)
@@ -640,6 +918,10 @@ export function extractClinicalFromPages(
           form_hint: formHint,
           dose_raw: doseMatch ? doseMatch[1] : undefined,
           page_index: sentence.page,
+          page: sentence.page,
+          assertion: isUncertain(sentence.text, m.index, m[0].length) ? "UNCERTAIN" : "PRESENT",
+          source_section: sentence.source_section,
+          extraction_method: sentence.extraction_method,
           normalization_status: "UNNORMALIZED",
           source: "DOCUMENT_EXTRACTED",
           verification: "UNREVIEWED",
@@ -653,7 +935,18 @@ export function extractClinicalFromPages(
           kind: "ALLERGY",
           raw_text: clip(sentence.text),
           page_index: sentence.page,
+          page: sentence.page,
+          source_section: "ALLERGIES",
+          extraction_method: sentence.extraction_method,
+          assertion: "ABSENT",
+          verification: "UNREVIEWED",
         });
+        // "NKDA except penicillin (rash)" contains both a negative blanket
+        // statement and a positive exception. Preserve both facts.
+        const exception = /\bexcept\s+([a-z0-9\- ]{2,60})(?:\s*\(([^)]+)\))?/i.exec(sentence.text);
+        if (exception?.[1] && base.allergies.length < MAX_ITEMS_PER_CATEGORY) {
+          base.allergies.push({ item_id: nextItemId(), allergen_raw: clip(exception[1].trim()), reaction_raw: exception[2]?.trim(), page_index: sentence.page, page: sentence.page, assertion: "PRESENT", source_section: "ALLERGIES", extraction_method: sentence.extraction_method, source: "DOCUMENT_EXTRACTED", verification: "UNREVIEWED" });
+        }
       } else {
         for (const ap of ALLERGY_PATTERNS) {
           if (base.allergies.length >= MAX_ITEMS_PER_CATEGORY) break;
@@ -670,6 +963,10 @@ export function extractClinicalFromPages(
             allergen_raw: clip(allergen),
             reaction_raw: ap.reactionGroup ? (m[ap.reactionGroup] ?? "").trim() || undefined : undefined,
             page_index: sentence.page,
+            page: sentence.page,
+            assertion: isUncertain(sentence.text, m.index, m[0].length) ? "UNCERTAIN" : "PRESENT",
+            source_section: sentence.source_section,
+            extraction_method: sentence.extraction_method,
             source: "DOCUMENT_EXTRACTED",
             verification: "UNREVIEWED",
           });
@@ -688,8 +985,14 @@ export function extractClinicalFromPages(
           base.explicit_negations.push({
             item_id: nextItemId(),
             kind: "SYSTEMIC_CONDITION",
+            condition: sc.condition,
             raw_text: clip(sentence.text),
             page_index: sentence.page,
+            page: sentence.page,
+            source_section: sentence.source_section,
+            extraction_method: sentence.extraction_method,
+            assertion: "ABSENT",
+            verification: "UNREVIEWED",
           });
           continue;
         }
@@ -700,12 +1003,17 @@ export function extractClinicalFromPages(
           condition: sc.condition,
           raw_text: clip(sentence.text),
           page_index: sentence.page,
+          page: sentence.page,
+          assertion: isUncertain(sentence.text, m.index, m[0].length) ? "UNCERTAIN" : "PRESENT",
+          source_section: sentence.source_section,
+          extraction_method: sentence.extraction_method,
           source: "DOCUMENT_EXTRACTED",
           verification: "UNREVIEWED",
         });
       }
     }
 
+    base.entities = buildClinicalEntities(base);
     return base;
   } catch {
     // Fail-safe: extraction failure never throws into the document pipeline.
@@ -722,6 +1030,9 @@ export function extractClinicalFromPages(
       ocular_history_candidates: [],
       family_history_candidates: [],
       exam_findings: [],
+      plan_candidates: [],
+      follow_up_candidates: [],
+      entities: [],
       chief_complaint: undefined,
     };
   }

@@ -14,6 +14,7 @@ import type { ExtractionArtifact } from "./types";
 
 export interface ParsedResultDraft {
   test_type: TestType;
+  metric_subtype?: string;
   value_raw: string;
   value?: number;
   unit_raw?: string;
@@ -33,6 +34,7 @@ export interface ParsedResultDraft {
 
 interface TypePattern {
   test_type: TestType;
+  metric_subtype?: string;
   /** One regex per value grammar; capture group 1 = raw value, group 2 = unit (optional). */
   patterns: RegExp[];
   unit_kind: "pressure" | "thickness" | "ratio" | "acuity" | "visual_field" | "signed_number" | "none";
@@ -55,7 +57,7 @@ const NON_UNIT_WORDS = new Set([
   "today", "was", "and", "with", "via", "per", "both", "hour", "days", "week",
   "note", "exam", "seen", "when", "then", "goal", "prior", "right", "left",
   "eye", "each", "this", "that", "from", "been", "were", "have", "has",
-  "iops", "scan", "slit", "lamp",
+  "iops", "scan", "slit", "lamp", "od", "os", "ou",
 ]);
 
 const TYPE_PATTERNS: TypePattern[] = [
@@ -65,8 +67,8 @@ const TYPE_PATTERNS: TypePattern[] = [
     patterns: [
       // NOTE: the OCR-noise alternative ([0-9]+[a-zA-Z][0-9]*) MUST come
       // first, or "2l" silently matches as a clean "2" (false precision).
-      /\bIOP\b[^0-9.]{0,40}?([0-9]+[a-zA-Z][0-9]*|\d+(?:[.,]\d+)?)(?:\s*(mmHg|mm\s?Hg|kPa|[A-Za-zµμ]{1,5})\b)?/i,
-      /\bintraocular pressure\b[^0-9.]{0,40}?([0-9]+[a-zA-Z][0-9]*|\d+(?:[.,]\d+)?)(?:\s*(mmHg|mm\s?Hg|kPa|[A-Za-zµμ]{1,5})\b)?/i,
+      /\bIOP\b[^0-9.]{0,40}?([0-9]+[a-zA-Z][0-9]*|\d+(?:[.,]\d+)?)(?:\s*(mmHg|mm\s?Hg|kPa|(?!OD\b|OS\b|OU\b)[A-Za-zµμ]{1,5})\b)?/i,
+      /\bintraocular pressure\b[^0-9.]{0,40}?([0-9]+[a-zA-Z][0-9]*|\d+(?:[.,]\d+)?)(?:\s*(mmHg|mm\s?Hg|kPa|(?!OD\b|OS\b|OU\b)[A-Za-zµμ]{1,5})\b)?/i,
     ],
   },
   {
@@ -74,32 +76,35 @@ const TYPE_PATTERNS: TypePattern[] = [
     unit_kind: "thickness",
     patterns: [
       // Same ordering rule as IOP: noise-tolerant alternative first.
-      /\bCST\b[^0-9.]{0,40}?([0-9]+[a-zA-Z][0-9]*|\d+(?:[.,]\d+)?)(?:\s*(µm|μm|um|microns?|mm|[A-Za-zµμ]{1,5})\b)?/i,
-      /\bcentral (?:subfield|macular) thickness\b[^0-9.]{0,40}?([0-9]+[a-zA-Z][0-9]*|\d+(?:[.,]\d+)?)(?:\s*(µm|μm|um|microns?|mm|[A-Za-zµμ]{1,5})\b)?/i,
+      /\bCST\b[^0-9.]{0,40}?([0-9]+[a-zA-Z][0-9]*|\d+(?:[.,]\d+)?)(?:\s*(µm|μm|um|microns?|mm|(?!OD\b|OS\b|OU\b)[A-Za-zµμ]{1,5})\b)?/i,
+      /\bcentral (?:subfield|macular) thickness\b[^0-9.]{0,40}?([0-9]+[a-zA-Z][0-9]*|\d+(?:[.,]\d+)?)(?:\s*(µm|μm|um|microns?|mm|(?!OD\b|OS\b|OU\b)[A-Za-zµμ]{1,5})\b)?/i,
     ],
   },
   {
     test_type: "CUP_TO_DISC_RATIO",
+    metric_subtype: "CDR",
     unit_kind: "ratio",
     patterns: [
-      /\bCDR\b[^0-9.]{0,30}?(0?[.,]\d{1,2})\b(?!\/)/i,
-      /\bcup[- ]to[- ]disc(?: ratio)?\b[^0-9.]{0,30}?(0?[.,]\d{1,2})\b(?!\/)/i,
+      /\b(?:CDR|C\/D|C\.D\.)\b[^0-9.]{0,30}?((?:0?[.,]\d{1,2}|1(?:[.,]0{1,2})?))\b(?!\/)/i,
+      /\bcup[- ]to[- ]disc(?: ratio)?\b[^0-9.]{0,30}?((?:0?[.,]\d{1,2}|1(?:[.,]0{1,2})?))\b(?!\/)/i,
     ],
   },
   {
     test_type: "VISUAL_ACUITY",
     unit_kind: "acuity",
+    number_grammar: "signed",
     patterns: [
-      /\b(?:BCVA|UCVA|VA)\b[^0-9/]{0,25}?\b((?:20|6)\s*\/\s*(?:\d{1,3}))\b/i,          // Snellen 20/20, 6/6
+      /\b(?:BCVA|UCVA|VA)\b[^0-9/]{0,25}?\b((?:20|6)\s*\/\s*(?:\d{1,3})(?:\s*\+\s*\d+)?)\b/i,          // Snellen 20/20, 6/6, 20/40+2
       /\bvisual acuity\b[^0-9/]{0,25}?\b((?:20|6)\s*\/\s*(?:\d{1,3}))\b/i,
-      /\b(?:BCVA|UCVA|VA)\b[^0-9.-]{0,25}?(\d\.\d{1,2})\s*logMAR\b/i,                   // logMAR
+      /\b(?:BCVA|UCVA|VA)\b[^0-9.+-]{0,25}?([+-]?\d\.\d{1,2})\s*logMAR\b/i,                   // logMAR
+      /\b(?:BCVA|UCVA|VA|visual acuity)\b(?:\s+(?:OD|OS|OU))?[^A-Za-z]{0,15}(CF|HM|LP|NLP|ETDRS)\b/i,
     ],
   },
   {
     test_type: "PACHYMETRY",
     unit_kind: "thickness",
     patterns: [
-      /\b(?:pachymetry|pachy|CCT|central corneal thickness)\b[^0-9.]{0,40}?([0-9]+[a-zA-Z][0-9]*|\d+(?:[.,]\d+)?)(?:\s*(µm|μm|um|microns?|mm|[A-Za-zµμ]{1,5})\b)?/i,
+      /\b(?:pachymetry|pachy|CCT|central corneal thickness)\b[^0-9.]{0,40}?([0-9]+[a-zA-Z][0-9]*|\d+(?:[.,]\d+)?)(?:\s*(µm|μm|um|microns?|mm|(?!OD\b|OS\b|OU\b)[A-Za-zµμ]{1,5})\b)?/i,
     ],
   },
   {
@@ -122,7 +127,7 @@ const TYPE_PATTERNS: TypePattern[] = [
     test_type: "OCT_MEASUREMENT",
     unit_kind: "thickness",
     patterns: [
-      /\b(?:OCT|RNFL|GCC|ganglion cell(?: complex)?|retinal nerve fiber layer)\b[^0-9.]{0,40}?([0-9]+[a-zA-Z][0-9]*|\d+(?:[.,]\d+)?)(?:\s*(µm|μm|um|microns?|mm|[A-Za-zµμ]{1,5})\b)?/i,
+      /\b(?:OCT|RNFL|GCC|ganglion cell(?: complex)?|retinal nerve fiber layer)\b[^0-9.]{0,40}?([0-9]+[a-zA-Z][0-9]*|\d+(?:[.,]\d+)?)(?:\s*(µm|μm|um|microns?|mm|(?!OD\b|OS\b|OU\b)[A-Za-zµμ]{1,5})\b)?/i,
     ],
   },
 ];
@@ -132,6 +137,8 @@ const LATERALITY_CANDIDATES: Array<[RegExp, Laterality]> = [
   [/\bOS\b/, "OS"],
   [/\bOU\b/, "OU"],
 ];
+
+type CoveredRange = { test_type: TestType; start: number; end: number };
 
 /** ISO dates only are unambiguous; everything else is kept raw + flagged. */
 const ISO_DATE_RX = /\b((?:19|20)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01]))\b/;
@@ -145,6 +152,13 @@ function unitKindToExpected(unitKind: TypePattern["unit_kind"]): Array<{ token: 
     case "acuity": return [{ token: "snellen", canonical: "snellen" }, { token: "logMAR", canonical: "logMAR" }];
     default: return [];
   }
+}
+
+function compatibleUnit(unitKind: TypePattern["unit_kind"], registryKey: string | undefined): boolean {
+  if (!registryKey) return true;
+  const canonical = UNIT_REGISTRY[registryKey]?.canonical;
+  if (!canonical) return true;
+  return unitKindToExpected(unitKind).some((e) => e.canonical === canonical);
 }
 
 function normalizeUnitToken(raw: string): { unit_raw?: string; registry_key?: string } {
@@ -190,6 +204,7 @@ function normalizeValue(
     // Snellen fractions and logMAR measure different scales; conversion is
     // NOT deterministic, so values are only labeled.
     flags.push("unconvertible_scale");
+    if (/^(?:CF|HM|LP|NLP|ETDRS)$/i.test(rawValue.trim())) return { unit_normalized: "categorical_acuity" };
     return { unit_normalized: rawValue.includes("/") ? "snellen" : "logMAR" };
   }
   if (unitKind === "visual_field" || unitKind === "signed_number") {
@@ -227,17 +242,85 @@ function referenceRangeOf(snippet: string, page: number): ReferenceRange | undef
   return range;
 }
 
+/** Parse compact OD/OS measurement rows such as "IOP 24 OD, 29 OS". The
+ * generic label grammar intentionally stops at the first value; this bounded
+ * pre-pass preserves every explicitly eye-labelled value without guessing
+ * which eye an unlabeled value belongs to. */
+function parseEyePairs(page: { page: number; text: string; method?: string; confidence?: number }): { drafts: ParsedResultDraft[]; covered: CoveredRange[] } {
+  const drafts: ParsedResultDraft[] = [];
+  const covered: CoveredRange[] = [];
+  const labelRx = /\b(IOP|intraocular\s+pressure|CST|central\s+(?:subfield|macular)\s+thickness|OCT\s+(?:RNFL|GCC)|RNFL|GCC)\b[^.;\n]{0,120}/gi;
+  let label: RegExpExecArray | null;
+  while ((label = labelRx.exec(page.text)) !== null) {
+    const labelText = label[0];
+    const testType: TestType = /\b(?:IOP|intraocular\s+pressure)\b/i.test(labelText) ? "IOP" : /\b(?:CST|central\s+(?:subfield|macular)\s+thickness)\b/i.test(labelText) ? "CENTRAL_SUBFIELD_THICKNESS" : "OCT_MEASUREMENT";
+    const unitKind: TypePattern["unit_kind"] = testType === "IOP" ? "pressure" : "thickness";
+    const valueRx = /(?:(?:\b(OD|OS|OU)\b)\s*)?([0-9]+[a-zA-Z][0-9]*|\d+(?:[.,]\d+)?)(?:\s*(mmHg|mm\s?Hg|kPa|µm|μm|um|microns?|mm|(?!OD\b|OS\b|OU\b)[A-Za-zµμ]{1,5})\b)?(?:\s*\b(OD|OS|OU)\b)?/gi;
+    const pairs: Array<{ raw: string; valueRaw: string; unitRaw?: string; lat: Laterality; index: number }> = [];
+    const candidateDrafts: ParsedResultDraft[] = [];
+    let vm: RegExpExecArray | null;
+    while ((vm = valueRx.exec(labelText)) !== null) {
+      const latRaw = vm[1] ?? vm[4];
+      if (!latRaw) continue; // only split rows with an explicit eye token
+      const start = vm.index;
+      const end = start + vm[0].length;
+      // Ignore numbers that are part of a date/header token.
+      if (/^[-/]?\d{4}[-/.]\d{1,2}/.test(labelText.slice(Math.max(0, start - 5), end))) continue;
+      const lat = latRaw.toUpperCase() as Laterality;
+      const info = vm[3] ? normalizeUnitToken(vm[3]) : {};
+      const flags: AmbiguityFlag[] = [];
+      const rawValue = vm[2];
+      let value: number | undefined;
+      if (STRICT_NUMBER.test(rawValue)) value = Number(rawValue);
+      else if (/^\d+,\d+$/.test(rawValue)) flags.push("ambiguous_value");
+      else flags.push("unparseable_value");
+      if (!info.unit_raw) flags.push("missing_unit");
+      if (!compatibleUnit(unitKind, info.registry_key)) flags.push("unexpected_unit");
+      const norm = compatibleUnit(unitKind, info.registry_key) ? normalizeValue(value, unitKind, rawValue, info, flags) : {};
+      candidateDrafts.push({ test_type: testType, metric_subtype: testType === "OCT_MEASUREMENT" ? (/\bRNFL\b/i.test(labelText) ? "RNFL" : /\bGCC\b/i.test(labelText) ? "GCC" : undefined) : undefined, value_raw: rawValue, value, unit_raw: info.unit_raw, ...norm, laterality: lat, page: page.page, source_text: labelText.trim().slice(0, 220), extraction_method: page.method === "ocr" ? "ocr" : "text_layer", extraction_confidence: page.confidence, ambiguity_flags: [...new Set(flags)] });
+      pairs.push({ raw: vm[0], valueRaw: rawValue, unitRaw: info.unit_raw, lat, index: label.index + start });
+    }
+    if (pairs.length >= 2) {
+      drafts.push(...candidateDrafts);
+      covered.push({ test_type: testType, start: label.index, end: label.index + labelText.length });
+    }
+  }
+  return { drafts, covered };
+}
+
+function parseBareRefraction(page: { page: number; text: string; method?: string; confidence?: number }): ParsedResultDraft[] {
+  const out: ParsedResultDraft[] = [];
+  const rx = /\b(OD|OS)\s+([+-]?\d+(?:[.,]\d+)?)\s+([+-]?\d+(?:[.,]\d+)?)\s*[xX]\s*(\d+(?:[.,]\d+)?)/g;
+  let m: RegExpExecArray | null;
+  while ((m = rx.exec(page.text)) !== null) {
+    const lat = m[1] as Laterality;
+    for (const [subtype, rawValue] of [["sphere", m[2]], ["cylinder", m[3]], ["axis", m[4]]] as const) {
+      const flags: AmbiguityFlag[] = [];
+      const value = SIGNED_NUMBER.test(rawValue) ? Number(rawValue) : (/^\d+,\d+$/.test(rawValue) ? undefined : undefined);
+      if (value === undefined) flags.push(/^\d+,\d+$/.test(rawValue) ? "ambiguous_value" : "unparseable_value");
+      flags.push("missing_unit");
+      out.push({ test_type: "REFRACTION", metric_subtype: subtype, value_raw: rawValue, value, laterality: lat, page: page.page, source_text: m[0], extraction_method: page.method === "ocr" ? "ocr" : "text_layer", extraction_confidence: page.confidence, ambiguity_flags: flags });
+    }
+  }
+  return out;
+}
+
 export function buildTestResults(artifact: ExtractionArtifact): ParsedResultDraft[] {
   const drafts: ParsedResultDraft[] = [];
   for (const page of artifact.pages) {
     if (!page.text || page.text.length < 3) continue;
+    const pairs = parseEyePairs(page);
+    drafts.push(...pairs.drafts);
+    drafts.push(...parseBareRefraction(page));
     const method = page.method === "ocr" ? "ocr" : "text_layer";
     for (const pattern of TYPE_PATTERNS) {
       for (const baseRx of pattern.patterns) {
         const rx = new RegExp(baseRx.source, baseRx.flags.includes("g") ? baseRx.flags : baseRx.flags + "g");
         let m: RegExpExecArray | null;
       while ((m = rx.exec(page.text)) !== null) {
+        if (pairs.covered.some((r) => r.test_type === pattern.test_type && m!.index >= r.start && m!.index < r.end)) continue;
         const rawValue = m[1];
+        if (pattern.test_type === "OCT_MEASUREMENT" && /^\d{4}$/.test(rawValue) && /\b\d{4}[-/.]\d{1,2}[-/.]\d{1,2}\b/.test(page.text.slice(Math.max(0, m.index - 2), m.index + m[0].length + 12))) continue;
         const rawUnit = pattern.unit_kind === "none" ? undefined : m[2];
         const snippetStart = Math.max(0, m.index - 40);
         const snippet = page.text.slice(snippetStart, Math.min(page.text.length, m.index + m[0].length + 40)).trim();
@@ -260,20 +343,26 @@ export function buildTestResults(artifact: ExtractionArtifact): ParsedResultDraf
           if (pattern.unit_kind !== "ratio" && pattern.unit_kind !== "acuity") flags.push("missing_unit");
         }
 
-        const lat = lateralityOf(m[0], page.text.slice(Math.max(0, m.index - 24), m.index));
+        const suffix = page.text.slice(m.index + m[0].length, m.index + m[0].length + 18).split(/[.;,\n]/, 1)[0];
+        const prefix = page.text.slice(Math.max(0, m.index - 36), m.index).split(/[.;,\n]/).at(-1) ?? "";
+        const lat = lateralityOf(m[0] + suffix, prefix);
         flags.push(...lat.flags);
 
-        const norm = normalizeValue(value, pattern.unit_kind, rawValue, unitInfo, flags);
+        if (!compatibleUnit(pattern.unit_kind, unitInfo.registry_key)) flags.push("unexpected_unit");
+        const norm = compatibleUnit(pattern.unit_kind, unitInfo.registry_key) ? normalizeValue(value, pattern.unit_kind, rawValue, unitInfo, flags) : {};
 
         // DATE: ISO accepted; loose formats kept raw + flagged.
         let timestamp: string | undefined;
         let date_raw: string | undefined;
-        const iso = ISO_DATE_RX.exec(snippet);
+        // Dates in a preceding OCT/report header must not become the value's
+        // timestamp. Only inspect text at/after this measurement token.
+        const dateWindow = page.text.slice(m.index, Math.min(page.text.length, m.index + m[0].length + 48));
+        const iso = ISO_DATE_RX.exec(dateWindow);
         if (iso) {
           timestamp = iso[1];
           date_raw = iso[1];
         } else {
-          const loose = LOOSE_DATE_RX.exec(snippet);
+          const loose = LOOSE_DATE_RX.exec(dateWindow);
           if (loose) {
             date_raw = loose[1];
             flags.push("ambiguous_date");
@@ -282,6 +371,7 @@ export function buildTestResults(artifact: ExtractionArtifact): ParsedResultDraf
 
         drafts.push({
           test_type: pattern.test_type,
+          metric_subtype: pattern.metric_subtype ?? (pattern.test_type === "VISUAL_FIELD" ? (/\bMD\b/i.test(m[0]) ? "MD" : /\bPSD\b/i.test(m[0]) ? "PSD" : /\bVFI\b/i.test(m[0]) ? "VFI" : undefined) : pattern.test_type === "REFRACTION" ? (/\bsphere\b/i.test(m[0]) ? "sphere" : /\bcylinder\b/i.test(m[0]) ? "cylinder" : /\baxis\b/i.test(m[0]) ? "axis" : undefined) : pattern.test_type === "OCT_MEASUREMENT" ? (/\bRNFL\b/i.test(m[0]) ? "RNFL" : /\bGCC\b/i.test(m[0]) ? "GCC" : undefined) : undefined),
           value_raw: rawValue,
           value,
           unit_raw: unitInfo.unit_raw,
@@ -308,7 +398,7 @@ export function flagConflicts(drafts: ParsedResultDraft[]): void {
   const groups = new Map<string, ParsedResultDraft[]>();
   for (const d of drafts) {
     if (d.value === undefined) continue;
-    const key = `${d.test_type}|${d.laterality}`;
+    const key = `${d.test_type}|${d.metric_subtype ?? ""}|${d.laterality}|${d.unit_normalized ?? d.unit_raw ?? ""}`;
     groups.set(key, [...(groups.get(key) ?? []), d]);
   }
   for (const group of groups.values()) {
@@ -332,6 +422,7 @@ export function materializeResults(
     document_id: documentId,
     study_id: studyId,
     test_type: d.test_type,
+    metric_subtype: d.metric_subtype,
     value_raw: d.value_raw,
     value: d.value,
     unit_raw: d.unit_raw,
@@ -360,7 +451,7 @@ export function materializeResults(
   const groups = new Map<string, TestResult[]>();
   for (const r of results) {
     if (r.value === undefined) continue;
-    const key = `${r.test_type}|${r.laterality}`;
+    const key = `${r.test_type}|${r.metric_subtype ?? ""}|${r.laterality}|${r.unit_normalized ?? r.unit_raw ?? ""}`;
     groups.set(key, [...(groups.get(key) ?? []), r]);
   }
   for (const group of groups.values()) {

@@ -506,7 +506,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     dr_assessment: drAssessment,
     oct_assessment: octAssessment,
     multi_model: {
-      performed: usedLesionResearch || usedDrResearch,
+      performed: usedLesionResearch || usedDrResearch || usedOctResearch,
       agreement: multiModelAgreement,
       models: [
         ...(usedLesionResearch && researchRun

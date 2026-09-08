@@ -10,6 +10,8 @@ export const dynamic = "force-dynamic";
 const PURPOSES: ConsentPurpose[] = ["screening_analysis", "research_use", "data_retention", "treatment_information"];
 const TYPES: ConsentType[] = ["explicit", "implied", "broad", "specific"];
 
+export function GET(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function GET(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function GET(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "REVIEWER"]);
@@ -21,6 +23,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ consent: records });
 }
 
+export function POST(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function POST(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function POST(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN", "TECHNICIAN"]);
@@ -44,6 +48,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json({ consent: rec }, { status: 201 });
 }
 
+export function DELETE(req: NextRequest, context: { params: { id: string } }): Promise<NextResponse>;
+export function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse>;
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   params = await params;
   const denied = await requireRole(req, ["ADMIN", "CLINICIAN"]);

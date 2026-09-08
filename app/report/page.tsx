@@ -66,10 +66,18 @@ interface Report {
   exports: { json_path?: string; fhir_note: string };
 }
 
+interface EvidenceWorkspaceSummary {
+  evidence: Array<{ id: string; source_type: string; category: string; laterality: string; presence: string; qualitative_finding?: string; value?: number; unit?: string }>;
+  conflicts: Array<{ id: string; category: string; severity: string; note: string }>;
+  possible_conditions: Array<{ canonical_name: string; laterality: string; state: string; missing_required: string[]; note: string }>;
+  examination_context?: { source_count?: { symptoms?: number; test_results?: number; ai_findings?: number; source_document_diagnoses?: number; history?: number; medications?: number; allergies?: number } };
+}
+
 function ReportInner() {
   const params = useSearchParams();
   const study = params.get("study") ?? "";
   const [report, setReport] = useState<Report | null>(null);
+  const [evidence, setEvidence] = useState<EvidenceWorkspaceSummary | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -78,6 +86,10 @@ function ReportInner() {
       .then((r) => r.json())
       .then((json) => { if (!json.report) setErr(json.error ?? "Report not found"); else setReport(json.report); })
       .catch(() => setErr("Failed to load report"));
+    fetch(`/api/studies/${encodeURIComponent(study)}/evidence`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((json) => { if (json) setEvidence(json as EvidenceWorkspaceSummary); })
+      .catch(() => { /* evidence is additive; report remains usable */ });
   }, [study]);
 
   if (err) return <div className="alert danger"><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body"><strong>Report unavailable</strong>{err}</div></div>;
@@ -186,6 +198,21 @@ function ReportInner() {
           </div>
         ))}
       </div>
+
+      {evidence && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Clinical record evidence</h2>
+          <p className="tiny muted" style={{ marginTop: 0 }}>Documented symptoms, objective tests, source claims, and research findings are kept as separate evidence types. This section does not create a diagnosis.</p>
+          <div className="table-wrap" tabIndex={0}>
+            <table className="table">
+              <thead><tr><th>Source</th><th>Items</th></tr></thead>
+              <tbody>{Object.entries(evidence.examination_context?.source_count ?? {}).map(([key, value]) => <tr key={key}><td>{key.replaceAll("_", " ")}</td><td>{value ?? 0}</td></tr>)}</tbody>
+            </table>
+          </div>
+          {evidence.conflicts.length > 0 && <div className="alert warn" style={{ marginTop: 10 }}><div className="alert-body"><strong>Unresolved evidence conflicts ({evidence.conflicts.length})</strong><div className="tiny">{evidence.conflicts.map((c) => `${c.category} (${c.severity})`).join(" · ")}</div></div></div>}
+          {evidence.possible_conditions.length > 0 && <details style={{ marginTop: 10 }}><summary className="small" style={{ cursor: "pointer", fontWeight: 650 }}>Evidence patterns and missing confirmation</summary><ul className="tiny muted" style={{ margin: "6px 0", paddingLeft: 18 }}>{evidence.possible_conditions.map((c, i) => <li key={i}><strong>{c.canonical_name}</strong> ({c.laterality}) — {c.state.replaceAll("_", " ")}. {c.missing_required.length ? `Missing: ${c.missing_required.join(", ")}` : c.note}</li>)}</ul></details>}
+        </div>
+      )}
 
       {report.patient_context?.reported && (
         <div className="card">
