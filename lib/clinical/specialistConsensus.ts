@@ -9,6 +9,8 @@ import type { ModelDisagreement, SpecialistAnalysisResult, SpecialistFailureStat
  */
 export interface SpecialistConsensus {
   status: "NO_SPECIALIST_OUTPUT" | "REVIEW_REQUIRED";
+  /** Detailed state for clinician review; `status` remains the legacy banner. */
+  consensus_state: "SPECIALISTS_CONCORDANT" | "PARTIAL_CORROBORATION" | "SPECIALIST_DISAGREEMENT" | "INSUFFICIENT_SPECIALIST_EVIDENCE";
   specialty_summaries: Array<{
     specialty_id: SpecialtyId;
     capability_id: string | null;
@@ -79,9 +81,18 @@ export function buildSpecialistConsensus(results: SpecialistAnalysisResult[]): S
     limitations: [...result.limitations],
   }));
   const hasActionableOutput = results.some((result) => result.failure_state !== "NO_VALIDATED_MODEL_AVAILABLE");
+  const completed = results.filter((result) => !result.failure_state).length;
+  const consensusState: SpecialistConsensus["consensus_state"] = !hasActionableOutput
+    ? "INSUFFICIENT_SPECIALIST_EVIDENCE"
+    : disagreements.length > 0
+      ? "SPECIALIST_DISAGREEMENT"
+      : completed > 1 && completed === results.length
+        ? "SPECIALISTS_CONCORDANT"
+        : "PARTIAL_CORROBORATION";
 
   return {
     status: hasActionableOutput ? "REVIEW_REQUIRED" : "NO_SPECIALIST_OUTPUT",
+    consensus_state: consensusState,
     specialty_summaries: summaries,
     shared_evidence_ids: [...evidenceCounts.entries()].filter(([, count]) => count > 1).map(([id]) => id),
     disagreements,

@@ -19,7 +19,7 @@ const EXPECTED_STAGES = [
 
 interface Job {
   job_id: string; study_id: string;
-  status: "queued" | "running" | "completed" | "failed";
+  status: "queued" | "running" | "completed" | "failed" | "cancelled";
   attempts: number; error?: string;
 }
 
@@ -66,6 +66,11 @@ function ProcessingInner() {
           if (job.status === "failed") {
             if (cancelled) return;
             setFailed(job.error ?? "Model inference could not be completed.");
+            return;
+          }
+          if (job.status === "cancelled") {
+            if (cancelled) return;
+            setFailed("Analysis was cancelled before a result was generated.");
             return;
           }
         }

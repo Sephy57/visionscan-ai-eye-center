@@ -55,7 +55,7 @@ export default function AdminPage() {
         <StatusCard label="AI Model" value="RESEARCH ONLY" tone="warn" detail="Hash-verified fundus/DR/OCT artifacts; no clinical validation" />
         <StatusCard label="Safety Engine" value="Operational" tone="ok" detail="Triage rules, safety validator" />
         <StatusCard label="Audit Logging" value="Operational" tone="ok" detail="Append-only NDJSON on D:" />
-        <StatusCard label="Auth / RBAC" value="NOT IMPLEMENTED" tone="bad" detail="Do not expose to untrusted networks" />
+        <StatusCard label="Auth / RBAC" value="Operational" tone="ok" detail="Session, role, CSRF, and resource-scope checks enforced" />
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>

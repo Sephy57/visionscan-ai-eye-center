@@ -7,7 +7,7 @@
     "dev": "next dev -p 3000",
     "build": "next build --webpack",
     "start": "next start -p 3000",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke": "node scripts/smoke.mjs",
@@ -33,10 +33,14 @@
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
+    "@next/eslint-plugin-next": "^16.3.4",
     "@types/node": "20.14.10",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
+    "@typescript-eslint/parser": "^8.70.0",
     "axe-core": "^4.13.0",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "playwright-core": "^1.62.1",
     "typescript": "5.5.3",
     "vitest": "^3.2.6"

@@ -49,6 +49,26 @@ export type EvidenceLateralitySource =
   | "study_level"                  // inherited from the study's declared eye (image findings)
   | "unknown";
 
+/** Canonical source vocabulary used by the clinician-review contract. */
+export type CanonicalEvidenceSourceType =
+  | "PATIENT_REPORTED"
+  | "CLINICIAN_VERIFIED"
+  | "SOURCE_DOCUMENT"
+  | "DOCUMENT_EXTRACTED"
+  | "DEVICE_MEASUREMENT"
+  | "AI_RESEARCH_FINDING"
+  | "AI_RESEARCH_CLASSIFICATION"
+  | "LONGITUDINAL_COMPARISON";
+
+export type EvidenceTemporalState =
+  | "SAME_ENCOUNTER"
+  | "NEARBY_ENCOUNTER"
+  | "HISTORICAL"
+  | "TEMPORALLY_UNCERTAIN";
+
+export type EvidenceNegation = "PRESENT" | "ABSENT" | "NOT_REPORTED" | "UNKNOWN";
+export type EvidenceCertainty = "CERTAIN" | "UNCERTAIN" | "UNKNOWN";
+
 /**
  * Distinguishes "the source never mentioned this" from "the source explicitly
  * says this is absent" from "we don't know" (S5.3/S5.16). Document negation
@@ -69,6 +89,10 @@ export interface EvidenceProvenance {
   analysis_id?: string;
   finding_id?: string;
   extraction_method?: string;
+  source_asset_id?: string;
+  source_page_hash?: string;
+  roi_id?: string;
+  roi_hash?: string;
 }
 
 export interface EvidenceItem {
@@ -100,9 +124,27 @@ export interface EvidenceItem {
   conflict_ids: string[];
   /** True for any demo/synthetic-origin evidence (never real clinical data). */
   synthetic?: boolean;
+  /** Canonical evidence graph fields (additive to the stable S5 shape). */
+  evidence_id?: string;
+  patient_id?: string | null;
+  encounter_id?: string | null;
+  modality?: string;
+  concept?: string;
+  raw_value?: string | number | null;
+  normalized_value?: string | number | null;
+  negation?: EvidenceNegation;
+  certainty?: EvidenceCertainty;
+  verification_status?: string;
+  canonical_source_type?: CanonicalEvidenceSourceType;
+  model_id?: string | null;
+  model_version?: string | null;
+  document_page?: number | null;
+  roi_id?: string | null;
+  dependency_group_id?: string;
+  temporal_state?: EvidenceTemporalState;
 }
 
-export type ConflictType = "VALUE_CONFLICT" | "LATERALITY_CONFLICT" | "QUALITATIVE_CONFLICT";
+export type ConflictType = "VALUE_CONFLICT" | "LATERALITY_CONFLICT" | "QUALITATIVE_CONFLICT" | "SOURCE_DIAGNOSIS_CONFLICT";
 
 export interface EvidenceConflict {
   id: string;
@@ -141,6 +183,21 @@ export interface ConditionAssessment {
   differential_relationships: string[];
   taxonomy_version: string;
   note: string;
+  /** Structured differential fields; optional for legacy persisted workspaces. */
+  assessment_state?: string;
+  independent_source_count?: number;
+  dependency_groups?: string[];
+  model_support?: string[];
+  objective_test_support?: string[];
+  document_support?: string[];
+  symptom_support?: string[];
+  limitations?: string[];
+  confirmation_requirements?: string[];
+  /** Categorical, non-probabilistic ranking metadata for review ordering. */
+  evidence_strength?: "NONE" | "LIMITED" | "MULTI_SOURCE" | "CONFLICTING";
+  ranking_factors?: string[];
+  rank?: number;
+  specialty?: "RETINA" | "MACULA_OCT" | "GLAUCOMA" | "NEURO_OPHTHALMOLOGY" | "COMPREHENSIVE";
 }
 
 export interface EvidenceWorkspace {
@@ -167,4 +224,5 @@ export interface EvidenceWorkspace {
   safety_banner: string;
   taxonomy_version: string;
   generated_at: string;
+  patient_id?: string | null;
 }

@@ -95,7 +95,7 @@ async function main() {
     check(typeof studyId === "string", "fundus upload returned no study id");
     console.log(`[ok ] metadata-free fundus upload ${studyId}`);
 
-    const analysis = await request.post(`${BASE}/api/analyze`, { headers: { "x-csrf-token": csrf }, data: { study_id: studyId } });
+    const analysis = await request.post(`${BASE}/api/analyze`, { headers: { "x-csrf-token": csrf }, data: { study_id: studyId }, timeout: 120_000 });
     check(analysis.ok(), `fundus analysis failed (${analysis.status()})`);
     const analysisJson = await analysis.json();
     check(["RESEARCH_MODEL_ANALYSIS", "MIXED_RESEARCH_AND_DEMO"].includes(analysisJson.analysis_mode), `unexpected fundus mode ${analysisJson.analysis_mode}`);
@@ -125,17 +125,21 @@ async function main() {
     check(jobStatus === "completed", `PDF extraction ended ${jobStatus}`);
     console.log("[ok ] mixed PDF extraction completed");
 
-    const reanalysis = await request.post(`${BASE}/api/analyze`, { headers: { "x-csrf-token": csrf }, data: { study_id: studyId } });
+    const reanalysis = await request.post(`${BASE}/api/analyze`, { headers: { "x-csrf-token": csrf }, data: { study_id: studyId }, timeout: 120_000 });
     check(reanalysis.ok(), `mixed analysis failed (${reanalysis.status()})`);
     const bundleResponse = await request.get(`${BASE}/api/studies/${encodeURIComponent(studyId)}`);
     check(bundleResponse.ok(), "bundle fetch failed");
     const bundle = await bundleResponse.json();
     const pages = (bundle.analysis?.document_routing ?? []).flatMap((document) => document.pages);
     const regions = bundle.analysis?.oct_region_results ?? [];
+    const ledger = bundle.analysis?.model_execution_ledger ?? [];
     check(pages.some((p) => p.content_type === "LAB_RESULT"), "LAB_RESULT page missing");
     check(pages.some((p) => p.content_type === "OCT_MACULAR_CUBE" && p.laterality === "OD"), "OD OCT page missing");
     check(pages.some((p) => p.content_type === "OCT_RASTER" && p.laterality === "OS"), "OS OCT page missing");
     check(regions.length > 0, "no OCT B-scan ROI result recorded");
+    check(ledger.length >= 4, `execution ledger is incomplete (${ledger.length} rows)`);
+    check(ledger.some((row) => row.task === "fundus_lesion_localization" && row.input_roi_id === null), "primary fundus ledger row missing");
+    check(ledger.some((row) => row.task === "oct_classification" && row.input_roi_id), "OCT ROI ledger row missing");
     console.log(`[ok ] mixed PDF routing pages=${pages.length} OCT_ROIs=${regions.length}`);
 
     await page.goto(`${BASE}/report?study=${encodeURIComponent(studyId)}`, { waitUntil: "domcontentloaded" });

@@ -89,7 +89,10 @@ export function convertRawModelOutputToFindings(params: {
       explanation: f.evidence ?? "Model-detected finding. Automated analysis; requires clinician review.",
       synthetic: false,
       model_id: params.model.model_id,
+      model_version: params.model.version,
       model_status: params.model.status,
+      source_modality: raw.modality ?? params.model.modalities[0] ?? undefined,
+      laterality: f.laterality === "both" ? "OU" : f.laterality ?? (raw.laterality === "both" ? "OU" : raw.laterality ?? "unknown"),
     };
   });
 

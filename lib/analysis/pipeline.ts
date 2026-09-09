@@ -7,7 +7,7 @@ import { NormalizedStudy } from "../devices/adapter";
 import { pickDemoScenario, buildDemoFindings } from "./findings";
 import { runEnsemble, estimateUncertainty } from "./ensemble";
 import { runTriage, TriageOutcome } from "../clinical/triage";
-import { validateAnalysisResult, AnalysisResult, Finding, SCHEMA_VERSION, PIPELINE_VERSION } from "./schema";
+import { validateAnalysisResult, AnalysisResult, Finding, SCHEMA_VERSION, PIPELINE_VERSION, ModelExecutionLedgerEntry, ModelExecutionStatus } from "./schema";
 import { modelProvenance, RULESET_VERSION, COMPONENTS, getModel, gateModelUse, deviceCompatible, supportsModality } from "../models/registry";
 import { ensureRegistryHydrated } from "../models/registryPersistence";
 import { assessOod, OOD_MESSAGE } from "./ood";
@@ -26,6 +26,7 @@ import type { FundusLesionResearchRun } from "../models/fundusLesionLocalProvide
 import type { DrGradeResearchRun } from "../models/drGradeLocalProvider";
 import type { OctResearchRun } from "../models/octLocalProvider";
 import { routeUploadedAsset, AssetRoutingResult } from "../assets/assetRouter";
+import { OUTPUT_CONTRACT_VERSION } from "../models/outputContract";
 
 /**
  * S12 - maps this deployment's registry ModelStatus onto the diagnosis
@@ -224,14 +225,37 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   const artifactHashes: Record<string, string | null> = {};
   const artifactVerification: Record<string, "EXPECTED_REGISTRY_HASH" | "VERIFIED" | "FAILED" | "UNAVAILABLE"> = {};
   const modelVersions: Record<string, string> = {};
+  const modelRuntimeMs = new Map<string, number>();
+  const modelStartedAt = new Map<string, number>();
+  // ROI timings are kept separately from the model aggregate so a clinician
+  // can see which source-page crop was actually processed.  A failed or
+  // gated ROI remains in the ledger with a zero runtime and an explicit
+  // status; zero never means that the model was fast.
+  const roiRuntimeMs = new Map<string, number>();
+  const roiQualityStatus = new Map<string, string>();
+  const roiDomainStatus = new Map<string, string>();
+  const roiSkipReason = new Map<string, string>();
   const markModel = (record: ReturnType<typeof getModel>, state: "attempted" | "executed" | "failed" | "skipped", reason?: string) => {
     if (!record) return;
     modelVersions[record.model_id] = record.version;
     artifactHashes[record.model_id] = record.sha256;
     artifactVerification[record.model_id] = record.sha256 ? "EXPECTED_REGISTRY_HASH" : "UNAVAILABLE";
-    if (state === "attempted") modelsAttempted.add(record.model_id);
-    if (state === "executed") { modelsAttempted.add(record.model_id); modelsExecuted.add(record.model_id); }
-    if (state === "failed") { modelsAttempted.add(record.model_id); modelsFailed.add(record.model_id); }
+    if (state === "attempted") {
+      modelsAttempted.add(record.model_id);
+      modelStartedAt.set(record.model_id, Date.now());
+    }
+    if (state === "executed") {
+      modelsAttempted.add(record.model_id); modelsExecuted.add(record.model_id);
+      const started = modelStartedAt.get(record.model_id);
+      if (started !== undefined) modelRuntimeMs.set(record.model_id, (modelRuntimeMs.get(record.model_id) ?? 0) + Math.max(0, Date.now() - started));
+      modelStartedAt.delete(record.model_id);
+    }
+    if (state === "failed") {
+      modelsAttempted.add(record.model_id); modelsFailed.add(record.model_id);
+      const started = modelStartedAt.get(record.model_id);
+      if (started !== undefined) modelRuntimeMs.set(record.model_id, (modelRuntimeMs.get(record.model_id) ?? 0) + Math.max(0, Date.now() - started));
+      modelStartedAt.delete(record.model_id);
+    }
     if (state === "skipped") modelsSkipped.set(record.model_id, reason ?? "not eligible");
   };
   const markArtifactVerification = (modelId: string, trusted: boolean) => { artifactVerification[modelId] = trusted ? "VERIFIED" : "FAILED"; };
@@ -453,18 +477,26 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     const { runOctResearchAnalysis } = await import("../models/octLocalProvider");
     for (const asset of input.document_assets ?? []) {
       if (asset.content_type !== "OCT_BSCAN" || asset.modality !== "OCT") continue;
+      const roiStartedAt = Date.now();
       // B-scan sidecars are bounded strips (often 512x128 or similar), so
       // apply the explicit OCT ROI profile instead of the whole-fundus
       // 512x512 minimum. Other quality checks remain identical and the
       // profile is disclosed as an unvalidated engineering threshold.
       const roiQuality = await assessOctBscanQuality(asset.bytes);
+      roiQualityStatus.set(asset.asset_id, roiQuality.quality_status);
       const base = { asset_id: asset.asset_id, document_id: asset.document_id, page: asset.page, laterality: asset.eye, source_page_hash: asset.source_page_hash, roi_hash: asset.roi_hash, content_type: "OCT_BSCAN" as const };
       if (roiQuality.quality_status !== "pass") {
+        roiRuntimeMs.set(asset.asset_id, Math.max(0, Date.now() - roiStartedAt));
+        roiDomainStatus.set(asset.asset_id, "DOMAIN_VALIDATION_UNKNOWN");
+        roiSkipReason.set(asset.asset_id, `quality gate failed: ${roiQuality.quality_status}`);
         octRegionResults.push({ ...base, status: "SKIPPED", note: `ROI quality gate failed (${roiQuality.quality_status}; ${roiQuality.detected_artifacts.join(", ") || "unspecified"}); no OCT inference attempted.` });
         continue;
       }
       const roiOod = assessOod({ modality: "oct", quality: roiQuality, model: octRecord, device: deviceInfo, metadataProvided: study.metadata.providedBy !== "none", deviceUnknownIsDomainUnknown: true, resolutionProfile: "oct_bscan" });
+      roiDomainStatus.set(asset.asset_id, roiOod.detected ? "OUT_OF_DISTRIBUTION" : "DOMAIN_VALIDATION_UNKNOWN");
       if (roiOod.detected) {
+        roiRuntimeMs.set(asset.asset_id, Math.max(0, Date.now() - roiStartedAt));
+        roiSkipReason.set(asset.asset_id, `out-of-distribution: ${roiOod.reasons.join(" ").slice(0, 180)}`);
         octRegionResults.push({ ...base, status: "SKIPPED", note: `ROI OOD gate: ${roiOod.reasons.join(" ").slice(0, 240)}` });
         continue;
       }
@@ -480,10 +512,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         const run = await runOctResearchAnalysis(roiStudy, { qualityScore: roiQuality.quality_score, eye: asset.eye, device: deviceInfo, imageBytes: asset.bytes });
         if (run.raw.inference_status !== "completed" || !run.oct) {
           markModel(octRecord, "failed", run.notes[0] ?? "OCT ROI classifier failed");
+          roiRuntimeMs.set(asset.asset_id, Math.max(0, Date.now() - roiStartedAt));
+          roiSkipReason.set(asset.asset_id, run.notes[0] ?? "OCT ROI classifier failed");
           octRegionResults.push({ ...base, status: "FAILED", note: run.notes[0] ?? "OCT ROI classifier failed" });
           continue;
         }
         markModel(octRecord, "executed");
+        roiRuntimeMs.set(asset.asset_id, Math.max(0, Date.now() - roiStartedAt));
         markArtifactVerification(octRecord.model_id, run.integrity.trusted);
         octRegionRuns.push(run);
         const assessment = resultFromResearchOct({ oct: run.oct, raw: run.raw, quality: roiQuality, ood: roiOod, modelId: octRecord.model_id, modelVersion: octRecord.version });
@@ -493,12 +528,19 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       } catch (err) {
         const note = `OCT ROI classifier could not run: ${String(err instanceof Error ? err.message : err).slice(0, 200)}`;
         markModel(octRecord, "failed", note);
+        roiRuntimeMs.set(asset.asset_id, Math.max(0, Date.now() - roiStartedAt));
+        roiSkipReason.set(asset.asset_id, note);
         octRegionResults.push({ ...base, status: "FAILED", note });
       }
     }
   } else if ((input.document_assets?.length ?? 0) > 0 && octRecord) {
     for (const asset of input.document_assets ?? []) {
-      if (asset.content_type === "OCT_BSCAN") octRegionResults.push({ asset_id: asset.asset_id, document_id: asset.document_id, page: asset.page, laterality: asset.eye, source_page_hash: asset.source_page_hash, roi_hash: asset.roi_hash, content_type: "OCT_BSCAN", status: "SKIPPED", note: "OCT registry gate unavailable." });
+      if (asset.content_type === "OCT_BSCAN") {
+        roiQualityStatus.set(asset.asset_id, qualityAcceptable ? "not_assessed" : quality.quality_status);
+        roiDomainStatus.set(asset.asset_id, "DOMAIN_VALIDATION_UNKNOWN");
+        roiSkipReason.set(asset.asset_id, "OCT registry gate unavailable.");
+        octRegionResults.push({ asset_id: asset.asset_id, document_id: asset.document_id, page: asset.page, laterality: asset.eye, source_page_hash: asset.source_page_hash, roi_hash: asset.roi_hash, content_type: "OCT_BSCAN", status: "SKIPPED", note: "OCT registry gate unavailable." });
+      }
     }
   }
 
@@ -600,6 +642,133 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     } else if (canonicalInputModality === "OCT" && octRecord) {
       markModel(octRecord, "skipped", qualityAcceptable ? "research model not eligible" : "quality gate failed");
     }
+  }
+
+  // ---- Stage 3b: row-oriented execution ledger -------------------------
+  // The legacy model_execution arrays are intentionally retained for API
+  // compatibility, but they cannot answer the clinician's most important
+  // question: which model saw which immutable asset/ROI, under which quality
+  // and domain gates, and what actually happened.  Build the authoritative
+  // rows only from server state collected above; the browser never supplies
+  // any of these values.
+  const primaryAssetId = study.files[0]?.id ?? routedAsset.source_hash;
+  const primaryDependencyGroup = `image:${study.studyId}:${routedAsset.source_hash}`;
+  const primaryLaterality: ModelExecutionLedgerEntry["laterality"] =
+    study.eye === "OD" || study.eye === "OS" ? study.eye : "unknown";
+  const primaryDomainStatus = ood.detected
+    ? "OUT_OF_DISTRIBUTION"
+    : routedAsset.domain_state === "IN_DOMAIN"
+      ? "IN_DOMAIN_UNVALIDATED"
+      : routedAsset.domain_state;
+  const packageByModel = new Map<string, boolean>([
+    [lesionRecord?.model_id ?? "", lesionPackagePresent],
+    [drRecord?.model_id ?? "", drPackagePresent],
+    [octRecord?.model_id ?? "", octPackagePresent],
+  ]);
+  const expectedModalityByModel = new Map<string, "FUNDUS" | "OCT">([
+    [lesionRecord?.model_id ?? "", "FUNDUS"],
+    [drRecord?.model_id ?? "", "FUNDUS"],
+    [octRecord?.model_id ?? "", "OCT"],
+  ]);
+  const gateByModel = new Map<string, ReturnType<typeof gateModelUse> | null>([
+    [lesionRecord?.model_id ?? "", lesionGate],
+    [drRecord?.model_id ?? "", drGate],
+    [octRecord?.model_id ?? "", octGate],
+  ]);
+  const reasonToStatus = (reason: string): ModelExecutionStatus => {
+    if (/quality/i.test(reason)) return "BLOCKED_QUALITY";
+    if (/ood|out.of.distribution|domain/i.test(reason)) return "BLOCKED_OOD";
+    if (/modality|content route|unsupported/i.test(reason)) return "UNSUPPORTED_MODALITY";
+    if (/unavailable|package|runtime|not installed/i.test(reason)) return "UNAVAILABLE";
+    return "SKIPPED";
+  };
+  const primaryLedgerStatus = (record: NonNullable<ReturnType<typeof getModel>>, expected: "FUNDUS" | "OCT"): { status: ModelExecutionStatus; reason: string | null } => {
+    const skippedReason = modelsSkipped.get(record.model_id);
+    if (modelsExecuted.has(record.model_id) && !modelsFailed.has(record.model_id)) return { status: "EXECUTED", reason: null };
+    if (modelsFailed.has(record.model_id)) return { status: "FAILED", reason: skippedReason ?? "Model execution failed closed." };
+    if (skippedReason) return { status: reasonToStatus(skippedReason), reason: skippedReason };
+    if (canonicalInputModality !== expected) return { status: "UNSUPPORTED_MODALITY", reason: `Input modality ${canonicalInputModality ?? "unknown"} is not supported by this model.` };
+    if (!qualityAcceptable) return { status: "BLOCKED_QUALITY", reason: `Quality gate status was ${quality.quality_status}.` };
+    if (ood.detected) return { status: "BLOCKED_OOD", reason: ood.message || "Input was flagged out of distribution." };
+    if (!packageByModel.get(record.model_id)) return { status: "UNAVAILABLE", reason: "Model package/runtime unavailable on this deployment." };
+    if (!gateByModel.get(record.model_id)?.allowed) return { status: "SKIPPED", reason: "Model registry gate did not allow execution." };
+    return { status: "UNAVAILABLE", reason: "No completed server execution was recorded." };
+  };
+  const ledgerRows: ModelExecutionLedgerEntry[] = [];
+  const addPrimaryLedger = (record: ReturnType<typeof getModel>, expected: "FUNDUS" | "OCT", task: string) => {
+    if (!record) return;
+    const outcome = primaryLedgerStatus(record, expected);
+    const eligible = canonicalInputModality === expected && qualityAcceptable && !ood.detected && !!packageByModel.get(record.model_id) && !!gateByModel.get(record.model_id)?.allowed;
+    ledgerRows.push({
+      model_id: record.model_id,
+      model_version: record.version,
+      task,
+      artifact_hash: record.sha256,
+      input_asset_id: primaryAssetId,
+      input_roi_id: null,
+      laterality: primaryLaterality,
+      eligibility: canonicalInputModality === expected ? (eligible ? "ELIGIBLE" : "INELIGIBLE") : "NOT_APPLICABLE",
+      execution_status: outcome.status,
+      skip_reason: outcome.reason,
+      quality_status: quality.quality_status,
+      domain_status: primaryDomainStatus,
+      runtime_ms: Math.max(0, modelRuntimeMs.get(record.model_id) ?? 0),
+      output_contract_version: modelsAttempted.has(record.model_id) ? OUTPUT_CONTRACT_VERSION : null,
+      validation_status: record.status,
+      dependency_group_id: primaryDependencyGroup,
+    });
+  };
+  addPrimaryLedger(lesionRecord, "FUNDUS", "fundus_lesion_localization");
+  addPrimaryLedger(drRecord, "FUNDUS", "diabetic_retinopathy_grading");
+  addPrimaryLedger(octRecord, "OCT", "oct_classification");
+  if (demoUsed && modelRecord && modelRecord.status === "DEMO") {
+    ledgerRows.push({
+      model_id: modelRecord.model_id,
+      model_version: modelRecord.version,
+      task: "synthetic_demo_pipeline",
+      artifact_hash: modelRecord.sha256,
+      input_asset_id: primaryAssetId,
+      input_roi_id: null,
+      laterality: primaryLaterality,
+      eligibility: "ELIGIBLE",
+      execution_status: "EXECUTED",
+      skip_reason: null,
+      quality_status: quality.quality_status,
+      domain_status: primaryDomainStatus,
+      runtime_ms: Math.max(0, modelRuntimeMs.get(modelRecord.model_id) ?? 0),
+      output_contract_version: null,
+      validation_status: modelRecord.status,
+      dependency_group_id: primaryDependencyGroup,
+    });
+  }
+  for (const region of octRegionResults) {
+    const record = octRecord;
+    if (!record) continue;
+    const regionReason = roiSkipReason.get(region.asset_id) ?? (region.status === "FAILED" ? region.note ?? "OCT ROI classifier failed." : null);
+    const regionStatus: ModelExecutionStatus = region.status === "EXECUTED"
+      ? "EXECUTED"
+      : region.status === "FAILED" ? "FAILED"
+        : reasonToStatus(regionReason ?? "ROI was skipped.");
+    const regionQuality = roiQualityStatus.get(region.asset_id) ?? (qualityAcceptable ? "not_assessed" : quality.quality_status);
+    const regionDomain = roiDomainStatus.get(region.asset_id) ?? "DOMAIN_VALIDATION_UNKNOWN";
+    ledgerRows.push({
+      model_id: record.model_id,
+      model_version: record.version,
+      task: "oct_classification",
+      artifact_hash: record.sha256,
+      input_asset_id: region.asset_id,
+      input_roi_id: region.asset_id,
+      laterality: region.laterality,
+      eligibility: regionStatus === "UNSUPPORTED_MODALITY" ? "NOT_APPLICABLE" : regionStatus === "EXECUTED" ? "ELIGIBLE" : "INELIGIBLE",
+      execution_status: regionStatus,
+      skip_reason: regionStatus === "EXECUTED" ? null : regionReason,
+      quality_status: regionQuality,
+      domain_status: regionDomain,
+      runtime_ms: Math.max(0, roiRuntimeMs.get(region.asset_id) ?? 0),
+      output_contract_version: regionStatus === "EXECUTED" || regionStatus === "FAILED" ? OUTPUT_CONTRACT_VERSION : null,
+      validation_status: record.status,
+      dependency_group_id: `document:${region.document_id}:page:${region.page}:roi:${region.roi_hash}`,
+    });
   }
   // If quality gate failed: findings stay EMPTY (safety rule), and the result
   // carries the mandatory insufficient-quality message.
@@ -745,6 +914,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       model_versions: modelVersions,
       runtime_status: modelsFailed.size > 0 && modelsExecuted.size > 0 ? "COMPLETED_WITH_FAILURES" : modelsFailed.size > 0 ? "FAILED_OR_UNAVAILABLE" : modelsExecuted.size > 0 ? "COMPLETED" : "NOT_RUN",
     },
+    model_execution_ledger: ledgerRows,
     quality: {
       score: quality.quality_score,
       acceptable: qualityAcceptable,
@@ -933,6 +1103,24 @@ function unsupportedResult(study: NormalizedStudy, note: string, assetRouting?: 
       models_attempted: [], models_executed: [], models_failed: [],
       models_skipped: [{ model_id: "all", reason: "unsupported format" }], artifact_hashes: {}, model_versions: {}, runtime_status: "NOT_RUN",
     },
+    model_execution_ledger: [{
+      model_id: "none",
+      model_version: "none",
+      task: "asset_validation",
+      artifact_hash: null,
+      input_asset_id: assetRouting?.source_hash ?? "unknown-asset",
+      input_roi_id: null,
+      laterality: study.eye === "OD" || study.eye === "OS" ? study.eye : "unknown",
+      eligibility: "NOT_APPLICABLE",
+      execution_status: "UNSUPPORTED_MODALITY",
+      skip_reason: note,
+      quality_status: "not_assessed",
+      domain_status: assetRouting?.domain_state ?? "NOT_ASSESSED",
+      runtime_ms: 0,
+      output_contract_version: null,
+      validation_status: "NOT_VALIDATED",
+      dependency_group_id: `asset:${assetRouting?.source_hash ?? study.studyId}`,
+    }],
     quality: { score: 0, acceptable: false, status: "fail", artifacts: ["unsupported_format"], affected_regions: [], recommended_reacquisition: false },
     segmentation: { implemented: false, note: "Not performed." },
     findings: [],

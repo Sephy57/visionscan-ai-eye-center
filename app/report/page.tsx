@@ -13,6 +13,7 @@ interface Report {
   asset_routing?: { container_type: string; modality: string; modality_state: string; device_state: string; domain_state: string; source_hash: string; warnings: string[] };
   document_routing?: Array<{ document_id: string; document_modality: string; pages: Array<{ page: number; content_type: string; modality: string; laterality: string; classifier_method: string; verification_state: string; source_page_hash?: string }>; measurements: Array<{ key: string; value_raw: string; value_normalized: number | null; unit: string | null; laterality: string; page: number; verification_status: string }>; image_regions: Array<{ region_id: string; page: number; content_type: string; laterality: string; bbox: { x: number; y: number; w: number; h: number }; roi_hash: string; source_page_hash: string; verification_status: string }> }>;
   model_execution?: { models_attempted: string[]; models_executed: string[]; models_failed: string[]; models_skipped: Array<{ model_id: string; reason: string }>; artifact_hashes: Record<string, string | null>; artifact_verification?: Record<string, string>; model_versions: Record<string, string>; runtime_status: string };
+  model_execution_ledger?: Array<{ model_id: string; model_version: string; task: string; artifact_hash: string | null; input_asset_id: string; input_roi_id: string | null; laterality: string; eligibility: string; execution_status: string; skip_reason: string | null; quality_status: string; domain_status: string; runtime_ms: number; output_contract_version: string | null; validation_status: string; dependency_group_id: string }>;
   oct_region_results?: Array<{ asset_id: string; document_id: string; page: number; laterality: string; source_page_hash: string; roi_hash: string; content_type: string; status: string; note?: string }>;
   oct_aggregation?: string;
   study: { modality: string; eye: string; source: string; captured_at?: string | null; metadata_provenance: string };
@@ -208,6 +209,16 @@ function ReportInner() {
             })}
           </tbody></table></div>
           <p className="tiny muted" style={{ marginBottom: 0 }}>Runtime: {report.model_execution.runtime_status}. RESEARCH output is uncalibrated and requires clinician review.</p>
+        </div>
+      )}
+
+      {report.model_execution_ledger && (
+        <div className="card">
+          <div className="card-title"><h2 style={{ marginTop: 0 }}>Input / model execution ledger</h2><Badge tone="info">{report.model_execution_ledger.length} row(s)</Badge></div>
+          <p className="tiny muted">Server-derived rows retain asset/ROI lineage, gate state, runtime, and dependency groups. This is an execution record, not a clinical conclusion.</p>
+          <div className="table-wrap" tabIndex={0}><table className="table"><thead><tr><th>Task / model</th><th>Asset / ROI</th><th>Eye</th><th>Eligibility</th><th>Status</th><th>Quality / domain</th><th>Runtime</th></tr></thead><tbody>
+            {report.model_execution_ledger.map((row, i) => <tr key={`${row.model_id}-${row.input_asset_id}-${i}`}><td><strong>{row.task.replaceAll("_", " ")}</strong><div className="tiny muted">{row.model_id} v{row.model_version}</div></td><td className="tiny">{row.input_asset_id.slice(0, 16)}…{row.input_roi_id ? <div>ROI {row.input_roi_id.slice(0, 12)}…</div> : null}</td><td>{row.laterality}</td><td>{row.eligibility}</td><td>{row.execution_status}{row.skip_reason ? <div className="tiny muted">{row.skip_reason}</div> : null}</td><td className="tiny">{row.quality_status} / {row.domain_status}</td><td>{row.runtime_ms} ms</td></tr>)}
+          </tbody></table></div>
         </div>
       )}
 

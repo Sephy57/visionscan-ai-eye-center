@@ -32,6 +32,8 @@ import { identifyMissingEvidence, type MissingEvidenceItem } from "../evidence/m
 import { redFlagSymptoms } from "../clinical/symptoms";
 import type { EvidenceItem, ConditionAssessment } from "../evidence/types";
 import { DISALLOWED_CLAIM_PATTERNS } from "../analysis/pipeline";
+import { reviewConditionsAdversarially, type AdversarialConditionReview } from "../clinical/clinicalRedTeam";
+import { verifyReasoningChain, type IndependentReasoningVerification } from "../clinical/independentVerifier";
 
 export const REASONING_ENGINE_VERSION = "1.0.0";
 export const RULE_SET_VERSION = "evidence-taxonomy-0.1.0-non-clinical"; // matches lib/evidence/conditionTaxonomy.ts's own version - one rule-set version, not two
@@ -65,6 +67,10 @@ export interface StructuredReasoningResult {
   safety_banner: string;
   /** §26 - reuses lib/analysis/pipeline.ts's own DISALLOWED_CLAIM_PATTERNS scan, never a second/divergent list. Non-empty is a defense-in-depth bug signal (a rule/template produced disallowed language), never expected in normal operation of this engine's fixed templates. */
   blocked_claims: string[];
+  /** A separate, deterministic attempt to disprove each hypothesis. */
+  adversarial_reviews: AdversarialConditionReview[];
+  /** Referential/safety verification; disagreement is surfaced, never hidden. */
+  independent_verification: IndependentReasoningVerification;
 }
 
 export interface ReasoningEngine {
@@ -149,6 +155,16 @@ export class DeterministicReasoningEngine implements ReasoningEngine {
       ...uncertainties, ...limitations,
     ];
     const blockedClaims = scanForbiddenClaims(textsToScan);
+    const adversarialReviews = reviewConditionsAdversarially(evidence.possible_conditions, evidence.evidence);
+    const independentVerification = verifyReasoningChain({
+      evidence: evidence.evidence,
+      conditions: evidence.possible_conditions,
+      conflicts: evidence.conflicts,
+      urgentFlags,
+    });
+    if (independentVerification.status !== "VERIFIED") {
+      limitations.push("Independent verification found a reasoning-chain discrepancy; clinician reconciliation is required before relying on this view.");
+    }
 
     return {
       study_id: evidence.study_id,
@@ -170,6 +186,8 @@ export class DeterministicReasoningEngine implements ReasoningEngine {
       requires_clinician_review: true,
       safety_banner: SAFETY_BANNER,
       blocked_claims: blockedClaims,
+      adversarial_reviews: adversarialReviews,
+      independent_verification: independentVerification,
     };
   }
 }

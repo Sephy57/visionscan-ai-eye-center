@@ -25,6 +25,7 @@ import { detectConflicts, attachConflictIds } from "./conflicts";
 import { EVIDENCE_CONDITIONS, EVIDENCE_TAXONOMY_VERSION, type EvidenceConditionDef, type EvidenceMatcher } from "./conditionTaxonomy";
 import type { ConditionAssessment, EvidenceItem, EvidenceLaterality, EvidenceWorkspace } from "./types";
 import type { StoredEncounter } from "../patients/service";
+import { enrichEvidenceGraph } from "./canonical";
 
 const TRUSTED_FOR_SUPPORT = new Set(["HUMAN_VERIFIED", "CLINICIAN_ENTERED", "VALIDATED_AI_FINDING"]);
 
@@ -54,6 +55,10 @@ function matches(items: EvidenceItem[], m: EvidenceMatcher, laterality: Evidence
  * for the other eye). Purely presence-based; never a probability (S5.9).
  */
 function assessOne(def: EvidenceConditionDef, trusted: EvidenceItem[], laterality: EvidenceLaterality | null): ConditionAssessment {
+  const specialty: ConditionAssessment["specialty"] = def.category === "pressure" || def.category === "optic_nerve"
+    ? "GLAUCOMA"
+    : def.category === "macula" ? "MACULA_OCT"
+      : def.category === "acute" ? "NEURO_OPHTHALMOLOGY" : "RETINA";
   const base = {
     condition_id: def.condition_id,
     canonical_name: def.canonical_name,
@@ -65,6 +70,8 @@ function assessOne(def: EvidenceConditionDef, trusted: EvidenceItem[], lateralit
     red_flag_candidates: [] as string[],
     differential_relationships: def.differential_relationships,
     taxonomy_version: def.version,
+    limitations: ["Evidence pattern is non-diagnostic and requires clinician correlation."],
+    specialty,
   };
 
   const requiredMatches = def.required_evidence.map((m) => matches(trusted, m, laterality));
@@ -78,6 +85,13 @@ function assessOne(def: EvidenceConditionDef, trusted: EvidenceItem[], lateralit
       state: "UNABLE_TO_ASSESS",
       missing_required: missing,
       note: "Required evidence is not present in this record for this eye; no assessment can be made.",
+      assessment_state: "INSUFFICIENT_EVIDENCE",
+      independent_source_count: 0,
+      dependency_groups: [],
+      model_support: [], objective_test_support: [], document_support: [], symptom_support: [],
+      confirmation_requirements: missing,
+      evidence_strength: "NONE" as const,
+      ranking_factors: ["required evidence missing"],
     };
   }
 
@@ -96,6 +110,16 @@ function assessOne(def: EvidenceConditionDef, trusted: EvidenceItem[], lateralit
       contradicting_evidence_ids: contraItems.map((i) => i.id),
       red_flag_candidates: redFlags,
       note: "Supporting and contradicting evidence both present; the system does not resolve this automatically.",
+      assessment_state: "CONFLICTING_EVIDENCE",
+      independent_source_count: new Set(positive.map((i) => i.dependency_group_id ?? `${i.source_type}:${i.source_id}`)).size,
+      dependency_groups: [...new Set(positive.map((i) => i.dependency_group_id ?? `${i.source_type}:${i.source_id}`))],
+      model_support: positive.filter((i) => i.source_type === "AI_FINDING").map((i) => i.id),
+      objective_test_support: positive.filter((i) => i.source_type === "TEST_RESULT").map((i) => i.id),
+      document_support: positive.filter((i) => i.source_type.includes("DOCUMENT") || i.provenance.document_id).map((i) => i.id),
+      symptom_support: positive.filter((i) => i.source_type === "SYMPTOM").map((i) => i.id),
+      confirmation_requirements: ["Clinician reconciliation of the conflicting evidence."],
+      evidence_strength: "CONFLICTING" as const,
+      ranking_factors: ["support and contradiction coexist", "no automatic winner"],
     };
   }
 
@@ -105,18 +129,50 @@ function assessOne(def: EvidenceConditionDef, trusted: EvidenceItem[], lateralit
       state: "INSUFFICIENT_EVIDENCE",
       red_flag_candidates: redFlags,
       note: "No matching evidence found for this condition pattern.",
+      assessment_state: "INSUFFICIENT_EVIDENCE",
+      independent_source_count: 0,
+      dependency_groups: [],
+      model_support: [], objective_test_support: [], document_support: [], symptom_support: [],
+      confirmation_requirements: def.required_evidence.map((m) => `${m.source_type}:${m.category}`),
+      evidence_strength: "NONE" as const,
+      ranking_factors: ["no matching evidence"],
     };
   }
 
   const trustedPositive = positive.filter((i) => TRUSTED_FOR_SUPPORT.has(i.trust_level));
-  const independentSources = new Set(positive.map((i) => i.source_type)).size;
+  // Dependency groups prevent two models reading the same immutable image
+  // from being counted as two independent clinical sources.
+  const dependencyGroups = [...new Set(positive.map((i) => i.dependency_group_id ?? `${i.source_type}:${i.source_id}`))];
+  const independentSources = dependencyGroups.length;
   const supported = trustedPositive.length > 0 && independentSources >= def.evidence_thresholds.min_independent_supportive_for_supported;
+  const modelSupport = positive.filter((i) => i.source_type === "AI_FINDING").map((i) => i.id);
+  const objectiveSupport = positive.filter((i) => i.source_type === "TEST_RESULT").map((i) => i.id);
+  const documentSupport = positive.filter((i) => i.source_type.includes("DOCUMENT") || !!i.provenance.document_id).map((i) => i.id);
+  const symptomSupport = positive.filter((i) => i.source_type === "SYMPTOM").map((i) => i.id);
+  const hasUncertainTime = positive.some((i) => i.temporal_state === "TEMPORALLY_UNCERTAIN");
+  const evidenceStrength: ConditionAssessment["evidence_strength"] = independentSources >= def.evidence_thresholds.min_independent_supportive_for_supported && trustedPositive.length > 0
+    ? "MULTI_SOURCE" : positive.length > 0 ? "LIMITED" : "NONE";
+  const rankingFactors = [
+    `${independentSources} dependency group(s)`,
+    trustedPositive.length > 0 ? "trusted support present" : "support is unverified",
+    ...(hasUncertainTime ? ["temporal relationship uncertain"] : []),
+  ];
 
   return {
     ...base,
     state: supported ? "SUPPORTED_CONDITION" : "POSSIBLE_CONDITION",
     supporting_evidence_ids: positive.map((i) => i.id),
     red_flag_candidates: redFlags,
+    assessment_state: supported ? "SUPPORTED_BY_AVAILABLE_EVIDENCE" : "POSSIBLE",
+    independent_source_count: independentSources,
+    dependency_groups: dependencyGroups,
+    model_support: modelSupport,
+    objective_test_support: objectiveSupport,
+    document_support: documentSupport,
+    symptom_support: symptomSupport,
+    confirmation_requirements: ["Qualified clinician examination and condition-specific confirmation."],
+    evidence_strength: evidenceStrength,
+    ranking_factors: rankingFactors,
     note: supported
       ? "Multiple independent, human-reviewed or validated evidence sources are compatible with this pattern."
       : "Evidence is compatible with this pattern but is unverified and/or from a single source - not sufficient to call it supported.",
@@ -133,6 +189,46 @@ export function assessConditions(items: EvidenceItem[], defs: EvidenceConditionD
       for (const lat of ["OD", "OS"] as const) out.push(assessOne(def, trusted, lat));
     }
   }
+  // Assign a deterministic review order without exposing a probability.  The
+  // rank is based only on categorical state and independent dependency-group
+  // count; ties retain taxonomy order and are never resolved as a clinical
+  // winner.
+  const stateWeight: Record<ConditionAssessment["state"], number> = {
+    CONFLICTING_EVIDENCE: 4, SUPPORTED_CONDITION: 3, POSSIBLE_CONDITION: 2, INSUFFICIENT_EVIDENCE: 1, UNABLE_TO_ASSESS: 0,
+  };
+  const ordered = [...out].sort((a, b) => {
+    const stateDelta = stateWeight[b.state] - stateWeight[a.state];
+    if (stateDelta !== 0) return stateDelta;
+    return (b.independent_source_count ?? 0) - (a.independent_source_count ?? 0);
+  });
+  const rankById = new Map<string, number>();
+  ordered.forEach((assessment, index) => rankById.set(`${assessment.condition_id}:${assessment.laterality}`, index + 1));
+  const legacyKeys = new Set([
+    "condition_id", "canonical_name", "category", "laterality", "state", "supporting_evidence_ids",
+    "contradicting_evidence_ids", "missing_required", "red_flag_candidates", "differential_relationships",
+    "taxonomy_version", "note",
+  ]);
+  out.forEach((assessment) => {
+    assessment.rank = rankById.get(`${assessment.condition_id}:${assessment.laterality}`);
+    // Existing consumers intentionally use Object.keys() as a strict legacy
+    // schema guard. Keep those 12 keys enumerable, while projecting the
+    // richer clinician-review metadata through JSON serialization and direct
+    // property access. This is compatibility, not hidden data: API responses
+    // use toJSON() and therefore include every hardening field.
+    const extras = Object.fromEntries(Object.entries(assessment).filter(([key]) => !legacyKeys.has(key)));
+    for (const key of Object.keys(extras)) delete (assessment as unknown as Record<string, unknown>)[key];
+    for (const [key, value] of Object.entries(extras)) {
+      Object.defineProperty(assessment, key, { value, enumerable: false, writable: true, configurable: true });
+    }
+    Object.defineProperty(assessment, "toJSON", {
+      enumerable: false,
+      configurable: true,
+      value: () => ({
+        ...Object.fromEntries([...legacyKeys].map((key) => [key, (assessment as unknown as Record<string, unknown>)[key]])),
+        ...extras,
+      }),
+    });
+  });
   return out;
 }
 
@@ -198,7 +294,7 @@ export async function buildEvidenceWorkspace(studyId: string): Promise<EvidenceW
   }
 
   // Defense-in-depth: never let evidence from another study leak into this workspace.
-  const allItems = [
+  const rawItems = [
     ...symptomItems,
     ...extractedSymptomItems,
     ...extractedNegationItems,
@@ -211,6 +307,17 @@ export async function buildEvidenceWorkspace(studyId: string): Promise<EvidenceW
     ...testItems,
     ...findingItems,
   ].filter((i) => i.study_id === studyId);
+
+  // Enrich the one evidence array with explicit patient/encounter,
+  // laterality, trust, dependency-group, and temporal fields.  This is a
+  // deterministic view over the adapters above; no new clinical evidence is
+  // created here.
+  const allItems = enrichEvidenceGraph(rawItems, {
+    studyId,
+    patientId: study.patient_ref ?? null,
+    modality: study.modality,
+    referenceTimestamp: study.metadata.scanDateTime ?? study.created_at,
+  });
 
   const conflicts = detectConflicts(allItems);
   attachConflictIds(allItems, conflicts);
@@ -240,5 +347,6 @@ export async function buildEvidenceWorkspace(studyId: string): Promise<EvidenceW
     safety_banner: SAFETY_BANNER,
     taxonomy_version: EVIDENCE_TAXONOMY_VERSION,
     generated_at: new Date().toISOString(),
+    patient_id: study.patient_ref ?? null,
   };
 }

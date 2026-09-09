@@ -91,6 +91,49 @@ export function detectConflicts(items: EvidenceItem[]): EvidenceConflict[] {
     }
   }
 
+  // SOURCE_DIAGNOSIS_CONFLICT: an explicitly negated source-document claim
+  // must remain attributed to that document, but it cannot silently coexist
+  // with a same-eye AI observation of the same concept.  This is intentionally
+  // a small, auditable concept map rather than a free-text diagnosis parser;
+  // unknown wording stays unlinked and is left for clinician review.
+  const conceptTokens: Array<[RegExp, string]> = [
+    [/diabetic\s+retinopathy|\bdr\b|dr_grade_estimate/i, "diabetic_retinopathy"],
+    [/retinal[_\s]+hemorrhage|retinal[_\s]+bleed/i, "retinal_hemorrhage"],
+    [/microaneurysm/i, "microaneurysm"],
+    [/hard[_\s]+exudate|exudate/i, "hard_exudate"],
+    [/cotton[-_\s]?wool/i, "cotton_wool_spot"],
+    [/macular[_\s]+edema|macular[_\s]+thickening/i, "macular_edema"],
+    [/glaucoma|optic[_\s]+nerve[_\s]+cupping/i, "glaucoma"],
+  ];
+  const conceptFor = (item: EvidenceItem): string | null => {
+    const text = `${item.category} ${item.qualitative_finding ?? ""}`;
+    for (const [rx, token] of conceptTokens) if (rx.test(text)) return token;
+    return null;
+  };
+  const sourceClaims = trusted.filter((item) => item.source_type === "SOURCE_DOCUMENT_DIAGNOSIS" && item.presence === "ABSENT");
+  const aiObservations = trusted.filter((item) => item.source_type === "AI_FINDING" && item.presence === "PRESENT");
+  for (const source of sourceClaims) {
+    const sourceConcept = conceptFor(source);
+    if (!sourceConcept) continue;
+    const related = aiObservations.filter((ai) => {
+      const aiConcept = conceptFor(ai);
+      const sameEye = source.laterality === "UNKNOWN" || ai.laterality === "OU" || source.laterality === "OU" || source.laterality === ai.laterality;
+      const sameConcept = aiConcept === sourceConcept || (sourceConcept === "diabetic_retinopathy" && ["retinal_hemorrhage", "microaneurysm", "hard_exudate", "cotton_wool_spot"].includes(aiConcept ?? ""));
+      return sameEye && sameConcept;
+    });
+    if (related.length === 0) continue;
+    conflicts.push({
+      id: newId("conf"),
+      conflict_type: "SOURCE_DIAGNOSIS_CONFLICT",
+      category: sourceConcept,
+      laterality: [...new Set([source.laterality, ...related.map((item) => item.laterality)])],
+      evidence_ids: [source.id, ...related.map((item) => item.id)],
+      severity: "high",
+      resolution_state: "UNRESOLVED",
+      note: `A source document explicitly recorded absence of ${sourceConcept}, while research AI produced same-eye compatible observation(s). The source claim remains attributed to its document; no source or AI result was selected automatically.`,
+    });
+  }
+
   return conflicts;
 }
 

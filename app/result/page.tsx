@@ -29,6 +29,7 @@ interface Bundle {
     asset_routing?: { container_type: string; modality: string; modality_state: string; device_state: string; domain_state: string; source_hash: string; warnings: string[] };
     document_routing?: Array<{ document_id: string; document_modality: string; pages: Array<{ page: number; content_type: string; modality: string; laterality: string; classifier_method: string; verification_state: string }>; measurements: Array<{ key: string; value_normalized: number | null; unit: string | null; laterality: string; page: number }>; image_regions: Array<{ region_id: string; page: number; content_type: string; laterality: string; bbox: { x: number; y: number; w: number; h: number }; roi_hash: string; source_page_hash: string; verification_status: string }> }>;
     model_execution?: { models_attempted: string[]; models_executed: string[]; models_failed: string[]; models_skipped: Array<{ model_id: string; reason: string }>; artifact_hashes: Record<string, string | null>; artifact_verification?: Record<string, string>; model_versions: Record<string, string>; runtime_status: string };
+    model_execution_ledger?: Array<{ model_id: string; model_version: string; task: string; artifact_hash: string | null; input_asset_id: string; input_roi_id: string | null; laterality: string; eligibility: string; execution_status: string; skip_reason: string | null; quality_status: string; domain_status: string; runtime_ms: number; output_contract_version: string | null; validation_status: string; dependency_group_id: string }>;
     quality: { score: number; status: string; acceptable: boolean; artifacts: string[]; metrics: Record<string, number | boolean> };
     findings: Finding[];
     uncertainty: { overall: number; reasons: string[]; ensemble_agreement?: string };
@@ -324,6 +325,18 @@ function ResultInner() {
                 const verification = a.model_execution!.artifact_verification?.[id] ?? (a.model_execution!.artifact_hashes[id] ? "EXPECTED_REGISTRY_HASH" : "UNAVAILABLE");
                 return <tr key={id}><td>{id}</td><td>{a.model_execution!.model_versions[id] ?? "—"}</td><td>{status}</td><td className="tiny">{verification} {a.model_execution!.artifact_hashes[id] ? `${a.model_execution!.artifact_hashes[id]!.slice(0, 12)}…` : ""}</td></tr>;
               })}
+            </tbody></table>
+          </div>
+        </div>
+      )}
+
+      {a.model_execution_ledger && (
+        <div className="card" style={{ margin: "14px 0" }}>
+          <div className="card-title"><h3>Input / model execution ledger</h3><Badge tone="info">{a.model_execution_ledger.length} row(s)</Badge></div>
+          <p className="tiny muted">Server-derived provenance for every primary asset and admitted OCT ROI. Dependency groups show which outputs share the same immutable pixels.</p>
+          <div className="table-wrap" tabIndex={0}>
+            <table className="table"><thead><tr><th>Task / model</th><th>Asset / ROI</th><th>Eye</th><th>Eligibility</th><th>Status</th><th>Quality / domain</th><th>Runtime</th></tr></thead><tbody>
+              {a.model_execution_ledger.map((row, i) => <tr key={`${row.model_id}-${row.input_asset_id}-${i}`}><td><strong>{row.task.replaceAll("_", " ")}</strong><div className="tiny muted">{row.model_id} v{row.model_version}</div></td><td className="tiny">{row.input_asset_id.slice(0, 16)}…{row.input_roi_id ? <div>ROI {row.input_roi_id.slice(0, 12)}…</div> : null}</td><td>{row.laterality}</td><td>{row.eligibility}</td><td>{row.execution_status}{row.skip_reason ? <div className="tiny muted">{row.skip_reason}</div> : null}</td><td className="tiny">{row.quality_status} / {row.domain_status}</td><td>{row.runtime_ms} ms</td></tr>)}
             </tbody></table>
           </div>
         </div>

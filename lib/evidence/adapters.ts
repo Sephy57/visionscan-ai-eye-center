@@ -390,15 +390,29 @@ export function evidenceFromFindings(studyId: string, studyEye: string, findings
     source_type: "AI_FINDING" as const,
     source_id: f.id,
     category: f.type,
-    laterality: lateralityFromStudyEye(studyEye),
-    laterality_source: "study_level" as const,
+    // Preserve finding-level laterality whenever a model supplied it.  The
+    // study eye is only a fallback for legacy findings that have no explicit
+    // eye, and UNKNOWN never becomes OU implicitly.
+    laterality: f.laterality === "OD" || f.laterality === "OS" || f.laterality === "OU"
+      ? f.laterality
+      : lateralityFromStudyEye(studyEye),
+    laterality_source: f.laterality ? "explicit" as const : "study_level" as const,
     qualitative_finding: f.severity,
     presence: "PRESENT" as const,
     trust_level: "UNVERIFIED" as const,
     confidence: f.confidence,
-    provenance: { study_id: studyId, analysis_id: `anl_${studyId}`, finding_id: f.id },
+    provenance: {
+      study_id: studyId,
+      analysis_id: `anl_${studyId}`,
+      finding_id: f.id,
+      source_asset_id: f.source_asset_id,
+      page: f.source_page,
+    },
     conflict_ids: [],
     synthetic: f.synthetic,
+    modality: f.source_modality,
+    model_id: f.model_id,
+    model_version: f.model_version ?? null,
   }));
 }
 

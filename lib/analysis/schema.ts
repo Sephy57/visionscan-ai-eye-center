@@ -27,6 +27,7 @@ export interface Finding {
   explanation: string;                 // careful, non-overstating language
   synthetic: boolean;                  // MUST be true for any demo-generated finding
   model_id: string;                    // component that produced this finding
+  model_version?: string;              // exact producing model version when available
   model_status?: string;               // registry status of producing model (e.g. DEMO)
   source_modality?: string;
   source_asset_id?: string;
@@ -69,6 +70,42 @@ export interface RecommendationInfo {
   rationale: string;
 }
 
+/**
+ * Server-derived provenance for one model/input attempt.  The compact
+ * model_execution arrays below remain for backwards compatibility, while
+ * this row-oriented ledger is the authoritative coverage view for current
+ * analyses.  A row is emitted for every applicable primary asset and every
+ * admitted document ROI; it is never accepted from the browser.
+ */
+export type ModelExecutionStatus =
+  | "EXECUTED"
+  | "SKIPPED"
+  | "UNAVAILABLE"
+  | "FAILED"
+  | "BLOCKED_QUALITY"
+  | "BLOCKED_OOD"
+  | "UNSUPPORTED_MODALITY";
+
+export interface ModelExecutionLedgerEntry {
+  model_id: string;
+  model_version: string;
+  task: string;
+  artifact_hash: string | null;
+  input_asset_id: string;
+  input_roi_id: string | null;
+  laterality: "OD" | "OS" | "OU" | "unknown";
+  eligibility: "ELIGIBLE" | "INELIGIBLE" | "NOT_APPLICABLE";
+  execution_status: ModelExecutionStatus;
+  skip_reason: string | null;
+  quality_status: string;
+  domain_status: string;
+  runtime_ms: number;
+  output_contract_version: string | null;
+  validation_status: string;
+  /** Models sharing this group consumed the same underlying pixels. */
+  dependency_group_id: string;
+}
+
 export interface AnalysisResult {
   schema_version: string;
   study: StudyInfo;
@@ -86,6 +123,8 @@ export interface AnalysisResult {
     model_versions: Record<string, string>;
     runtime_status: string;
   };
+  /** Complete, server-derived model/input ledger for current analyses. */
+  model_execution_ledger?: ModelExecutionLedgerEntry[];
   quality: QualityInfo;
   segmentation: {
     implemented: boolean;
@@ -300,6 +339,34 @@ export function validateAnalysisResult(r: unknown): { valid: boolean; errors: Va
     need(Array.isArray(o.model_execution.models_failed), "model_execution.models_failed", "must be array");
     need(Array.isArray(o.model_execution.models_skipped), "model_execution.models_skipped", "must be array");
     need(typeof o.model_execution.runtime_status === "string", "model_execution.runtime_status", "required");
+  }
+  if (o.model_execution_ledger !== undefined) {
+    need(Array.isArray(o.model_execution_ledger), "model_execution_ledger", "must be array");
+    const statuses = new Set<ModelExecutionStatus>([
+      "EXECUTED", "SKIPPED", "UNAVAILABLE", "FAILED", "BLOCKED_QUALITY", "BLOCKED_OOD", "UNSUPPORTED_MODALITY",
+    ]);
+    const eligibilities = new Set(["ELIGIBLE", "INELIGIBLE", "NOT_APPLICABLE"]);
+    const eyes = new Set(["OD", "OS", "OU", "unknown"]);
+    for (const [i, row] of (o.model_execution_ledger ?? []).entries()) {
+      need(!!row && typeof row === "object", `model_execution_ledger[${i}]`, "must be object");
+      if (!row || typeof row !== "object") continue;
+      need(typeof row.model_id === "string" && row.model_id.length > 0, `model_execution_ledger[${i}].model_id`, "required");
+      need(typeof row.model_version === "string" && row.model_version.length > 0, `model_execution_ledger[${i}].model_version`, "required");
+      need(typeof row.task === "string" && row.task.length > 0, `model_execution_ledger[${i}].task`, "required");
+      need(row.artifact_hash === null || typeof row.artifact_hash === "string", `model_execution_ledger[${i}].artifact_hash`, "must be string or null");
+      need(typeof row.input_asset_id === "string" && row.input_asset_id.length > 0, `model_execution_ledger[${i}].input_asset_id`, "required");
+      need(row.input_roi_id === null || typeof row.input_roi_id === "string", `model_execution_ledger[${i}].input_roi_id`, "must be string or null");
+      need(eyes.has(row.laterality), `model_execution_ledger[${i}].laterality`, "invalid laterality");
+      need(eligibilities.has(row.eligibility), `model_execution_ledger[${i}].eligibility`, "invalid eligibility");
+      need(statuses.has(row.execution_status), `model_execution_ledger[${i}].execution_status`, "invalid execution status");
+      need(row.skip_reason === null || typeof row.skip_reason === "string", `model_execution_ledger[${i}].skip_reason`, "must be string or null");
+      need(typeof row.quality_status === "string", `model_execution_ledger[${i}].quality_status`, "required");
+      need(typeof row.domain_status === "string", `model_execution_ledger[${i}].domain_status`, "required");
+      need(typeof row.runtime_ms === "number" && Number.isFinite(row.runtime_ms) && row.runtime_ms >= 0, `model_execution_ledger[${i}].runtime_ms`, "must be a finite non-negative number");
+      need(row.output_contract_version === null || typeof row.output_contract_version === "string", `model_execution_ledger[${i}].output_contract_version`, "must be string or null");
+      need(typeof row.validation_status === "string", `model_execution_ledger[${i}].validation_status`, "required");
+      need(typeof row.dependency_group_id === "string" && row.dependency_group_id.length > 0, `model_execution_ledger[${i}].dependency_group_id`, "required");
+    }
   }
 
   // Safety rule: findings must not exist when quality gate failed.

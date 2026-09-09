@@ -26,6 +26,7 @@ import { canonicalModality } from "../models/modalities";
 import { buildSpecialistConsensus, type SpecialistConsensus } from "../clinical/specialistConsensus";
 import type { PatientSymptom } from "../clinical/symptoms";
 import { buildSpecialistEvidencePackages, type SpecialistEvidencePackage } from "../clinical/specialistPackages";
+import { enrichEvidenceGraph } from "./canonical";
 
 export interface SpecialistEvidenceBundle {
   specialty_id: SpecialistAnalysisResult["specialty_id"];
@@ -117,6 +118,13 @@ export async function buildStructuredClinicalEvidence(
   // Re-run conflict detection / condition assessment on the MERGED set -
   // reusing the exact same, unmodified functions the base workspace used,
   // never a parallel implementation.
+  evidence = enrichEvidenceGraph(evidence, {
+    studyId,
+    patientId: study.patient_ref ?? null,
+    encounterId: encounter?.encounter_id ?? null,
+    modality: study.modality,
+    referenceTimestamp: study.metadata.scanDateTime ?? study.created_at,
+  });
   const conflicts = detectConflicts(evidence);
   attachConflictIds(evidence, conflicts);
   const possibleConditions = assessConditions(evidence);

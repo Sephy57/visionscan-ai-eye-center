@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/rbac";
 import { requireStudyScope } from "@/lib/auth/scope";
 import { buildStructuredClinicalEvidence } from "@/lib/evidence/structuredClinicalEvidence";
+import { DeterministicReasoningEngine } from "@/lib/models/reasoningEngine";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,11 +26,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const evidence = await buildStructuredClinicalEvidence(params.id, { includeSpecialists: true });
   if ("not_found" in evidence) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const reasoning = new DeterministicReasoningEngine().analyze(evidence);
   return NextResponse.json({
     study_id: params.id,
     specialist_consensus: evidence.specialist_consensus ?? null,
     specialist_bundles: evidence.specialist_bundles,
     specialist_packages: evidence.specialist_packages ?? [],
+    reasoning,
     safety_banner: evidence.safety_banner,
     requires_clinician_review: true,
   });
