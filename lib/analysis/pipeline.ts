@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { newId, StoredFile, readOriginalScan } from "../storage/files";
 import { assessQuality, assessOctBscanQuality, QualityResult } from "../imaging/quality";
 import { detectDicom } from "../imaging/dicom";
@@ -15,7 +17,7 @@ import { correlateSymptoms } from "../clinical/correlation";
 import { possibleConditions } from "../clinical/conditions";
 import { getTreatmentInformation } from "../treatment/treatmentInfo";
 import { PatientSymptom, SYMPTOM_MAP, redFlagSymptoms } from "../clinical/symptoms";
-import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
+import { DEMO_LABEL, VALIDATION_STATUS_BANNER, MODEL_ROOT, PROJECT_ROOT } from "../config";
 import { canDisplayDiagnosis, unvalidatedGateResult, DiagnosisGateInput } from "../models/diagnosisGate";
 import { unavailableFundusAbnormalityResult, resultFromResearchDetector } from "../models/fundusAbnormality";
 import { unavailableDrAssessmentResult, resultFromResearchGrader } from "../models/drAssessment";
@@ -91,6 +93,32 @@ export const DISALLOWED_CLAIM_PATTERNS: Array<[RegExp, string]> = [
   [/symptoms? (indicate|confirm|prove)s? (a |an )?diagnosis/i, "symptom-causation claim"],
 ];
 
+/**
+ * A registry entry describes a model that may be used, but a fresh checkout
+ * does not necessarily contain its private artifact/runtime.  Keep that
+ * deployment state separate from a provider failure: only a genuinely
+ * installed package is eligible for a research attempt.  This inexpensive
+ * presence check deliberately does not replace the provider's hash and
+ * manifest verification immediately before inference.
+ */
+function researchPackagePresent(model: ReturnType<typeof getModel>): boolean {
+  if (!model || model.status === "DEMO" || !model.file_path) return false;
+  const packageDir = path.resolve(MODEL_ROOT, model.model_id);
+  const artifactPath = path.resolve(MODEL_ROOT, model.file_path);
+  const root = path.resolve(MODEL_ROOT);
+  const relativeArtifact = path.relative(root, artifactPath);
+  if (relativeArtifact.startsWith("..") || path.isAbsolute(relativeArtifact)) return false;
+  const pythonPath = path.join(
+    PROJECT_ROOT,
+    ".venv-ophthalmic",
+    process.platform === "win32" ? "Scripts" : "bin",
+    process.platform === "win32" ? "python.exe" : "python3",
+  );
+  return fs.existsSync(path.join(packageDir, "manifest.json")) &&
+    fs.existsSync(artifactPath) &&
+    fs.existsSync(pythonPath);
+}
+
 export async function runPipeline(input: PipelineInput): Promise<PipelineOutput> {
   await ensureRegistryHydrated();
   const { originalBytes } = input;
@@ -147,12 +175,28 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
   // ---- Stage 1b: model registry gate + out-of-distribution check ----
   const canonicalInputModality = canonicalModality(study.modality);
-  // Select a real modality-specific registry record for the primary gate. The
-  // DEMO record is retained only for modalities with no applicable research
-  // provider; it is never used to stand in for a failed fundus/OCT run.
+  // A registry entry can exist in source control while its private
+  // hash-verified package is absent from a fresh checkout/CI runner.  Treat
+  // that as "research unavailable" and retain the established labeled DEMO
+  // path for that deployment.  Once a package/runtime is present, the real
+  // provider is attempted and a runtime failure remains MODEL_FAILED (never a
+  // synthetic substitute).
+  const lesionRecord = getModel("fundus-lesions-clementp-unet-seresnext50");
+  const drRecord = getModel("fundus-dr-grading-effb0");
+  const octRecord = getModel("oct-retinal-weights-fp32");
+  const lesionPackagePresent = researchPackagePresent(lesionRecord);
+  const drPackagePresent = researchPackagePresent(drRecord);
+  const octPackagePresent = researchPackagePresent(octRecord);
+  const researchProviderAvailable = canonicalInputModality === "FUNDUS"
+    ? lesionPackagePresent || drPackagePresent
+    : canonicalInputModality === "OCT" ? octPackagePresent : false;
+  // Select a real modality-specific registry record for the primary gate only
+  // when at least one applicable research package is installed. Otherwise the
+  // explicit DEMO registry record is used and its strict OOD/device wording
+  // remains intact for legacy/demo-only deployments.
   const primaryResearchRecord = canonicalInputModality === "FUNDUS"
-    ? getModel("fundus-lesions-clementp-unet-seresnext50")
-    : canonicalInputModality === "OCT" ? getModel("oct-retinal-weights-fp32") : null;
+    ? (lesionPackagePresent ? lesionRecord : drPackagePresent ? drRecord : null)
+    : canonicalInputModality === "OCT" && octPackagePresent ? octRecord : null;
   const modelRecord = primaryResearchRecord ?? getModel("demo-fundus-synthetic-v0");
   const deviceInfo = study.metadata.manufacturer || study.metadata.model
     ? { manufacturer: study.metadata.manufacturer, model: study.metadata.model }
@@ -208,11 +252,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   let fundusAbnormality = unavailableFundusAbnormalityResult(quality, ood, study.modality);
   let researchRun: FundusLesionResearchRun | null = null;
   let researchAttemptNote: string | null = null;
-  const lesionRecord = getModel("fundus-lesions-clementp-unet-seresnext50");
   const lesionGate = lesionRecord ? gateModelUse(lesionRecord) : null;
   if (
     qualityAcceptable &&
     canonicalModality(study.modality) === "FUNDUS" &&
+    lesionPackagePresent &&
     lesionRecord &&
     lesionGate?.allowed &&
     supportsModality(lesionRecord, study.modality)
@@ -267,7 +311,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     researchAttemptNote = `Research lesion detector gated off: ${(lesionGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
     markModel(lesionRecord, "skipped", researchAttemptNote);
   } else if (canonicalModality(study.modality) === "FUNDUS" && lesionRecord) {
-    markModel(lesionRecord, "skipped", qualityAcceptable ? "content/modality gate did not match" : "quality gate failed");
+    markModel(lesionRecord, "skipped", !lesionPackagePresent
+      ? "research package/runtime unavailable on this deployment"
+      : qualityAcceptable ? "content/modality gate did not match" : "quality gate failed");
   }
 
   // ---- Stage 1d: research DR grade estimation (before any disease reasoning) ----
@@ -279,11 +325,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   let drAssessment = unavailableDrAssessmentResult(quality, ood, study.modality);
   let drRun: DrGradeResearchRun | null = null;
   let drAttemptNote: string | null = null;
-  const drRecord = getModel("fundus-dr-grading-effb0");
   const drGate = drRecord ? gateModelUse(drRecord) : null;
   const researchScopeOk =
     qualityAcceptable &&
     canonicalModality(study.modality) === "FUNDUS" &&
+    drPackagePresent &&
     drRecord &&
     drGate?.allowed &&
     supportsModality(drRecord, study.modality);
@@ -330,7 +376,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     drAttemptNote = `Research DR grader gated off: ${(drGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
     markModel(drRecord, "skipped", drAttemptNote);
   } else if (canonicalModality(study.modality) === "FUNDUS" && drRecord) {
-    markModel(drRecord, "skipped", qualityAcceptable ? "content/modality gate did not match" : "quality gate failed");
+    markModel(drRecord, "skipped", !drPackagePresent
+      ? "research package/runtime unavailable on this deployment"
+      : qualityAcceptable ? "content/modality gate did not match" : "quality gate failed");
   }
 
   // ---- Stage 1e: research OCT classification (native OCT + PDF B-scan ROIs) ----
@@ -339,7 +387,6 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   let octAssessment = unavailableOctAssessmentResult(quality, ood, study.modality);
   let octRun: OctResearchRun | null = null;
   let octAttemptNote: string | null = null;
-  const octRecord = getModel("oct-retinal-weights-fp32");
   const octGate = octRecord ? gateModelUse(octRecord) : null;
   const octRegionResults: NonNullable<AnalysisResult["oct_region_results"]> = [];
   const octRegionFindings: Finding[] = [];
@@ -347,6 +394,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   const octScopeOk =
     qualityAcceptable &&
     canonicalModality(study.modality) === "OCT" &&
+    octPackagePresent &&
     octRecord &&
     octGate?.allowed &&
     supportsModality(octRecord, study.modality);
@@ -393,13 +441,15 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     octAttemptNote = `Research OCT classifier gated off: ${(octGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
     markModel(octRecord, "skipped", octAttemptNote);
   } else if (canonicalModality(study.modality) === "OCT" && octRecord) {
-    markModel(octRecord, "skipped", qualityAcceptable ? "content/modality gate did not match" : "quality gate failed");
+    markModel(octRecord, "skipped", !octPackagePresent
+      ? "research package/runtime unavailable on this deployment"
+      : qualityAcceptable ? "content/modality gate did not match" : "quality gate failed");
   }
 
   // PDF-derived B-scans are independent assets. A fundus primary study may
   // therefore produce a mixed research result without changing the primary
   // study modality or mixing laterality.
-  if (octRecord && octGate?.allowed && (input.document_assets?.length ?? 0) > 0) {
+  if (octPackagePresent && octRecord && octGate?.allowed && (input.document_assets?.length ?? 0) > 0) {
     const { runOctResearchAnalysis } = await import("../models/octLocalProvider");
     for (const asset of input.document_assets ?? []) {
       if (asset.content_type !== "OCT_BSCAN" || asset.modality !== "OCT") continue;
@@ -501,9 +551,12 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       activeModelGate = octGate;
     }
   }
-  // Demo is only a modality-unsupported fallback. A research model failure
-  // is represented as MODEL_FAILED with no fabricated findings.
-  const researchApplicable = canonicalInputModality === "FUNDUS" || canonicalInputModality === "OCT";
+  // Demo is available only when no applicable research package/runtime is
+  // installed (or the modality is unsupported). Once a research provider is
+  // installed, a provider failure is represented as MODEL_FAILED with no
+  // fabricated findings.
+  const researchModality = canonicalInputModality === "FUNDUS" || canonicalInputModality === "OCT";
+  const researchApplicable = researchModality && researchProviderAvailable;
   const unroutedImage = routedAsset.container_type === "IMAGE" &&
     (routedAsset.modality_state === "MODALITY_UNKNOWN" || researchModalityConflict);
   let demoUsed = false;
