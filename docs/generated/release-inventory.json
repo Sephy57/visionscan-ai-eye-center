@@ -1,0 +1,49 @@
+{
+  "schema_version": "visionscan-release-inventory-v1",
+  "application": {
+    "name": "eye-ai-platform",
+    "version": "0.1.0"
+  },
+  "source": {
+    "commit": "17fda11462a2eb59e622d9cf710fc41de3ddd660",
+    "branch": "main",
+    "working_tree_clean": true
+  },
+  "runtime": {
+    "node": "v20.20.2",
+    "platform": "win32",
+    "python": "Python 3.12.10"
+  },
+  "models": [
+    {
+      "model_id": "fundus-dr-grading-effb0",
+      "version": "aa5741419b90",
+      "artifact_sha256": "0d9a18b0cb6c90d1f30bf2e66153b368bd7ff0bcb45b6690e8d5ce14fa19f69b",
+      "validation_status": "RESEARCH"
+    },
+    {
+      "model_id": "fundus-lesions-clementp-unet-seresnext50",
+      "version": "a2cfcb594e483",
+      "artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+      "validation_status": "RESEARCH"
+    },
+    {
+      "model_id": "oct-retinal-weights-fp32",
+      "version": "hf-main-2026",
+      "artifact_sha256": "22b1fffb5a0ab88284d4c5817c581bedb1b54c09011d87c3f6472cb2c36b2b1f",
+      "validation_status": "RESEARCH"
+    }
+  ],
+  "rulesets": {
+    "pipeline_version": "0.4.0",
+    "ruleset_version": "clinical-rules-0.2.0",
+    "validation_registry_version": "2026-09-08.2"
+  },
+  "dependencies": {
+    "package_lock_sha256": "9dba08b19bdbcf392677109d34602d840065d64ed1dec3a03af99fa5b048b678",
+    "sbom_path": "docs/generated/SBOM.cdx.json",
+    "sbom_sha256": "ed21a1e6845d514452979af74594c125a81e1f0a23783a9112253168fc208715"
+  },
+  "phi_included": false,
+  "generated_at": "2026-09-09T13:47:05.271Z"
+}

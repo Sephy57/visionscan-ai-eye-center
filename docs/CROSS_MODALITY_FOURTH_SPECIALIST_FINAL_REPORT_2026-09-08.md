@@ -553,3 +553,109 @@ record above where the two records differ.
 68. **Exact capability boundary.** VisionScan is a local research / clinician decision-support workstation that can route eligible fundus, OCT, and mixed-document inputs; preserve page, ROI, eye, dependency, and temporal provenance; expose actual model execution; organize symptoms and objective measurements; and present cautious specialist/differential evidence. It cannot diagnose, prove normality, infer undocumented symptoms, guarantee sensitivity/specificity, prescribe, or replace a clinician. Unsupported, ambiguous, low-quality, tampered, and true-OOD inputs fail closed.
 
 69. **Final classification.** ENGINEERING PARTIAL — BLOCKERS REMAIN
+
+## J. CASE VALIDATION / ERROR REGISTRY / REPRODUCIBILITY FINAL REPORT (2026-09-09)
+
+This section supersedes earlier phase measurements where they conflict with the current case-validation and persistence implementation. It records the evidence that was actually run; it does not convert research-only behavior into clinical validation.
+
+1. **Starting HEAD.** This phase started from `2d4e4d281a69097faab0b12caa571a95bfa0f844` on `main`.
+
+2. **Ending HEAD for implementation gates.** The implementation/release-gate head before this documentation commit is `17fda11462a2eb59e622d9cf710fc41de3ddd660` (the final report commit is intentionally not self-referenced).
+
+3. **Commits.** `fe964f9775c2f63666f79b642ec2965be83abf7e` adds the validation/error/persistence/UI gates; `17fda11462a2eb59e622d9cf710fc41de3ddd660` adds the de-identified SBOM.
+
+4. **Push.** Both implementation and SBOM commits were pushed successfully to `origin/main`; the report/inventory push follows this report append.
+
+5. **CI.** GitHub Actions runs `34359219208` (implementation) and `34359394503` (SBOM) completed successfully. The documentation commit will create a separate final-head run that is checked after push.
+
+6. **Sub-agents.** Three explicitly requested parallel workstreams were completed and reconciled: synthetic case/error registry, persistence/progress/cache safety, and aggregate validation dashboard/security.
+
+7. **Case-package architecture.** `lib/validation/casePackage.ts` validates a JSON package as synthetic-only, schema-versioned, provenance-bearing cases with typed expected projections and semantic assertions; no fixture bytes are required for package validation.
+
+8. **Number of validation cases.** `validation-cases/synthetic-safety-package.json` contains 15 cases (`synthetic-001` through `synthetic-015`). The schema supports optional asset descriptors; only synthetic descriptors are present and no clinical/patient bytes are committed.
+
+9. **Evidence assertions.** The harness covers existence, reference, source attribution, laterality, negation, uncertainty, and structured evidence-category assertions using explicit paths/matches rather than free-text scoring.
+
+10. **Routing assertions.** Cases assert modality/page type, laterality, ambiguous routing, unsupported modality, OOD/domain state, and the requirement that server-computed routing—not uploader metadata—controls eligibility.
+
+11. **Model execution assertions.** Cases can require a model/version, research-only status, expected execution/blocked/failed state, and no synthetic fallback after a real research-model failure; the model execution ledger remains server-authored.
+
+12. **Specialist assertions.** Cases can require a specialist package, allow an optional specialist, and assert `requires_clinician_review`; specialist output remains an evidence pattern, not a diagnosis.
+
+13. **Condition assertions.** Cases can assert a bounded possible-condition identifier, state, laterality, and supporting evidence while rejecting autonomous `CLINICAL_DIAGNOSIS` claims.
+
+14. **Forbidden-output assertions.** Cases can list forbidden literals (for example, `diagnosis confirmed`) and the focused contract test rejects unsafe confirmed-diagnosis wording in automated output.
+
+15. **Model-error registry.** `lib/validation/modelErrorRegistry.ts` defines canonical categories (including `MISCLASSIFICATION`, `OOD_FALSE_REJECTION`, `OOD_FALSE_ACCEPTANCE`, `LOCALIZATION_ERROR`, `ROUTING_ERROR`, `ROI_ERROR`, `LATERALITY_ERROR`, `MODEL_TIMEOUT`, `CONTRACT_FAILURE`, and `UNSUPPORTED_PATHOLOGY`) with normalized legacy aliases.
+
+16. **Error adjudication.** `lib/validation/modelErrorStore.ts` persists insert-only error records and requires an explicit reviewer and valid lifecycle transition for adjudication; automated inference cannot close or resolve an error.
+
+17. **False-positive registry.** FP records are representable with immutable input/fixture identity, modality, eye, quality/domain state, structured expected/observed projections, reviewer, mitigation, regression test, and adjudication status. No clinical FP rate is claimed and no clinical FP dataset is committed.
+
+18. **False-negative registry.** FN records use the same provenance and reviewer gates, including `OOD_FALSE_REJECTION` and unsupported-pathology pathways. No sensitivity or false-negative estimate is claimed without a labeled, patient-separated reference set.
+
+19. **Reasoning persistence.** Specialist/condition evidence and deterministic reasoning are persisted as a self-contained `reasoning_record` with source-analysis hash, evidence hash, ruleset versions, and payload hash; raw document snippets are scoped to evidence paths.
+
+20. **Report immutability.** Reports carry an AI-owned `version_freeze` hash. AI fields cannot be silently rewritten, finalized reports reject reruns, and clinician amendments remain additive review records.
+
+21. **Ruleset freeze.** The report seal records pipeline, pipeline-ruleset, coverage, evidence taxonomy, specialist, validation-registry, reasoning-engine, and reasoning-record schema versions.
+
+22. **Reproducibility.** Deterministic reasoning, canonical JSON hashing, immutable source bytes, server-derived provenance, and content/model/version/ROI cache keys make replay checks explicit; reproducibility is engineering-level, not clinical performance evidence.
+
+23. **Job progress.** Analysis and extraction jobs persist bounded stages (`preparing`, source validation, asset routing, inference, report generation, completion/failure) with monotonic percentages and unit counts.
+
+24. **Cancellation.** Queued jobs cancel immediately; running jobs check cancellation at safe checkpoints and refuse cancellation after persistence/report publication begins, preventing a partially published result.
+
+25. **Retry.** Retry requires an 8–128 character idempotency key; exact replay returns the existing attempt without creating another worker attempt or duplicate audit event, and retries reset progress for a new attempt.
+
+26. **Cache safety.** Inference cache keys include content hash, optional ROI hash, model/version, preprocessing version, scope, and eye. Entries are cloned on write/read and malformed keys are rejected, preventing cross-study or caller-mutation poisoning.
+
+27. **Validation dashboard.** `/api/validation/dashboard` exposes aggregate-only validation metrics and `/validation` renders them. Statuses distinguish model failure, unsupported modality, quality block, OOD, urgent review, and ordinary review.
+
+28. **Evidence trace UI.** Validation/error routes and specialist-analysis views expose scoped provenance, evidence references, model ledger rows, and adjudication state without placing case IDs, dataset references, reviewer notes, or raw snippets in aggregate dashboard responses.
+
+29. **Clinician UI.** Report/clinician surfaces keep AI reasoning, evidence, and clinician-authored final assessment structurally separate; only the authorized review workflow can persist diagnosis, impression, plan, or follow-up fields.
+
+30. **Security.** API routes enforce session, role, scope, and CSRF checks; modality, laterality, provenance, model status, and retry actor are recomputed server-side. `proxy.ts` is only a page redirect convenience and is not the authorization boundary.
+
+31. **PHI review.** New committed artifacts are synthetic/de-identified source code, tests, manifests, and metadata only. Local ignored data still contains user-generated studies and model weights; neither is staged, logged, or included in the SBOM.
+
+32. **Dependency advisories.** `npm audit --omit=dev --json` passed with 0 production vulnerabilities across 42 production dependencies. Full audit remains non-zero for two moderate dev-only Vitest/@vitest-mocker path-traversal/arbitrary-file-read advisories (GHSA-82fw-gwwq-j7x9); the available fix is a major upgrade and was not forced.
+
+33. **ESLint.** `npm run lint` exited 0 after the hardening changes.
+
+34. **Next.js warnings.** `npm run build` exited 0 under Next 16.3.4 webpack and reports `ƒ Proxy (Middleware)`; the prior middleware-convention warning is gone.
+
+35. **GitHub Actions.** The implementation and SBOM CI runs completed all configured typecheck, single-worker test, validation-case, manifest-audit, SBOM, inventory, filesystem, and build steps successfully.
+
+36. **SBOM.** `docs/generated/SBOM.cdx.json` is a CycloneDX 1.5 inventory generated from the lockfile, Python environment, and local research manifests; it marks patient-data-included as false and contains no model weights or patient assets.
+
+37. **Release inventory.** `docs/generated/release-inventory.json` records application/runtime/model/ruleset hashes, the SBOM hash, `phi_included: false`, and a clean-tree snapshot at commit `17fda11462a2eb59e622d9cf710fc41de3ddd660` before the report append.
+
+38. **Performance.** Current local CPU-only measurements were login page 4.0/5.3 ms p50/p95, login API 87.2/114.9 ms, dashboard 3.7/6.3 ms, study-list API 2.5/2.9 ms, upload 55.2 ms, result bundle 3.2/6.4 ms, result page 3.4/4.3 ms, and report page 3.4/3.8 ms. The demo pipeline was 250.6 ms with `NO_MODEL_EXECUTED`; ClementP cold worker load/inference was 7,237.8 ms, with the observed warmed CPU note remaining approximately 2.3 s/1024 px and approximately 1.3 GB RSS, serialized. These are local engineering observations, not SLOs or clinical claims.
+
+39. **Test totals.** The full single-worker Vitest run completed 54 of 56 files with 938 passed tests and 2 skipped (940 total); two suites failed only their 30-second `afterAll` cleanup hooks while removing studies from the accumulated 19.5 MB JSON store (`s2-extraction.test.ts` and `s4-verification.test.ts`). The focused new hardening suites passed 3 files / 16 tests.
+
+40. **TypeScript.** `npx tsc --noEmit --pretty false` exited 0 after the final source changes.
+
+41. **Build.** `npm run build` exited 0, compiled successfully, typechecked successfully, generated 21/21 static pages, and included the validation dashboard/error routes.
+
+42. **Smoke.** `npm run smoke` passed 16/16, including authenticated upload, symptom validation/rejection, research analysis, urgent triage, report generation, clinician finalize, comparison, self-test, deletion, unauthenticated denial, and cross-role checks.
+
+43. **Browser E2E.** With the local demo auth flag enabled, real headless Chrome passed asset E2E through dashboard login, metadata-free fundus upload, research inference, mixed-PDF extraction, three-page/ eight-OCT-ROI routing, and report provenance.
+
+44. **Responsive.** Real browser responsive QA passed 80/80 checks across ten routes at 320, 375, 414, 768, 1024, 1280, 1440, and 1920 px with no horizontal overflow.
+
+45. **Accessibility.** Real browser axe QA passed 20/20 WCAG A/AA checks across ten routes at 320 and 1280 px. Manual NVDA/JAWS certification was not performed and is not claimed.
+
+46. **Dependency audit.** Production dependency audit is green as stated in item 32; the remaining two moderate findings are development-only and require compatibility review before a major Vitest upgrade.
+
+47. **Remaining engineering blockers.** The full local suite is not exit-green because two cleanup hooks exceed 30 seconds on the accumulated JSON store; historical legacy reports without the new reasoning/version seal are rejected by the freeze verifier and need an explicit migration policy; browser keyboard/manual QA and a production-grade transactional database remain incomplete.
+
+48. **Remaining model blockers.** All installed models are research-only and uncalibrated. Patient-separated multi-device/domain validation, subgroup/error analysis, calibration/operating-point freeze, approved data rights, and clinically powered sensitivity/specificity measurement remain absent; PDF-to-OCT routing still uses heuristic/fixed ROI extraction.
+
+49. **Remaining clinical-validation blockers.** No prospective clinical validation, reference-standard adjudication, clinical governance sign-off, normative OCT policy, regulatory assessment, or post-deployment monitoring plan has been completed. The synthetic harness validates contracts and safety boundaries, not diagnostic accuracy.
+
+50. **Exact capability boundary.** VisionScan is a local research / clinician decision-support workstation that can route eligible fundus, OCT, and mixed-document inputs; preserve byte/page/ROI/eye/model provenance; execute explicitly labeled research providers; organize symptoms and objective measurements; persist deterministic reasoning; and present cautious specialist/condition evidence. It cannot diagnose, prove normality, infer undocumented symptoms, guarantee sensitivity/specificity, prescribe, or replace a clinician. Unsupported, ambiguous, low-quality, tampered, and true-OOD inputs fail closed.
+
+51. **Final classification.** ENGINEERING PARTIAL — BLOCKERS REMAIN
