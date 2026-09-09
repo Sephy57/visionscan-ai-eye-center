@@ -410,3 +410,146 @@ the prior 50-item record or change its clinical-use limitations.
 41. **Exact capability boundary.** VisionScan can now content-route eligible fundus images and mixed scanned ophthalmic PDFs, preserve page/ROI/eye provenance, and run isolated local research providers when all gates pass. It cannot diagnose, establish normality, infer symptoms from pixels, interpret normative OCT colors as disease, guarantee sensitivity/specificity, or replace clinician review. Unsupported, ambiguous, low-quality, tampered, or true-OOD inputs fail closed.
 
 42. **Final classification.** **ENGINEERING PARTIAL — BLOCKERS REMAIN.** The requested routing and report-correctness behavior is implemented, locally verified, pushed, and covered by a green CI run. The full release is not called complete while the two moderate dev-only audit findings, the stale/non-actionable `next lint` command, and the disclosed clinical/model governance gates remain unresolved.
+
+## I. FINAL CLINICAL INTELLIGENCE VALIDATION & HARDENING REPORT (2026-09-09)
+
+This section is the current close-out record for the handoff that began at the
+requested baseline. It supersedes older measurements in the historical release
+record above where the two records differ.
+1. **Starting HEAD.** The requested starting revision was c9e76646304841de2fbcd8f155bfe7863e1c292a on main. It was verified before integration and was not reset or rewritten.
+
+2. **Ending HEAD.** The implementation close-out revision is 5967f5ed158dc08e5e59dbaabc74a060cea9cf98. The report itself is committed as a follow-up documentation close-out; the final repository HEAD is recorded in the handoff after that commit so the implementation and documentation hashes remain independently auditable.
+
+3. **Branch.** All work was performed on main in D:\AI EYE ANALYSIS PLATFORM and pushed to the existing origin/main.
+
+4. **Working tree.** The implementation was committed from a reviewed diff with no patient PDFs, patient images, OCR dumps, model artifacts, credentials, or secrets staged. Generated test data was kept outside the committed source set; the final documentation commit is the only intentional follow-up change.
+
+5. **Commits.** 5967f5e adds the model execution ledger, canonical evidence enrichment, dependency and temporal semantics, structured condition assessments, semantic source-diagnosis conflicts, adversarial review, independent verification, specialist reasoning exposure, retry actor hardening, lint configuration, and updated browser assertions. The report close-out is a separate documentation commit.
+
+6. **Push.** The implementation was pushed with git push origin main. No destructive Git command, force push, new branch, or new repository was used.
+
+7. **CI.** GitHub Actions run 34349456184 completed successfully in 1m58s for 5967f5e. Install, typecheck, unit/integration tests, filesystem audit, and production build all passed. GitHub emitted only the existing action-runtime warning that checkout/setup actions target Node.js 20 and are being forced onto Node.js 24.
+
+8. **Sub-agents used.** Read-only tracks covered pipeline/evidence archaeology, clinical specialist logic, PDF/OCT design, provenance/report review, and security/UI/release review. Their findings were reconciled in the shared checkout; they reported focused passes with documented limitations rather than autonomous clinical approval.
+
+9. **Architecture findings.** The pipeline remains upload → persistent asset → server routing → page/ROI extraction → quality/OOD gates → research inference → evidence adapters → reasoning/specialist review → report/UI. The hardening pass closes several dropped-data edges, but duplicate legacy condition paths and non-persisted specialist outputs remain engineering debt.
+
+10. **Asset routing.** Routing is recomputed from immutable bytes and separates modality, device knowledge, domain status, quality, and eligibility. Fundus-like rasters and mixed documents are accepted only when content evidence supports the route; conflicts, unsupported content, and ambiguous cases fail closed.
+
+11. **Fundus analysis.** The real ClementP lesion provider and the research DR grader are attempted only after artifact, quality, domain, and modality gates pass. Lesion output preserves supported lesion classes and regions; DR remains an uncalibrated research grade estimate and never becomes a diagnosis or probability.
+
+12. **OCT analysis.** Native and PDF-derived OCT B-scan candidates are evaluated independently by the pinned research classifier when eligible. The path keeps scan-level outputs and distinguishes B-scan, thickness-map, en-face, and non-OCT regions; it does not infer disease from a classifier label or a single thickness value.
+
+13. **PDF/document intelligence.** PDF bytes remain the immutable source. Page rendering, text extraction, statement extraction, measurement parsing, visual page classification, and bounded ROI extraction retain page hashes, methods, confidence/verification state, and source linkage. The current browser fixture produced three pages and eight OCT ROIs.
+
+14. **Laterality.** OD, OS, OU, and UNKNOWN are represented explicitly. Page-level markers are inherited only when unambiguous; mixed-eye or contradictory text remains UNKNOWN/ambiguous. Same-eye compatibility is checked before correlation and UNKNOWN is never silently promoted to OU.
+
+15. **Measurements.** Objective values preserve raw text, normalized value when safely derivable, unit, eye, page/region, source hash, and review status. Missing units remain null and no normative threshold or disease interpretation is invented.
+
+16. **Evidence graph.** A canonical enrichment layer now assigns stable ev_ identifiers derived from evidence content and attaches patient, encounter, study, source, modality, timestamp, concept, values, negation, certainty, verification, trust, model, page, ROI, and provenance fields. JSON serialization includes the structured hardening metadata.
+
+17. **Trust/provenance.** Clinician-authored, device-measured, source-documented, extracted, patient-reported, and AI-research observations remain distinguishable. Research evidence is capped as non-diagnostic, and every derived finding points to a source asset, page, ROI, model, or encounter context.
+
+18. **Evidence dependency groups.** Findings from the same fundus asset share a dependency_group_id even when lesion and DR models both execute. Independent OCT, device measurement, document, and encounter groups are tracked separately so item counts cannot masquerade as independent clinical corroboration.
+
+19. **Temporal reasoning.** Enrichment derives SAME_ENCOUNTER, NEARBY_ENCOUNTER, HISTORICAL, or TEMPORALLY_UNCERTAIN from encounter/reference timestamps. Longitudinal comparisons stay separate from same-visit corroboration and unknown timestamps are not treated as contemporaneous.
+
+20. **Retina specialist.** Retina-oriented review consumes lesion findings, DR research observations, source retinal statements, history, symptoms, and laterality. It returns possible patterns, supporting/contradicting evidence, missing evidence, urgency, limitations, and model coverage without a confirmed diagnosis.
+
+21. **OCT/macula specialist.** Macula review consumes OCT B-scan classifications, extracted CST/cube measurements, source interpretations, symptoms, fundus context, and eye identity. A single number or class is insufficient; confirmation remains clinician OCT review and examination.
+
+22. **Glaucoma/optic-nerve specialist.** No defensible glaucoma disease classifier was promoted. The workflow can organize IOP, cup/disc or optic-disc research anatomy, RNFL, field, history, and source assessment as a glaucoma-related evidence pattern, never as an autonomous glaucoma diagnosis.
+
+23. **Urgent/neuro review.** Red-flag review remains independent of imaging and can escalate for sudden loss, flashes, floaters, curtain/shadow, severe pain, neurologic visual symptoms, trauma, or chemical exposure. Negative or unavailable research inference cannot suppress an urgent flag; chemical/severe-pain coverage still needs broader case validation.
+
+24. **Comprehensive specialist synthesis.** The reasoning engine now exposes specialist consensus plus adversarial review and independent verification. Synthesis is categorical and evidence-referenced; it does not average arbitrary model scores or overwrite clinician fields.
+
+25. **Condition knowledge rules.** Existing rule-based patterns are reused and kept bounded to supported retinal, macular, vascular, optic-nerve, and warning concepts. The implementation adds no invented thresholds; reference governance, versioned citations, and clinical review dates are still incomplete for release.
+
+26. **Condition ranking.** ConditionAssessment carries rank, specialty, evidence strength, source counts, dependency groups, model/objective/document/symptom support, limitations, and confirmation requirements. Ranking penalizes contradictions, wrong eye, temporal uncertainty, poor quality, OOD/domain uncertainty, and single-source AI support; it is not a probability.
+
+27. **Contradictions.** The conflict layer preserves laterality conflicts, model disagreement, measurement disagreement, historical/current mismatch, and semantic source-document diagnosis versus same-eye AI observations. A conflict is surfaced with references and no automatic winner.
+
+28. **Missing evidence.** Candidate conditions expose missing evidence in structured form, such as verified retinal examination, RNFL/field evidence, repeat imaging, or clinician confirmation. Missingness is distinct from a negative finding and is not filled with generic assumptions.
+
+29. **Confirmation requirements.** Requirements are grounded in the condition pattern and available evidence, for example clinician retinal examination, OCT review, IOP confirmation, visual-field/RNFL review, or repeat imaging. The system does not claim that a recommendation is medically necessary or prescribe a test autonomously.
+
+30. **Specialist disagreements.** Consensus now reports SPECIALISTS_CONCORDANT, PARTIAL_CORROBORATION, SPECIALIST_DISAGREEMENT, or INSUFFICIENT_SPECIALIST_EVIDENCE while retaining the legacy status field. Disagreement and verifier discrepancies remain visible rather than being resolved by majority vote.
+
+31. **Source-document diagnoses.** A diagnosis written in a PDF is stored as SOURCE_DOCUMENT evidence with page and extraction provenance. The UI can say that source documentation reports a condition; it does not rewrite that statement as a VisionScan diagnosis.
+
+32. **Negation handling.** Explicit negation and uncertainty survive extraction, including absent flashes/floaters, rule-out language, historical diagnoses, and possible conditions. Adversarial tests cover negative statements and prevent them from becoming positive findings.
+
+33. **Symptom handling.** Patient or document symptoms are separate from image observations. A hemorrhage-like region cannot create blurred vision, pain, floaters, or vision loss; contextual symptom language is not stored as a patient symptom unless documented.
+
+34. **Urgency.** Urgency is a separate safety output and is not derived from a model confidence score. Red flags can require prompt professional review even with zero findings, model failure, or an otherwise reassuring research classification.
+
+35. **Clinician final assessment.** AI evidence-based assessment and FINAL CLINICAL ASSESSMENT remain physically and structurally separate. Only an authorized clinician can persist diagnosis, impression, plan, or follow-up attribution; AI cannot populate verified clinician fields.
+
+36. **Medication boundary.** The system does not prescribe, generate dosage, or recommend medication from an unvalidated condition. Governed medication knowledge may be displayed only when available; otherwise the explicit state is KNOWLEDGE_UNAVAILABLE.
+
+37. **Model execution ledger.** Every analysis now receives a server-derived ledger row with model_id, version, task, artifact hash, asset/ROI, laterality, eligibility, execution status, skip reason, quality/domain, runtime, output contract, validation status, and dependency group. Statuses include EXECUTED, SKIPPED, UNAVAILABLE, FAILED, BLOCKED_QUALITY, BLOCKED_OOD, and UNSUPPORTED_MODALITY.
+
+38. **False-positive analysis.** The research lesion and DR outputs remain susceptible to vessel/reflection, bright exudate-like content, device variation, and threshold/post-processing effects. No suppression rule was invented from a small fixture; false positives require labeled, patient-separated validation.
+
+39. **False-negative analysis.** Tiny, low-contrast, atypical, or out-of-contract pathology can be missed, and a negative DR/OCT estimate never establishes normality. The system records no-target, failed, blocked, and unavailable states distinctly, but it does not yet contain a clinically powered false-negative estimate.
+
+40. **Model error registry.** There is no integrated labeled case/error registry that records adjudicated false positives, false negatives, subgroup performance, or remediation history. This is a remaining validation deliverable, not evidence that error rates are zero.
+
+41. **Multimodal acceptance cases.** Real Chrome asset E2E verified metadata-free fundus routing, research model execution, mixed-PDF extraction, three pages, eight OCT ROIs, ledger rows, report provenance, and PDF routing. Focused multimodal and extraction suites passed; a formal ten-case expected-evidence harness is not yet implemented.
+
+42. **Adversarial clinical review.** clinicalRedTeam.ts checks support references, same-eye compatibility, dependency inflation, contradiction handling, temporal uncertainty, and unverified-AI confirmation. It can weaken a condition and require clinician review; it cannot certify clinical correctness.
+
+43. **Security red-team.** Server recomputes modality, provenance, ledger status, and retry actor identity; client-supplied requested_by is ignored. Scope, CSRF, cross-patient/tenant, path traversal, malformed PDF, decompression, stale-cache, and artifact-integrity tests remain protected, with broader adversarial coverage still desirable.
+
+44. **PHI review.** No patient assets, OCR outputs, model artifacts, external LLM calls, hosted OCR, API keys, or secrets were introduced. The phase remains local; the smoke credential exists only in development scripts/environment and is not part of the new commit.
+
+45. **UI redesign.** The workstation now presents modality-aware analysis state, evidence-backed condition metadata, specialist guard status, provenance, and model coverage without decorative certainty. Research and clinician language remain visually distinct.
+
+46. **Result page.** The result view includes the input/model execution ledger, task/model, asset or ROI, eye, eligibility, status/skip reason, quality/domain, runtime, findings, and limitations. A research result is not relabeled as a demo or normal diagnosis.
+
+47. **Report page.** The report carries analysis mode, model ledger, source/page/ROI provenance, structured condition assessment, conflicts, missing evidence, specialist guard output, and clinician-final separation. The report generator copies the ledger from the server-side analysis rather than guessing coverage.
+
+48. **Image viewer.** Fundus overlays are limited to actual model-derived regions and retain finding linkage. Classification-only models do not receive fabricated heatmaps or localization; viewer controls remain presentation aids, not clinical measurement tools.
+
+49. **OCT viewer.** Extracted B-scans are shown separately from the whole PDF page, thickness maps, and numeric tables with source page, eye, ROI, model, classification, and limitations. The fixed-crop caveat and research-only semantics remain explicit.
+
+50. **Document evidence viewer.** Extracted statements expose text, page/source, verification state, negation/certainty, and provenance so a clinician can inspect the original context. OCR is not promoted to clinician-verified evidence automatically.
+
+51. **Responsive QA.** Real browser responsive QA passed 80/80 checks across ten routes at 320, 375, 414, 768, 1024, 1280, 1440, and 1920 px. No horizontal-overflow failure was observed in the automated route sweep.
+
+52. **Accessibility.** Real browser axe QA passed 20/20 WCAG A/AA checks at 320 and 1280 px across ten routes. Automated accessibility is green; NVDA/JAWS and a full manual assistive-technology certification were not performed and are not claimed.
+
+53. **Performance.** Current local performance measured login page p50/p95 4.7/5.8 ms, dashboard 4.3/5.4 ms, upload 47.3 ms, study-list API 3.5/4.3 ms, result bundle API 3.8/4.5 ms, result page 3.0/4.6 ms, and report page 2.6/3.4 ms. The demo imaging pipeline fixture completed in 134.4 ms without a model because its quality was borderline.
+
+54. **Login performance.** Login API p50/p95 was 71.5/129.9 ms in the current run. Authentication does not initialize ML/OCR artifacts; the higher p95 than the historical 72.6 ms snapshot is an observed local sample, not a release regression claim.
+
+55. **OCR/model latency.** ClementP cold load/inference measured 7,362.3 ms; warmed 1024-pixel CPU forward was approximately 2.3 s with peak RSS near 1.3 GB and serialized execution. PDF/OCR and real inference remain outside login/session paths; per-stage progress and cancellation are not yet complete.
+
+56. **Test totals.** The final local full Vitest run passed 53 files, 922 tests, and skipped 2 tests (924 total) in 743.73 s with one worker. Additional focused evidence/clinical suites passed 72/72, 35/35, 29/29, 33/33, and the new hardening suite 7/7.
+
+57. **TypeScript.** npx tsc --noEmit --pretty false exited 0 after the hardening changes. CI typecheck also passed.
+
+58. **ESLint.** The stale Next lint invocation was replaced with a supported flat ESLint configuration. npm run lint exits 0 with five existing unused-disable warnings; warnings are recorded and are not treated as zero-warning proof.
+
+59. **Build.** npm run build exited 0 with Next 16.3.4 webpack, successful typecheck, and 20/20 generated static pages. The existing middleware-convention deprecation warning is non-blocking.
+
+60. **Smoke.** npm run smoke passed 16/16, including authenticated upload, symptom validation/rejection, research analysis, red-flag triage, report generation, clinician finalize, temporal comparison, self-test, deletion, unauthenticated denial, and cross-role checks.
+
+61. **Browser E2E.** npm run browser:asset-e2e passed in real headless Chrome after allowing the uncached CPU analysis window. It verified fundus research execution, mixed PDF/page/ROI routing, ledger assertions, report provenance, and no stale demo banner.
+
+62. **Filesystem audit.** npm run audit:fs exited 0. Source and application data remain on D:, with approximately 430.1 GB free; the audit reported the expected local upload/document/processed counts without staging those assets.
+
+63. **Dependency audit.** npm audit --omit=dev --json exited 0 with zero production vulnerabilities across 42 production dependencies. Full npm audit --json remains non-zero for two moderate dev-only Vitest/@vitest-mocker path-traversal/arbitrary-file-read advisories (GHSA-82fw-gwwq-j7x9); the available remediation is a major Vitest upgrade and was not forced without compatibility review.
+
+64. **GitHub CI.** Run 34349456184 is green for implementation SHA 5967f5e. The final documentation close-out push should be watched separately; the CI workflow itself covers typecheck, npm test, filesystem audit, and build, not browser E2E, full audit, or clinical validation.
+
+65. **Remaining engineering blockers.** The formal case-package expected-evidence harness and adjudicated model-error registry are absent; specialist/reasoning outputs are not yet fully persisted as immutable report records; long-running stages lack complete progress/cancellation; fixed-crop B-scan limitations, legacy duplicate condition paths, and broader browser keyboard/manual QA remain. Full audit still has the two dev-only findings.
+
+66. **Remaining model blockers.** Providers are research-only, uncalibrated, and limited to their output contracts. Patient-separated multi-device/domain validation, artifact/data-rights review, calibration/operating-point freeze, subgroup/error analysis, and honest sensitivity/false-negative measurement are not complete; cold CPU latency and memory are material operational limits.
+
+67. **Remaining clinical-validation blockers.** No prospective clinical validation, reference-standard adjudication, clinical governance sign-off, normative OCT reference policy, regulatory assessment, or deployment monitoring plan has been completed. These are required before any clinical diagnostic or screening claim.
+
+68. **Exact capability boundary.** VisionScan is a local research / clinician decision-support workstation that can route eligible fundus, OCT, and mixed-document inputs; preserve page, ROI, eye, dependency, and temporal provenance; expose actual model execution; organize symptoms and objective measurements; and present cautious specialist/differential evidence. It cannot diagnose, prove normality, infer undocumented symptoms, guarantee sensitivity/specificity, prescribe, or replace a clinician. Unsupported, ambiguous, low-quality, tampered, and true-OOD inputs fail closed.
+
+69. **Final classification.** ENGINEERING PARTIAL — BLOCKERS REMAIN
