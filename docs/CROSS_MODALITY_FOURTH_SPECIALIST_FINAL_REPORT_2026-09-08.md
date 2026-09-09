@@ -564,9 +564,9 @@ This section supersedes earlier phase measurements where they conflict with the 
 
 3. **Commits.** `fe964f9775c2f63666f79b642ec2965be83abf7e` adds the validation/error/persistence/UI gates; `17fda11462a2eb59e622d9cf710fc41de3ddd660` adds the de-identified SBOM.
 
-4. **Push.** Both implementation and SBOM commits were pushed successfully to `origin/main`; the report/inventory push follows this report append.
+4. **Push.** Implementation, SBOM, and report/inventory commits were pushed successfully to `origin/main`; the report/inventory artifact was introduced in `663114b` and this final CI-status correction is the following docs commit.
 
-5. **CI.** GitHub Actions runs `34359219208` (implementation) and `34359394503` (SBOM) completed successfully. The documentation commit will create a separate final-head run that is checked after push.
+5. **CI.** GitHub Actions runs `34359219208` (implementation), `34359394503` (SBOM), and final-head `34374085817` (report/inventory) completed successfully. The final-head job completed in 2m33s; GitHub emitted only a Node.js 20 action-deprecation annotation.
 
 6. **Sub-agents.** Three explicitly requested parallel workstreams were completed and reconciled: synthetic case/error registry, persistence/progress/cache safety, and aggregate validation dashboard/security.
 
