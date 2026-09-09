@@ -61,7 +61,8 @@ export const DEFAULT_EXTRACTION_LIMITS: ExtractionLimits = {
 export interface ExtractOptions {
   ocrProvider?: OCRProvider;      // injectable for tests; default = tesseract.js
   limits?: Partial<ExtractionLimits>;
-  shouldCancel?: () => boolean;   // cooperative cancellation between pages
+  /** May consult durable worker state at every bounded page checkpoint. */
+  shouldCancel?: () => boolean | Promise<boolean>;   // cooperative cancellation between pages
   onProgress?: (update: ProgressUpdate) => void | Promise<void>;
 }
 
@@ -76,10 +77,6 @@ export interface ExtractionOutcome {
   char_count?: number;
   error_code?: "NOT_FOUND" | "NOT_EXTRACTABLE" | "INTEGRITY_FAILED" | "EXTRACTION_FAILED" | "OCR_FAILED" | "CANCELLED";
   error?: string;
-}
-
-function checkCancel(opts: ExtractOptions): void {
-  if (opts.shouldCancel?.()) throw new ExtractionCancelledError();
 }
 
 export async function extractDocument(documentId: string, actor: string, opts: ExtractOptions = {}): Promise<ExtractionOutcome> {
@@ -120,6 +117,16 @@ export async function extractDocument(documentId: string, actor: string, opts: E
   const docWarnings: string[] = [];
   let charsTotal = 0;
   let timeExceeded = false;
+  // The asynchronous callback is the source of truth for durable
+  // cancellation. This local bit only adapts it to OCR providers whose
+  // cancellation signal is a synchronous `aborted` getter.
+  let cancellationObserved = false;
+  const checkCancel = async (): Promise<void> => {
+    if (await opts.shouldCancel?.()) {
+      cancellationObserved = true;
+      throw new ExtractionCancelledError();
+    }
+  };
 
   let loaded;
   try {
@@ -128,7 +135,7 @@ export async function extractDocument(documentId: string, actor: string, opts: E
     const pageMethods: PageExtractionMethod[] = [];
 
     for (let p = 1; p <= loaded.numPages; p++) {
-      checkCancel(opts);
+      await checkCancel();
       await opts.onProgress?.({
         stage: "extracting_pages",
         percent: 10 + Math.round(((p - 1) / Math.max(1, loaded.numPages)) * 65),
@@ -168,7 +175,7 @@ export async function extractDocument(documentId: string, actor: string, opts: E
       // Scanned or empty page -> extract the embedded page image + OCR.
       let rendered: Awaited<ReturnType<typeof loaded.renderPageToPng>>;
       try {
-        checkCancel(opts);
+        await checkCancel();
         rendered = await loaded.renderPageToPng(p, limits.maxRenderDimensionPx);
         renderedPages.set(p, rendered.png);
       } catch (err) {
@@ -197,10 +204,10 @@ export async function extractDocument(documentId: string, actor: string, opts: E
       }
       let page: PageExtraction;
       try {
-        checkCancel(opts);
+        await checkCancel();
         const ocr = await provider.recognize(rendered.png, {
           documentId, studyId: doc.study_id, page: p, timeoutMs: limits.maxOcrTimeMs,
-          signal: { get aborted() { return opts.shouldCancel?.() ?? false; } },
+          signal: { get aborted() { return cancellationObserved; } },
         });
         if (ocr.text.length > 0) {
           // Any non-empty OCR result is kept and flagged when suspiciously
@@ -250,7 +257,7 @@ export async function extractDocument(documentId: string, actor: string, opts: E
 
     let assetRouting: import("./pdfIntelligence").PdfAssetRouting | undefined;
     try {
-      checkCancel(opts);
+      await checkCancel();
       await opts.onProgress?.({ stage: "routing_assets", percent: 78, completed_units: loaded.numPages, total_units: loaded.numPages, message: "Classifying bounded document assets" });
       assetRouting = await analyzePdfDocument({
         document_id: documentId,
@@ -289,7 +296,7 @@ export async function extractDocument(documentId: string, actor: string, opts: E
       warnings: [...new Set(docWarnings)],
       asset_routing: assetRouting,
     };
-    checkCancel(opts);
+    await checkCancel();
     await opts.onProgress?.({ stage: "persisting_analysis", percent: 90, completed_units: loaded.numPages, total_units: loaded.numPages, message: "Persisting extraction artifacts" });
     await writeExtractionArtifact(artifact);
     await transition(doc, "READY");

@@ -29,7 +29,8 @@
     "migrate:data": "node scripts/migrate-data.mjs",
     "backup:data": "node scripts/backup-data.mjs",
     "restore:data": "node scripts/restore-data.mjs",
-    "benchmark:persistence": "node scripts/persistence-benchmark.mjs"
+    "benchmark:persistence": "node scripts/persistence-benchmark.mjs",
+    "stress:workspace": "node scripts/stress-workspace.mjs"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.8",

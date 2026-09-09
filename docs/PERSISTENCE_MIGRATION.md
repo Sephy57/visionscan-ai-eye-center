@@ -53,6 +53,45 @@ SQLite sidecars when present, a hash- and size-bearing `manifest.json`, and an
 asset manifest for uploads, documents, processed outputs, and reports. Model
 weights are never copied automatically and credentials are never included.
 
+Plaintext remains the backwards-compatible default. For a local encrypted
+backup, use an environment secret (the secret is never logged or written to a
+manifest):
+
+```text
+$env:VISIONSCAN_BACKUP_KEY = "operator-supplied-secret"
+npm run backup:data -- --encrypt --output data/backups/backup-encrypted
+npm run restore:data -- --backup data/backups/backup-encrypted
+```
+
+The operator may instead pipe a secret with `--key-stdin`, or select another
+environment variable with `--key-env NAME`. Encryption uses Node's built-in
+AES-256-GCM with a fresh random IV per payload and scrypt-derived key material;
+the manifest carries algorithm/KDF/salt metadata and a keyed HMAC so a
+tampered manifest fails closed. Database, sidecar, asset, and asset-manifest
+payloads are encrypted; the outer manifest contains only recovery metadata.
+Wrong keys, modified ciphertext, modified hashes, and modified authenticated
+metadata are rejected before a restore is published.
+
+For example, a one-shot stdin flow (the key is not an argument and is not
+printed) is:
+
+```text
+"operator-supplied-secret" | npm run backup:data -- --encrypt --key-stdin
+"operator-supplied-secret" | npm run restore:data -- --backup data/backups/backup-<timestamp> --key-stdin
+```
+
+Backups optionally carry non-destructive retention metadata:
+
+```text
+npm run backup:data -- --retention-days 30 --legal-hold --archive-state ARCHIVED
+```
+
+Equivalent environment variables are `VISIONSCAN_BACKUP_RETENTION_DAYS`,
+`VISIONSCAN_BACKUP_LEGAL_HOLD`, and `VISIONSCAN_BACKUP_ARCHIVE_STATE`. The
+manifest records `retention_days`, `legal_hold`, `archive_state`,
+`deletion_eligible_at`, and `policy_version`; automatic deletion is always
+false and any destructive cleanup remains an explicit operator action.
+
 Restore is non-destructive by default:
 
 ```text
@@ -61,11 +100,20 @@ npm run restore:data -- --backup data/backups/backup-<timestamp>
 ```
 
 That creates a new ignored `data/restores/restore-*` directory after verifying
-the database hash and SQLite integrity. Replacing an active database requires
-an explicit target and `--activate`; the current target is backed up first.
-There is no implicit overwrite.
+the database hash and SQLite integrity. Restore is staged in a temporary
+directory and atomically published only after every listed asset, hash, and
+path has been verified; missing or unsafe assets are removed with the staging
+directory, so a partial restore is not presented as complete. Replacing an
+active database requires an explicit target and `--activate`; the current
+target is backed up first. There is no implicit overwrite.
 
-Encryption, TLS, retention, key management, production consent enforcement,
-and a multi-resource outbox/reconciliation worker remain deployment
+Backup and restore reject absolute, UNC, dot-segment, encoded-traversal, and
+symlink/reparse-point paths. Asset roots are allowlisted and duplicate target
+paths are rejected. These checks protect the file boundary but are not a
+replacement for OS ACLs, volume encryption, key rotation, or off-host backup
+storage.
+
+TLS, production key management/rotation, production consent enforcement, and
+a multi-resource outbox/reconciliation worker remain deployment
 responsibilities. This project remains research/demo software and is not a
 medical device.

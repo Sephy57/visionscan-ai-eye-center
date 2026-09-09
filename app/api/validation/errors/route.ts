@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, requireSession } from "@/lib/auth/rbac";
-import { createModelError, listModelErrors, transitionModelError } from "@/lib/validation/modelErrorStore";
+import { createModelError, listModelErrorsPage, transitionModelError } from "@/lib/validation/modelErrorStore";
 import { validateModelErrorRecord } from "@/lib/validation/modelErrorRegistry";
 
 export const runtime = "nodejs";
@@ -16,13 +16,25 @@ export async function GET(req: NextRequest) {
   const denied = await requireRole(req, ["ADMIN", "RESEARCHER", "CLINICIAN"]);
   if (denied) return denied;
   const modelId = req.nextUrl.searchParams.get("model_id") ?? undefined;
-  const errors = await listModelErrors({ model_id: modelId });
-  return NextResponse.json({
-    schema_version: "visionscan-model-error-dashboard-v1",
-    phi_included: false,
-    errors,
-    note: "Synthetic validation errors only. Lifecycle transitions require explicit human reviewer roles; no clinical resolution is inferred.",
-  });
+  const rawLimit = Number(req.nextUrl.searchParams.get("limit"));
+  const limit = Number.isFinite(rawLimit) ? rawLimit : undefined;
+  const cursor = req.nextUrl.searchParams.get("cursor") ?? undefined;
+  try {
+    const page = await listModelErrorsPage({ model_id: modelId }, { limit, cursor });
+    return NextResponse.json({
+      schema_version: "visionscan-model-error-dashboard-v1",
+      phi_included: false,
+      errors: page.items,
+      next_cursor: page.next_cursor,
+      has_more: page.has_more,
+      limit: page.limit,
+      note: "Synthetic validation errors only. Cursor pagination is stable and bounded; no clinical resolution is inferred.",
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid pagination request";
+    if (/pagination (cursor|scan)/i.test(message)) return NextResponse.json({ error: message }, { status: 400 });
+    throw error;
+  }
 }
 
 /** POST creates a synthetic error or transitions an existing error. */

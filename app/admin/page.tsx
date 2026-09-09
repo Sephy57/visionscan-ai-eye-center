@@ -5,6 +5,8 @@ import { Badge, StatusCard } from "@/components/ui";
 
 interface AdminData {
   audit_tail: Array<{ ts: string; actor: string; action: string; studyId?: string; outcome: string; detail?: string }>;
+  next_cursor?: string | null;
+  has_more?: boolean;
   components: Array<{ id: string; name: string; version: string; implementation: string; validationStatus: string; notes?: string }>;
 }
 interface ModelsData {
@@ -23,16 +25,56 @@ interface SelfTest {
   total: number; passed: number; all_passed: boolean;
   checks: Array<{ name: string; passed: boolean; detail?: string }>;
 }
+interface OperationsData {
+  status: string;
+  checks?: Record<string, unknown>;
+  persistence?: {
+    database_bytes?: number; jobs_total?: number; jobs_active?: number; stale_leases?: number; failed_jobs?: number; reconciliation_errors?: number;
+    backup?: { status?: string; latest_at?: string | null; age_seconds?: number | null; usable_count?: number; phi_included?: boolean };
+    migration?: { status?: string; backend?: string; database_schema_version?: number; migration_version?: number; phi_included?: boolean };
+    validation_errors?: { status?: string; total?: number; phi_included?: boolean };
+  };
+}
+interface ReconciliationData {
+  issues?: Array<{ issue_id: string; kind: string; resource: string; detail: string }>;
+  counts?: Record<string, number>;
+}
 
 export default function AdminPage() {
   const [data, setData] = useState<AdminData | null>(null);
   const [models, setModels] = useState<ModelsData | null>(null);
   const [selftest, setSelftest] = useState<SelfTest | null>(null);
+  const [operations, setOperations] = useState<OperationsData | null>(null);
+  const [reconciliation, setReconciliation] = useState<ReconciliationData | null>(null);
   const [running, setRunning] = useState(false);
+  const [auditCursor, setAuditCursor] = useState<string | null>(null);
+  const [auditHasMore, setAuditHasMore] = useState(false);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+
+  async function loadAudit(cursor?: string, append = false) {
+    if (append) setLoadingAudit(true);
+    try {
+      const query = new URLSearchParams({ limit: "50" });
+      if (cursor) query.set("cursor", cursor);
+      const response = await fetch(`/api/admin?${query.toString()}`);
+      if (!response.ok) throw new Error("audit unavailable");
+      const payload = await response.json() as AdminData;
+      setData((previous) => append && previous
+        ? { ...previous, audit_tail: [...previous.audit_tail, ...(payload.audit_tail ?? [])] }
+        : payload);
+      setAuditCursor(typeof payload.next_cursor === "string" ? payload.next_cursor : null);
+      setAuditHasMore(payload.has_more === true);
+    } finally {
+      setLoadingAudit(false);
+    }
+  }
 
   useEffect(() => {
-    fetch("/api/admin").then((r) => r.json()).then(setData).catch(() => {});
+    loadAudit().catch(() => {});
     fetch("/api/models").then((r) => r.json()).then(setModels).catch(() => {});
+    fetch("/api/health/ready").then((r) => r.json()).then(setOperations).catch(() => {});
+    fetch("/api/admin/metrics").then((r) => r.json()).then((r) => setOperations((previous) => ({ ...(previous ?? {}), ...r }))).catch(() => {});
+    fetch("/api/admin/reconciliation").then((r) => r.json()).then(setReconciliation).catch(() => {});
   }, []);
 
   async function runSelfTest() {
@@ -49,13 +91,51 @@ export default function AdminPage() {
 
       <div className="grid grid-4" style={{ marginTop: 18 }}>
         <StatusCard label="Application" value="Operational" tone="ok" />
-        <StatusCard label="Database" value="Operational" tone="ok" detail="JSON store on D: (SQLite-ready interface)" />
+        <StatusCard label="Database" value="Operational" tone="ok" detail="SQLite WAL/full-sync on D:" />
         <StatusCard label="Storage" value="Operational" tone="ok" detail="uploads / processed / reports on D:" />
         <StatusCard label="Image Quality Engine" value="Operational" tone="ok" detail="Thresholds not clinically validated" />
         <StatusCard label="AI Model" value="RESEARCH ONLY" tone="warn" detail="Hash-verified fundus/DR/OCT artifacts; no clinical validation" />
         <StatusCard label="Safety Engine" value="Operational" tone="ok" detail="Triage rules, safety validator" />
         <StatusCard label="Audit Logging" value="Operational" tone="ok" detail="Append-only NDJSON on D:" />
         <StatusCard label="Auth / RBAC" value="Operational" tone="ok" detail="Session, role, CSRF, and resource-scope checks enforced" />
+      </div>
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <div className="card-title"><h3>Durable operations</h3><Badge tone={operations?.status === "ready" ? "ok" : "warn"}>{operations?.status ?? "loading"}</Badge></div>
+        <div className="grid grid-4">
+          <StatusCard label="Queued jobs" value={String(operations?.persistence?.jobs_total ?? "—")} tone="neutral" />
+          <StatusCard label="Active leases" value={String(operations?.persistence?.jobs_active ?? "—")} tone="neutral" />
+          <StatusCard label="Stale leases" value={String(operations?.persistence?.stale_leases ?? "—")} tone={(operations?.persistence?.stale_leases ?? 0) > 0 ? "warn" : "ok"} />
+          <StatusCard label="Reconciliation errors" value={String(operations?.persistence?.reconciliation_errors ?? "—")} tone={(operations?.persistence?.reconciliation_errors ?? 0) > 0 ? "warn" : "ok"} />
+        </div>
+        <p className="tiny muted" style={{ marginBottom: 0 }}>Aggregate metadata only; no patient identifiers, source bytes, or model inference are exposed.</p>
+        <div className="grid grid-3" style={{ marginTop: 14 }}>
+          <StatusCard
+            label="Backup status"
+            value={operations?.persistence?.backup?.status === "available" ? "Available" : operations?.persistence?.backup?.status === "missing" ? "Missing" : "—"}
+            tone={operations?.persistence?.backup?.status === "available" ? "ok" : "warn"}
+            detail={operations?.persistence?.backup?.latest_at ? `Latest ${new Date(operations.persistence.backup.latest_at).toLocaleString()}` : "No verified data backup found"}
+          />
+          <StatusCard
+            label="Migration status"
+            value={operations?.persistence?.migration?.status === "current" ? "Current" : operations?.persistence?.migration?.status === "legacy_json" ? "Legacy JSON" : "—"}
+            tone={operations?.persistence?.migration?.status === "current" ? "ok" : "warn"}
+            detail={operations?.persistence?.migration ? `${operations.persistence.migration.backend} schema ${operations.persistence.migration.database_schema_version} / migration ${operations.persistence.migration.migration_version}` : "Loading schema metadata"}
+          />
+          <StatusCard
+            label="Validation errors"
+            value={String(operations?.persistence?.validation_errors?.total ?? "—")}
+            tone={(operations?.persistence?.validation_errors?.total ?? 0) > 0 ? "warn" : "ok"}
+            detail={(operations?.persistence?.validation_errors?.total ?? 0) > 0 ? "Aggregate records awaiting review" : "No recorded model-validation errors"}
+          />
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <div className="card-title"><h3>Reconciliation plan</h3><Badge tone={(reconciliation?.issues?.length ?? 0) > 0 ? "warn" : "ok"}>{reconciliation ? `${reconciliation.issues?.length ?? 0} issue(s)` : "loading"}</Badge></div>
+        <p className="tiny muted">Read-only scan. Repairs require a separate, explicit administrator action; originals are never auto-deleted.</p>
+        {(reconciliation?.issues ?? []).length > 0 && <div style={{ overflowX: "auto" }} tabIndex={0}><table className="table"><thead><tr><th>Kind</th><th>Resource</th><th>Detail</th></tr></thead><tbody>{(reconciliation?.issues ?? []).slice(0, 100).map((issue) => <tr key={issue.issue_id}><td><code className="tiny">{issue.kind}</code></td><td className="small">{issue.resource}</td><td className="tiny muted">{issue.detail}</td></tr>)}</tbody></table></div>}
+        {(reconciliation?.issues ?? []).length === 0 && <p className="muted small">No reconciliation issues found.</p>}
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>
@@ -166,6 +246,11 @@ export default function AdminPage() {
           </table>
         </div>
         {(data?.audit_tail ?? []).length === 0 && <p className="muted small">No audit events yet.</p>}
+        {auditHasMore && auditCursor && (
+          <button className="btn secondary sm" style={{ marginTop: 10 }} onClick={() => loadAudit(auditCursor, true)} disabled={loadingAudit}>
+            {loadingAudit ? "Loading…" : "Load more audit events"}
+          </button>
+        )}
       </div>
     </div>
   );

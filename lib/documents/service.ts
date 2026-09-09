@@ -118,6 +118,8 @@ export async function uploadDocument(
   const record: DocumentRecord = {
     document_id: documentId,
     study_id: studyId,
+    patient_id: study.patient_id ?? null,
+    tenant_id: study.tenant_id ?? null,
     patient_ref: study.patient_ref,
     filename_display: filenameDisplay,
     mime_type: DOCUMENT_MIME,
@@ -165,6 +167,8 @@ function rejectedRecord(
   return {
     document_id: newId("doc"),
     study_id: studyId,
+    patient_id: study.patient_id ?? null,
+    tenant_id: study.tenant_id ?? null,
     patient_ref: study.patient_ref,
     filename_display: filenameDisplay,
     mime_type: DOCUMENT_MIME,

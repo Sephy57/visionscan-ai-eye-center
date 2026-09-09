@@ -58,6 +58,9 @@ export const COLLECTIONS = [
   "reset_tokens",
   "calibration_records",
   "record_extractions",
+  // Cross-resource recovery records. These are intentionally metadata-only;
+  // immutable clinical payloads remain in their source collections.
+  "reconciliation_journal",
 ] as const;
 
 export type Collection = (typeof COLLECTIONS)[number];
@@ -66,6 +69,79 @@ const COLLECTION_SET = new Set<string>(COLLECTIONS);
 const SQLITE_HEADER = Buffer.from("SQLite format 3\u0000", "ascii");
 const SCHEMA_VERSION = 1;
 const MIGRATION_VERSION = 1;
+
+/** Explicit relational metadata carried alongside the JSON payload. The
+ * application remains payload-first, but these nullable columns make the
+ * safety-critical links inspectable/indexable without requiring a full
+ * normalization rewrite. */
+const RELATIONAL_COLUMNS = [
+  "patient_id",
+  "encounter_id",
+  "study_id",
+  "document_id",
+  "analysis_id",
+  "report_id",
+  "tenant_id",
+  "job_id",
+] as const;
+
+// Every collection uses the same payload envelope and may receive a typed
+// reference in a future migration. Applying the additive columns to all
+// existing tables keeps older SQLite stores writable after the schema evolves
+// (for example, the pre-relational `users` table).
+const RELATIONAL_COLLECTIONS = new Set<Collection>(COLLECTIONS);
+
+type RelationalColumn = (typeof RELATIONAL_COLUMNS)[number];
+
+function referenceValue(doc: unknown, key: RelationalColumn): string | null {
+  if (!doc || typeof doc !== "object") return null;
+  const value = (doc as Record<string, unknown>)[key] ??
+    (doc as Record<string, unknown>)[key.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function tenantValue(doc: unknown): string | null {
+  return referenceValue(doc, "tenant_id");
+}
+
+const REFERENCE_TARGETS: Partial<Record<Collection, Partial<Record<RelationalColumn, Collection>>>> = {
+  encounters: { patient_id: "patients" },
+  studies: { patient_id: "patients", encounter_id: "encounters" },
+  documents: { study_id: "studies", patient_id: "patients" },
+  analyses: { study_id: "studies" },
+  reports: { study_id: "studies", analysis_id: "analyses" },
+  clinician_reviews: { report_id: "reports" },
+  reasoning_records: { study_id: "studies", analysis_id: "analyses", report_id: "reports" },
+  model_executions: { analysis_id: "analyses" },
+  evidence: { study_id: "studies", analysis_id: "analyses" },
+  jobs: { study_id: "studies", document_id: "documents", analysis_id: "analyses" },
+  model_errors: { study_id: "studies", analysis_id: "analyses" },
+};
+
+/**
+ * Validate the tenant boundary for a typed reference. Missing legacy targets
+ * are reported by reconciliation/migration instead of being guessed here;
+ * when both sides carry a tenant, a mismatch is always rejected.
+ */
+function assertTenantReferences(
+  collection: Collection,
+  doc: unknown,
+  lookup: <T>(target: Collection, id: string) => T | null,
+): void {
+  const sourceTenant = tenantValue(doc);
+  const targets = REFERENCE_TARGETS[collection];
+  if (!targets) return;
+  for (const [column, targetCollection] of Object.entries(targets) as Array<[RelationalColumn, Collection]>) {
+    const id = referenceValue(doc, column);
+    if (!id) continue;
+    const target = lookup(targetCollection, id);
+    if (!target) continue; // legacy/import rows are reconciled separately
+    const targetTenant = tenantValue(target);
+    if (sourceTenant && targetTenant && sourceTenant !== targetTenant) {
+      throw new Error(`CROSS_TENANT_REFERENCE:${collection}.${column}->${targetCollection}/${id}`);
+    }
+  }
+}
 
 export class PersistenceMigrationRequiredError extends Error {
   readonly code = "PERSISTENCE_MIGRATION_REQUIRED" as const;
@@ -182,11 +258,58 @@ function initializeSqliteConnection(): Database.Database {
           id TEXT PRIMARY KEY NOT NULL,
           payload TEXT NOT NULL CHECK(length(payload) > 0),
           created_at TEXT NOT NULL,
-          updated_at TEXT NOT NULL
+          updated_at TEXT NOT NULL,
+          patient_id TEXT,
+          encounter_id TEXT,
+          study_id TEXT,
+          document_id TEXT,
+          analysis_id TEXT,
+          report_id TEXT,
+          tenant_id TEXT,
+          job_id TEXT
         );
         CREATE INDEX IF NOT EXISTS ${collection}_updated_at_idx ON ${table}(updated_at);`,
       );
+      // Existing databases created before the relational metadata layer are
+      // upgraded in place. ALTER TABLE is idempotent because PRAGMA is read
+      // first; payload rows remain byte-for-byte untouched.
+      if (RELATIONAL_COLLECTIONS.has(collection)) {
+        const existingColumns = new Set(
+          (connection.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((c) => c.name),
+        );
+        for (const column of RELATIONAL_COLUMNS) {
+          if (!existingColumns.has(column)) connection.exec(`ALTER TABLE ${table} ADD COLUMN ${column} TEXT`);
+          connection.exec(`CREATE INDEX IF NOT EXISTS ${collection}_${column}_idx ON ${table}(${column})`);
+        }
+      }
     }
+    // A registry keyed by collection/id gives us a target for typed links
+    // without relying on ambiguous ids that can legitimately repeat across
+    // collections. SQLite foreign keys protect the registry rows themselves.
+    connection.exec(`
+      CREATE TABLE IF NOT EXISTS persistence_entities (
+        entity_key TEXT PRIMARY KEY NOT NULL,
+        collection TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        tenant_id TEXT,
+        lifecycle TEXT NOT NULL DEFAULT 'ACTIVE' CHECK(lifecycle IN ('ACTIVE','ARCHIVED','DELETED')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(collection, entity_id)
+      );
+      CREATE INDEX IF NOT EXISTS persistence_entities_tenant_idx ON persistence_entities(tenant_id);
+      CREATE TABLE IF NOT EXISTS persistence_links (
+        source_key TEXT NOT NULL,
+        target_key TEXT NOT NULL,
+        relation TEXT NOT NULL,
+        tenant_id TEXT,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY(source_key, target_key, relation),
+        FOREIGN KEY(source_key) REFERENCES persistence_entities(entity_key) ON DELETE RESTRICT,
+        FOREIGN KEY(target_key) REFERENCES persistence_entities(entity_key) ON DELETE RESTRICT
+      );
+      CREATE INDEX IF NOT EXISTS persistence_links_target_idx ON persistence_links(target_key);
+    `);
     const schemaMeta = connection
       .prepare("SELECT value FROM persistence_meta WHERE key = ?")
       .get("schema_version") as { value: string } | undefined;
@@ -219,6 +342,7 @@ let sqlite: Database.Database | null = null;
 let jsonCache: DbShape | null = null;
 let writeChain: Promise<void> = Promise.resolve();
 let initialization: Promise<void> | null = null;
+let startupRecoveryDone = false;
 
 async function ensureInitialized(): Promise<void> {
   if (PERSISTENCE_BACKEND === "json") {
@@ -304,6 +428,42 @@ export type DbTransaction = SyncTransaction;
 function sqliteTransaction(): SyncTransaction {
   if (!sqlite) throw new Error("Database is not initialized");
   const connection = sqlite;
+  const readTarget = <T>(target: Collection, id: string): T | null => {
+    const row = connection.prepare(`SELECT payload FROM ${tableName(target)} WHERE id = ?`).get(id) as
+      | { payload: string }
+      | undefined;
+    return row ? parsePayload<T>(target, id, row.payload) : null;
+  };
+  const registerEntity = (collection: Collection, id: string, doc: unknown): void => {
+    const entityKey = `${collection}:${id}`;
+    const timestamp = now();
+    const lifecycle = (() => {
+      const raw = doc && typeof doc === "object" ? (doc as Record<string, unknown>).lifecycle ?? (doc as Record<string, unknown>).archive_state : undefined;
+      return raw === "ARCHIVED" || raw === "DELETED" ? raw : "ACTIVE";
+    })();
+    connection.prepare(
+      `INSERT INTO persistence_entities(entity_key, collection, entity_id, tenant_id, lifecycle, created_at, updated_at)
+       VALUES(?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(entity_key) DO UPDATE SET tenant_id=excluded.tenant_id, lifecycle=excluded.lifecycle, updated_at=excluded.updated_at`,
+    ).run(entityKey, collection, id, tenantValue(doc), lifecycle, timestamp, timestamp);
+
+    const targets = REFERENCE_TARGETS[collection];
+    if (!targets) return;
+    const link = connection.prepare(
+      `INSERT OR IGNORE INTO persistence_links(source_key, target_key, relation, tenant_id, created_at) VALUES(?, ?, ?, ?, ?)`,
+    );
+    for (const [column] of Object.entries(targets) as Array<[RelationalColumn, Collection]>) {
+      const refId = referenceValue(doc, column);
+      const targetCollection = targets[column];
+      if (!refId || !targetCollection) continue;
+      const targetKey = `${targetCollection}:${refId}`;
+      // Legacy rows may predate the registry. Keep the payload write safe and
+      // let reconciliation report the unresolved link rather than inventing a
+      // target entity or weakening the FK.
+      const targetExists = connection.prepare("SELECT 1 AS present FROM persistence_entities WHERE entity_key = ?").get(targetKey);
+      if (targetExists) link.run(entityKey, targetKey, column, tenantValue(doc), timestamp);
+    }
+  };
   return {
     get<T>(collection: Collection, id: string) {
       const row = connection.prepare(`SELECT payload FROM ${tableName(collection)} WHERE id = ?`).get(id) as
@@ -318,15 +478,33 @@ function sqliteTransaction(): SyncTransaction {
       return rows.map((row) => clone(parsePayload<T>(collection, row.id, row.payload)));
     },
     put<T>(collection: Collection, id: string, doc: T) {
+      assertTenantReferences(collection, doc, readTarget);
       const payload = jsonPayload(doc);
       const timestamp = now();
       connection
         .prepare(
-          `INSERT INTO ${tableName(collection)}(id, payload, created_at, updated_at)
-           VALUES(?, ?, ?, ?)
-           ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=excluded.updated_at`,
+          `INSERT INTO ${tableName(collection)}(id, payload, created_at, updated_at, patient_id, encounter_id, study_id, document_id, analysis_id, report_id, tenant_id, job_id)
+           VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=excluded.updated_at,
+             patient_id=excluded.patient_id, encounter_id=excluded.encounter_id, study_id=excluded.study_id,
+             document_id=excluded.document_id, analysis_id=excluded.analysis_id, report_id=excluded.report_id,
+             tenant_id=excluded.tenant_id, job_id=excluded.job_id`,
         )
-        .run(id, payload, timestamp, timestamp);
+        .run(
+          id,
+          payload,
+          timestamp,
+          timestamp,
+          referenceValue(doc, "patient_id"),
+          referenceValue(doc, "encounter_id"),
+          referenceValue(doc, "study_id"),
+          referenceValue(doc, "document_id"),
+          referenceValue(doc, "analysis_id"),
+          referenceValue(doc, "report_id"),
+          tenantValue(doc),
+          referenceValue(doc, "job_id"),
+        );
+      registerEntity(collection, id, doc);
     },
     delete(collection: Collection, id: string) {
       const result = connection.prepare(`DELETE FROM ${tableName(collection)} WHERE id = ?`).run(id);
@@ -351,6 +529,13 @@ function assertSyncResult(value: unknown): void {
 
 export async function initializeDatabase(): Promise<ReturnType<typeof persistenceInfo>> {
   await ensureInitialized();
+  if (PERSISTENCE_BACKEND === "sqlite" && !startupRecoveryDone) {
+    startupRecoveryDone = true;
+    // Loaded lazily to keep the low-level store independent of the scanner's
+    // audit/fs helpers and to avoid an import cycle during module startup.
+    const { recoverPendingReconciliations } = await import("./reconciliation");
+    await recoverPendingReconciliations();
+  }
   return persistenceInfo();
 }
 
@@ -362,6 +547,7 @@ export async function closeDatabase(): Promise<void> {
   initialization = null;
   jsonCache = null;
   writeChain = Promise.resolve();
+  startupRecoveryDone = false;
 }
 
 export async function dbTransaction<T>(work: (tx: DbTransaction) => T): Promise<T> {
@@ -420,7 +606,12 @@ export async function dbTransaction<T>(work: (tx: DbTransaction) => T): Promise<
 export async function dbPut<T>(collection: Collection, id: string, doc: T): Promise<void> {
   await ensureInitialized();
   if (PERSISTENCE_BACKEND === "sqlite") {
-    sqliteTransaction().put(collection, id, doc);
+    if (!sqlite) throw new Error("Database is not initialized");
+    // Metadata, registry entity, and typed links commit as one unit. A
+    // process crash can therefore not leave a payload row without its
+    // relational safety envelope.
+    const operation = sqlite.transaction(() => sqliteTransaction().put(collection, id, doc));
+    operation();
     return;
   }
   const db = await loadJson();
@@ -442,6 +633,218 @@ export async function dbAll<T>(collection: Collection): Promise<T[]> {
   if (PERSISTENCE_BACKEND === "sqlite") return sqliteTransaction().all<T>(collection);
   const db = await loadJson();
   return Object.values(db.collections[collection] ?? {}).map((value) => clone(value as T));
+}
+
+/**
+ * Bounded, stable keyset pagination over a collection.
+ *
+ * The storage envelope deliberately keeps the domain record as JSON, but
+ * SQLite owns a created_at/id ordering key for every row.  Pages therefore
+ * never use OFFSET (which gets slower and shifts under concurrent inserts):
+ * the opaque cursor identifies the last (created_at, id) pair returned and
+ * the next query seeks past that pair.  The JSON backend implements the same
+ * contract in memory for explicitly-selected legacy mode.
+ *
+ * `predicate` is intended for server-side scope/filtering.  When supplied,
+ * the bounded scanner advances the cursor over records that do not match so
+ * a filtered page is complete rather than silently dropping rows.  The
+ * response remains bounded by `limit`; `max_scan` protects a pathological
+ * sparse filter from an unbounded request.
+ */
+export const DEFAULT_PAGE_SIZE = 50;
+export const MAX_PAGE_SIZE = 100;
+export const MAX_PAGE_SCAN = 100_000;
+
+export type PageDirection = "asc" | "desc";
+
+export interface DbPageOptions<T = unknown> {
+  limit?: number;
+  cursor?: string;
+  direction?: PageDirection;
+  predicate?: (value: T) => boolean;
+  max_scan?: number;
+}
+
+export interface DbPageResult<T> {
+  items: T[];
+  next_cursor: string | null;
+  has_more: boolean;
+  limit: number;
+}
+
+interface PageCursor {
+  version: 1;
+  direction: PageDirection;
+  created_at: string;
+  id: string;
+}
+
+function pageLimit(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) return DEFAULT_PAGE_SIZE;
+  return Math.max(1, Math.min(MAX_PAGE_SIZE, Math.floor(value)));
+}
+
+function pageScanLimit(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) return MAX_PAGE_SCAN;
+  return Math.max(1, Math.min(MAX_PAGE_SCAN, Math.floor(value)));
+}
+
+function encodePageCursor(cursor: Omit<PageCursor, "version">): string {
+  return Buffer.from(JSON.stringify({ version: 1, ...cursor }), "utf8").toString("base64url");
+}
+
+function decodePageCursor(raw: string | undefined, direction: PageDirection): PageCursor | null {
+  if (!raw) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(Buffer.from(raw, "base64url").toString("utf8"));
+  } catch {
+    throw new Error("Invalid pagination cursor");
+  }
+  if (!parsed || typeof parsed !== "object") throw new Error("Invalid pagination cursor");
+  const candidate = parsed as Partial<PageCursor>;
+  if (candidate.version !== 1 || candidate.direction !== direction ||
+      typeof candidate.created_at !== "string" || typeof candidate.id !== "string" ||
+      !candidate.id || candidate.created_at.length > 128 || candidate.id.length > 512) {
+    throw new Error("Invalid pagination cursor");
+  }
+  return candidate as PageCursor;
+}
+
+function recordCreatedAt(value: unknown): string {
+  const candidate = value as { created_at?: unknown } | null;
+  return typeof candidate?.created_at === "string" ? candidate.created_at : "";
+}
+
+function comparePageKey(a: { created_at: string; id: string }, b: { created_at: string; id: string }): number {
+  const timestamp = a.created_at.localeCompare(b.created_at);
+  return timestamp || a.id.localeCompare(b.id);
+}
+
+function isAfterPageCursor(
+  row: { created_at: string; id: string },
+  cursor: PageCursor | null,
+  direction: PageDirection,
+): boolean {
+  if (!cursor) return true;
+  const comparison = comparePageKey(row, cursor);
+  return direction === "asc" ? comparison > 0 : comparison < 0;
+}
+
+function pageResult<T>(items: T[], last: { created_at: string; id: string } | null, hasMore: boolean, limit: number, direction: PageDirection): DbPageResult<T> {
+  return {
+    items,
+    next_cursor: hasMore && last ? encodePageCursor({ direction, created_at: last.created_at, id: last.id }) : null,
+    has_more: hasMore,
+    limit,
+  };
+}
+
+async function sqlitePage<T>(collection: Collection, options: DbPageOptions<T>): Promise<DbPageResult<T>> {
+  if (!sqlite) throw new Error("Database is not initialized");
+  const limit = pageLimit(options.limit);
+  const direction = options.direction ?? "desc";
+  const cursor = decodePageCursor(options.cursor, direction);
+  const order = direction === "asc" ? "ASC" : "DESC";
+  const table = tableName(collection);
+  const fetchRows = (after: PageCursor | null, fetchLimit: number) => {
+    if (!after) {
+      return sqlite!.prepare(`SELECT id, payload, created_at FROM ${table} ORDER BY created_at ${order}, id ${order} LIMIT ?`).all(fetchLimit) as Array<{ id: string; payload: string; created_at: string }>;
+    }
+    const operator = direction === "asc" ? ">" : "<";
+    return sqlite!.prepare(
+      `SELECT id, payload, created_at FROM ${table}
+       WHERE created_at ${operator} ? OR (created_at = ? AND id ${operator} ?)
+       ORDER BY created_at ${order}, id ${order} LIMIT ?`,
+    ).all(after.created_at, after.created_at, after.id, fetchLimit) as Array<{ id: string; payload: string; created_at: string }>;
+  };
+
+  // The common path has no predicate and is a single indexed/ordered SQL
+  // query.  Fetch one sentinel row to establish has_more without a COUNT.
+  if (!options.predicate) {
+    const rows = fetchRows(cursor, limit + 1);
+    const pageRows = rows.slice(0, limit);
+    const items = pageRows.map((row) => clone(parsePayload<T>(collection, row.id, row.payload)));
+    const last = pageRows.length ? pageRows[pageRows.length - 1] : null;
+    return pageResult(items, last, rows.length > limit, limit, direction);
+  }
+
+  const maxScan = pageScanLimit(options.max_scan);
+  const items: T[] = [];
+  let scanCursor = cursor;
+  let scanned = 0;
+  let hasMore = false;
+  const filterBatchSize = MAX_PAGE_SIZE + 1;
+  while (items.length < limit) {
+    const rows = fetchRows(scanCursor, Math.max(limit + 1, filterBatchSize));
+    if (!rows.length) break;
+    for (let index = 0; index < rows.length; index += 1) {
+      const row = rows[index];
+      scanned += 1;
+      if (scanned > maxScan) throw new Error("Pagination scan limit exceeded");
+      scanCursor = { version: 1, direction, created_at: row.created_at, id: row.id };
+      const value = clone(parsePayload<T>(collection, row.id, row.payload));
+      if (options.predicate!(value)) items.push(value);
+      if (items.length >= limit) {
+        // A row after the last matching item was fetched, or the batch was
+        // filled to its limit: either case proves that another page may
+        // exist.  Returning the last matching row keeps the cursor semantic
+        // intuitive and makes skipped rows eligible on the next request.
+        const lastMatching = row;
+        hasMore = index < rows.length - 1 || rows.length > filterBatchSize - 1;
+        return pageResult(items, lastMatching, hasMore, limit, direction);
+      }
+    }
+    if (rows.length < filterBatchSize) break;
+  }
+  return pageResult(items, items.length ? scanCursor : null, false, limit, direction);
+}
+
+async function jsonPage<T>(collection: Collection, options: DbPageOptions<T>): Promise<DbPageResult<T>> {
+  const db = await loadJson();
+  const limit = pageLimit(options.limit);
+  const direction = options.direction ?? "desc";
+  const cursor = decodePageCursor(options.cursor, direction);
+  const rows = Object.entries(db.collections[collection] ?? {})
+    .map(([id, value]) => ({ id, value: clone(value as T), created_at: recordCreatedAt(value) }))
+    .sort((a, b) => direction === "asc" ? comparePageKey(a, b) : comparePageKey(b, a));
+  const maxScan = pageScanLimit(options.max_scan);
+  const items: T[] = [];
+  let scanned = 0;
+  let last: { created_at: string; id: string } | null = null;
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    if (!isAfterPageCursor(row, cursor, direction)) continue;
+    scanned += 1;
+    if (scanned > maxScan) throw new Error("Pagination scan limit exceeded");
+    const matches = options.predicate ? options.predicate(row.value) : true;
+    if (matches) {
+      items.push(row.value);
+      last = row;
+      if (items.length >= limit) {
+        return pageResult(items, last, index < rows.length - 1, limit, direction);
+      }
+    }
+    last = row;
+  }
+  return pageResult(items, items.length ? last : null, false, limit, direction);
+}
+
+export async function dbPage<T>(collection: Collection, options: DbPageOptions<T> = {}): Promise<DbPageResult<T>> {
+  await ensureInitialized();
+  return PERSISTENCE_BACKEND === "sqlite" ? sqlitePage(collection, options) : jsonPage(collection, options);
+}
+
+/** Cheap aggregate count used by bounded list endpoints and dashboards. */
+export async function dbCount(collection: Collection): Promise<number> {
+  await ensureInitialized();
+  if (PERSISTENCE_BACKEND === "sqlite") {
+    if (!sqlite) throw new Error("Database is not initialized");
+    const row = sqlite.prepare(`SELECT COUNT(*) AS count FROM ${tableName(collection)}`).get() as { count: number };
+    return Number(row.count);
+  }
+  const db = await loadJson();
+  return Object.keys(db.collections[collection] ?? {}).length;
 }
 
 export async function dbDelete(collection: Collection, id: string): Promise<boolean> {
@@ -516,6 +919,44 @@ export function databaseFilePath(): string {
 
 export function databaseDir(): string {
   return DATABASE_ROOT;
+}
+
+export interface DatabaseMaintenanceResult {
+  backend: "sqlite" | "json";
+  integrity_check: string;
+  wal_checkpoint: unknown;
+  database_bytes: number;
+  wal_bytes: number;
+  shm_bytes: number;
+  collection_counts: Partial<Record<Collection, number>>;
+  performed_at: string;
+}
+
+/** Safe admin maintenance primitives. No VACUUM is issued while the service
+ * is running; callers can schedule that separately during a maintenance
+ * window if it is ever justified. */
+export async function databaseMaintenance(): Promise<DatabaseMaintenanceResult> {
+  await ensureInitialized();
+  if (PERSISTENCE_BACKEND === "json" || !sqlite) {
+    const counts: Partial<Record<Collection, number>> = {};
+    for (const collection of COLLECTIONS) counts[collection] = await dbCount(collection);
+    const stat = await fsp.stat(DATABASE_FILE).catch(() => null);
+    return { backend: "json", integrity_check: "not_applicable", wal_checkpoint: null, database_bytes: stat?.size ?? 0, wal_bytes: 0, shm_bytes: 0, collection_counts: counts, performed_at: now() };
+  }
+  const integrity = String(sqlite.pragma("integrity_check", { simple: true }));
+  let checkpoint: unknown = null;
+  try { checkpoint = sqlite.pragma("wal_checkpoint(PASSIVE)"); } catch (error) { checkpoint = { error: String(error) }; }
+  const counts: Partial<Record<Collection, number>> = {};
+  for (const collection of COLLECTIONS) {
+    const row = sqlite.prepare(`SELECT COUNT(*) AS count FROM ${tableName(collection)}`).get() as { count: number };
+    counts[collection] = Number(row.count);
+  }
+  const [dbStat, walStat, shmStat] = await Promise.all([
+    fsp.stat(DATABASE_FILE).catch(() => null),
+    fsp.stat(`${DATABASE_FILE}-wal`).catch(() => null),
+    fsp.stat(`${DATABASE_FILE}-shm`).catch(() => null),
+  ]);
+  return { backend: "sqlite", integrity_check: integrity, wal_checkpoint: checkpoint, database_bytes: dbStat?.size ?? 0, wal_bytes: walStat?.size ?? 0, shm_bytes: shmStat?.size ?? 0, collection_counts: counts, performed_at: now() };
 }
 
 export function legacyDatabaseFilePath(): string {

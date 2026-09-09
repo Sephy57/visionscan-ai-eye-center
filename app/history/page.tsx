@@ -34,16 +34,29 @@ export default function HistoryPage() {
 function HistoryInner() {
   const [rows, setRows] = useState<StudyRow[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const filter = searchParams.get("filter");
   const filterStatus = filter ? FILTER_TO_STATUS[filter] : undefined;
 
-  async function load() {
-    const res = await fetch("/api/studies?with_status=1");
-    const json = await res.json();
-    setRows(json.studies ?? []);
-    setLoaded(true);
+  async function load(cursor?: string, append = false) {
+    if (append) setLoadingMore(true);
+    try {
+      const search = new URLSearchParams({ with_status: "1", limit: "50" });
+      if (cursor) search.set("cursor", cursor);
+      const res = await fetch(`/api/studies?${search.toString()}`);
+      if (!res.ok) throw new Error("history unavailable");
+      const json = await res.json();
+      setRows((previous) => append ? [...previous, ...(json.studies ?? [])] : (json.studies ?? []));
+      setNextCursor(typeof json.next_cursor === "string" ? json.next_cursor : null);
+      setHasMore(json.has_more === true);
+      setLoaded(true);
+    } finally {
+      setLoadingMore(false);
+    }
   }
   useEffect(() => { load().catch(() => { setError("Could not load studies."); setLoaded(true); }); }, []);
 
@@ -118,6 +131,13 @@ function HistoryInner() {
               </tbody>
             </table>
           </div>
+          {hasMore && nextCursor && (
+            <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
+              <button className="btn secondary sm" onClick={() => load(nextCursor, true)} disabled={loadingMore}>
+                {loadingMore ? "Loading…" : "Load more studies"}
+              </button>
+            </div>
+          )}
         </div>
       )}
       <p className="tiny muted" style={{ marginTop: 10 }}>

@@ -1,6 +1,6 @@
 import { NormalizedStudy, DeviceMetadata, SecureFileImportAdapter, ScanType, EyeLaterality } from "../devices/adapter";
 import { newId, saveOriginalScan, readOriginalScan, StoredFile, writeJson, deleteStudyFiles } from "../storage/files";
-import { dbPut, dbGet, dbAll, dbDelete, dbTransaction } from "../storage/db";
+import { dbPut, dbGet, dbAll, dbDelete, dbPage, dbTransaction, type DbPageResult, type DbPageOptions } from "../storage/db";
 import { runPipeline } from "../analysis/pipeline";
 import { AnalysisResult } from "../analysis/schema";
 import { generateReport, ClinicalReport } from "../reports/generator";
@@ -20,11 +20,12 @@ import { listDocumentsByStudy } from "../documents/repository";
 import { readExtractionArtifact } from "../documents/extraction/artifacts";
 import { readExtractedRegion } from "../documents/extraction/pdfIntelligence";
 import { canonicalModality } from "../models/modalities";
-import { presentReportWithLegacyStatus, verifyReportVersionFreeze } from "../reports/integrity";
+import { presentReportWithLegacyStatus, verifyReportVersionFreeze, sha256Canonical } from "../reports/integrity";
 import { jobCheckpoint, type JobExecutionControl } from "../jobs/control";
 import { buildStructuredClinicalEvidence } from "../evidence/structuredClinicalEvidence";
 import { DeterministicReasoningEngine } from "../models/reasoningEngine";
 import { persistReasoningRecord } from "../reports/reasoningRecord";
+import { prepareRecoveryJournal, updateRecoveryJournal } from "../storage/reconciliation";
 
 export interface StudyRecord {
   study_id: string;
@@ -35,9 +36,12 @@ export interface StudyRecord {
   metadata: DeviceMetadata;
   files: StoredFile[];
   status: "uploaded" | "analyzed" | "rejected";
+  lifecycle?: "ACTIVE" | "ARCHIVED" | "DELETED";
   original_sha256: string;
   patient_ref?: string;               // user-supplied study identifier (e.g. "VS-2026-0001"); optional, never invented
   /** Optional patient/tenant scope metadata. Legacy synthetic fixtures omit it. */
+  patient_id?: string | null;
+  encounter_id?: string | null;
   tenant_id?: string | null;
   owner_user_id?: string | null;
   owner_username?: string | null;
@@ -45,11 +49,16 @@ export interface StudyRecord {
   symptoms_updated_at?: string;
   /** Server-computed content routing; optional for legacy records. */
   asset_routing?: import("../assets/assetRouter").AssetRoutingResult;
+  /** Mutable pointer to the newest immutable report version for this study. */
+  latest_report_id?: string;
 }
 
 export interface AnalysisRecord {
   analysis_id: string;
   study_id: string;
+  patient_id?: string | null;
+  tenant_id?: string | null;
+  lifecycle?: "ACTIVE" | "ARCHIVED" | "DELETED";
   created_at: string;
   result: AnalysisResult;
 }
@@ -120,11 +129,14 @@ export async function createStudy(
   if (autoLinkPatient && record.patient_ref) {
     try {
       const patient = await ensurePatient(record.patient_ref, createdBy, "PROVISIONED_FROM_STUDY", null, scope);
-      await createEncounter({
+      const encounterResult = await createEncounter({
         patient_id: patient.patient_id,
         linked_study_ids: [studyId],
         created_by: createdBy,
       });
+      record.patient_id = patient.patient_id;
+      if (encounterResult.ok && encounterResult.encounter) record.encounter_id = encounterResult.encounter.encounter_id;
+      await dbPut("studies", studyId, record);
     } catch {
       // The study remains usable if workspace provisioning is temporarily
       // unavailable; the failed link is visible in audit and can be retried.
@@ -164,9 +176,50 @@ export async function analyzeStudy(
   await jobCheckpoint(control, { stage: "preparing", percent: 4, message: "Loading study metadata" });
   const record = await dbGet<StudyRecord>("studies", studyId);
   if (!record) throw new Error("Study not found");
-  const existingReport = await dbGet<ClinicalReport>("reports", `rep_${studyId}`);
+  const canonicalReportId = `rep_${studyId}`;
+  const existingReportId = record.latest_report_id ?? canonicalReportId;
+  const existingReport = await dbGet<ClinicalReport>("reports", existingReportId);
   if (existingReport?.review.status === "clinician_finalized") {
     throw new Error("Finalized report is immutable; create a new study/version instead of rerunning analysis.");
+  }
+  const existingAnalysis = await dbGet<AnalysisRecord>("analyses", `anl_${studyId}`);
+  // A sealed analysis/report pair is reusable only when the complete immutable
+  // input envelope is unchanged. Linked documents are added asynchronously by
+  // the extraction worker, so comparing the study-image hash alone would
+  // incorrectly skip a required re-analysis after a PDF/OCT becomes READY.
+  const linkedDocuments = await listDocumentsByStudy(studyId);
+  const currentDocumentInputs = linkedDocuments
+    .filter((doc) => doc.status === "READY")
+    .map((doc) => ({ document_id: doc.document_id, sha256: doc.sha256 }))
+    .sort((a, b) => a.document_id.localeCompare(b.document_id));
+  const existingDocumentInputs = (existingAnalysis?.result.document_routing ?? [])
+    .map((routing) => ({ document_id: routing.document_id, sha256: routing.source_document_hash ?? null }))
+    .sort((a, b) => a.document_id.localeCompare(b.document_id));
+  const documentInputsMatch = sha256Canonical(currentDocumentInputs) === sha256Canonical(existingDocumentInputs);
+  const currentSymptoms = (record.symptoms ?? []).map((symptom) => ({
+    type: symptom.type,
+    label: SYMPTOM_MAP[symptom.type]?.label,
+    onset: symptom.onset,
+    duration: symptom.duration,
+    severity: symptom.severity,
+    laterality: symptom.laterality,
+    progression: symptom.progression,
+    frequency: symptom.frequency,
+    free_text: symptom.free_text ?? null,
+  }));
+  const existingSymptoms = existingAnalysis?.result.patient_context?.symptoms ?? [];
+  const symptomsMatch = sha256Canonical(currentSymptoms) === sha256Canonical(existingSymptoms);
+  const inputEnvelopeMatch = documentInputsMatch && symptomsMatch;
+  const reportId = existingReport?.version_freeze && !inputEnvelopeMatch
+    ? `${canonicalReportId}_v${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
+    : existingReportId;
+  const supersedesReportId = reportId === existingReportId ? undefined : existingReport?.report_id;
+  if (existingReport?.version_freeze && existingReport.reasoning_snapshot && existingAnalysis?.result &&
+      existingReport.version_freeze.source_analysis_sha256 === sha256Canonical(existingAnalysis.result) &&
+      inputEnvelopeMatch) {
+    // A worker may be replayed after a crash that occurred after publication.
+    // Reuse the sealed pair instead of running inference or rewriting history.
+    return { analysis: existingAnalysis.result, report: existingReport };
   }
   const bytes = await readOriginalScan(studyId);
   if (!bytes) throw new Error("Original scan missing");
@@ -179,7 +232,6 @@ export async function analyzeStudy(
   const documentRouting: import("../documents/extraction/pdfIntelligence").PdfAssetRouting[] = [];
   // Only server-created OCT_BSCAN derivatives are eligible for OCT inference.
   // Text, tables, whole pages, and non-OCT records never enter this list.
-  const linkedDocuments = await listDocumentsByStudy(studyId);
   for (const [documentIndex, doc] of linkedDocuments.entries()) {
     await jobCheckpoint(control, {
       stage: "routing_assets",
@@ -250,6 +302,8 @@ export async function analyzeStudy(
   const analysisRecord: AnalysisRecord = {
     analysis_id: `anl_${studyId}`,
     study_id: studyId,
+    patient_id: record.patient_id ?? null,
+    tenant_id: record.tenant_id ?? null,
     created_at: new Date().toISOString(),
     result: analysis,
   };
@@ -298,13 +352,16 @@ export async function analyzeStudy(
   if ("not_found" in structuredEvidence) throw new Error("Study disappeared before reasoning persistence");
   const reasoning = new DeterministicReasoningEngine().analyze(structuredEvidence);
   const reasoningSnapshot = await persistReasoningRecord({
-    report_id: `rep_${studyId}`,
+    report_id: reportId,
     analysis,
     evidence: structuredEvidence,
     reasoning,
   });
   await control?.onProgress?.({ stage: "generating_report", percent: 92, message: "Generating version-frozen report" });
-  const report = await generateReport(analysis, undefined, reasoningSnapshot);
+  const report = await generateReport(analysis, undefined, reasoningSnapshot, {
+    report_id: reportId,
+    supersedes_report_id: supersedesReportId,
+  });
 
   const safety = runSafetyChecks(analysis);
   if (!safety.ok) {
@@ -313,6 +370,7 @@ export async function analyzeStudy(
   }
 
   record.status = analysis.quality.acceptable ? "analyzed" : "rejected";
+  record.latest_report_id = report.report_id;
   await dbPut("studies", studyId, record);
   await audit({
     actor: "system",
@@ -334,7 +392,8 @@ export async function getStudyBundle(studyId: string): Promise<{
 }> {
   const study = await dbGet<StudyRecord>("studies", studyId);
   const analysisRecord = await dbGet<AnalysisRecord>("analyses", `anl_${studyId}`);
-  const report = await dbGet<ClinicalReport>("reports", `rep_${studyId}`);
+  const reportId = study?.latest_report_id ?? `rep_${studyId}`;
+  const report = await dbGet<ClinicalReport>("reports", reportId);
   // Unwrap: expose the structured AnalysisResult directly (never the storage
   // record). The immutable reasoning snapshot is retained in the report store
   // and is available to the specialist/evidence review paths, but is omitted
@@ -354,6 +413,17 @@ export async function getStudyBundle(studyId: string): Promise<{
 export async function listStudies(): Promise<StudyRecord[]> {
   const all = await dbAll<StudyRecord>("studies");
   return all.sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
+/**
+ * Bounded history query. The legacy listStudies() array API remains for
+ * internal comparison/test callers; HTTP list endpoints should use this
+ * keyset page so a large workspace is never serialized in one response.
+ */
+export async function listStudiesPage(
+  options: Pick<DbPageOptions<StudyRecord>, "limit" | "cursor" | "direction"> = {},
+): Promise<DbPageResult<StudyRecord>> {
+  return dbPage<StudyRecord>("studies", { ...options, direction: options.direction ?? "desc" });
 }
 
 /**
@@ -401,7 +471,7 @@ export async function listStudiesWithStatus(): Promise<DashboardStudyRow[]> {
         ? "UNSUPPORTED_MODALITY"
         : "IMAGE_NOT_SUITABLE";
     } else if (s.status === "analyzed") {
-      const report = await dbGet<ClinicalReport>("reports", `rep_${s.study_id}`);
+      const report = await dbGet<ClinicalReport>("reports", s.latest_report_id ?? `rep_${s.study_id}`);
       triage_priority = analysisRecord?.result.recommendation.priority;
       const urgent = triage_priority === "emergency_evaluation" || triage_priority === "urgent_eye_care_review";
       const gate = analysisRecord?.result.diagnosis_gate;
@@ -439,6 +509,48 @@ export async function listStudiesWithStatus(): Promise<DashboardStudyRow[]> {
   return rows;
 }
 
+/** Server-derived dashboard rows with the same bounded keyset contract. */
+export async function listStudiesWithStatusPage(
+  options: Pick<DbPageOptions<StudyRecord>, "limit" | "cursor" | "direction"> = {},
+): Promise<DbPageResult<DashboardStudyRow>> {
+  const page = await listStudiesPage(options);
+  const rows: DashboardStudyRow[] = [];
+  for (const s of page.items) {
+    let dashboard_status: DashboardStatus = "UPLOADED";
+    let triage_priority: string | undefined;
+    const analysisRecord = s.status === "analyzed" || s.status === "rejected"
+      ? await dbGet<AnalysisRecord>("analyses", `anl_${s.study_id}`)
+      : null;
+    if (s.status === "rejected") {
+      const ledger = analysisRecord?.result.model_execution_ledger ?? [];
+      dashboard_status = ledger.length > 0 && ledger.every((row) => row.execution_status === "UNSUPPORTED_MODALITY")
+        ? "UNSUPPORTED_MODALITY"
+        : "IMAGE_NOT_SUITABLE";
+    } else if (s.status === "analyzed") {
+      const report = await dbGet<ClinicalReport>("reports", s.latest_report_id ?? `rep_${s.study_id}`);
+      triage_priority = analysisRecord?.result.recommendation.priority;
+      const urgent = triage_priority === "emergency_evaluation" || triage_priority === "urgent_eye_care_review";
+      const gate = analysisRecord?.result.diagnosis_gate;
+      const hasClinicalContent = (analysisRecord?.result.findings.length ?? 0) > 0 || (analysisRecord?.result.possible_conditions?.conditions.length ?? 0) > 0;
+      if (urgent) dashboard_status = "URGENT_REVIEW";
+      else if (analysisRecord?.result.analysis_mode === "MODEL_FAILED" || (analysisRecord?.result.model_execution?.models_failed.length ?? 0) > 0) dashboard_status = "MODEL_FAILED";
+      else if (analysisRecord?.result.analysis_mode === "NO_MODEL_EXECUTED" && (analysisRecord?.result.model_execution_ledger?.length ?? 0) > 0 && analysisRecord?.result.model_execution_ledger?.every((row) => row.execution_status === "UNSUPPORTED_MODALITY")) dashboard_status = "UNSUPPORTED_MODALITY";
+      else if (analysisRecord?.result.model_execution_ledger?.some((row) => row.execution_status === "BLOCKED_OOD")) dashboard_status = "OUT_OF_DISTRIBUTION";
+      else if (analysisRecord?.result.model_execution_ledger?.some((row) => row.execution_status === "BLOCKED_QUALITY")) dashboard_status = "IMAGE_NOT_SUITABLE";
+      else if (report?.review.status === "clinician_reviewed" || report?.review.status === "clinician_finalized") dashboard_status = "REVIEWED";
+      else if (gate && !gate.allowed && hasClinicalContent) dashboard_status = "CLINICAL_CORRELATION_REQUIRED";
+      else dashboard_status = "REVIEW_REQUIRED";
+    }
+    rows.push({
+      study_id: s.study_id, created_at: s.created_at, modality: s.modality, eye: s.eye,
+      status: s.status, patient_ref: s.patient_ref ?? null,
+      tenant_id: s.tenant_id ?? null, owner_user_id: s.owner_user_id ?? null, owner_username: s.owner_username ?? null,
+      dashboard_status, triage_priority,
+    });
+  }
+  return { ...page, items: rows };
+}
+
 export async function deleteStudy(studyId: string): Promise<boolean> {
   const record = await dbGet<StudyRecord>("studies", studyId);
   if (!record) return false;
@@ -449,34 +561,74 @@ export async function deleteStudy(studyId: string): Promise<boolean> {
   const documentIds = docs.map((doc) => doc.document_id);
   const testResults = await dbAll<{ result_id: string; document_id: string }>("test_results");
   const resultIds = testResults.filter((result) => documentIds.includes(result.document_id)).map((result) => result.result_id);
-  await dbTransaction((tx) => {
-    for (const doc of docs) {
-      const current = tx.get<typeof doc>("documents", doc.document_id) ?? doc;
-      tx.put("documents", doc.document_id, { ...current, status: "DELETED", updated_at: new Date().toISOString() });
-    }
-    tx.deleteMany("test_results", resultIds);
-    tx.deleteMany("record_extractions", documentIds);
-    tx.delete("studies", studyId);
-    tx.delete("analyses", `anl_${studyId}`);
-    tx.delete("reports", `rep_${studyId}`);
+  const studyReports = (await dbAll<ClinicalReport>("reports")).filter((report) => report.study_id === studyId);
+  const reportIds = studyReports.map((report) => report.report_id);
+  const preserveFinalizedReport = studyReports.some((report) => report.review.status === "clinician_finalized");
+  const journal = await prepareRecoveryJournal({
+    operation: "study_delete",
+    resources: [
+      { kind: "study", id: studyId },
+      { kind: "analysis", id: `anl_${studyId}` },
+      ...reportIds.map((id) => ({ kind: "report", id })),
+      ...documentIds.map((id) => ({ kind: "document", id })),
+    ],
   });
-  await deleteStudyFiles(studyId);
-  for (const doc of docs) {
-    await deleteOriginalDocument(doc.document_id);
-    await deleteExtractedRegions(doc.document_id);
-    await deleteExtractionArtifact(doc.document_id);
-    await deleteRecordExtraction(doc.document_id);
-    await audit({
-      actor: "user:study_deletion_cascade",
-      action: "document.deleted",
-      resource: "document",
-      resourceId: doc.document_id,
-      studyId,
-      outcome: "ok",
-      detail: "study cascade removed database derivatives and immutable file references",
+  try {
+    await dbTransaction((tx) => {
+      for (const doc of docs) {
+        const current = tx.get<typeof doc>("documents", doc.document_id) ?? doc;
+        tx.put("documents", doc.document_id, { ...current, status: "DELETED", updated_at: new Date().toISOString() });
+      }
+      tx.deleteMany("test_results", resultIds);
+      tx.deleteMany("record_extractions", documentIds);
+      // Clinical history is retained as a lifecycle transition. Finalized
+      // reports and clinician amendments are never destroyed; non-finalized
+      // reports/analyses remain available to audit and replay as DELETED rows.
+      tx.put("studies", studyId, { ...record, lifecycle: "DELETED" });
+      const analysis = tx.get<AnalysisRecord>("analyses", `anl_${studyId}`);
+      if (analysis) tx.put("analyses", `anl_${studyId}`, { ...analysis, lifecycle: "DELETED" });
+      const report = tx.get<ClinicalReport>("reports", `rep_${studyId}`);
+      if (report) tx.put("reports", `rep_${studyId}`, { ...report, lifecycle: "DELETED" });
+      for (const reportId of reportIds) {
+        const version = tx.get<ClinicalReport>("reports", reportId);
+        if (version) tx.put("reports", reportId, { ...version, lifecycle: "DELETED" });
+      }
     });
+    await updateRecoveryJournal(journal.journal_id, "DB_COMMITTED");
+    await deleteStudyFiles(studyId, { preserveReportExport: preserveFinalizedReport });
+    for (const doc of docs) {
+      await deleteOriginalDocument(doc.document_id);
+      await deleteExtractedRegions(doc.document_id);
+      await deleteExtractionArtifact(doc.document_id);
+      await deleteRecordExtraction(doc.document_id);
+      await audit({
+        actor: "user:study_deletion_cascade",
+        action: "document.deleted",
+        resource: "document",
+        resourceId: doc.document_id,
+        studyId,
+        outcome: "ok",
+        detail: "study cascade removed database derivatives and immutable file references",
+      });
+    }
+    await updateRecoveryJournal(journal.journal_id, "FILES_COMMITTED");
+    await updateRecoveryJournal(journal.journal_id, "COMPLETE");
+  } catch (error) {
+    await updateRecoveryJournal(journal.journal_id, "FAILED_RECONCILIATION", String(error)).catch(() => undefined);
+    throw error;
   }
-  await audit({ actor: "user", action: "delete", studyId, outcome: "ok", detail: "study and derived artifacts deleted" });
+  await audit({ actor: "user", action: "delete", studyId, outcome: "ok", detail: "study lifecycle marked DELETED; source bytes removed by explicit operator workflow" });
+  return true;
+}
+
+/** Reversible lifecycle transition used by retention/operations workflows.
+ * Archiving never removes source bytes or derived evidence. */
+export async function archiveStudy(studyId: string, actor = "system"): Promise<boolean> {
+  const record = await dbGet<StudyRecord>("studies", studyId);
+  if (!record) return false;
+  if (record.lifecycle === "DELETED") throw new Error("Deleted study cannot be archived without an explicit restore review");
+  await dbPut("studies", studyId, { ...record, lifecycle: "ARCHIVED" });
+  await audit({ actor, action: "study.archive", resource: "study", resourceId: studyId, studyId, outcome: "ok", detail: "lifecycle=ARCHIVED; bytes retained" });
   return true;
 }
 

@@ -19,6 +19,7 @@ export interface ImmutableReasoningRecord {
   reasoning_record_id: string;
   report_id: string;
   study_id: string;
+  analysis_id?: string;
   created_at: string;
   record_schema_version: typeof REASONING_RECORD_SCHEMA_VERSION;
   source_analysis_sha256: string;
@@ -62,6 +63,14 @@ export function reasoningRecordIdFor(studyId: string, analysis: AnalysisResult):
 
 function sign(record: UnsignedReasoningRecord): ImmutableReasoningRecord {
   return { ...record, payload_sha256: sha256Canonical(record) };
+}
+
+/** Build a deterministic-but-distinct id for an explicit replay. The source
+ * analysis hash remains part of the signed record so replay cannot spoof new
+ * evidence; the nonce only separates historical report versions. */
+export function replayReasoningRecordId(sourceRecordId: string, replayNonce: string): string {
+  const safeNonce = replayNonce.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 48);
+  return `${sourceRecordId}_replay_${safeNonce}`;
 }
 
 export function verifyReasoningRecord(record: ImmutableReasoningRecord): {
@@ -111,12 +120,13 @@ async function persistReasoningRecordUnlocked(input: {
   analysis: AnalysisResult;
   evidence: StructuredClinicalEvidence;
   reasoning: StructuredReasoningResult;
+  reasoning_record_id?: string;
 }): Promise<ImmutableReasoningRecord> {
   const studyId = input.analysis.study.study_id;
   if (input.evidence.study_id !== studyId || input.reasoning.study_id !== studyId) {
     throw new Error("Reasoning record study scope mismatch");
   }
-  const recordId = reasoningRecordIdFor(studyId, input.analysis);
+  const recordId = input.reasoning_record_id ?? reasoningRecordIdFor(studyId, input.analysis);
   const existing = await getReasoningRecord(recordId);
   if (existing) return existing;
 
@@ -124,6 +134,7 @@ async function persistReasoningRecordUnlocked(input: {
     reasoning_record_id: recordId,
     report_id: input.report_id,
     study_id: studyId,
+    analysis_id: `anl_${studyId}`,
     created_at: new Date().toISOString(),
     record_schema_version: REASONING_RECORD_SCHEMA_VERSION,
     source_analysis_sha256: sourceAnalysisSha256(input.analysis),
@@ -158,6 +169,7 @@ export function persistReasoningRecord(input: {
   analysis: AnalysisResult;
   evidence: StructuredClinicalEvidence;
   reasoning: StructuredReasoningResult;
+  reasoning_record_id?: string;
 }): Promise<ImmutableReasoningRecord> {
   const task = reasoningWriteChain.then(() => persistReasoningRecordUnlocked(input));
   reasoningWriteChain = task.then(() => undefined, () => undefined);

@@ -220,6 +220,105 @@ export async function recentAudit(limit = 100): Promise<AuditEvent[]> {
   return out.slice(0, limit);
 }
 
+export interface AuditPageOptions {
+  limit?: number;
+  cursor?: string;
+}
+
+export interface AuditPageResult {
+  events: AuditEvent[];
+  next_cursor: string | null;
+  has_more: boolean;
+  limit: number;
+}
+
+interface AuditPageCursor {
+  version: 1;
+  file: string;
+  line: number;
+  hash?: string;
+  ts?: string;
+}
+
+const AUDIT_PAGE_DEFAULT = 50;
+const AUDIT_PAGE_MAX = 100;
+
+function auditPageLimit(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) return AUDIT_PAGE_DEFAULT;
+  return Math.max(1, Math.min(AUDIT_PAGE_MAX, Math.floor(value)));
+}
+
+function encodeAuditPageCursor(cursor: Omit<AuditPageCursor, "version">): string {
+  return Buffer.from(JSON.stringify({ version: 1, ...cursor }), "utf8").toString("base64url");
+}
+
+function decodeAuditPageCursor(raw: string | undefined): AuditPageCursor | null {
+  if (!raw) return null;
+  let parsed: unknown;
+  try { parsed = JSON.parse(Buffer.from(raw, "base64url").toString("utf8")); } catch { throw new Error("Invalid audit pagination cursor"); }
+  if (!parsed || typeof parsed !== "object") throw new Error("Invalid audit pagination cursor");
+  const candidate = parsed as Partial<AuditPageCursor>;
+  if (candidate.version !== 1 || typeof candidate.file !== "string" ||
+      !/^audit-\d{4}-\d{2}-\d{2}\.ndjson$/.test(candidate.file) ||
+      !Number.isInteger(candidate.line) || Number(candidate.line) < 1 || Number(candidate.line) > 10_000_000 ||
+      (candidate.hash !== undefined && typeof candidate.hash !== "string") ||
+      (candidate.ts !== undefined && typeof candidate.ts !== "string")) {
+    throw new Error("Invalid audit pagination cursor");
+  }
+  return candidate as AuditPageCursor;
+}
+
+/**
+ * Cursor-paged audit tail. Audit files are append-only and read newest-file /
+ * newest-line first; the cursor contains only a file/line locator plus the
+ * event hash (never detail or identifiers). New events appended after page 1
+ * are intentionally excluded from subsequent pages, giving a stable walk.
+ */
+export async function recentAuditPage(options: AuditPageOptions = {}): Promise<AuditPageResult> {
+  ensureDirs();
+  const limit = auditPageLimit(options.limit);
+  const cursor = decodeAuditPageCursor(options.cursor);
+  let names: string[];
+  try {
+    names = (await fs.readdir(LOG_ROOT)).filter((f) => /^audit-\d{4}-\d{2}-\d{2}\.ndjson$/.test(f)).sort().reverse();
+  } catch {
+    return { events: [], next_cursor: null, has_more: false, limit };
+  }
+
+  let cursorFound = !cursor;
+  const events: AuditEvent[] = [];
+  for (let fileIndex = 0; fileIndex < names.length; fileIndex += 1) {
+    const name = names[fileIndex];
+    const raw = await fs.readFile(path.join(LOG_ROOT, name), "utf8").catch(() => "");
+    const lines = raw.trim().length ? raw.trim().split("\n") : [];
+    for (let lineIndex = lines.length - 1; lineIndex >= 0; lineIndex -= 1) {
+      const lineNumber = lineIndex + 1;
+      let event: AuditEvent;
+      try { event = JSON.parse(lines[lineIndex]) as AuditEvent; } catch { continue; }
+      if (!cursorFound) {
+        const sameLocation = cursor?.file === name && cursor.line === lineNumber;
+        const sameHash = !cursor?.hash || event.hash === cursor.hash;
+        const sameTimestamp = !cursor?.ts || event.ts === cursor.ts;
+        if (sameLocation && sameHash && sameTimestamp) cursorFound = true;
+        continue;
+      }
+      events.push(event);
+      if (events.length >= limit) {
+        const hasMore = lineIndex > 0 || fileIndex < names.length - 1;
+        return {
+          events,
+          next_cursor: hasMore ? encodeAuditPageCursor({ file: name, line: lineNumber, hash: event.hash, ts: event.ts }) : null,
+          has_more: hasMore,
+          limit,
+        };
+      }
+    }
+  }
+  // A cursor that cannot be found is treated as an exhausted/rotated page,
+  // never as permission to replay the newest audit events.
+  return { events: cursorFound ? events : [], next_cursor: null, has_more: false, limit };
+}
+
 /**
  * Immutable / append-only analysis audit records (Phase 2).
  * One NDJSON line per analysis with full provenance. Records are never

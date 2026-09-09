@@ -1,4 +1,4 @@
-import { dbGet, dbPut, dbAll, dbDelete } from "../storage/db";
+import { dbGet, dbPut, dbAll, dbDelete, dbPage, type DbPageOptions, type DbPageResult } from "../storage/db";
 import { newId } from "../storage/files";
 import { audit } from "../audit";
 import {
@@ -49,6 +49,7 @@ export interface PatientRecord {
  */
 export interface StoredEncounter extends PatientEncounter {
   patient_id: string;
+  tenant_id?: string | null;
   created_by: string;
 }
 
@@ -156,6 +157,48 @@ export interface PatientSummary {
   study_count: number;
 }
 
+export interface PatientListPageOptions {
+  query?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+/**
+ * Bounded patient registry page. Search is applied in the persistence layer's
+ * keyset scanner, so a sparse query does not silently return only the first
+ * storage page. Encounter counts are still derived from authoritative rows;
+ * no patient data is copied into the page cursor.
+ */
+export async function listPatientsPage(options: PatientListPageOptions = {}): Promise<DbPageResult<PatientSummary>> {
+  const q = options.query?.trim().toLowerCase();
+  const page = await dbPage<PatientRecord>("patients", {
+    limit: options.limit,
+    cursor: options.cursor,
+    direction: "desc",
+    predicate: q
+      ? (patient) => String(patient.patient_ref ?? "").toLowerCase().includes(q) || String(patient.display_label ?? "").toLowerCase().includes(q)
+      : undefined,
+  });
+  const encounters = await dbAll<StoredEncounter>("encounters");
+  const summaries = page.items.map((p) => {
+    const pEncounters = encounters.filter((e) => e.patient_id === p.patient_id);
+    const studyIds = new Set<string>();
+    pEncounters.forEach((e) => (e.linked_study_ids ?? []).forEach((s) => studyIds.add(s)));
+    return {
+      patient_id: p.patient_id,
+      patient_ref: p.patient_ref,
+      display_label: p.display_label,
+      tenant_id: p.tenant_id ?? null,
+      owner_user_id: p.owner_user_id ?? null,
+      owner_username: p.owner_username ?? null,
+      created_at: p.created_at,
+      encounter_count: pEncounters.length,
+      study_count: studyIds.size,
+    } satisfies PatientSummary;
+  });
+  return { ...page, items: summaries };
+}
+
 export async function listPatients(query?: string): Promise<PatientSummary[]> {
   const patients = await dbAll<PatientRecord>("patients");
   const encounters = await dbAll<StoredEncounter>("encounters");
@@ -231,6 +274,9 @@ export async function createEncounter(input: EncounterCreateInput): Promise<Enco
   for (const sid of linkedIds) {
     const study = await dbGet<StudyRecord>("studies", sid);
     if (!study) return { ok: false, status: 400, error: `LINKED_STUDY_NOT_FOUND:${sid}` };
+    if (patient.tenant_id && study.tenant_id && patient.tenant_id !== study.tenant_id) {
+      return { ok: false, status: 409, error: `LINKED_STUDY_TENANT_MISMATCH:${sid}` };
+    }
     if (study.patient_ref && study.patient_ref.toLowerCase() !== patient.patient_ref.toLowerCase()) {
       return { ok: false, status: 409, error: `LINKED_STUDY_PATIENT_MISMATCH:${sid}` };
     }
@@ -239,6 +285,7 @@ export async function createEncounter(input: EncounterCreateInput): Promise<Enco
   const ts = nowIso();
   const encounter: StoredEncounter = {
     patient_id: patient.patient_id,
+    tenant_id: patient.tenant_id ?? null,
     created_by: input.created_by,
     encounter_id: newId("enc"),
     patient_ref: patient.patient_ref,

@@ -20,12 +20,13 @@ const collections = [
   "validation_cases", "model_errors", "model_error_adjudications", "test_results",
   "reviews", "devices", "comparisons", "datasets", "dataset_samples", "adjudications",
   "transitions", "evaluation_runs", "model_registry_state", "sessions", "access_grants",
-  "consent", "reset_tokens", "calibration_records", "record_extractions",
+  "consent", "reset_tokens", "calibration_records", "record_extractions", "reconciliation_journal",
 ];
 const collectionSet = new Set(collections);
 const schemaVersion = 1;
 const migrationVersion = 1;
 const sqliteHeader = Buffer.from("SQLite format 3\u0000", "ascii");
+const relationalColumns = ["patient_id", "encounter_id", "study_id", "document_id", "analysis_id", "report_id", "tenant_id", "job_id"];
 
 function valueAfter(flag, fallback) {
   const exact = process.argv.find((arg) => arg === flag);
@@ -69,8 +70,21 @@ function safeIdentifier(name) {
 function schemaSql() {
   return collections.map((name) => {
     const table = safeIdentifier(name);
-    return `CREATE TABLE IF NOT EXISTS ${table} (id TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL CHECK(length(payload) > 0), created_at TEXT NOT NULL, updated_at TEXT NOT NULL); CREATE INDEX IF NOT EXISTS ${name}_updated_at_idx ON ${table}(updated_at);`;
-  }).join("\n");
+    const columns = relationalColumns.map((column) => `${column} TEXT`).join(", ");
+    const indexes = relationalColumns.map((column) => `CREATE INDEX IF NOT EXISTS ${name}_${column}_idx ON ${table}(${column});`).join(" ");
+    return `CREATE TABLE IF NOT EXISTS ${table} (id TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL CHECK(length(payload) > 0), created_at TEXT NOT NULL, updated_at TEXT NOT NULL, ${columns}); CREATE INDEX IF NOT EXISTS ${name}_updated_at_idx ON ${table}(updated_at); ${indexes}`;
+  }).join("\n") + `
+    CREATE TABLE IF NOT EXISTS persistence_entities (
+      entity_key TEXT PRIMARY KEY NOT NULL, collection TEXT NOT NULL, entity_id TEXT NOT NULL,
+      tenant_id TEXT, lifecycle TEXT NOT NULL DEFAULT 'ACTIVE', created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+      UNIQUE(collection, entity_id)
+    );
+    CREATE TABLE IF NOT EXISTS persistence_links (
+      source_key TEXT NOT NULL, target_key TEXT NOT NULL, relation TEXT NOT NULL, tenant_id TEXT, created_at TEXT NOT NULL,
+      PRIMARY KEY(source_key, target_key, relation),
+      FOREIGN KEY(source_key) REFERENCES persistence_entities(entity_key),
+      FOREIGN KEY(target_key) REFERENCES persistence_entities(entity_key)
+    );`;
 }
 
 function createSchema(db) {
@@ -252,7 +266,8 @@ async function applyMigration(info) {
     db = new Database(temp);
     createSchema(db);
     const setMeta = db.prepare("INSERT INTO persistence_meta(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value");
-    const inserts = new Map(collections.map((name) => [name, db.prepare(`INSERT INTO ${safeIdentifier(name)}(id, payload, created_at, updated_at) VALUES(?, ?, ?, ?)`)]));
+    const insertSql = `INSERT INTO %TABLE%(id, payload, created_at, updated_at, ${relationalColumns.join(", ")}) VALUES(?, ?, ?, ?, ${relationalColumns.map(() => "?").join(", ")})`;
+    const inserts = new Map(collections.map((name) => [name, db.prepare(insertSql.replace("%TABLE%", safeIdentifier(name)))]));
     const migrate = db.transaction(() => {
       for (const [name, value] of Object.entries(info.parsed.collections)) {
         if (!collectionSet.has(name) || !value || typeof value !== "object" || Array.isArray(value)) continue;
@@ -262,7 +277,14 @@ async function applyMigration(info) {
           if (!payload) throw new Error(`Empty payload for ${name}/${id}`);
           const created = record && typeof record === "object" && typeof record.created_at === "string" ? record.created_at : timestamp();
           const updated = record && typeof record === "object" && typeof record.updated_at === "string" ? record.updated_at : created;
-          insert.run(id, payload, created, updated);
+          const item = record && typeof record === "object" ? record : {};
+          const camel = (key) => key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+          const value = (key) => typeof item[key] === "string" && item[key].trim() ? item[key].trim() : (typeof item[camel(key)] === "string" && item[camel(key)].trim() ? item[camel(key)].trim() : null);
+          insert.run(id, payload, created, updated, ...relationalColumns.map(value));
+          const tenant = value("tenant_id");
+          db.prepare(`INSERT INTO persistence_entities(entity_key, collection, entity_id, tenant_id, lifecycle, created_at, updated_at) VALUES(?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(entity_key) DO UPDATE SET tenant_id=excluded.tenant_id, lifecycle=excluded.lifecycle, updated_at=excluded.updated_at`)
+            .run(`${name}:${id}`, name, id, tenant, item.lifecycle === "ARCHIVED" || item.lifecycle === "DELETED" ? item.lifecycle : "ACTIVE", created, updated);
         }
       }
       const metadata = [

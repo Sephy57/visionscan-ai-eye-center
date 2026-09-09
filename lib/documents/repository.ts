@@ -1,5 +1,6 @@
 import { dbPut, dbGet, dbAll, dbDelete } from "../storage/db";
 import { DocumentRecord, DocumentSummary, toSummary } from "./types";
+import { validateTypedReferences } from "../storage/relational";
 
 /**
  * Document repository (S1). Uses the existing JSON document-store
@@ -8,6 +9,10 @@ import { DocumentRecord, DocumentSummary, toSummary } from "./types";
  */
 
 export async function putDocument(doc: DocumentRecord): Promise<void> {
+  // A document is never persisted against an unknown study. The check is
+  // intentionally at the repository boundary so all ingestion/extraction
+  // paths share the same fail-closed relationship rule.
+  await validateTypedReferences("documents", doc, { requireTargets: true });
   await dbPut("documents", doc.document_id, doc);
 }
 

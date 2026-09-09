@@ -1,5 +1,5 @@
 import { AnalysisResult } from "../analysis/schema";
-import { dbGet, dbPut } from "../storage/db";
+import { dbGet, dbPut, dbPage, dbAll, type DbPageOptions, type DbPageResult } from "../storage/db";
 import { writeJson } from "../storage/files";
 import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
 import { OPHTHALMIC_COVERAGE_REGISTRY, OPHTHALMIC_COVERAGE_VERSION } from "../models/ophthalmicCoverage";
@@ -10,6 +10,7 @@ import { REASONING_ENGINE_VERSION } from "../models/reasoningEngine";
 import { VALIDATION_REGISTRY_VERSION } from "../models/validationRegistry";
 import { SPECIALIST_PACKAGE_VERSION } from "../clinical/specialistPackages";
 import type { ImmutableReasoningRecord } from "./reasoningRecord";
+import { prepareRecoveryJournal, updateRecoveryJournal } from "../storage/reconciliation";
 
 export const REPORT_VERSION = "1.2.0";
 
@@ -25,6 +26,8 @@ export const REPORT_VERSION = "1.2.0";
 export interface ClinicalReport {
   report_id: string;
   study_id: string;
+  analysis_id?: string;
+  lifecycle?: "ACTIVE" | "ARCHIVED" | "DELETED";
   generated_at: string;
   report_version: string;
   /** Hash/version seal over server-generated AI fields. Clinician-authored
@@ -32,6 +35,14 @@ export interface ClinicalReport {
   version_freeze: ReportVersionFreeze;
   legacy_status?: "LEGACY_UNSEALED";
   legacy_warning?: string;
+  /** Set only by the explicit legacy replay workflow. The source report is
+   * immutable and remains independently addressable. */
+  supersedes_report_id?: string;
+  source_legacy_report_id?: string;
+  replay_reason?: string;
+  replayed_by?: string;
+  replayed_at?: string;
+  ruleset_version?: string;
   /** Immutable, self-contained specialist/condition reasoning produced from
    * this exact analysis. It is attached before the report is published. */
   reasoning_snapshot?: ImmutableReasoningRecord;
@@ -145,6 +156,66 @@ export interface ClinicalReport {
     json_path?: string;
     fhir_note: string;
   };
+}
+
+export interface ReportSummary {
+  report_id: string;
+  study_id: string;
+  generated_at: string;
+  report_version: string;
+  review_status: ClinicalReport["review"]["status"];
+  legacy_status?: ClinicalReport["legacy_status"];
+  analysis_mode: ClinicalReport["analysis_mode"];
+  triage_priority: string;
+}
+
+/**
+ * Bounded report registry page. The list surface returns metadata only; full
+ * report payloads remain available through getReport() after study scope
+ * checks. Stable ordering is supplied by the persistence keyset cursor.
+ */
+export async function listReportSummariesPage(
+  options: Pick<DbPageOptions<ClinicalReport>, "limit" | "cursor"> & { study_id?: string } = {},
+): Promise<DbPageResult<ReportSummary>> {
+  const page = await dbPage<ClinicalReport>("reports", {
+    limit: options.limit,
+    cursor: options.cursor,
+    direction: "desc",
+    predicate: options.study_id ? (report) => report.study_id === options.study_id : undefined,
+  });
+  return {
+    ...page,
+    items: page.items.map((report) => {
+      const presented = presentReportWithLegacyStatus(report);
+      return {
+        report_id: presented.report_id,
+        study_id: presented.study_id,
+        generated_at: presented.generated_at,
+        report_version: presented.report_version,
+        review_status: presented.review.status,
+        ...(presented.legacy_status ? { legacy_status: presented.legacy_status } : {}),
+        analysis_mode: presented.analysis_mode,
+        triage_priority: presented.triage_priority,
+      };
+    }),
+  };
+}
+
+/** Return every immutable report version for a study, newest first. This is
+ * intentionally metadata-only so replay history can be reviewed without
+ * exposing the full clinical payload from an index endpoint. */
+export async function listReportVersions(studyId: string): Promise<ReportSummary[]> {
+  const reports = await dbAll<ClinicalReport>("reports");
+  return reports.filter((report) => report.study_id === studyId).sort((a, b) => b.generated_at.localeCompare(a.generated_at)).map((report) => ({
+    report_id: report.report_id,
+    study_id: report.study_id,
+    generated_at: report.generated_at,
+    report_version: report.report_version,
+    review_status: report.review.status,
+    ...(report.legacy_status ? { legacy_status: report.legacy_status } : {}),
+    analysis_mode: report.analysis_mode,
+    triage_priority: report.triage_priority,
+  }));
 }
 
 export const POSSIBLE_ASSOCIATIONS_NOTE =
@@ -268,22 +339,44 @@ export async function generateReport(
   analysis: AnalysisResult,
   patient?: ClinicalReport["patient"],
   reasoningSnapshot?: ImmutableReasoningRecord,
+  options: {
+    report_id?: string;
+    supersedes_report_id?: string;
+    source_legacy_report_id?: string;
+    replay_reason?: string;
+    replayed_by?: string;
+    replayed_at?: string;
+  } = {},
 ): Promise<ClinicalReport> {
-  const existing = await dbGet<ClinicalReport>("reports", `rep_${analysis.study.study_id}`);
+  const reportId = options.report_id ?? `rep_${analysis.study.study_id}`;
+  const existing = await dbGet<ClinicalReport>("reports", reportId);
   if (existing?.review.status === "clinician_finalized") {
     throw new Error("Finalized report is immutable; create a new study/version instead of rerunning analysis.");
   }
   if (existing && (!existing.version_freeze || !existing.reasoning_snapshot)) {
     throw new Error("Legacy report is unsealed; explicit replay/versioning is required before replacing it.");
   }
+  if (existing?.version_freeze && existing.reasoning_snapshot) {
+    const sourceHash = sha256Canonical(analysis);
+    if (existing.version_freeze.source_analysis_sha256 === sourceHash &&
+        (!reasoningSnapshot || existing.reasoning_snapshot.payload_sha256 === reasoningSnapshot.payload_sha256)) {
+      // At-least-once workers may reach publication again after a process
+      // crash. Returning the already-sealed row makes finalization effectively
+      // exactly-once without rewriting its timestamp, clinician state, or
+      // immutable AI payload.
+      return existing;
+    }
+    if (!options.report_id) throw new Error("A sealed report already exists for a different analysis version; create an explicit version/replay instead of replacing it.");
+  }
   if (reasoningSnapshot && (
     reasoningSnapshot.study_id !== analysis.study.study_id ||
-    reasoningSnapshot.report_id !== `rep_${analysis.study.study_id}` ||
+    reasoningSnapshot.report_id !== reportId ||
     reasoningSnapshot.source_analysis_sha256 !== sha256Canonical(analysis)
   )) throw new Error("Reasoning snapshot does not match this analysis/report");
   const report: ClinicalReport = {
-    report_id: `rep_${analysis.study.study_id}`,
+    report_id: reportId,
     study_id: analysis.study.study_id,
+    analysis_id: `anl_${analysis.study.study_id}`,
     generated_at: new Date().toISOString(),
     report_version: REPORT_VERSION,
     validation_banner: VALIDATION_STATUS_BANNER,
@@ -322,6 +415,12 @@ export async function generateReport(
     possible_conditions: analysis.possible_conditions,
     treatment_information: analysis.treatment_information,
     reasoning_snapshot: reasoningSnapshot ? structuredClone(reasoningSnapshot) : undefined,
+    ...(options.supersedes_report_id ? { supersedes_report_id: options.supersedes_report_id } : {}),
+    ...(options.source_legacy_report_id ? { source_legacy_report_id: options.source_legacy_report_id } : {}),
+    ...(options.replay_reason ? { replay_reason: options.replay_reason } : {}),
+    ...(options.replayed_by ? { replayed_by: options.replayed_by } : {}),
+    ...(options.replayed_at ? { replayed_at: options.replayed_at } : {}),
+    ...(options.replayed_at ? { ruleset_version: analysis.provenance.ruleset_version } : {}),
     diagnosis_gate: analysis.diagnosis_gate,
     review: { status: "ai_only" },
     provenance: analysis.provenance,
@@ -352,8 +451,17 @@ export async function generateReport(
     frozen_at: report.generated_at,
   };
 
-  await dbPut("reports", report.report_id, report);
-  report.exports.json_path = await writeJson("reports", report.report_id, report);
+  const journal = await prepareRecoveryJournal({ operation: "report_publish", resources: [{ kind: "report", id: report.report_id }] });
+  try {
+    await dbPut("reports", report.report_id, report);
+    await updateRecoveryJournal(journal.journal_id, "DB_COMMITTED");
+    report.exports.json_path = await writeJson("reports", report.report_id, report);
+    await updateRecoveryJournal(journal.journal_id, "FILES_COMMITTED");
+    await updateRecoveryJournal(journal.journal_id, "COMPLETE");
+  } catch (error) {
+    await updateRecoveryJournal(journal.journal_id, "FAILED_RECONCILIATION", String(error)).catch(() => undefined);
+    throw error;
+  }
   return report;
 }
 
@@ -392,7 +500,16 @@ export async function attachReasoningSnapshot(
     frozen_at: new Date().toISOString(),
   };
   report.version_freeze.ai_payload_sha256 = sha256Canonical(reportAiPayload(report));
-  await dbPut("reports", report.report_id, report);
-  report.exports.json_path = await writeJson("reports", report.report_id, report);
+  const journal = await prepareRecoveryJournal({ operation: "report_reasoning_attach", resources: [{ kind: "report", id: report.report_id }] });
+  try {
+    await dbPut("reports", report.report_id, report);
+    await updateRecoveryJournal(journal.journal_id, "DB_COMMITTED");
+    report.exports.json_path = await writeJson("reports", report.report_id, report);
+    await updateRecoveryJournal(journal.journal_id, "FILES_COMMITTED");
+    await updateRecoveryJournal(journal.journal_id, "COMPLETE");
+  } catch (error) {
+    await updateRecoveryJournal(journal.journal_id, "FAILED_RECONCILIATION", String(error)).catch(() => undefined);
+    throw error;
+  }
   return report;
 }

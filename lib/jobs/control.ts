@@ -7,6 +7,8 @@ export type JobStage =
   | "running_inference"
   | "persisting_analysis"
   | "generating_report"
+  | "stale"
+  | "retryable"
   | "completed"
   | "cancellation_requested"
   | "cancelled"
@@ -30,7 +32,12 @@ export interface ProgressUpdate {
 }
 
 export interface JobExecutionControl {
-  shouldCancel?: () => boolean;
+  /**
+   * Cancellation is allowed to consult durable state.  Existing synchronous
+   * callbacks remain valid, while workers can now re-read the persisted job
+   * row at every bounded checkpoint after a process restart.
+   */
+  shouldCancel?: () => boolean | Promise<boolean>;
   onProgress?: (update: ProgressUpdate) => void | Promise<void>;
 }
 
@@ -59,7 +66,7 @@ export function makeJobProgress(update: ProgressUpdate): JobProgress {
 /** Report a bounded server-authored checkpoint, checking cancellation both
  * before and after the callback so a request cannot slip into the next stage. */
 export async function jobCheckpoint(control: JobExecutionControl | undefined, update: ProgressUpdate): Promise<void> {
-  if (control?.shouldCancel?.()) throw new JobCancelledError();
+  if (await control?.shouldCancel?.()) throw new JobCancelledError();
   await control?.onProgress?.(update);
-  if (control?.shouldCancel?.()) throw new JobCancelledError();
+  if (await control?.shouldCancel?.()) throw new JobCancelledError();
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/rbac";
 import { requireSession } from "@/lib/auth/rbac";
-import { listPatients, ensurePatient, findPatientByRef } from "@/lib/patients/service";
+import { listPatientsPage, ensurePatient, findPatientByRef } from "@/lib/patients/service";
 import { filterScopedResources, hasPatientScope } from "@/lib/auth/scope";
 
 export const runtime = "nodejs";
@@ -19,9 +19,23 @@ export async function GET(req: NextRequest) {
   const { user } = await requireSession(req);
   if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   const q = req.nextUrl.searchParams.get("q") ?? undefined;
-  const patients = await listPatients(q ?? undefined);
-  const visible = await filterScopedResources(user, patients);
-  return NextResponse.json({ patients: visible });
+  const rawLimit = Number(req.nextUrl.searchParams.get("limit"));
+  const limit = Number.isFinite(rawLimit) ? rawLimit : undefined;
+  const cursor = req.nextUrl.searchParams.get("cursor") ?? undefined;
+  try {
+    const page = await listPatientsPage({ query: q, limit, cursor });
+    const visible = await filterScopedResources(user, page.items);
+    return NextResponse.json({
+      patients: visible,
+      next_cursor: page.next_cursor,
+      has_more: page.has_more,
+      limit: page.limit,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid pagination request";
+    if (/pagination (cursor|scan)/i.test(message)) return NextResponse.json({ error: message }, { status: 400 });
+    throw error;
+  }
 }
 
 export async function POST(req: NextRequest) {

@@ -160,11 +160,13 @@ export async function runSelfTest(): Promise<SelfTestReport> {
       "clinician treatment note recorded separately; AI treatment_information (absent for DEMO) left untouched"
     );
 
-    // 13. Delete removes study.
+    // 13. Delete is a durable lifecycle transition. Clinical history remains
+    // addressable for audit/replay while source bytes and derivatives are
+    // removed by the explicit cleanup workflow.
     if (darkStudyId) {
       await deleteStudy(darkStudyId);
       const gone = await getStudyBundle(darkStudyId);
-      t("delete_study", gone.study === null);
+      t("delete_study_lifecycle", gone.study?.lifecycle === "DELETED" && gone.report?.lifecycle === "DELETED");
       darkStudyId = null;
     }
   } catch (err) {

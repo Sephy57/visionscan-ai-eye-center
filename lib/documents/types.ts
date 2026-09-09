@@ -34,6 +34,9 @@ export type DocumentType =
 export interface DocumentRecord {
   document_id: string;
   study_id: string;
+  /** Explicit relational scope metadata; optional for legacy imports. */
+  patient_id?: string | null;
+  tenant_id?: string | null;
   patient_ref?: string;          // copied from the study record; optional, never invented
   filename_display: string;      // sanitized original filename (display/audit only, never a filesystem path)
   mime_type: string;             // always "application/pdf" for accepted S1 documents

@@ -24,23 +24,33 @@ export default function PatientsPage() {
   const [rows, setRows] = useState<PatientRow[]>([]);
   const [query, setQuery] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [newRef, setNewRef] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
 
-  async function load(q?: string) {
+  async function load(q?: string, cursor?: string, append = false) {
+    if (append) setLoadingMore(true);
     try {
-      const res = await authFetch(`/api/patients${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+      const params = new URLSearchParams({ limit: "50" });
+      if (q) params.set("q", q);
+      if (cursor) params.set("cursor", cursor);
+      const res = await authFetch(`/api/patients?${params.toString()}`);
       if (!res.ok) throw new Error();
       const json = await res.json();
-      setRows(json.patients ?? []);
+      setRows((previous) => append ? [...previous, ...(json.patients ?? [])] : (json.patients ?? []));
+      setNextCursor(typeof json.next_cursor === "string" ? json.next_cursor : null);
+      setHasMore(json.has_more === true);
       setError(null);
     } catch {
       setError("Could not load patients.");
     }
     setLoaded(true);
+    setLoadingMore(false);
   }
 
   useEffect(() => { load(); }, []);
@@ -126,6 +136,7 @@ export default function PatientsPage() {
       )}
 
       {rows.length > 0 && (
+        <>
         <div className="table-wrap" tabIndex={0}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
@@ -156,6 +167,14 @@ export default function PatientsPage() {
           </tbody>
         </table>
         </div>
+        {hasMore && nextCursor && (
+          <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 4px" }}>
+            <button className="btn secondary sm" onClick={() => load(query, nextCursor, true)} disabled={loadingMore}>
+              {loadingMore ? "Loading…" : "Load more patients"}
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   );

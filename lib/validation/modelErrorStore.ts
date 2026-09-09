@@ -1,4 +1,4 @@
-import { dbAll, dbGet, dbPut } from "../storage/db";
+import { dbAll, dbGet, dbPage, dbPut, type DbPageOptions, type DbPageResult } from "../storage/db";
 import { audit } from "../audit";
 import {
   MODEL_ERROR_RECORD_SCHEMA_VERSION,
@@ -97,6 +97,39 @@ export async function listModelErrors(filters?: {
     .filter((record) => !filters?.category || record.category === filters.category)
     .filter((record) => !filters?.lifecycle || (record.lifecycle ?? (record.status === "OPEN" ? "UNREVIEWED" : undefined)) === filters.lifecycle)
     .sort((a, b) => b.observed_at.localeCompare(a.observed_at));
+}
+
+/**
+ * Bounded synthetic model-error registry page. Invalid legacy rows are
+ * skipped exactly as in listModelErrors(); the opaque cursor is based only on
+ * persistence ordering and never includes case text, patient data, or raw
+ * model output.
+ */
+export async function listModelErrorsPage(filters: {
+  model_id?: string;
+  lifecycle?: ModelErrorLifecycle;
+  category?: ModelErrorRecord["category"];
+} = {}, options: Pick<DbPageOptions<unknown>, "limit" | "cursor"> = {}): Promise<DbPageResult<ModelErrorRecord>> {
+  const page = await dbPage<unknown>("model_errors", {
+    ...options,
+    direction: "desc",
+    predicate: (value) => {
+      try {
+        const record = readStored(value);
+        return (!filters.model_id || record.model_id === filters.model_id) &&
+          (!filters.category || record.category === filters.category) &&
+          (!filters.lifecycle || (record.lifecycle ?? (record.status === "OPEN" ? "UNREVIEWED" : undefined)) === filters.lifecycle);
+      } catch {
+        return false;
+      }
+    },
+  });
+  return {
+    ...page,
+    items: page.items.flatMap((value) => {
+      try { return [readStored(value)]; } catch { return []; }
+    }),
+  };
 }
 
 /** Insert-only creation. Reusing an error id is rejected rather than overwritten. */

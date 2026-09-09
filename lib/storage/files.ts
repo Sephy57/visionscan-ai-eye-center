@@ -121,13 +121,14 @@ export async function listJson(kind: "processed" | "reports"): Promise<string[]>
   }
 }
 
-export async function deleteStudyFiles(studyId: string): Promise<void> {
+export async function deleteStudyFiles(studyId: string, options: { preserveReportExport?: boolean } = {}): Promise<void> {
   for (const dir of [UPLOAD_ROOT, PROCESSED_ROOT, REPORT_ROOT]) {
     const target = safeJoin(dir, studyId); // fails closed on path traversal - never delete outside the study's own dir
     await fs.rm(target, { recursive: true, force: true });
     // Derived records are keyed by analysis/report IDs, not the bare study ID.
     // Remove only this study's known names; never scan/delete unrelated files.
-    for (const name of [`${studyId}.json`, `anl_${studyId}.json`, `rep_${studyId}.json`]) {
+    const names = [`${studyId}.json`, `anl_${studyId}.json`, ...(options.preserveReportExport ? [] : [`rep_${studyId}.json`])];
+    for (const name of names) {
       await fs.rm(safeJoin(dir, name), { force: true });
     }
   }

@@ -43,19 +43,31 @@ const pct = (value: number | null) => value === null ? "—" : (value * 100).toF
 export default function ValidationPage() {
   const [data, setData] = useState<Dashboard | null>(null);
   const [registryErrors, setRegistryErrors] = useState<RegistryError[]>([]);
+  const [errorCursor, setErrorCursor] = useState<string | null>(null);
+  const [errorHasMore, setErrorHasMore] = useState(false);
+  const [loadingMoreErrors, setLoadingMoreErrors] = useState(false);
   const [error, setError] = useState(false);
 
+  async function loadRegistryErrors(cursor?: string, append = false) {
+    if (append) setLoadingMoreErrors(true);
+    try {
+      const params = new URLSearchParams({ limit: "50" });
+      if (cursor) params.set("cursor", cursor);
+      const response = await fetch(`/api/validation/errors?${params.toString()}`);
+      if (!response.ok) throw new Error("validation registry unavailable");
+      const registry = await response.json() as { errors?: RegistryError[]; next_cursor?: string | null; has_more?: boolean };
+      setRegistryErrors((previous) => append ? [...previous, ...(registry.errors ?? [])] : (registry.errors ?? []));
+      setErrorCursor(typeof registry.next_cursor === "string" ? registry.next_cursor : null);
+      setErrorHasMore(registry.has_more === true);
+    } finally {
+      setLoadingMoreErrors(false);
+    }
+  }
+
   useEffect(() => {
-    Promise.all([
-      fetch("/api/validation/dashboard"),
-      fetch("/api/validation/errors"),
-    ]).then(async ([dashboardResponse, errorsResponse]) => {
+    Promise.all([fetch("/api/validation/dashboard"), loadRegistryErrors()]).then(async ([dashboardResponse]) => {
       if (!dashboardResponse.ok) throw new Error("validation access denied");
       const dashboard = await dashboardResponse.json() as Dashboard;
-      if (errorsResponse.ok) {
-        const registry = await errorsResponse.json() as { errors?: RegistryError[] };
-        setRegistryErrors(registry.errors ?? []);
-      }
       setData(dashboard);
     }).catch(() => setError(true));
   }, []);
@@ -117,6 +129,11 @@ export default function ValidationPage() {
                     <span className="tiny muted">{entry.model_id} v{entry.model_version} · {entry.modality ?? "unknown modality"} · {entry.laterality ?? "unknown eye"} · severity {entry.severity ?? "unknown"}</span>
                   </div>
                 ))}
+                {errorHasMore && errorCursor && (
+                  <button className="btn secondary sm" onClick={() => loadRegistryErrors(errorCursor, true)} disabled={loadingMoreErrors}>
+                    {loadingMoreErrors ? "Loading…" : "Load more validation errors"}
+                  </button>
+                )}
               </div>
             )}
           </section>
