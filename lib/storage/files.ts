@@ -76,7 +76,28 @@ export async function writeJson(kind: "processed" | "reports", id: string, obj: 
   const root = kind === "processed" ? PROCESSED_ROOT : REPORT_ROOT;
   const p = path.join(root, `${id}.json`);
   await fs.mkdir(path.dirname(p), { recursive: true });
-  await fs.writeFile(p, JSON.stringify(obj, null, 2), "utf8");
+  const tmp = `${p}.${process.pid}.${Math.random().toString(36).slice(2, 8)}.tmp`;
+  try {
+    const handle = await fs.open(tmp, "w");
+    try {
+      await handle.writeFile(JSON.stringify(obj, null, 2), "utf8");
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    try {
+      await fs.rename(tmp, p);
+    } catch (error) {
+      // Windows does not replace an existing target with rename(). The DB row
+      // remains canonical; replace only this derived export after the durable
+      // temp has been flushed, then surface any second failure.
+      if ((error as NodeJS.ErrnoException)?.code !== "EEXIST" && (error as NodeJS.ErrnoException)?.code !== "EPERM") throw error;
+      await fs.rm(p, { force: true });
+      await fs.rename(tmp, p);
+    }
+  } finally {
+    await fs.rm(tmp, { force: true }).catch(() => undefined);
+  }
   return p;
 }
 
@@ -104,7 +125,11 @@ export async function deleteStudyFiles(studyId: string): Promise<void> {
   for (const dir of [UPLOAD_ROOT, PROCESSED_ROOT, REPORT_ROOT]) {
     const target = safeJoin(dir, studyId); // fails closed on path traversal - never delete outside the study's own dir
     await fs.rm(target, { recursive: true, force: true });
-    await fs.rm(safeJoin(dir, `${studyId}.json`), { force: true });
+    // Derived records are keyed by analysis/report IDs, not the bare study ID.
+    // Remove only this study's known names; never scan/delete unrelated files.
+    for (const name of [`${studyId}.json`, `anl_${studyId}.json`, `rep_${studyId}.json`]) {
+      await fs.rm(safeJoin(dir, name), { force: true });
+    }
   }
 }
 

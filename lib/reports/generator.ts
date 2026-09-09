@@ -4,7 +4,7 @@ import { writeJson } from "../storage/files";
 import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
 import { OPHTHALMIC_COVERAGE_REGISTRY, OPHTHALMIC_COVERAGE_VERSION } from "../models/ophthalmicCoverage";
 import { canonicalModality } from "../models/modalities";
-import { REPORT_AI_SNAPSHOT_VERSION, REASONING_RECORD_SCHEMA_VERSION, reportAiPayload, sha256Canonical, type ReportVersionFreeze } from "./integrity";
+import { REPORT_AI_SNAPSHOT_VERSION, REASONING_RECORD_SCHEMA_VERSION, reportAiPayload, sha256Canonical, presentReportWithLegacyStatus, type ReportVersionFreeze } from "./integrity";
 import { EVIDENCE_TAXONOMY_VERSION } from "../evidence/conditionTaxonomy";
 import { REASONING_ENGINE_VERSION } from "../models/reasoningEngine";
 import { VALIDATION_REGISTRY_VERSION } from "../models/validationRegistry";
@@ -30,6 +30,8 @@ export interface ClinicalReport {
   /** Hash/version seal over server-generated AI fields. Clinician-authored
    * review fields are additive and deliberately excluded from this seal. */
   version_freeze: ReportVersionFreeze;
+  legacy_status?: "LEGACY_UNSEALED";
+  legacy_warning?: string;
   /** Immutable, self-contained specialist/condition reasoning produced from
    * this exact analysis. It is attached before the report is published. */
   reasoning_snapshot?: ImmutableReasoningRecord;
@@ -271,6 +273,9 @@ export async function generateReport(
   if (existing?.review.status === "clinician_finalized") {
     throw new Error("Finalized report is immutable; create a new study/version instead of rerunning analysis.");
   }
+  if (existing && (!existing.version_freeze || !existing.reasoning_snapshot)) {
+    throw new Error("Legacy report is unsealed; explicit replay/versioning is required before replacing it.");
+  }
   if (reasoningSnapshot && (
     reasoningSnapshot.study_id !== analysis.study.study_id ||
     reasoningSnapshot.report_id !== `rep_${analysis.study.study_id}` ||
@@ -353,7 +358,8 @@ export async function generateReport(
 }
 
 export async function getReport(reportId: string): Promise<ClinicalReport | null> {
-  return dbGet<ClinicalReport>("reports", reportId);
+  const report = await dbGet<ClinicalReport>("reports", reportId);
+  return report ? presentReportWithLegacyStatus(report) : null;
 }
 
 /** Attach exactly one immutable reasoning snapshot and reseal the complete

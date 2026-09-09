@@ -24,10 +24,15 @@
     "audit:fs": "node scripts/audit-filesystem.mjs",
     "seed:admin": "node scripts/seed-admin.mjs",
     "ocr:warmup": "node scripts/ocr-warmup.mjs",
-    "migration:preflight": "node scripts/persistence-migration-preflight.mjs"
+    "migration:preflight": "node scripts/persistence-migration-preflight.mjs",
+    "migrate:data": "node scripts/migrate-data.mjs",
+    "backup:data": "node scripts/backup-data.mjs",
+    "restore:data": "node scripts/restore-data.mjs",
+    "benchmark:persistence": "node scripts/persistence-benchmark.mjs"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.8",
+    "better-sqlite3": "^11.10.0",
     "next": "^16.3.4",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.10.38",
@@ -38,6 +43,7 @@
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^16.3.4",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "20.14.10",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",

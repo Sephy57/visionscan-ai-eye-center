@@ -12,7 +12,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 
 const repo = process.cwd();
-const source = process.env.VISIONSCAN_DATABASE_FILE ?? path.join(repo, "data", "database", "eye-ai.json");
+const source = process.env.VISIONSCAN_LEGACY_DATABASE_FILE ?? process.env.LEGACY_DATABASE_FILE ?? process.env.VISIONSCAN_DATABASE_FILE ?? path.join(repo, "data", "database", "eye-ai.json");
 const write = process.argv.includes("--write-manifest");
 
 const raw = await fs.readFile(source, "utf8");
@@ -53,4 +53,3 @@ if (write) {
   console.log(JSON.stringify(manifest, null, 2));
   console.error("Dry run only. Re-run with --write-manifest to persist this manifest; source was not changed.");
 }
-

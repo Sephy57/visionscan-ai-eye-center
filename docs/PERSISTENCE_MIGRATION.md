@@ -1,39 +1,71 @@
-# Persistence migration and rollback
+# Persistence migration, backup, and rollback
 
-The current atomic JSON store (`data/database/eye-ai.json`) is for local
-development and is not a production PHI database. The stable `dbGet`/`dbPut`/
-`dbAll` interface is intentionally the seam for a reviewed SQLite development
-adapter or PostgreSQL production adapter.
-
-## Preflight
-
-Run:
+VisionScan now uses SQLite as its local transactional persistence backend. The
+existing `dbGet`/`dbPut`/`dbAll` seam is unchanged for application callers, but
+each collection is stored in a table with a JSON payload envelope:
 
 ```text
-npm run migration:preflight
+id TEXT PRIMARY KEY, payload TEXT NOT NULL, created_at TEXT NOT NULL,
+updated_at TEXT NOT NULL
 ```
 
-This is a dry run. It parses the source, validates collection shape, computes
-the source SHA-256, and prints collection counts without changing the source.
-Use `npm run migration:preflight -- --write-manifest` only when a local,
-gitignored manifest is wanted. The manifest is evidence for an importer review;
-it is not itself a database migration.
+The connection enables `foreign_keys=ON`, `journal_mode=WAL`,
+`busy_timeout=5000`, and `synchronous=FULL`. Schema and migration versions are
+recorded in `persistence_meta`. Large originals, PDFs, OCT regions, and model
+weights remain file objects referenced by application records; SQLite cannot
+make a file-system write and a database commit one atomic resource, so callers
+must use the existing immutable/hash and reconciliation boundaries.
 
-## Required production migration controls
+## Importing the legacy JSON store
 
-1. Make and independently verify a read-only backup of the entire JSON store
-   and file objects; record hashes and a restore test.
-2. Import into a staging database with explicit schema/version mappings for
-   patients, encounters, studies, documents, images, measurements, findings,
-   evidence, reviews, reports, audit, model registry, evaluations, medications,
-   sessions, grants, consent, and jobs.
-3. Reconcile row counts, IDs, references, tenant/patient scope, hashes, and
-   timestamps. Stop on any mismatch; never silently coerce PHI.
-4. Keep the source immutable and read-only during cutover. Run dual-read or a
-   maintenance window, then perform a signed, human-approved cutover.
-5. Roll back by routing reads/writes back to the verified source or restoring a
-   database snapshot. Never delete the source as part of migration.
+`npm run migrate:data` is always a dry run unless `--apply` is supplied. A
+normal review sequence is:
 
-Encryption, TLS, backups, retention, key management, and production consent
-enforcement remain deployment responsibilities and are not simulated here.
+```text
+npm run migrate:data -- --dry-run --source data/database/eye-ai.json --destination data/database/eye-ai.db
+npm run migrate:data -- --apply --source data/database/eye-ai.json --destination data/database/eye-ai.db
+```
 
+The importer validates the top-level `collections` envelope, counts records,
+computes source and deterministic record hashes, and reports invalid or
+unsupported collections. Applying creates `data/backups/migration-*` (ignored
+by Git), copies and hashes the immutable source and any existing destination,
+imports all supported records in one SQLite transaction, verifies counts and
+`PRAGMA integrity_check`, and atomically installs the result. A destination
+with the same `migration_source_sha256` returns `already_applied`; a different
+destination requires `--force` after review. Temporary databases are removed
+on failure and the source is never changed.
+
+The importer deliberately refuses to open a non-SQLite file at the destination
+path. This protects the common `.db`/legacy-JSON collision and requires an
+operator-reviewed migration rather than silently replacing data.
+
+Reports that lack an immutable `version_freeze` or `reasoning_snapshot` are
+counted and labelled `LEGACY_UNSEALED` at delivery time. No seal, snapshot, or
+clinical conclusion is invented; the existing report-integrity gate continues
+to reject those reports for clinician finalization.
+
+## Backup and restore
+
+`npm run backup:data -- --dry-run` prints a read-only plan. The real command
+writes an ignored `data/backups/backup-*` directory containing the database,
+SQLite sidecars when present, a hash- and size-bearing `manifest.json`, and an
+asset manifest for uploads, documents, processed outputs, and reports. Model
+weights are never copied automatically and credentials are never included.
+
+Restore is non-destructive by default:
+
+```text
+npm run restore:data -- --backup data/backups/backup-<timestamp> --dry-run
+npm run restore:data -- --backup data/backups/backup-<timestamp>
+```
+
+That creates a new ignored `data/restores/restore-*` directory after verifying
+the database hash and SQLite integrity. Replacing an active database requires
+an explicit target and `--activate`; the current target is backed up first.
+There is no implicit overwrite.
+
+Encryption, TLS, retention, key management, production consent enforcement,
+and a multi-resource outbox/reconciliation worker remain deployment
+responsibilities. This project remains research/demo software and is not a
+medical device.

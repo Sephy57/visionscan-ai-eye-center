@@ -25,6 +25,12 @@ logs/
 # Temp
 tmp/
 *.tmp
+*.db
+*.db-wal
+*.db-shm
+data/backups/
+data/restores/
+data/migrations/
 
 # Caches
 .cache/

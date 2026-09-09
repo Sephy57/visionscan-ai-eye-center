@@ -5,6 +5,24 @@ import type { AnalysisResult } from "../analysis/schema";
 export const REPORT_AI_SNAPSHOT_VERSION = "1.0.0";
 export const REASONING_RECORD_SCHEMA_VERSION = "1.0.0";
 
+export type LegacyReportStatus = "LEGACY_UNSEALED";
+
+/**
+ * Present a report without mutating the stored record. Legacy JSON imports
+ * may not have a version seal or reasoning snapshot; callers must see an
+ * explicit warning while the integrity gate continues to reject finalization.
+ */
+export function presentReportWithLegacyStatus<T extends { version_freeze?: unknown; reasoning_snapshot?: unknown }>(
+  report: T,
+): T & { legacy_status?: LegacyReportStatus; legacy_warning?: string } {
+  const presented = (typeof structuredClone === "function" ? structuredClone(report) : JSON.parse(JSON.stringify(report)) as T) as T & { legacy_status?: LegacyReportStatus; legacy_warning?: string };
+  if (!presented.version_freeze || !presented.reasoning_snapshot) {
+    presented.legacy_status = "LEGACY_UNSEALED";
+    presented.legacy_warning = "Legacy report is unsealed: immutable version freeze or reasoning snapshot is missing. Clinician verification is required; no seal was fabricated.";
+  }
+  return presented;
+}
+
 export interface ReportVersionFreeze {
   snapshot_version: typeof REPORT_AI_SNAPSHOT_VERSION;
   report_version: string;

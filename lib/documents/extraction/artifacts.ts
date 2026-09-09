@@ -24,7 +24,27 @@ export async function writeExtractionArtifact(artifact: ExtractionArtifact): Pro
   ensureDirs();
   const target = artifactPath(artifact.document_id);
   await fs.mkdir(path.dirname(target), { recursive: true });
-  await fs.writeFile(target, JSON.stringify(artifact, null, 2), "utf8");
+  const tmp = `${target}.${process.pid}.${Math.random().toString(36).slice(2, 8)}.tmp`;
+  try {
+    const handle = await fs.open(tmp, "w");
+    try {
+      await handle.writeFile(JSON.stringify(artifact, null, 2), "utf8");
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    try {
+      await fs.rename(tmp, target);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code !== "EEXIST" && (error as NodeJS.ErrnoException)?.code !== "EPERM") throw error;
+      await fs.rm(target, { force: true });
+      await fs.rename(tmp, target);
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code !== "EEXIST") throw error;
+  } finally {
+    await fs.rm(tmp, { force: true }).catch(() => undefined);
+  }
   return target;
 }
 

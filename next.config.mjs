@@ -5,7 +5,7 @@ const nextConfig = {
   // .next is created in the project root, which is D:\AI EYE ANALYSIS PLATFORM).
   // Next 15/16 uses the stable top-level option. Keeping these native/server
   // packages external avoids bundling their platform-specific binaries.
-  serverExternalPackages: ["sharp", "pdfjs-dist", "tesseract.js", "@napi-rs/canvas"],
+  serverExternalPackages: ["sharp", "pdfjs-dist", "tesseract.js", "@napi-rs/canvas", "better-sqlite3"],
 };
 
 export default nextConfig;

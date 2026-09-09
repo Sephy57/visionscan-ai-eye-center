@@ -1,14 +1,16 @@
 import { NormalizedStudy, DeviceMetadata, SecureFileImportAdapter, ScanType, EyeLaterality } from "../devices/adapter";
 import { newId, saveOriginalScan, readOriginalScan, StoredFile, writeJson, deleteStudyFiles } from "../storage/files";
-import { dbPut, dbGet, dbAll, dbDelete } from "../storage/db";
+import { dbPut, dbGet, dbAll, dbDelete, dbTransaction } from "../storage/db";
 import { runPipeline } from "../analysis/pipeline";
 import { AnalysisResult } from "../analysis/schema";
 import { generateReport, ClinicalReport } from "../reports/generator";
 import { runSafetyChecks } from "../clinical/safety";
 import { audit, appendAnalysisAudit } from "../audit";
-import { deleteDocument } from "../documents/service";
 import { listAllDocumentRecords } from "../documents/repository";
-import { deleteTestResultsForDocument } from "../documents/extraction/testResultService";
+import { deleteOriginalDocument } from "../documents/storage";
+import { deleteExtractedRegions } from "../documents/extraction/pdfIntelligence";
+import { deleteExtractionArtifact } from "../documents/extraction/artifacts";
+import { deleteRecordExtraction } from "../documents/extraction/recordExtractionStore";
 import { pickDemoScenario } from "../analysis/findings";
 import { PatientSymptom, validateSymptoms, SYMPTOM_MAP } from "../clinical/symptoms";
 import { ensurePatient, createEncounter } from "../patients/service";
@@ -18,7 +20,7 @@ import { listDocumentsByStudy } from "../documents/repository";
 import { readExtractionArtifact } from "../documents/extraction/artifacts";
 import { readExtractedRegion } from "../documents/extraction/pdfIntelligence";
 import { canonicalModality } from "../models/modalities";
-import { verifyReportVersionFreeze } from "../reports/integrity";
+import { presentReportWithLegacyStatus, verifyReportVersionFreeze } from "../reports/integrity";
 import { jobCheckpoint, type JobExecutionControl } from "../jobs/control";
 import { buildStructuredClinicalEvidence } from "../evidence/structuredClinicalEvidence";
 import { DeterministicReasoningEngine } from "../models/reasoningEngine";
@@ -342,7 +344,8 @@ export async function getStudyBundle(studyId: string): Promise<{
   // transport while preserving the sealed snapshot for audit and replay.
   let presentationReport: ClinicalReport | null = null;
   if (report) {
-    const { reasoning_snapshot: _reasoningSnapshot, ...safeReport } = report;
+    const presented = presentReportWithLegacyStatus(report);
+    const { reasoning_snapshot: _reasoningSnapshot, ...safeReport } = presented;
     presentationReport = safeReport;
   }
   return { study, analysis: analysisRecord?.result ?? null, report: presentationReport };
@@ -439,18 +442,40 @@ export async function listStudiesWithStatus(): Promise<DashboardStudyRow[]> {
 export async function deleteStudy(studyId: string): Promise<boolean> {
   const record = await dbGet<StudyRecord>("studies", studyId);
   if (!record) return false;
-  await deleteStudyFiles(studyId);
-  // Cascade: documents bound to this study are deleted with it (S1).
-  const docs = await listAllDocumentRecords();
-  for (const doc of docs) {
-    if (doc.study_id === studyId && doc.status !== "DELETED") {
-      await deleteTestResultsForDocument(doc.document_id);
-      await deleteDocument(doc.document_id, "study_deletion_cascade");
+  // Cascade all database records in one transaction. File deletion is kept
+  // outside this transaction because SQLite cannot atomically commit with the
+  // filesystem; the follow-up cleanup is idempotent and audited below.
+  const docs = (await listAllDocumentRecords()).filter((doc) => doc.study_id === studyId && doc.status !== "DELETED");
+  const documentIds = docs.map((doc) => doc.document_id);
+  const testResults = await dbAll<{ result_id: string; document_id: string }>("test_results");
+  const resultIds = testResults.filter((result) => documentIds.includes(result.document_id)).map((result) => result.result_id);
+  await dbTransaction((tx) => {
+    for (const doc of docs) {
+      const current = tx.get<typeof doc>("documents", doc.document_id) ?? doc;
+      tx.put("documents", doc.document_id, { ...current, status: "DELETED", updated_at: new Date().toISOString() });
     }
+    tx.deleteMany("test_results", resultIds);
+    tx.deleteMany("record_extractions", documentIds);
+    tx.delete("studies", studyId);
+    tx.delete("analyses", `anl_${studyId}`);
+    tx.delete("reports", `rep_${studyId}`);
+  });
+  await deleteStudyFiles(studyId);
+  for (const doc of docs) {
+    await deleteOriginalDocument(doc.document_id);
+    await deleteExtractedRegions(doc.document_id);
+    await deleteExtractionArtifact(doc.document_id);
+    await deleteRecordExtraction(doc.document_id);
+    await audit({
+      actor: "user:study_deletion_cascade",
+      action: "document.deleted",
+      resource: "document",
+      resourceId: doc.document_id,
+      studyId,
+      outcome: "ok",
+      detail: "study cascade removed database derivatives and immutable file references",
+    });
   }
-  await dbDelete("studies", studyId);
-  await dbDelete("analyses", `anl_${studyId}`);
-  await dbDelete("reports", `rep_${studyId}`);
   await audit({ actor: "user", action: "delete", studyId, outcome: "ok", detail: "study and derived artifacts deleted" });
   return true;
 }

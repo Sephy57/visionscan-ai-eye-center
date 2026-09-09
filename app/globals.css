@@ -18,7 +18,8 @@
   --text: #16191d;
   --text-2: #565f6b;
   --text-3: #5a636f; /* WCAG AA (4.5:1+) on both --surface #ffffff (6.1:1) and --bg #f6f7f9 (5.7:1) - was #8b95a1 (3.0:1, a real axe color-contrast violation) */
-  --accent: #2f6fdb;
+  /* 5.07:1 against the page background (WCAG AA for normal text). */
+  --accent: #2b66cb;
   --accent-strong: #245bbd;
   --accent-soft: #eef3fc;
   --teal: #0f766e;

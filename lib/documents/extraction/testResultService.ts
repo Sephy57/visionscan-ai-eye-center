@@ -1,4 +1,4 @@
-import { dbAll, dbDelete, dbGet, dbPut } from "../../storage/db";
+import { dbAll, dbDeleteMany, dbGet, dbPut, dbTransaction } from "../../storage/db";
 import { audit } from "../../audit";
 import { getDocument } from "../repository";
 import { TestResult, VerificationEntry, VerificationStatus, TEST_RESULTS_VERSION, Laterality } from "./testResults";
@@ -34,13 +34,13 @@ const VALUE_BOUNDS: Partial<Record<TestResult["test_type"], { min: number; max: 
 export async function persistTestResults(documentId: string, studyId: string, artifact: ExtractionArtifact, actor: string): Promise<number> {
   // Replace any previous generation for this document (re-extraction supersedes).
   const previous = await dbAll<TestResult>("test_results");
-  for (const old of previous) {
-    if (old.document_id === documentId) await dbDelete("test_results", old.result_id);
-  }
+  await dbDeleteMany("test_results", previous.filter((old) => old.document_id === documentId).map((old) => old.result_id));
 
   const drafts = buildTestResults(artifact);
   const results = materializeResults(documentId, studyId, drafts);
-  for (const r of results) await dbPut("test_results", r.result_id, r);
+  await dbTransaction((tx) => {
+    for (const r of results) tx.put("test_results", r.result_id, r);
+  });
 
   await audit({
     actor: `user:${actor}`,
@@ -75,14 +75,7 @@ export async function getTestResult(resultId: string): Promise<TestResult | null
 /** Deletes results bound to a document (used when its study is deleted). */
 export async function deleteTestResultsForDocument(documentId: string): Promise<number> {
   const all = await dbAll<TestResult>("test_results");
-  let n = 0;
-  for (const r of all) {
-    if (r.document_id === documentId) {
-      await dbDelete("test_results", r.result_id);
-      n++;
-    }
-  }
-  return n;
+  return dbDeleteMany("test_results", all.filter((r) => r.document_id === documentId).map((r) => r.result_id));
 }
 
 export interface VerificationInput {

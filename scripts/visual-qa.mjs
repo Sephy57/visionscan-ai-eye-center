@@ -15,9 +15,9 @@ const BASE = process.env.BASE_URL || "http://localhost:3000";
     // The patient workspace adds a first-class Patients destination to the
     // existing navigation. Keep this explicit so a missing/duplicated link
     // still fails loudly instead of allowing the UI contract to drift.
-    const navLinks = (html.match(/class="nav-link/g) || []).length; // expected: 12 sidebar links
+    const navLinks = (html.match(/class="nav-link/g) || []).length; // expected: 13 sidebar links (including Patients)
     const mainContent = (html.match(/id="main-content"/g) || []).length;
-    const ok = sidebars === 1 && mobileNav === 0 && drawerClosed && banners === 1 && navLinks === 12 && mainContent === 1;
+    const ok = sidebars === 1 && mobileNav === 0 && drawerClosed && banners === 1 && navLinks === 13 && mainContent === 1;
     if (!ok) allOk = false;
     console.log(`${ok ? "[ok ]" : "[FAIL]"} ${route.padEnd(12)} sidebars=${sidebars} mobileNavInDOM=${mobileNav} drawerClosed=${drawerClosed} banners=${banners} navLinks=${navLinks} main=${mainContent}`);
   }

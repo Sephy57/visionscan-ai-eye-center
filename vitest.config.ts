@@ -5,16 +5,14 @@ export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
     environment: "node",
+    setupFiles: ["./tests/setup.ts"],
     testTimeout: 60000,
-    // Cleanup may serialize several full JSON-store rewrites after document
-    // and verification suites. Give hooks a realistic budget without
-    // changing individual test assertions or production behavior.
+    // Keep hook timeouts honest; isolated SQLite teardown should complete well
+    // below this budget and must not hide a persistence regression.
     hookTimeout: 30000,
-    // Sequential file execution: the JSON document store persists the WHOLE
-    // database per write and is documented as single-process (lib/storage/db.ts).
-    // Parallel test files each hold their own in-memory copy and race
-    // (lost updates / resurrected deletes) - so files must not run in
-    // parallel against the shared D: database.
+    // A single worker keeps native image/OCR fixtures predictable. Each run is
+    // independently rooted by tests/setup.ts, so this is no longer a workaround
+    // for a shared whole-file JSON database.
     fileParallelism: false,
     // NOTE: native modules in the S2 extraction suite are lazy-loaded
     // (no top-level @napi-rs/canvas import).

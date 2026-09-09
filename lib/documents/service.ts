@@ -7,6 +7,8 @@ import { validatePdf, DEFAULT_VALIDATION_LIMITS } from "./validation";
 import { saveOriginalDocument, readOriginalDocument, deleteOriginalDocument } from "./storage";
 import { putDocument, getDocument, listAllDocumentRecords } from "./repository";
 import { deleteExtractedRegions } from "./extraction/pdfIntelligence";
+import { deleteExtractionArtifact } from "./extraction/artifacts";
+import { deleteRecordExtraction } from "./extraction/recordExtractionStore";
 import { sanitizeDisplayName } from "./security";
 import type { StudyRecord } from "../studies/service";
 
@@ -238,6 +240,8 @@ export async function deleteDocument(documentId: string, actor: string): Promise
   await putDocument(doc);
   await deleteOriginalDocument(documentId);
   await deleteExtractedRegions(documentId);
+  await deleteExtractionArtifact(documentId);
+  await deleteRecordExtraction(documentId);
   await audit({
     actor: `user:${actor}`,
     action: "document.deleted",

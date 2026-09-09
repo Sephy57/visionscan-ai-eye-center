@@ -6,7 +6,7 @@ import { DeterministicReasoningEngine } from "@/lib/models/reasoningEngine";
 import type { AnalysisResult } from "@/lib/analysis/schema";
 import { dbGet } from "@/lib/storage/db";
 import { getReasoningRecordForAnalysis, persistReasoningRecord } from "@/lib/reports/reasoningRecord";
-import { attachReasoningSnapshot, type ClinicalReport } from "@/lib/reports/generator";
+import type { ClinicalReport } from "@/lib/reports/generator";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,9 +33,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const persisted = await getReasoningRecordForAnalysis(params.id, analysisRecord.result);
     if (persisted) {
       const report = await dbGet<ClinicalReport>("reports", `rep_${params.id}`);
-      if (report && report.review.status === "ai_only" && !report.reasoning_snapshot) {
-        await attachReasoningSnapshot(report, persisted);
-      }
       return NextResponse.json({
         study_id: params.id,
         reasoning_record_id: persisted.reasoning_record_id,
@@ -63,10 +60,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       })
     : null;
   if (persisted) {
-    const report = await dbGet<ClinicalReport>("reports", `rep_${params.id}`);
-    if (report && report.review.status === "ai_only" && !report.reasoning_snapshot) {
-      await attachReasoningSnapshot(report, persisted);
-    }
+    // GET is deliberately read/persist-reasoning only; it never mutates a
+    // legacy report or fabricates a version seal. A reviewed workflow may
+    // attach a snapshot through an explicit write action.
   }
   return NextResponse.json({
     study_id: params.id,

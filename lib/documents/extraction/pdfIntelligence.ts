@@ -239,9 +239,16 @@ export async function extractOCTImageRegions(input: {
       const target = regionPath(input.document_id, region_id);
       ensureDirs();
       await fs.mkdir(path.dirname(target), { recursive: true });
-      await fs.writeFile(target, crop, { flag: "wx" }).catch(async (err: unknown) => {
-        if ((err as NodeJS.ErrnoException)?.code !== "EEXIST") throw err;
-      });
+      const tmp = `${target}.${process.pid}.${Math.random().toString(36).slice(2, 8)}.tmp`;
+      try {
+        const handle = await fs.open(tmp, "w");
+        try { await handle.writeFile(crop); await handle.sync(); } finally { await handle.close(); }
+        await fs.rename(tmp, target);
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException)?.code !== "EEXIST" && (err as NodeJS.ErrnoException)?.code !== "EPERM") throw err;
+      } finally {
+        await fs.rm(tmp, { force: true }).catch(() => undefined);
+      }
       regions.push({
         region_id, document_id: input.document_id, study_id: input.study_id, page: input.page, bbox: b,
         source_page_hash, roi_hash, content_type, laterality: input.classification.laterality,

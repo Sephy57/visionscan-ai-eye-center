@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": 1,
+    "createdAt": "2026-09-10T00:00:00.000Z",
+    "lastWrite": "2026-09-10T00:00:00.000Z"
+  },
+  "collections": {
+    "studies": {
+      "fixture-study": {
+        "study_id": "fixture-study",
+        "status": "uploaded",
+        "modality": "FUNDUS",
+        "eye": "OD"
+      }
+    },
+    "reports": {
+      "rep_fixture-study": {
+        "report_id": "rep_fixture-study",
+        "study_id": "fixture-study",
+        "review": { "status": "ai_only" },
+        "overall_result": "DEMO / SYNTHETIC RESULT"
+      }
+    },
+    "users": {
+      "fixture-user": {
+        "user_id": "fixture-user",
+        "username": "fixture-user",
+        "role": "REVIEWER"
+      }
+    }
+  }
+}

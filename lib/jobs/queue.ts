@@ -10,7 +10,7 @@
  * `runWorkerLoop` without touching callers or the UI.
  */
 
-import { dbPut, dbGet } from "../storage/db";
+import { dbPut, dbGet, dbTransaction } from "../storage/db";
 import { newId } from "../storage/files";
 import { audit } from "../audit";
 import { JobCancelledError, makeJobProgress, type JobProgress, type ProgressUpdate } from "./control";
@@ -31,6 +31,11 @@ export interface AnalysisJob {
   completed_at?: string;
   cancellation_requested_at?: string;
   active_attempt_id?: string;
+  /** Monotonic CAS version; every state transition increments it. */
+  version?: number;
+  claimed_at?: string;
+  lease_expires_at?: string;
+  worker_id?: string;
   retry_idempotency_keys?: string[];
   progress: JobProgress;
 }
@@ -50,6 +55,7 @@ export async function enqueueAnalysis(studyId: string): Promise<AnalysisJob> {
     kind: "analysis",
     status: "queued",
     attempts: 0,
+    version: 0,
     created_at: new Date().toISOString(),
     progress: makeJobProgress({ stage: "queued", percent: 0, message: "Waiting for a worker" }),
   };
@@ -69,6 +75,7 @@ export async function enqueueExtraction(documentId: string, studyId: string): Pr
     document_id: documentId,
     status: "queued",
     attempts: 0,
+    version: 0,
     created_at: new Date().toISOString(),
     progress: makeJobProgress({ stage: "queued", percent: 0, message: "Waiting for a worker" }),
   };
@@ -91,23 +98,36 @@ export async function cancelJob(jobId: string, requestedBy: string): Promise<Ana
     throw new Error("Cancellation is no longer safe because result publication has started.");
   }
   cancelFlags.add(jobId);
-  job.cancellation_requested_at = new Date().toISOString();
-  if (job.status === "queued") {
-    job.status = "cancelled";
-    job.completed_at = job.cancellation_requested_at;
-    job.progress = makeJobProgress({ stage: "cancelled", percent: job.progress?.percent ?? 0, message: "Cancelled before execution" });
-  } else {
-    job.progress = makeJobProgress({
-      stage: "cancellation_requested",
-      percent: job.progress?.percent ?? 0,
-      completed_units: job.progress?.completed_units,
-      total_units: job.progress?.total_units,
-      message: "Cancellation requested; waiting for the current bounded stage to stop",
-    });
-  }
-  await dbPut("jobs", jobId, job);
+  const updated = await dbTransaction((tx) => {
+    const current = tx.get<AnalysisJob>("jobs", jobId);
+    if (!current) return null;
+    if (["completed", "failed", "cancelled"].includes(current.status)) return current;
+    const at = new Date().toISOString();
+    const next: AnalysisJob = {
+      ...current,
+      version: (current.version ?? 0) + 1,
+      cancellation_requested_at: at,
+    };
+    if (current.status === "queued") {
+      next.status = "cancelled";
+      next.completed_at = at;
+      next.progress = makeJobProgress({ stage: "cancelled", percent: current.progress?.percent ?? 0, message: "Cancelled before execution" });
+    } else {
+      next.progress = makeJobProgress({
+        stage: "cancellation_requested",
+        percent: current.progress?.percent ?? 0,
+        completed_units: current.progress?.completed_units,
+        total_units: current.progress?.total_units,
+        message: "Cancellation requested; waiting for the current bounded stage to stop",
+      });
+    }
+    tx.put("jobs", jobId, next);
+    return next;
+  });
+  if (!updated) return null;
+  if (["completed", "failed", "cancelled"].includes(updated.status)) return updated;
   await audit({ actor: requestedBy, action: "job.cancel", studyId: job.study_id, resource: "document", resourceId: job.document_id, outcome: "ok", detail: `${jobId} cancelled by ${requestedBy}` });
-  return job;
+  return updated;
 }
 
 export async function getJob(jobId: string): Promise<AnalysisJob | null> {
@@ -120,73 +140,106 @@ export async function retryJob(jobId: string, requestedBy: string, idempotencyKe
   if (typeof idempotencyKey !== "string" || !/^[A-Za-z0-9._:-]{8,128}$/.test(idempotencyKey)) {
     throw new Error("A valid idempotency key (8-128 safe characters) is required for retry.");
   }
-  if (job.retry_idempotency_keys?.includes(idempotencyKey)) {
-    // Exact replay: return current state without another transition, worker,
-    // attempt, or audit event.
-    return job;
-  }
-  if (job.status !== "failed") throw new Error("Only failed jobs can be retried.");
-  if (job.attempts >= MAX_ATTEMPTS) throw new Error(`Job exceeded maximum attempts (${MAX_ATTEMPTS}).`);
-  job.status = "queued";
-  job.error = undefined;
-  job.started_at = undefined;
-  job.completed_at = undefined;
-  job.cancellation_requested_at = undefined;
-  job.active_attempt_id = undefined;
-  job.progress = makeJobProgress({ stage: "queued", percent: 0, message: "Retry waiting for a worker" });
-  job.retry_idempotency_keys = [...(job.retry_idempotency_keys ?? []), idempotencyKey].slice(-16);
+  const outcome = await dbTransaction((tx) => {
+    const current = tx.get<AnalysisJob>("jobs", jobId);
+    if (!current) return { job: null, replayed: false };
+    if (current.retry_idempotency_keys?.includes(idempotencyKey)) return { job: current, replayed: true };
+    if (current.status !== "failed") throw new Error("Only failed jobs can be retried.");
+    if (current.attempts >= MAX_ATTEMPTS) throw new Error(`Job exceeded maximum attempts (${MAX_ATTEMPTS}).`);
+    const next: AnalysisJob = {
+      ...current,
+      version: (current.version ?? 0) + 1,
+      status: "queued",
+      error: undefined,
+      started_at: undefined,
+      completed_at: undefined,
+      cancellation_requested_at: undefined,
+      active_attempt_id: undefined,
+      claimed_at: undefined,
+      lease_expires_at: undefined,
+      worker_id: undefined,
+      progress: makeJobProgress({ stage: "queued", percent: 0, message: "Retry waiting for a worker" }),
+      retry_idempotency_keys: [...(current.retry_idempotency_keys ?? []), idempotencyKey].slice(-16),
+    };
+    tx.put("jobs", jobId, next);
+    return { job: next, replayed: false };
+  });
+  if (!outcome.job) return null;
+  if (outcome.replayed) return outcome.job;
+  const retryJobRecord = outcome.job;
   cancelFlags.delete(jobId);
-  await dbPut("jobs", jobId, job);
-  await audit({ actor: requestedBy, action: "job.retry", studyId: job.study_id, outcome: "ok", detail: `${jobId} attempt ${job.attempts + 1}` });
+  await audit({ actor: requestedBy, action: "job.retry", studyId: retryJobRecord.study_id, outcome: "ok", detail: `${jobId} attempt ${retryJobRecord.attempts + 1}` });
   void processJob(jobId);
-  return job;
+  return retryJobRecord;
 }
 
 /** In-process worker. Replace with an external worker process for production scale. */
 async function processJob(jobId: string): Promise<void> {
-  const job = await dbGet<AnalysisJob>("jobs", jobId);
-  if (!job || job.status !== "queued") return;
-  if (job.cancellation_requested_at || isJobCancelled(jobId)) {
-    job.status = "cancelled";
-    job.completed_at = new Date().toISOString();
-    job.progress = makeJobProgress({ stage: "cancelled", percent: job.progress?.percent ?? 0, message: "Cancelled before execution" });
-    await dbPut("jobs", jobId, job);
-    return;
-  }
-  const attemptId = newId("attempt");
-  job.status = "running";
-  job.started_at = new Date().toISOString();
-  job.completed_at = undefined;
-  job.attempts += 1;
-  job.active_attempt_id = attemptId;
-  job.progress = makeJobProgress({ stage: "preparing", percent: 2, message: "Worker claimed the job" });
-  await dbPut("jobs", jobId, job);
+  const claim = await dbTransaction((tx) => {
+    const current = tx.get<AnalysisJob>("jobs", jobId);
+    if (!current || current.status !== "queued") return { job: null, attemptId: null, cancelled: false };
+    if (current.cancellation_requested_at || isJobCancelled(jobId)) {
+      const cancelled: AnalysisJob = {
+        ...current,
+        version: (current.version ?? 0) + 1,
+        status: "cancelled",
+        completed_at: new Date().toISOString(),
+        progress: makeJobProgress({ stage: "cancelled", percent: current.progress?.percent ?? 0, message: "Cancelled before execution" }),
+      };
+      tx.put("jobs", jobId, cancelled);
+      return { job: null, attemptId: null, cancelled: true };
+    }
+    const attemptId = newId("attempt");
+    const started = new Date().toISOString();
+    const running: AnalysisJob = {
+      ...current,
+      version: (current.version ?? 0) + 1,
+      status: "running",
+      started_at: started,
+      completed_at: undefined,
+      attempts: current.attempts + 1,
+      active_attempt_id: attemptId,
+      claimed_at: started,
+      lease_expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      worker_id: `${process.pid}`,
+      progress: makeJobProgress({ stage: "preparing", percent: 2, message: "Worker claimed the job" }),
+    };
+    tx.put("jobs", jobId, running);
+    return { job: running, attemptId, cancelled: false };
+  });
+  if (!claim.job || !claim.attemptId) return;
+  const job = claim.job;
+  const attemptId = claim.attemptId;
 
   const updateProgress = async (update: ProgressUpdate): Promise<void> => {
-    const current = await dbGet<AnalysisJob>("jobs", jobId);
-    if (!current || current.status !== "running" || current.active_attempt_id !== attemptId) return;
-    const next = makeJobProgress(update);
-    // Within one attempt progress is monotonic. A retry receives a fresh
-    // attempt id and explicitly resets progress to zero above.
-    if (next.percent < (current.progress?.percent ?? 0)) next.percent = current.progress.percent;
-    current.progress = next;
-    await dbPut("jobs", jobId, current);
+    await dbTransaction((tx) => {
+      const current = tx.get<AnalysisJob>("jobs", jobId);
+      if (!current || current.status !== "running" || current.active_attempt_id !== attemptId) return;
+      const next = makeJobProgress(update);
+      if (next.percent < (current.progress?.percent ?? 0)) next.percent = current.progress.percent;
+      tx.put("jobs", jobId, { ...current, version: (current.version ?? 0) + 1, progress: next });
+    });
   };
 
   const finalizeCancelled = async (): Promise<void> => {
-    const current = await dbGet<AnalysisJob>("jobs", jobId);
-    if (!current || current.active_attempt_id !== attemptId) return;
-    current.status = "cancelled";
-    current.completed_at = new Date().toISOString();
-    current.error = undefined;
-    current.progress = makeJobProgress({
-      stage: "cancelled",
-      percent: current.progress?.percent ?? 0,
-      completed_units: current.progress?.completed_units,
-      total_units: current.progress?.total_units,
-      message: "Cancelled without publishing a result",
+    await dbTransaction((tx) => {
+      const current = tx.get<AnalysisJob>("jobs", jobId);
+      if (!current || current.active_attempt_id !== attemptId) return;
+      tx.put("jobs", jobId, {
+        ...current,
+        version: (current.version ?? 0) + 1,
+        status: "cancelled",
+        completed_at: new Date().toISOString(),
+        error: undefined,
+        progress: makeJobProgress({
+          stage: "cancelled",
+          percent: current.progress?.percent ?? 0,
+          completed_units: current.progress?.completed_units,
+          total_units: current.progress?.total_units,
+          message: "Cancelled without publishing a result",
+        }),
+      });
     });
-    await dbPut("jobs", jobId, current);
     cancelFlags.delete(jobId);
   };
 
@@ -217,10 +270,21 @@ async function processJob(jobId: string): Promise<void> {
       await finalizeCancelled();
       return;
     }
-    current.status = "completed";
-    current.completed_at = new Date().toISOString();
-    current.progress = makeJobProgress({ stage: "completed", percent: 100, completed_units: 1, total_units: 1, message: "Job completed" });
-    await dbPut("jobs", jobId, current);
+    const completed = await dbTransaction((tx) => {
+      const latest = tx.get<AnalysisJob>("jobs", jobId);
+      if (!latest || latest.status !== "running" || latest.active_attempt_id !== attemptId) return null;
+      const next = {
+        ...latest,
+        version: (latest.version ?? 0) + 1,
+        status: "completed" as const,
+        completed_at: new Date().toISOString(),
+        lease_expires_at: undefined,
+        progress: makeJobProgress({ stage: "completed", percent: 100, completed_units: 1, total_units: 1, message: "Job completed" }),
+      };
+      tx.put("jobs", jobId, next);
+      return next;
+    });
+    if (!completed) return;
     cancelFlags.delete(jobId);
     await audit({ actor: "system", action: "job.complete", studyId: job.study_id, resource: job.kind === "extraction" ? "document" : undefined, resourceId: job.document_id, outcome: "ok", detail: jobId });
   } catch (err) {
@@ -228,15 +292,25 @@ async function processJob(jobId: string): Promise<void> {
       await finalizeCancelled();
       return;
     }
-    const current = await dbGet<AnalysisJob>("jobs", jobId);
-    if (!current || current.active_attempt_id !== attemptId) return;
-    current.status = "failed";
-    current.error = String(err instanceof Error ? err.message : err).slice(0, 400);
-    current.completed_at = new Date().toISOString();
-    current.progress = makeJobProgress({ stage: "failed", percent: current.progress?.percent ?? 0, message: "Job failed; no result was published" });
-    await dbPut("jobs", jobId, current);
+    const failed = await dbTransaction((tx) => {
+      const latest = tx.get<AnalysisJob>("jobs", jobId);
+      if (!latest || latest.active_attempt_id !== attemptId || latest.status !== "running") return null;
+      const error = String(err instanceof Error ? err.message : err).slice(0, 400);
+      const next = {
+        ...latest,
+        version: (latest.version ?? 0) + 1,
+        status: "failed" as const,
+        error,
+        completed_at: new Date().toISOString(),
+        lease_expires_at: undefined,
+        progress: makeJobProgress({ stage: "failed", percent: latest.progress?.percent ?? 0, message: "Job failed; no result was published" }),
+      };
+      tx.put("jobs", jobId, next);
+      return next;
+    });
+    if (!failed) return;
     cancelFlags.delete(jobId);
-    await audit({ actor: "system", action: "job.fail", studyId: job.study_id, resource: job.kind === "extraction" ? "document" : undefined, resourceId: job.document_id, outcome: "error", detail: `${jobId}: ${current.error.slice(0, 150)}` });
+    await audit({ actor: "system", action: "job.fail", studyId: job.study_id, resource: job.kind === "extraction" ? "document" : undefined, resourceId: job.document_id, outcome: "error", detail: `${jobId}: ${(failed.error ?? "").slice(0, 150)}` });
     // FAILURE HANDLING contract: no result is generated; the UI shows
     // ANALYSIS FAILED with Retry / Request New Scan.
   }

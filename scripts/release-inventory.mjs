@@ -3,6 +3,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import Database from "better-sqlite3";
 
 const ROOT = path.resolve(fileURLToPath(new URL("../", import.meta.url)));
 
@@ -56,6 +57,31 @@ function parseOutputArg() {
   return index >= 0 && process.argv[index + 1] ? process.argv[index + 1] : null;
 }
 
+function persistenceInventory() {
+  const configured = process.env.DATABASE_FILE ?? path.join(ROOT, "data", "database", "eye-ai.db");
+  const databaseFile = path.resolve(configured);
+  const requested = String(process.env.VISIONSCAN_PERSISTENCE_BACKEND ?? "").trim().toLowerCase();
+  const backend = requested === "json" || databaseFile.toLowerCase().endsWith(".json") ? "json" : "sqlite";
+  let schema = null;
+  let migration = null;
+  try {
+    const header = fs.readFileSync(databaseFile).subarray(0, 16).toString("ascii");
+    if (backend === "sqlite" && header === "SQLite format 3\u0000") {
+      const db = new Database(databaseFile, { readonly: true, fileMustExist: true });
+      try {
+        schema = db.prepare("SELECT value FROM persistence_meta WHERE key='schema_version'").get()?.value ?? null;
+        migration = db.prepare("SELECT value FROM persistence_meta WHERE key='migration_version'").get()?.value ?? null;
+      } finally { db.close(); }
+    }
+  } catch { /* inventory remains metadata-only when no local database exists */ }
+  return {
+    backend,
+    database_schema_version: schema,
+    migration_version: migration,
+    database_file_extension: path.extname(databaseFile).toLowerCase() || null,
+  };
+}
+
 const packageJson = json("package.json") ?? {};
 const lockSha = sha256File("package-lock.json");
 const sbomIndex = process.argv.indexOf("--sbom");
@@ -76,6 +102,7 @@ const inventory = {
     validation_registry_version: versionFrom(read("lib/models/validationRegistry.ts"), "VALIDATION_REGISTRY_VERSION"),
   },
   dependencies: { package_lock_sha256: lockSha, sbom_path: sbomRelative, sbom_sha256: sha256File(sbomRelative) },
+  persistence: persistenceInventory(),
   phi_included: false,
   generated_at: new Date().toISOString(),
 };

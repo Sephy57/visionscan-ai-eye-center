@@ -134,6 +134,8 @@ const bom = {
       { name: "visionscan:package-lock-sha256", value: npm.lockSha256 ?? "unavailable" },
       { name: "visionscan:python-environment-detected", value: String(python.detected) },
       { name: "visionscan:patient-data-included", value: "false" },
+      { name: "visionscan:phi-included", value: "false" },
+      { name: "visionscan:persistence", value: "sqlite (better-sqlite3); legacy JSON import tooling only" },
     ],
   },
   components,

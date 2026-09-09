@@ -8,6 +8,7 @@ import { presentQuality } from "@/lib/analysis/qualityPresentation";
 interface Report {
   report_id: string; study_id: string; generated_at: string;
   validation_banner: string; demo_label: string;
+  legacy_status?: "LEGACY_UNSEALED"; legacy_warning?: string;
   patient: { identifier?: string | null; age_band?: string | null; notes?: string | null };
   analysis_mode?: string;
   asset_routing?: { container_type: string; modality: string; modality_state: string; device_state: string; domain_state: string; source_hash: string; warnings: string[] };
@@ -148,6 +149,13 @@ function ReportInner() {
           <dt>Generated at</dt><dd>{new Date(report.generated_at).toLocaleString()}</dd>
         </dl>
       </div>
+
+      {report.legacy_status === "LEGACY_UNSEALED" && (
+        <div className="alert warning" role="alert" style={{ marginTop: 16 }}>
+          <span className="alert-icon" aria-hidden="true">⚠</span>
+          <div className="alert-body"><strong>Legacy report requires verification</strong><div>{report.legacy_warning ?? "This report has no immutable version freeze or reasoning snapshot."}</div></div>
+        </div>
+      )}
 
       <div className={`result-hero ${!report.image_quality.acceptable ? "reject" : report.analysis_mode === "DEMO_ONLY" && report.overall_result.includes("NO TARGET") ? "normal" : "abnormal"}`} style={{ padding: 24 }}>
         <div className="eyebrow">SCREENING RESULT</div>

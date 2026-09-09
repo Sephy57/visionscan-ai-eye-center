@@ -28,7 +28,19 @@ export const DATABASE_ROOT = envPath("DATABASE_ROOT", path.join(DATA_ROOT, "data
 export const MODEL_ROOT = envPath("MODEL_ROOT", path.join(DATA_ROOT, "models"));
 export const LOG_ROOT = envPath("LOG_ROOT", path.join(DATA_ROOT, "logs"));
 export const TMP_ROOT = envPath("TMP_ROOT", path.join(DATA_ROOT, "tmp"));
-export const DATABASE_FILE = envPath("DATABASE_FILE", path.join(DATABASE_ROOT, "eye-ai.json"));
+// SQLite is the transactional default.  The JSON path remains explicit so a
+// reviewed migration can read it without making the application silently
+// fall back to a mutable whole-file store.
+export const LEGACY_DATABASE_FILE = envPath("LEGACY_DATABASE_FILE", path.join(DATABASE_ROOT, "eye-ai.json"));
+export const DATABASE_FILE = envPath("DATABASE_FILE", path.join(DATABASE_ROOT, "eye-ai.db"));
+export const PERSISTENCE_BACKEND = (() => {
+  const requested = String(process.env.VISIONSCAN_PERSISTENCE_BACKEND ?? "").trim().toLowerCase();
+  if (requested === "json" || requested === "sqlite") return requested as "json" | "sqlite";
+  // An explicitly JSON-named database is opt-in legacy mode.  Everything
+  // else (including the .db default) is SQLite and fails closed if a legacy
+  // JSON file is found at that path until migration is run.
+  return DATABASE_FILE.toLowerCase().endsWith(".json") ? "json" : "sqlite";
+})();
 
 export const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_BYTES || 26214400); // 25 MB
 export const DEMO_MODE = String(process.env.DEMO_MODE ?? "true") !== "false";
