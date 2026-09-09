@@ -9,6 +9,7 @@
 import type { QualityResult } from "../imaging/quality";
 import type { RawModelOutput } from "./outputContract";
 import type { OctWorkerOutput } from "./octContract";
+import { canonicalModality } from "./modalities";
 
 export type OctAssessmentState =
   | "CLASS_ESTIMATED"
@@ -50,7 +51,7 @@ export function unavailableOctAssessmentResult(
       model_id: null, model_version: null,
     };
   }
-  if (ood.detected || modality.toUpperCase() !== "OCT") {
+  if (ood.detected || canonicalModality(modality) !== "OCT") {
     return {
       state: "OUT_OF_DISTRIBUTION", predicted_class: null, predicted_index: null, model_scores: null,
       score_semantics: "NO_SCORE_AVAILABLE",

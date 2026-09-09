@@ -10,6 +10,7 @@
 import type { QualityResult } from "../imaging/quality";
 import type { RawModelOutput } from "./outputContract";
 import type { DrGradeWorkerOutput } from "./drGradeContract";
+import { canonicalModality } from "./modalities";
 
 export type DrAssessmentState =
   | "GRADE_ESTIMATED"
@@ -52,7 +53,7 @@ export function unavailableDrAssessmentResult(
       model_id: null, model_version: null,
     };
   }
-  if (ood.detected || modality.toUpperCase() !== "FUNDUS") {
+  if (ood.detected || canonicalModality(modality) !== "FUNDUS") {
     return {
       state: "OUT_OF_DISTRIBUTION", grade: null, grade_label: null, model_score: null,
       score_semantics: "NO_SCORE_AVAILABLE", referable_dr: null,

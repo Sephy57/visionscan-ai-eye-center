@@ -16,6 +16,7 @@ interface Finding {
 interface Bundle {
   study?: { study_id: string; modality: string; eye: string; status: string; original_sha256: string; symptoms?: Array<{ type: string; label?: string; onset: string; duration: string; severity: string; laterality: string; progression: string; free_text?: string | null }> };
   analysis?: {
+    analysis_mode?: string;
     findings: Finding[];
     quality: { acceptable: boolean; status: string; score: number; artifacts: string[]; metrics: Record<string, number | boolean> };
     model_registry?: { model_id: string; model_version: string; model_status: string; device_compatibility: { compatible: boolean; note: string } };
@@ -190,7 +191,7 @@ function ClinicianInner() {
           <div style={{ display: "grid", gap: 16 }}>
             <div className="card" style={{ margin: 0 }}>
               <div className="card-title">
-                <h3 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)", margin: 0 }}>AUTOMATED ANALYSIS — Research output</h3>
+                <h3 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-3)", margin: 0 }}>AUTOMATED ANALYSIS — {bundle.analysis.analysis_mode === "DEMO_ONLY" ? "Demo / synthetic output" : bundle.analysis.analysis_mode === "MODEL_FAILED" ? "Model failed — no output" : bundle.analysis.analysis_mode === "NO_MODEL_EXECUTED" ? "No applicable model" : "Research output"}</h3>
               </div>
               <div className="card-title" style={{ marginTop: -6 }}>
                 <h3>AI findings ({bundle.analysis.findings.length})</h3>

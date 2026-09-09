@@ -24,6 +24,7 @@ import { checkModalitySupported } from "./modalities";
 import {
   DR_GRADE_MODEL_ID,
   DR_GRADE_MODEL_VERSION,
+  DR_GRADE_PREPROCESSING_VERSION,
   validateDrGradeWorkerOutput,
   type DrGradeWorkerOutput,
 } from "./drGradeContract";
@@ -31,6 +32,8 @@ import { convertRawModelOutputToFindings } from "./outputConversion";
 import type { RawModelOutput } from "./outputContract";
 import type { Finding } from "../analysis/schema";
 import { lateralityForStudy } from "./fundusLesionLocalProvider";
+import { assetHash } from "../assets/assetRouter";
+import { getInferenceCache, inferenceCacheKey, setInferenceCache } from "./inferenceCache";
 
 const PROBE_SCRIPT = path.join(PROJECT_ROOT, "scripts", "inference", "dr_grade_probe.py");
 const VENV_PYTHON = path.join(
@@ -240,15 +243,30 @@ export async function runDrGradeResearchAnalysis(
   }
   const deviceNote = deviceCompatible(model, ctx.device ?? null);
   const disclosure = `Device compatibility: ${deviceNote.note} Domain validation: DOMAIN_VALIDATION_UNKNOWN.`;
-  const { raw, worker } = await runWithMutex(() =>
-    runProbeOnce(imageBytes, study.studyId, lateralityForStudy(study))
-  );
+  const cacheKey = inferenceCacheKey({
+    scope: study.studyId,
+    sourceHash: assetHash(imageBytes),
+    modelId: model.model_id,
+    modelVersion: model.version,
+    preprocessingVersion: DR_GRADE_PREPROCESSING_VERSION,
+    eye: lateralityForStudy(study),
+  });
+  const probe = await runWithMutex(async () => {
+    if (integrity.trusted) {
+      const hit = getInferenceCache<{ raw: RawModelOutput; worker: DrGradeWorkerOutput | null }>(cacheKey);
+      if (hit) return { ...hit, cacheHit: true };
+    }
+    const result = await runProbeOnce(imageBytes, study.studyId, lateralityForStudy(study));
+    if (integrity.trusted && result.raw.inference_status === "completed") setInferenceCache(cacheKey, result);
+    return { ...result, cacheHit: false };
+  });
+  const { raw, worker } = probe;
   if (raw.inference_status === "failed") {
     return {
       raw,
       grade: null,
       findings: [],
-      notes: [raw.inference_error ?? "DR inference failed; no findings produced.", disclosure],
+      notes: [raw.inference_error ?? "DR inference failed; no findings produced.", disclosure, ...(probe.cacheHit ? ["Inference cache hit (content/model/preprocessing/study scoped)."] : [])],
       model,
       gate,
       integrity,
@@ -264,6 +282,7 @@ export async function runDrGradeResearchAnalysis(
     findings: conversion.findings,
     notes: [
       ...conversion.notes,
+      ...(probe.cacheHit ? ["Inference cache hit (content/model/preprocessing/study scoped)."] : []),
       "Research output only (RESEARCH status): uncalibrated grade estimate, not a diagnosis; requires ophthalmic review.",
       disclosure,
     ],

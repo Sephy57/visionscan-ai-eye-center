@@ -9,6 +9,12 @@ interface Report {
   report_id: string; study_id: string; generated_at: string;
   validation_banner: string; demo_label: string;
   patient: { identifier?: string | null; age_band?: string | null; notes?: string | null };
+  analysis_mode?: string;
+  asset_routing?: { container_type: string; modality: string; modality_state: string; device_state: string; domain_state: string; source_hash: string; warnings: string[] };
+  document_routing?: Array<{ document_id: string; document_modality: string; pages: Array<{ page: number; content_type: string; modality: string; laterality: string; classifier_method: string; verification_state: string; source_page_hash?: string }>; measurements: Array<{ key: string; value_raw: string; value_normalized: number | null; unit: string | null; laterality: string; page: number; verification_status: string }>; image_regions: Array<{ region_id: string; page: number; content_type: string; laterality: string; bbox: { x: number; y: number; w: number; h: number }; roi_hash: string; source_page_hash: string; verification_status: string }> }>;
+  model_execution?: { models_attempted: string[]; models_executed: string[]; models_failed: string[]; models_skipped: Array<{ model_id: string; reason: string }>; artifact_hashes: Record<string, string | null>; artifact_verification?: Record<string, string>; model_versions: Record<string, string>; runtime_status: string };
+  oct_region_results?: Array<{ asset_id: string; document_id: string; page: number; laterality: string; source_page_hash: string; roi_hash: string; content_type: string; status: string; note?: string }>;
+  oct_aggregation?: string;
   study: { modality: string; eye: string; source: string; captured_at?: string | null; metadata_provenance: string };
   image_quality: { score: number; status: string; acceptable: boolean; artifacts: string[] };
   overall_result: string;
@@ -125,7 +131,7 @@ function ReportInner() {
           </span>
           <strong>VisionScan AI</strong>
           <Badge tone="warn">{report.validation_banner}</Badge>
-          <Badge tone="demo">{report.demo_label}</Badge>
+          <Badge tone={report.analysis_mode === "DEMO_ONLY" ? "demo" : report.analysis_mode === "MODEL_FAILED" ? "bad" : "info"}>{report.demo_label}</Badge>
         </div>
 
         <h2>Study information</h2>
@@ -137,17 +143,20 @@ function ReportInner() {
           <dt>Source</dt><dd>{report.study.source}</dd>
           <dt>Acquisition date</dt><dd>{report.study.captured_at ?? "Not provided"}</dd>
           <dt>Metadata provenance</dt><dd>{report.study.metadata_provenance}</dd>
+          <dt>Analysis mode</dt><dd>{(report.analysis_mode ?? "UNKNOWN").replaceAll("_", " ")}</dd>
           <dt>Generated at</dt><dd>{new Date(report.generated_at).toLocaleString()}</dd>
         </dl>
       </div>
 
-      <div className={`result-hero ${report.image_quality.acceptable ? (report.overall_result.includes("NO TARGET") ? "normal" : "abnormal") : "reject"}`} style={{ padding: 24 }}>
+      <div className={`result-hero ${!report.image_quality.acceptable ? "reject" : report.analysis_mode === "DEMO_ONLY" && report.overall_result.includes("NO TARGET") ? "normal" : "abnormal"}`} style={{ padding: 24 }}>
         <div className="eyebrow">SCREENING RESULT</div>
         <h2>{report.overall_result}</h2>
         <p className="small" style={{ margin: 0 }}>
           {report.image_quality.acceptable
-            ? report.overall_result.includes("MODEL UNAVAILABLE")
-              ? "No installed general fundus-abnormality model evaluated this image. This is not a normal-fundus result."
+            ? report.analysis_mode === "MODEL_FAILED"
+              ? "Applicable research model execution failed. No finding was inferred and no synthetic replacement was used."
+              : report.analysis_mode === "NO_MODEL_EXECUTED"
+                ? "No compatible research model executed for this asset. This is not evidence of normality."
               : report.overall_result.includes("NO TARGET")
                 ? "No target abnormality was identified by the available model. This does not exclude other eye disease."
                 : "Findings below are automated screening signals. They are not diagnoses."
@@ -165,6 +174,40 @@ function ReportInner() {
             <dt>Unsupported / unavailable targets</dt><dd>{report.coverage_snapshot.unsupported_targets.map((v) => v.replaceAll("_", " ")).join(", ")}</dd>
           </dl>
           <p className="tiny muted" style={{ marginBottom: 0 }}>{report.coverage_snapshot.notice} Registry {report.coverage_snapshot.registry_version}.</p>
+        </div>
+      )}
+
+      {report.asset_routing && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Uploaded assets</h2>
+          <dl className="kv">
+            <dt>Container</dt><dd>{report.asset_routing.container_type}</dd>
+            <dt>Content modality</dt><dd>{report.asset_routing.modality.replaceAll("_", " ")}</dd>
+            <dt>Modality state</dt><dd>{report.asset_routing.modality_state.replaceAll("_", " ")}</dd>
+            <dt>Device state</dt><dd>{report.asset_routing.device_state.replaceAll("_", " ")}</dd>
+            <dt>Domain state</dt><dd>{report.asset_routing.domain_state.replaceAll("_", " ")}</dd>
+          </dl>
+          {report.oct_region_results && report.oct_region_results.length > 0 && (
+            <div className="table-wrap" tabIndex={0} style={{ marginTop: 10 }}><table className="table"><thead><tr><th>PDF page</th><th>Content</th><th>Eye</th><th>Execution</th><th>B-box / ROI hash</th></tr></thead><tbody>
+              {report.oct_region_results.map((region) => <tr key={region.asset_id}><td>{region.page}</td><td>{region.content_type}</td><td>{region.laterality}</td><td>{region.status}</td><td className="tiny">{region.roi_hash.slice(0, 12)}…</td></tr>)}
+            </tbody></table></div>
+          )}
+          {report.oct_aggregation && <p className="tiny muted" style={{ marginBottom: 0 }}>OCT scan aggregation: {report.oct_aggregation.replaceAll("_", " ")} (categorical; logits are not averaged).</p>}
+          {report.document_routing?.map((doc) => <div key={doc.document_id} style={{ marginTop: 12 }}><strong className="small">Document {doc.document_id}</strong><div className="table-wrap" tabIndex={0}><table className="table"><thead><tr><th>Page</th><th>Content type</th><th>Laterality</th><th>Method</th><th>Verification</th></tr></thead><tbody>{doc.pages.map((p) => <tr key={`${doc.document_id}-${p.page}`}><td>{p.page}</td><td>{p.content_type}</td><td>{p.laterality}</td><td>{p.classifier_method}</td><td>{p.verification_state}</td></tr>)}</tbody></table></div>{doc.measurements.length > 0 && <p className="tiny muted">Measurements (unreviewed): {doc.measurements.map((m) => `${m.key.replaceAll("_", " ")}=${m.value_normalized ?? m.value_raw}${m.unit ? ` ${m.unit}` : ""} (${m.laterality}, p${m.page})`).join(" · ")}</p>}</div>)}
+        </div>
+      )}
+
+      {report.model_execution && (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Model execution</h2>
+          <div className="table-wrap" tabIndex={0}><table className="table"><thead><tr><th>Model</th><th>Version</th><th>Execution</th><th>Artifact hash</th></tr></thead><tbody>
+            {[...new Set([...report.model_execution.models_attempted, ...report.model_execution.models_failed, ...report.model_execution.models_skipped.map((x) => x.model_id)])].map((id) => {
+              const status = report.model_execution!.models_executed.includes(id) ? "EXECUTED" : report.model_execution!.models_failed.includes(id) ? "FAILED" : "SKIPPED";
+              const verification = report.model_execution!.artifact_verification?.[id] ?? (report.model_execution!.artifact_hashes[id] ? "EXPECTED_REGISTRY_HASH" : "UNAVAILABLE");
+              return <tr key={id}><td>{id}</td><td>{report.model_execution!.model_versions[id] ?? "—"}</td><td>{status}</td><td className="tiny">{verification} {report.model_execution!.artifact_hashes[id] ? `${report.model_execution!.artifact_hashes[id]!.slice(0, 12)}…` : ""}</td></tr>;
+            })}
+          </tbody></table></div>
+          <p className="tiny muted" style={{ marginBottom: 0 }}>Runtime: {report.model_execution.runtime_status}. RESEARCH output is uncalibrated and requires clinician review.</p>
         </div>
       )}
 

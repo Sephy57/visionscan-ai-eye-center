@@ -25,6 +25,10 @@ interface Bundle {
   study?: { study_id: string; modality: string; eye: string; status: string; created_at: string; original_sha256: string; patient_ref?: string };
   analysis?: {
     study: { eye: string; modality: string };
+    analysis_mode?: "DEMO_ONLY" | "RESEARCH_MODEL_ANALYSIS" | "MIXED_RESEARCH_AND_DEMO" | "NO_MODEL_EXECUTED" | "MODEL_FAILED";
+    asset_routing?: { container_type: string; modality: string; modality_state: string; device_state: string; domain_state: string; source_hash: string; warnings: string[] };
+    document_routing?: Array<{ document_id: string; document_modality: string; pages: Array<{ page: number; content_type: string; modality: string; laterality: string; classifier_method: string; verification_state: string }>; measurements: Array<{ key: string; value_normalized: number | null; unit: string | null; laterality: string; page: number }>; image_regions: Array<{ region_id: string; page: number; content_type: string; laterality: string; bbox: { x: number; y: number; w: number; h: number }; roi_hash: string; source_page_hash: string; verification_status: string }> }>;
+    model_execution?: { models_attempted: string[]; models_executed: string[]; models_failed: string[]; models_skipped: Array<{ model_id: string; reason: string }>; artifact_hashes: Record<string, string | null>; artifact_verification?: Record<string, string>; model_versions: Record<string, string>; runtime_status: string };
     quality: { score: number; status: string; acceptable: boolean; artifacts: string[]; metrics: Record<string, number | boolean> };
     findings: Finding[];
     uncertainty: { overall: number; reasons: string[]; ensemble_agreement?: string };
@@ -57,6 +61,8 @@ interface Bundle {
       limitations: string[]; validation_state: string;
       model_id: string | null; model_version: string | null;
     };
+    oct_region_results?: Array<{ asset_id: string; document_id: string; page: number; laterality: string; source_page_hash: string; roi_hash: string; content_type: string; status: string; assessment?: { predicted_class: string | null }; note?: string }>;
+    oct_aggregation?: string;
     model_registry?: {
       model_id: string; model_version: string; model_status: string; display_label: string | null;
       integrity_checks: Array<{ check: string; passed: boolean; detail: string }>;
@@ -180,11 +186,14 @@ function ResultInner() {
   if (!data?.analysis) return <ResultSkeleton />;
 
   const a = data.analysis;
+  const mode = a.analysis_mode ?? (a.demo?.synthetic_result ? "DEMO_ONLY" : "RESEARCH_MODEL_ANALYSIS");
   const rejected = !a.quality.acceptable;
   const abnormal = a.findings.length > 0;
+  const studyModality = (a.study?.modality ?? "").toLowerCase();
+  const isFundusStudy = ["fundus", "retinal_photo", "optic_nerve", "macula"].includes(studyModality);
   const fundus = a.fundus_abnormality;
-  const suspiciousFundus = fundus?.state === "SUSPICIOUS_ABNORMALITY" || fundus?.state === "MULTIPLE_ABNORMALITIES";
-  const fundusUnavailable = fundus?.state === "MODEL_UNAVAILABLE" || fundus?.state === "MODEL_NOT_VALIDATED_FOR_IMAGE";
+  const suspiciousFundus = isFundusStudy && (fundus?.state === "SUSPICIOUS_ABNORMALITY" || fundus?.state === "MULTIPLE_ABNORMALITIES");
+  const fundusUnavailable = isFundusStudy && (fundus?.state === "MODEL_UNAVAILABLE" || fundus?.state === "MODEL_NOT_VALIDATED_FOR_IMAGE");
   // S12: honest quality presentation - a "pass" status can still carry real
   // artifacts (see lib/analysis/qualityPresentation.ts's doc comment); never
   // shown as a bare "GOOD" when a real artifact was detected.
@@ -198,13 +207,18 @@ function ResultInner() {
   const disabledCandidateTargets = fundusCoverage.filter((entry) => entry.state === "CANDIDATE_DISABLED").map((entry) => entry.display_name);
   const unsupportedDiseaseTargets = fundusCoverage.filter((entry) => entry.task === "DISEASE_SCREENING").map((entry) => entry.display_name);
 
-  const heroClass = rejected ? "reject" : abnormal || suspiciousFundus || ood || fundusUnavailable ? "abnormal" : "normal";
+  const researchNoTarget = !rejected && !abnormal && !suspiciousFundus && !ood && !fundusUnavailable && mode !== "DEMO_ONLY";
+  const heroClass = rejected ? "reject" : abnormal || suspiciousFundus || ood || fundusUnavailable || researchNoTarget ? "abnormal" : "normal";
   const headline = rejected
     ? "Automated interpretation inconclusive — image quality insufficient"
     : suspiciousFundus
       ? "Abnormal retinal region identified by research AI"
       : fundusUnavailable
         ? "General fundus abnormality model unavailable"
+      : mode === "MODEL_FAILED"
+        ? "Research model analysis failed — no finding inferred"
+      : mode === "NO_MODEL_EXECUTED"
+        ? "No applicable research model executed"
       : abnormal
       ? "Potential abnormal finding detected"
       : ood
@@ -259,6 +273,11 @@ function ResultInner() {
         </div>
       </div>
 
+      <div className="card" style={{ margin: "10px 0", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <strong>MODE</strong><Badge tone={mode === "MODEL_FAILED" ? "bad" : mode === "DEMO_ONLY" ? "demo" : "info"}>{mode.replaceAll("_", " ")}</Badge>
+        {a.asset_routing && <span className="tiny muted">{a.asset_routing.container_type} • {a.asset_routing.modality_state} • device {a.asset_routing.device_state} • domain {a.asset_routing.domain_state}</span>}
+      </div>
+
       <div className={`result-hero ${heroClass}`} role="status">
         <div className="eyebrow">SCREENING RESULT</div>
         <h2>{headline}</h2>
@@ -277,7 +296,7 @@ function ResultInner() {
         </p>
       </div>
 
-      <div className="card" style={{ margin: "14px 0" }}>
+      {isFundusStudy && <div className="card" style={{ margin: "14px 0" }}>
         <div className="card-title"><h3>AI imaging review</h3><Badge tone={suspiciousFundus ? "bad" : fundusUnavailable ? "warn" : "neutral"}>{fundus?.state?.replaceAll("_", " ") ?? "NOT AVAILABLE"}</Badge></div>
         <p className="small" style={{ margin: "0 0 6px" }}>
           {suspiciousFundus ? "Research AI detected a suspicious fundus region; ophthalmic review is required." : fundus?.limitations?.[0] ?? "No general fundus-abnormality result is recorded."}
@@ -293,7 +312,40 @@ function ResultInner() {
           <p className="tiny muted"><strong>No validated disease model available:</strong> {unsupportedDiseaseTargets.join(", ")}.</p>
           <p className="tiny muted" style={{ marginBottom: 0 }}>Missing or disabled coverage is never evidence of a normal fundus or absence of unlisted pathology.</p>
         </details>
-      </div>
+      </div>}
+
+      {a.model_execution && (
+        <div className="card" style={{ margin: "14px 0" }}>
+          <div className="card-title"><h3>Model execution</h3><Badge tone={a.model_execution.runtime_status === "COMPLETED" ? "ok" : a.model_execution.models_failed.length ? "bad" : "warn"}>{a.model_execution.runtime_status}</Badge></div>
+          <div className="table-wrap" tabIndex={0}>
+            <table className="table"><thead><tr><th>Model</th><th>Version</th><th>Status</th><th>Artifact</th></tr></thead><tbody>
+              {[...new Set([...a.model_execution.models_attempted, ...a.model_execution.models_failed, ...a.model_execution.models_skipped.map((x) => x.model_id)])].map((id) => {
+                const status = a.model_execution!.models_executed.includes(id) ? "EXECUTED" : a.model_execution!.models_failed.includes(id) ? "FAILED" : "SKIPPED";
+                const verification = a.model_execution!.artifact_verification?.[id] ?? (a.model_execution!.artifact_hashes[id] ? "EXPECTED_REGISTRY_HASH" : "UNAVAILABLE");
+                return <tr key={id}><td>{id}</td><td>{a.model_execution!.model_versions[id] ?? "—"}</td><td>{status}</td><td className="tiny">{verification} {a.model_execution!.artifact_hashes[id] ? `${a.model_execution!.artifact_hashes[id]!.slice(0, 12)}…` : ""}</td></tr>;
+              })}
+            </tbody></table>
+          </div>
+        </div>
+      )}
+
+      {a.oct_region_results && a.oct_region_results.length > 0 && (
+        <div className="card" style={{ margin: "14px 0" }}>
+          <div className="card-title"><h3>Uploaded PDF assets / OCT regions</h3><Badge tone="info">{a.oct_region_results.length} ROI(s)</Badge></div>
+          <p className="tiny muted">Only bounded OCT_BSCAN regions are eligible for OCT research inference. Source-page and ROI hashes preserve provenance; measurements remain unreviewed document evidence.</p>
+          <div className="table-wrap" tabIndex={0}><table className="table"><thead><tr><th>Page</th><th>Eye</th><th>Content</th><th>Status</th><th>ROI hash</th></tr></thead><tbody>
+            {a.oct_region_results.map((r) => <tr key={r.asset_id}><td>{r.page}</td><td>{r.laterality}</td><td>{r.content_type}</td><td>{r.status}</td><td className="tiny">{r.roi_hash.slice(0, 12)}…</td></tr>)}
+          </tbody></table></div>
+          {a.oct_aggregation && <p className="tiny muted" style={{ marginBottom: 0 }}>Scan-level aggregation: {a.oct_aggregation.replaceAll("_", " ")} (categorical evidence; no logit averaging).</p>}
+        </div>
+      )}
+
+      {a.document_routing && a.document_routing.length > 0 && (
+        <div className="card" style={{ margin: "14px 0" }}>
+          <div className="card-title"><h3>Document page routing</h3><Badge tone="info">{a.document_routing.reduce((n, d) => n + d.pages.length, 0)} page(s)</Badge></div>
+          {a.document_routing.map((doc) => <div key={doc.document_id} className="table-wrap" tabIndex={0} style={{ marginTop: 8 }}><table className="table"><thead><tr><th>Page</th><th>Content</th><th>Modality</th><th>Eye</th><th>Method</th></tr></thead><tbody>{doc.pages.map((p) => <tr key={`${doc.document_id}-${p.page}`}><td>{p.page}</td><td>{p.content_type}</td><td>{p.modality}</td><td>{p.laterality}</td><td>{p.classifier_method}</td></tr>)}</tbody></table></div>)}
+        </div>
+      )}
 
       {a.dr_assessment && a.dr_assessment.state !== "MODEL_UNAVAILABLE" && (
         <div className="card" style={{ margin: "14px 0" }}>
@@ -373,7 +425,7 @@ function ResultInner() {
                 // This viewer belongs to the normal Gate-A pipeline. The
                 // isolated SegFormer path has its own explicitly labelled
                 // viewer below; never call synthetic output "research".
-                analysisLabel: a.demo?.synthetic_result ? "DEMO / SYNTHETIC" : "AUTOMATED ANALYSIS",
+                analysisLabel: mode === "DEMO_ONLY" ? "DEMO / SYNTHETIC" : mode === "MODEL_FAILED" ? "MODEL FAILED" : mode === "NO_MODEL_EXECUTED" ? "NO MODEL EXECUTED" : "RESEARCH ANALYSIS",
               }}
             />
           ) : (
@@ -391,14 +443,13 @@ function ResultInner() {
             <div className="card-title"><h3 style={{ fontSize: "0.9rem" }}>Findings</h3><Badge tone="neutral">{abnormal ? a.findings.length : 0}</Badge></div>
             {!abnormal && (
               <div className="empty-state" style={{ padding: "22px 14px" }}>
-                <h3 style={{ fontSize: "0.9rem" }}>NO VALIDATED FINDINGS</h3>
+                <h3 style={{ fontSize: "0.9rem" }}>{mode === "MODEL_FAILED" ? "MODEL FAILED — NO FINDING INFERRED" : mode === "NO_MODEL_EXECUTED" ? "NO APPLICABLE MODEL EXECUTED" : mode === "RESEARCH_MODEL_ANALYSIS" || mode === "MIXED_RESEARCH_AND_DEMO" ? "NO TARGET FINDING DETECTED" : "NO VALIDATED FINDINGS"}</h3>
                 <p className="tiny muted" style={{ marginBottom: 8 }}>
-                  The currently installed model does not provide clinically validated ophthalmic findings.
-                  This scan has not been clinically interpreted by VisionScan AI.
+                  {mode === "MODEL_FAILED" ? "The applicable research provider failed. No synthetic replacement or normality claim was generated." : mode === "NO_MODEL_EXECUTED" ? "No compatible research provider ran for this asset. This state is not evidence of normality." : mode === "RESEARCH_MODEL_ANALYSIS" || mode === "MIXED_RESEARCH_AND_DEMO" ? "No target finding was emitted by the research model(s) that completed successfully. Other abnormalities may still be present." : "The currently installed model does not provide clinically validated ophthalmic findings."}
                 </p>
                 <dl className="kv tiny" style={{ gridTemplateColumns: "auto 1fr", textAlign: "left", gap: "2px 10px" }}>
                   <dt>Model</dt><dd>{a.model_registry?.model_id}</dd>
-                  <dt>Status</dt><dd>Research only</dd>
+                  <dt>Status</dt><dd>{mode.replaceAll("_", " ")}</dd>
                 </dl>
               </div>
             )}
@@ -497,7 +548,7 @@ function ResultInner() {
               <dt>Model</dt><dd>{a.model_registry?.model_id} v{a.model_registry?.model_version}</dd>
               <dt>Model status</dt><dd><Badge tone="warn">{a.model_registry?.model_status}</Badge></dd>
               <dt>Clinical validation</dt><dd style={{ color: "var(--danger)", fontWeight: 650 }}>NOT VALIDATED</dd>
-              <dt>Findings</dt><dd>{abnormal ? `${a.findings.length} (${a.demo?.synthetic_result ? "synthetic demo" : "model output"})` : "None available"}</dd>
+              <dt>Findings</dt><dd>{abnormal ? `${a.findings.length} (${mode.replaceAll("_", " ")})` : mode === "RESEARCH_MODEL_ANALYSIS" || mode === "MIXED_RESEARCH_AND_DEMO" ? "No target finding detected" : mode === "MODEL_FAILED" ? "Model failed" : mode === "NO_MODEL_EXECUTED" ? "No applicable model" : "None available"}</dd>
               <dt>Symptom correlation</dt><dd>{a.symptom_correlation && a.patient_context?.reported ? `${a.symptom_correlation.state.replaceAll("_", " ")} (research)` : a.patient_context?.reported ? "inconclusive" : "no symptoms reported"}</dd>
               <dt>Urgency</dt><dd>{a.recommendation.priority === "routine_follow_up" ? "No escalation" : "Review recommended"}</dd>
             </dl>
@@ -556,8 +607,8 @@ function ResultInner() {
             <div className="card-title"><h3 style={{ fontSize: "0.9rem" }}>WHY AM I SEEING THIS RESULT?</h3></div>
             <ol className="small" style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 7 }}>
               <li><strong>Image quality:</strong> the quality gate measured the image ({a.quality.status}); {a.quality.acceptable ? "analysis proceeded." : "analysis of findings was blocked."}</li>
-              <li><strong>Model status:</strong> {a.demo?.synthetic_result ? "the current model is a registered DEMO placeholder. It produces labeled synthetic output — no validated medical model is installed." : "the current model is not clinically validated for autonomous diagnosis; interpret its output only within the clinician review workflow."}</li>
-              <li><strong>Detected findings:</strong> {abnormal ? a.demo?.synthetic_result ? `${a.findings.length} synthetic demo signal(s) were generated to exercise the pipeline. They do not derive from image content.` : `${a.findings.length} model output signal(s) are shown with their research/validation status.` : "no findings were produced by the model."}</li>
+              <li><strong>Model status:</strong> {mode === "DEMO_ONLY" ? "a registered DEMO placeholder produced labeled synthetic output." : mode === "MODEL_FAILED" ? "the applicable research provider failed; no synthetic replacement was used." : mode === "NO_MODEL_EXECUTED" ? "no compatible research model ran for this asset." : "research model execution completed; outputs are uncalibrated and not clinically validated."}</li>
+              <li><strong>Detected findings:</strong> {abnormal ? mode === "DEMO_ONLY" ? `${a.findings.length} synthetic demo signal(s) were generated to exercise the pipeline. They do not derive from image content.` : `${a.findings.length} research model output signal(s) are shown with their provenance.` : mode === "MODEL_FAILED" ? "no findings were produced because model execution failed." : mode === "NO_MODEL_EXECUTED" ? "no findings were produced because no applicable model ran." : "no target findings were emitted by the research model(s) that completed."}</li>
               <li><strong>Model validation:</strong> not clinically validated — results cannot be used clinically and cannot be considered normal.</li>
               <li><strong>Symptom information:</strong> {a.patient_context?.reported ? "reported symptoms were correlated separately by a rules layer AFTER the model ran." : "no symptoms were reported for this study."} {a.model_registry?.model_input === "IMAGE_ONLY" ? "The model analyzes the image only; symptoms are never used as model input." : ""}</li>
             </ol>

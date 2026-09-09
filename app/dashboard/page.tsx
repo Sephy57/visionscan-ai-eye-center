@@ -41,7 +41,7 @@ export default function DashboardPage() {
           <h1 style={{ marginBottom: 2 }}>{greeting()}</h1>
           <p className="small muted" style={{ margin: 0, display: "flex", gap: 14, flexWrap: "wrap" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span className="dot dot-amber" aria-hidden="true" />Research environment</span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span className="dot dot-off" aria-hidden="true" />No clinical model installed</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span className="dot dot-off" aria-hidden="true" />Research models require clinician review</span>
           </p>
         </div>
         <Link className="btn" href="/analyze"><Icon name="plus" size={14} /> New Analysis</Link>
@@ -50,8 +50,8 @@ export default function DashboardPage() {
       <div className="grid grid-3" style={{ marginTop: 20 }}>
         <div className="card stat-card">
           <span className="stat-label">Model status</span>
-          <span className="stat-value" style={{ color: "var(--warn)" }}>DEMO</span>
-          <span className="stat-detail">Synthetic findings only — research use, not validated</span>
+          <span className="stat-value" style={{ color: "var(--warn)" }}>RESEARCH</span>
+          <span className="stat-detail">Fundus/OCT research routing; DEMO fallback only for unsupported modalities</span>
         </div>
         <div className="card stat-card">
           <span className="stat-label">System status</span>

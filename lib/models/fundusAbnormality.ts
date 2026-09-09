@@ -9,6 +9,7 @@
  */
 import type { QualityResult } from "../imaging/quality";
 import type { RawModelOutput } from "./outputContract";
+import { canonicalModality } from "./modalities";
 
 export type FundusAbnormalityState =
   | "NO_TARGET_ABNORMALITY_DETECTED"
@@ -60,7 +61,7 @@ export function unavailableFundusAbnormalityResult(
       limitations: ["Image-quality gate prevented fundus-abnormality inference.", ...quality.limitations],
     };
   }
-  if (ood.detected || modality.toUpperCase() !== "FUNDUS") {
+  if (ood.detected || canonicalModality(modality) !== "FUNDUS") {
     return {
       state: "OUT_OF_DISTRIBUTION", regions: [], model_id: null, model_version: null, model_score: null,
       score_semantics: "NO_SCORE_AVAILABLE", calibration_state: "NOT_APPLICABLE", quality_state: quality.quality_status,

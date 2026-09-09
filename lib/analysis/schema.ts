@@ -28,6 +28,10 @@ export interface Finding {
   synthetic: boolean;                  // MUST be true for any demo-generated finding
   model_id: string;                    // component that produced this finding
   model_status?: string;               // registry status of producing model (e.g. DEMO)
+  source_modality?: string;
+  source_asset_id?: string;
+  source_page?: number;
+  laterality?: "OD" | "OS" | "OU" | "unknown";
 }
 
 export interface StudyInfo {
@@ -68,6 +72,20 @@ export interface RecommendationInfo {
 export interface AnalysisResult {
   schema_version: string;
   study: StudyInfo;
+  /** Actual execution state, derived from providers rather than UI defaults. */
+  analysis_mode?: "DEMO_ONLY" | "RESEARCH_MODEL_ANALYSIS" | "MIXED_RESEARCH_AND_DEMO" | "NO_MODEL_EXECUTED" | "MODEL_FAILED";
+  asset_routing?: import("../assets/assetRouter").AssetRoutingResult;
+  document_routing?: import("../documents/extraction/pdfIntelligence").PdfAssetRouting[];
+  model_execution?: {
+    models_attempted: string[];
+    models_executed: string[];
+    models_failed: string[];
+    models_skipped: Array<{ model_id: string; reason: string }>;
+    artifact_hashes: Record<string, string | null>;
+    artifact_verification?: Record<string, "EXPECTED_REGISTRY_HASH" | "VERIFIED" | "FAILED" | "UNAVAILABLE">;
+    model_versions: Record<string, string>;
+    runtime_status: string;
+  };
   quality: QualityInfo;
   segmentation: {
     implemented: boolean;
@@ -98,6 +116,12 @@ export interface AnalysisResult {
   dr_assessment?: import("../models/drAssessment").DrAssessmentResult;
   /** Dedicated OCT class-estimate layer. A NORMAL estimate never means a healthy macula. */
   oct_assessment?: import("../models/octAssessment").OctAssessmentResult;
+  oct_region_results?: Array<{
+    asset_id: string; document_id: string; page: number; laterality: "OD" | "OS" | "unknown";
+    source_page_hash: string; roi_hash: string; content_type: "OCT_BSCAN";
+    status: "EXECUTED" | "FAILED" | "SKIPPED"; assessment?: import("../models/octAssessment").OctAssessmentResult; note?: string;
+  }>;
+  oct_aggregation?: "CONSISTENT_TARGET_CLASS" | "MIXED_OCT_CLASS_RESULTS" | "INSUFFICIENT_SCAN_QUALITY" | "NOT_COMPARABLE";
   /** Cross-model research agreement. Scores are never averaged; disagreement has no automatic winner. */
   multi_model?: {
     performed: boolean;
@@ -267,6 +291,16 @@ export function validateAnalysisResult(r: unknown): { valid: boolean; errors: Va
   need(!!o.recommendation && typeof o.recommendation.priority === "string", "recommendation.priority", "required");
   need(!!o.demo, "demo", "required");
   need(!!o.provenance && Array.isArray(o.provenance.models), "provenance.models", "required");
+  if (o.analysis_mode !== undefined) {
+    need(["DEMO_ONLY", "RESEARCH_MODEL_ANALYSIS", "MIXED_RESEARCH_AND_DEMO", "NO_MODEL_EXECUTED", "MODEL_FAILED"].includes(o.analysis_mode), "analysis_mode", "invalid execution mode");
+  }
+  if (o.model_execution !== undefined) {
+    need(Array.isArray(o.model_execution.models_attempted), "model_execution.models_attempted", "must be array");
+    need(Array.isArray(o.model_execution.models_executed), "model_execution.models_executed", "must be array");
+    need(Array.isArray(o.model_execution.models_failed), "model_execution.models_failed", "must be array");
+    need(Array.isArray(o.model_execution.models_skipped), "model_execution.models_skipped", "must be array");
+    need(typeof o.model_execution.runtime_status === "string", "model_execution.runtime_status", "required");
+  }
 
   // Safety rule: findings must not exist when quality gate failed.
   if (o.quality && o.quality.acceptable === false && (o.findings ?? []).length > 0) {

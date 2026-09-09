@@ -101,7 +101,15 @@ async function main() {
   results.metrics.upload = { samples: 1, elapsed_ms: upload.elapsed_ms, bytes: image.length };
   try {
     const analysis = await timed(() => request("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ study_id: studyId }) }));
-    results.metrics.full_demo_imaging_pipeline = { samples: 1, elapsed_ms: analysis.elapsed_ms, triage_priority: analysis.body.triage_priority };
+    results.metrics.full_demo_imaging_pipeline = {
+      samples: 1,
+      elapsed_ms: analysis.elapsed_ms,
+      triage_priority: analysis.body.triage_priority,
+      analysis_mode: analysis.body.analysis_mode ?? "not_returned_by_server",
+      models_executed: analysis.body.model_execution?.models_executed ?? [],
+      quality_status: analysis.body.quality?.status ?? "not_returned_by_server",
+      note: "Name retained for backwards-compatible output; state is server-reported and may be RESEARCH, DEMO_ONLY, NO_MODEL_EXECUTED, or MODEL_FAILED.",
+    };
     results.metrics.result_bundle_api = await sample(20, () => request(`/api/studies/${encodeURIComponent(studyId)}`));
     results.metrics.result_page = await sample(20, () => request(`/result?study=${encodeURIComponent(studyId)}`));
     results.metrics.report_page = await sample(20, () => request(`/report?study=${encodeURIComponent(studyId)}`));

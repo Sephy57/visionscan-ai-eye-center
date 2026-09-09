@@ -38,6 +38,11 @@ export async function POST(req: NextRequest) {
       triage_priority: report.triage_priority,
       quality: analysis.quality,
       findings_count: analysis.findings.length,
+      // Keep the summary endpoint honest and machine-auditable; consumers do
+      // not have to infer DEMO/RESEARCH state from a prose result string.
+      analysis_mode: analysis.analysis_mode,
+      model_execution: analysis.model_execution,
+      asset_routing: analysis.asset_routing,
     });
   } catch (err) {
     return NextResponse.json({ error: String(err instanceof Error ? err.message : err) }, { status: 400 });

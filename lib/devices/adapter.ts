@@ -34,6 +34,8 @@ export interface NormalizedStudy {
   metadata: DeviceMetadata;   // only what was actually provided - never invented
   files: StoredFile[];
   hashSeed?: number;          // deterministic content hash for reproducible demo generation
+  /** Server-computed content interpretation; user metadata is never authoritative. */
+  asset_routing?: import("../assets/assetRouter").AssetRoutingResult;
 }
 
 export interface DeviceMetadata {

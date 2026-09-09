@@ -324,3 +324,89 @@ the prior 50-item record or change its clinical-use limitations.
     run because the checkout/setup actions target deprecated Node.js 20 and are
     being forced onto Node.js 24; this is an infrastructure warning, not a
     failed application gate.
+
+## H. Real asset routing / OCT-PDF analysis phase (2026-09-09)
+
+1. **Starting HEAD.** Work for this phase began at `f353fce424b89bad1a94a669c66292c686d2075c` on `main`. Existing history and dirty user work were preserved; no reset, clean, restore, checkout, or stash operation was used.
+
+2. **Ending HEAD.** The implementation commit and any post-push report correction are recorded after the source/report commit is created; this section is updated with the exact final SHA before handoff.
+
+3. **Working tree.** Before commit, the tree contains only the intended routing, extraction, provenance, UI, test, script, and package changes listed by `git status --short`; no uploaded patient PDF/JPEG, OCR output, credentials, or model data is staged. The final working tree will be checked clean after commit.
+
+4. **Commits.** The phase is committed as a focused feature change covering `assetRouter`, PDF intelligence/ROI extraction, immutable provenance checks, inference caching, modality-aware pipeline/report/UI behavior, browser acceptance, and regression tests. The exact commit SHA is recorded in the post-push release record.
+
+5. **Push.** The existing `origin` remote and `main` branch are used. Push is attempted only after `git diff --check` and staged-file review; no new repository or branch is created.
+
+6. **CI.** GitHub Actions is queried for the pushed SHA and its conclusion is recorded below only from the observed run; an unobserved or unavailable run is reported as such rather than inferred from local tests.
+
+7. **Root cause of fundus UNKNOWN state.** Upload creation trusted a missing/`unknown` client modality and did not derive modality from immutable image bytes. Device metadata absence therefore left the study globally unknown even when pixels were fundus-like.
+
+8. **Root cause of false OOD state.** Device validation and pixel/domain OOD were coupled. A missing camera/device record could be converted into an OOD-style rejection before a real image-domain check, preventing eligible research routing.
+
+9. **Fundus modality-classification changes.** `lib/assets/assetRouter.ts` now performs deterministic container and raster-content classification using multiple signals (circular field/FOV, dark exterior, color distribution, texture/vessel-like structure, and optic-disc-like brightness). It returns `FUNDUS_PHOTO_CONFIRMED`, `FUNDUS_PHOTO_PROBABLE`, or `UNKNOWN`; no filename, hash, dimension, or fixture-specific shortcut is used.
+
+10. **Device/domain/OOD changes.** Modality, device, domain validation, image quality, and OOD are separate states. A recognized image with absent device metadata is `DEVICE_UNKNOWN` plus `DOMAIN_VALIDATION_UNKNOWN`; only a genuine pixel/domain gate produces `OUT_OF_DISTRIBUTION`. Quality limitations remain quality limitations and are not relabeled OOD.
+
+11. **Real fundus routing result.** The real-Chrome acceptance upload of a metadata-free, synthetic fundus-like raster was content-routed as fundus and entered `RESEARCH_MODEL_ANALYSIS`; the result reported the server-computed route and did not fall through to the demo detector.
+
+12. **Lesion model execution result.** The ClementP lesion provider was attempted and executed for the accepted fundus workflow as `fundus-lesions-clementp-unet-seresnext50` (pinned version `a2cfcb594e483`) when its quality/OOD/artifact gates allowed it. Output conversion preserves supported lesion types and bounding regions; a miss is not rewritten as normal.
+
+13. **DR model execution result.** The research DR grader was attempted and executed for the same eligible fundus workflow as `fundus-dr-grading-effb0` (pinned version `aa5741419b90`). It remains a research grade estimate, explicitly `NOT_CALIBRATED`, with no diagnostic probability.
+
+14. **Report provenance changes.** Analysis results now carry server-computed asset routing, immutable source/ROI hashes, model registry metadata, `models_attempted`, `models_executed`, `models_failed`, `models_skipped`, skip reasons, artifact hashes, versions, runtime status, and per-document/per-page provenance. Stale or mismatched sidecars are excluded.
+
+15. **DEMO/research banner fix.** `analysis_mode` is derived from actual provider execution (`DEMO_ONLY`, `RESEARCH_MODEL_ANALYSIS`, `MIXED_RESEARCH_AND_DEMO`, `NO_MODEL_EXECUTED`, or `MODEL_FAILED`). Research output is shown as research-only/not clinically validated; demo copy is shown only when demo is what ran. A target-negative research result is not presented as a green normal diagnosis.
+
+16. **Mixed-PDF classification architecture.** PDFs are retained as one immutable source document, then rendered page-by-page, text-extracted as evidence, visually classified, and decomposed into bounded image regions. The document is `MIXED_CLINICAL_DOCUMENT` when page classes differ; there is no single global modality override.
+
+17. **PDF page categories.** Controlled categories are implemented for `LAB_RESULT`, `OPHTHALMIC_NOTE`, `FUNDUS_REPORT`, `OCT_MACULAR_CUBE`, `OCT_RASTER`, `VISUAL_FIELD`, `IOP_REPORT`, `REFRACTION`, `DICOM_SUMMARY`, `UNKNOWN_CLINICAL`, and `NON_OPHTHALMIC_CLINICAL`, with classifier method, confidence semantics, and verification state preserved.
+
+18. **OCT page detection.** Zeiss/Cirrus markers, macular-cube terminology, raster terminology, ILM-RPE/thickness terms, and OCT visual signals are used conservatively. The mixed-PDF browser fixture was observed as three pages with OCT macular-cube/raster pages and a separate laboratory page.
+
+19. **OCT ROI extraction.** `pdfIntelligence.ts` extracts bounded, non-uniform candidate regions and records `document_id`, page, bounding box, source-page hash, ROI hash, content type, laterality, and extraction method. The original PDF is never mutated; invalid, oversized, or untrusted derivatives are rejected.
+
+20. **B-scan extraction.** Only elongated grayscale/layer-textured candidates classified as `OCT_BSCAN` are eligible for the OCT classifier. Thickness maps and en-face images receive separate content types; headings, tables, logos, signatures, and whole-page screenshots are not sent as B-scans.
+
+21. **Laterality extraction.** Explicit, unambiguous `OD`/`OS` markers are attached at page level and inherited by a region only from that page. A page that mentions both eyes without an unambiguous assignment is `UNKNOWN` with `AMBIGUOUS` provenance; laterality is never copied from an adjacent page.
+
+22. **Objective OCT measurement extraction.** Clearly legible Central Subfield Thickness, Cube Volume, Cube Average Thickness, and related labels retain `value_raw`, optional `value_normalized`, `unit`, laterality, page, source region, and review status. Missing units remain null; no disease meaning or patient value is hard-coded.
+
+23. **OCT model routing.** Each validated OCT B-scan ROI independently passes quality and OOD gates before `oct-retinal-weights-fp32` (`hf-main-2026`) is invoked. The PDF page, thickness map, en-face crop, fundus photo, and laboratory page are excluded from this B-scan path. Research failures remain explicit failures rather than demo fallback.
+
+24. **Multi-B-scan behavior.** Every compatible B-scan candidate is retained and evaluated; the pipeline does not silently choose one crop or average arbitrary logits. Scan-level outputs are preserved and aggregate categorically as consistent target class, mixed class results, insufficient scan quality, or not comparable.
+
+25. **Non-ophthalmic page handling.** Laboratory/serology pages remain `LAB_RESULT`/`NON_OPHTHALMIC_CLINICAL_RECORD` evidence with page provenance. They are not routed to fundus, DR, or OCT inference and are not deleted from the source document.
+
+26. **Image/PDF evidence fusion.** Fundus findings, OCT classifications, extracted measurements, and document evidence can enter the existing cross-modality evidence layer only with their source hashes, page/eye context, and evidence type intact. Unrelated laboratory facts are not synthesized into an eye diagnosis.
+
+27. **Symptom behavior.** Symptoms come from validated user/document extraction, including explicit negation and uncertainty; they are never inferred from pixels. The report separates AI-observed imaging findings, documented symptoms, and possible associated symptom evidence.
+
+28. **Findings/no-model distinction.** Schema and UI distinguish `NO_TARGET_FINDING_DETECTED`, `NO_APPLICABLE_MODEL`, `MODEL_FAILED`, `INPUT_UNSUITABLE`, and `OUT_OF_DISTRIBUTION`. `Findings (0)` is only used for successfully executed models with zero supported targets, not for an analysis that never ran.
+
+29. **UI/report redesign.** Result and report pages now lead with analysis mode, uploaded asset/page breakdown, model execution, findings/measurements, ROI provenance, and limitations. Clinician/dashboard language is modality-aware; OCT studies do not show stale fundus-unavailable text, and `ScanViewer` no longer appends an unconditional demo label.
+
+30. **Security/red-team.** Server recomputation ignores spoofed modality/page-class/model fields. Study/document/routing IDs, source hashes, page hashes, ROI hashes, bounding boxes, and patient scope are verified before analysis. Extraction caps embedded resources and rejects malformed/unsupported assets; path traversal and cross-study derivative reuse remain blocked. Prompt text in PDFs is evidence, not executable instruction.
+
+31. **Performance.** Login/navigation remain off the model path. `npm run performance:local` passed: login API p95 72.6 ms, dashboard p95 5.5 ms, study-list API p95 6.1 ms, upload 34.7 ms, result/report page p95 4.8/4.3 ms. The ClementP cold single-run measured 7,604.7 ms (interpreter included); warmed 1024-pixel CPU forward was about 2.3 s, peak worker RSS about 1.3 GB, with serialized execution. The endpoint fixture was borderline quality and `NO_MODEL_EXECUTED`, so these are engineering timings, not clinical latency claims.
+
+32. **Test totals.** The isolated full regression using fresh temporary database/storage roots passed 52 files, 915 tests, and 2 skipped (917 total) in 494.95 s. The default shared store run had an afterAll cleanup timeout after 915 passes; it is recorded as host/store contention, not a green claim. The new asset/PDF regression file has 8 focused tests.
+
+33. **TypeScript.** `npx tsc --noEmit` passed after the routing, extraction, provenance, and UI changes.
+
+34. **Build.** `npm run build` passed using the stable webpack command (`next build --webpack`), compiling successfully, typechecking, and generating 20/20 static pages. Existing middleware-convention warning remains non-blocking.
+
+35. **Smoke.** `npm run smoke` passed 16/16, including authenticated upload, symptom validation and rejection, real research analysis, red-flag triage, report generation, clinician finalize, temporal comparison, self-test, deletion, unauthenticated denial, and cross-role checks.
+
+36. **Browser E2E.** `npm run browser:asset-e2e` passed in real headless Chrome: metadata-free fundus upload reached research models; mixed PDF extraction completed; pages were classified; 8 OCT ROI candidates were preserved and analyzed through the B-scan path; and the report showed research provenance/PDF routing without a stale synthetic banner.
+
+37. **Responsive QA.** `npm run browser:responsive` passed 80/80 checks across 10 routes at 320, 375, 414, 768, 1024, 1280, 1440, and 1920 px.
+
+38. **Accessibility.** `npm run browser:a11y` passed 20/20 axe WCAG A/AA checks at 320 px and 1280 px over the 10 application routes.
+
+39. **npm audits.** `npm audit --omit=dev --json` passed with 0 production vulnerabilities across 42 dependencies. Full `npm audit --json` remains non-zero for two moderate dev-only Vitest vulnerabilities (`vitest`/`@vitest/mocker`, GHSA-82fw-gwwq-j7x9); the available fix is a major Vitest upgrade and was not applied without review. `npm run audit:fs` passed with source/data on D: and approximately 430 GB free.
+
+40. **Remaining clinical/model limitations.** Research artifacts remain uncalibrated and non-diagnostic; supported pathology is limited to each pinned model's contract; device/domain validation is incomplete for unknown acquisition hardware; rights/provenance for training data and derived weights, SBOM/dependency governance, resource/network sandboxing, multi-device patient-separated validation, operating-point/calibration freeze, and clinical/regulatory review remain open. The stale `next lint` script still fails because no ESLint configuration is installed.
+
+41. **Exact capability boundary.** VisionScan can now content-route eligible fundus images and mixed scanned ophthalmic PDFs, preserve page/ROI/eye provenance, and run isolated local research providers when all gates pass. It cannot diagnose, establish normality, infer symptoms from pixels, interpret normative OCT colors as disease, guarantee sensitivity/specificity, or replace clinician review. Unsupported, ambiguous, low-quality, tampered, or true-OOD inputs fail closed.
+
+42. **Final classification.** **ENGINEERING PARTIAL — BLOCKERS REMAIN.** The requested routing and report-correctness behavior is implemented and locally verified, but the full release is not called complete while dev-audit/lint limitations, CI confirmation for the new SHA, and the disclosed clinical/model governance gates remain unresolved.

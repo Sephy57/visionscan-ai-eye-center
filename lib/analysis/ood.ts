@@ -36,6 +36,8 @@ export function assessOod(params: {
    * Defaults to false (strict: every distribution uncertainty is OOD).
    */
   deviceUnknownIsDomainUnknown?: boolean;
+  /** Bounded OCT B-scan sidecars are wide strips, not square fundus frames. */
+  resolutionProfile?: "primary" | "oct_bscan";
 }): OodResult {
   const reasons: string[] = [];
 
@@ -69,7 +71,9 @@ export function assessOod(params: {
   if (m.illumination_mean < 15 || m.illumination_mean > 250) {
     reasons.push("Extreme illumination values; image may not resemble the intended imaging distribution.");
   }
-  if (m.width < 256 || m.height < 256) {
+  const minWidth = params.resolutionProfile === "oct_bscan" ? 256 : 256;
+  const minHeight = params.resolutionProfile === "oct_bscan" ? 80 : 256;
+  if (m.width < minWidth || m.height < minHeight) {
     reasons.push("Unusually low resolution for ophthalmic imaging.");
   }
   if (params.quality.detected_artifacts.includes("incorrect_field_of_view")) {

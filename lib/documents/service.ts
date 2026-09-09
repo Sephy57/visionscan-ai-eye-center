@@ -6,6 +6,7 @@ import { PARSER_VERSION, DOCUMENT_MIME } from "./constants";
 import { validatePdf, DEFAULT_VALIDATION_LIMITS } from "./validation";
 import { saveOriginalDocument, readOriginalDocument, deleteOriginalDocument } from "./storage";
 import { putDocument, getDocument, listAllDocumentRecords } from "./repository";
+import { deleteExtractedRegions } from "./extraction/pdfIntelligence";
 import { sanitizeDisplayName } from "./security";
 import type { StudyRecord } from "../studies/service";
 
@@ -236,6 +237,7 @@ export async function deleteDocument(documentId: string, actor: string): Promise
   doc.updated_at = new Date().toISOString();
   await putDocument(doc);
   await deleteOriginalDocument(documentId);
+  await deleteExtractedRegions(documentId);
   await audit({
     actor: `user:${actor}`,
     action: "document.deleted",

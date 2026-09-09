@@ -28,6 +28,12 @@ export interface ClinicalReport {
     notes?: string | null;
   };
   study: AnalysisResult["study"];
+  analysis_mode: AnalysisResult["analysis_mode"];
+  asset_routing?: AnalysisResult["asset_routing"];
+  document_routing?: AnalysisResult["document_routing"];
+  model_execution: AnalysisResult["model_execution"];
+  oct_region_results?: AnalysisResult["oct_region_results"];
+  oct_aggregation?: AnalysisResult["oct_aggregation"];
   image_quality: AnalysisResult["quality"];
   overall_result: string;
   findings: AnalysisResult["findings"];
@@ -154,6 +160,8 @@ export function buildOverallResult(r: AnalysisResult): string {
     return "IMAGE QUALITY INSUFFICIENT FOR RELIABLE AUTOMATED ANALYSIS";
   }
   const modality = canonicalModality(r.study.modality);
+  if (r.analysis_mode === "MODEL_FAILED") return "RESEARCH MODEL ANALYSIS FAILED — NO FINDING INFERRED";
+  if (r.analysis_mode === "NO_MODEL_EXECUTED") return "NO APPLICABLE RESEARCH MODEL EXECUTED — AUTOMATED INTERPRETATION UNAVAILABLE";
   if (modality === "OCT") {
     if (r.oct_assessment?.state === "CLASS_ESTIMATED") return "OCT TARGET CLASS ESTIMATED BY RESEARCH AI — CLINICIAN REVIEW REQUIRED";
     if (r.oct_assessment?.state === "OUT_OF_DISTRIBUTION") return "OCT INPUT OUT OF DISTRIBUTION — AUTOMATED INTERPRETATION INCONCLUSIVE";
@@ -172,6 +180,10 @@ export function buildOverallResult(r: AnalysisResult): string {
     return "SUSPICIOUS FUNDUS ABNORMALITY DETECTED BY RESEARCH AI — OPHTHALMIC REVIEW REQUIRED";
   }
   if (r.findings.length === 0) {
+    // Keep the established overall-result wording for compatibility with
+    // stored reports; the explicit analysis_mode/model_execution fields and
+    // the UI badge distinguish a completed research negative from a demo or
+    // no-model state. This wording never claims normality or health.
     return "NO TARGET ABNORMALITY IDENTIFIED BY THE AVAILABLE MODEL — OTHER ABNORMALITIES MAY STILL BE PRESENT";
   }
   const result = "POTENTIAL ABNORMAL FINDING DETECTED";
@@ -187,16 +199,20 @@ export function buildOverallResult(r: AnalysisResult): string {
 }
 
 export function buildLimitations(r: AnalysisResult): string[] {
-  const researchPath = r.model_registry?.model_status === "RESEARCH" && r.demo?.synthetic_result === false;
+  const researchPath = r.analysis_mode === "RESEARCH_MODEL_ANALYSIS" || r.analysis_mode === "MIXED_RESEARCH_AND_DEMO" || (r.model_registry?.model_status === "RESEARCH" && r.demo?.synthetic_result === false);
   const researchLabel = /oct/i.test(r.model_registry?.model_id ?? "") ? "OCT classifier" : /dr|grading/i.test(r.model_registry?.model_id ?? "") ? "DR grader" : "fundus lesion detector";
   const l: string[] = [
     VALIDATION_STATUS_BANNER,
     researchPath
       ? `The ${researchLabel} is a RESEARCH model running real local inference; it is not clinically validated and its output consists of uncalibrated observations only.`
-      : "All detection and segmentation components in this deployment are unvalidated placeholders or heuristics.",
+      : r.analysis_mode === "MODEL_FAILED" ? "Applicable research model execution failed; no finding was inferred and no DEMO substitute was used."
+        : r.analysis_mode === "NO_MODEL_EXECUTED" ? "No applicable research model executed for this asset; absence of findings is not evidence of normality."
+          : "All detection and segmentation components in this deployment are unvalidated placeholders or heuristics.",
     researchPath
       ? `Findings are ${researchLabel} outputs from real image pixels; they are not validated clinical conclusions, carry no calibrated confidence, and require ophthalmic review.`
-      : "Findings are synthetic demo outputs generated to exercise the pipeline; they do not derive from a validated medical model.",
+      : r.analysis_mode === "MODEL_FAILED" ? "Research execution failed; this report contains no synthetic replacement result."
+        : r.analysis_mode === "NO_MODEL_EXECUTED" ? "No model output is present; the system does not infer normality from this state."
+          : "Findings are synthetic demo outputs generated to exercise the pipeline; they do not derive from a validated medical model.",
     "No validated reference databases are installed; measurements are not compared against population references.",
     "Device-specific calibration and per-device validation have not been performed.",
     "This system is not a medical device and is not authorized for clinical use.",
@@ -222,6 +238,12 @@ export function buildLimitations(r: AnalysisResult): string[] {
       "Class estimates do not establish or exclude macular disease and are not diagnoses."
     );
   }
+  if (r.asset_routing) {
+    l.push(`Asset routing: ${r.asset_routing.container_type} / ${r.asset_routing.modality_state}; device=${r.asset_routing.device_state}; domain=${r.asset_routing.domain_state}.`);
+  }
+  if (r.oct_region_results?.length) {
+    l.push(`${r.oct_region_results.filter((x) => x.status === "EXECUTED").length} bounded OCT B-scan ROI(s) were analyzed; each ROI retains source-page and ROI hashes. Non-B-scan page content was excluded from OCT inference.`);
+  }
   return l;
 }
 
@@ -233,13 +255,20 @@ export async function generateReport(
     report_id: `rep_${analysis.study.study_id}`,
     study_id: analysis.study.study_id,
     generated_at: new Date().toISOString(),
-    report_version: "1.0.0",
+    report_version: "1.1.0",
     validation_banner: VALIDATION_STATUS_BANNER,
-    demo_label: analysis.demo?.synthetic_result === false
-      ? (analysis.model_registry?.display_label ?? VALIDATION_STATUS_BANNER)
-      : DEMO_LABEL,
+    demo_label: analysis.analysis_mode === "DEMO_ONLY" ? DEMO_LABEL
+      : analysis.analysis_mode === "MODEL_FAILED" ? "RESEARCH MODEL ANALYSIS FAILED — NO SYNTHETIC FALLBACK"
+        : analysis.analysis_mode === "NO_MODEL_EXECUTED" ? "NO MODEL EXECUTED — INTERPRETATION UNAVAILABLE"
+          : (analysis.model_registry?.display_label ?? VALIDATION_STATUS_BANNER),
     patient: patient ?? { identifier: null, age_band: null, notes: null },
     study: analysis.study,
+    analysis_mode: analysis.analysis_mode,
+    asset_routing: analysis.asset_routing,
+    document_routing: analysis.document_routing,
+    model_execution: analysis.model_execution,
+    oct_region_results: analysis.oct_region_results,
+    oct_aggregation: analysis.oct_aggregation,
     image_quality: analysis.quality,
     overall_result: buildOverallResult(analysis),
     findings: analysis.findings,

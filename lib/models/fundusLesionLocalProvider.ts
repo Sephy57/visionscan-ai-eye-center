@@ -41,12 +41,15 @@ import { checkModalitySupported } from "./modalities";
 import {
   FUNDUS_LESION_MODEL_ID,
   FUNDUS_LESION_MODEL_VERSION,
+  FUNDUS_LESION_PREPROCESSING_VERSION,
   validateFundusLesionSegmentationOutput,
   type FundusLesionSegmentationOutput,
 } from "./fundusLesionContract";
 import { convertRawModelOutputToFindings } from "./outputConversion";
 import type { RawModelOutput } from "./outputContract";
 import type { Finding } from "../analysis/schema";
+import { assetHash } from "../assets/assetRouter";
+import { getInferenceCache, inferenceCacheKey, setInferenceCache } from "./inferenceCache";
 
 const PROBE_SCRIPT = path.join(PROJECT_ROOT, "scripts", "inference", "fundus_lesion_probe.py");
 const CHECK_SCRIPT = path.join(PROJECT_ROOT, "scripts", "inference", "check_environment.py");
@@ -326,14 +329,29 @@ export async function runFundusLesionResearchAnalysis(
   // unvalidated and is disclosed, never assumed.
   const deviceNote = deviceCompatible(model, ctx.device ?? null);
   const disclosure = `Device compatibility: ${deviceNote.note} Domain validation: DOMAIN_VALIDATION_UNKNOWN.`;
-  const raw = await runWithMutex(() =>
-    runProbeOnce(imageBytes, study.studyId, lateralityForStudy(study))
-  );
+  const cacheKey = inferenceCacheKey({
+    scope: study.studyId,
+    sourceHash: assetHash(imageBytes),
+    modelId: model.model_id,
+    modelVersion: model.version,
+    preprocessingVersion: FUNDUS_LESION_PREPROCESSING_VERSION,
+    eye: lateralityForStudy(study),
+  });
+  const probe = await runWithMutex(async () => {
+    if (integrity.trusted) {
+      const hit = getInferenceCache<{ raw: RawModelOutput }>(cacheKey);
+      if (hit) return { ...hit, cacheHit: true };
+    }
+    const raw = await runProbeOnce(imageBytes, study.studyId, lateralityForStudy(study));
+    if (integrity.trusted && raw.inference_status === "completed") setInferenceCache(cacheKey, { raw });
+    return { raw, cacheHit: false };
+  });
+  const raw = probe.raw;
   if (raw.inference_status === "failed") {
     return {
       raw,
       findings: [],
-      notes: [raw.inference_error ?? "Lesion inference failed; no findings produced.", disclosure],
+      notes: [raw.inference_error ?? "Lesion inference failed; no findings produced.", disclosure, ...(probe.cacheHit ? ["Inference cache hit (content/model/preprocessing/study scoped)."] : [])],
       model,
       gate,
       integrity,
@@ -348,6 +366,7 @@ export async function runFundusLesionResearchAnalysis(
     findings: conversion.findings,
     notes: [
       ...conversion.notes,
+      ...(probe.cacheHit ? ["Inference cache hit (content/model/preprocessing/study scoped)."] : []),
       "Research output only (RESEARCH status): uncalibrated argmax regions, not validated lesions; requires ophthalmic review.",
       disclosure,
     ],

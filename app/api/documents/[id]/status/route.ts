@@ -36,6 +36,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         extraction_version: artifact.extraction_version,
         warnings: artifact.warnings,
         created_at: artifact.created_at,
+        asset_routing: artifact.asset_routing,
       }
     : null;
 

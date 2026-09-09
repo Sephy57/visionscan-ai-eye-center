@@ -240,6 +240,11 @@ export interface AnalysisAuditRecord {
   triage_priority: string;
   symptoms_reported?: boolean;
   red_flags?: string[];
+  analysis_mode?: string;
+  models_attempted?: string[];
+  models_executed?: string[];
+  models_failed?: string[];
+  asset_routing?: { container_type?: string; modality?: string; modality_state?: string; device_state?: string; domain_state?: string; source_hash?: string };
   ts: string;
 }
 

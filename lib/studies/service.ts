@@ -13,6 +13,11 @@ import { pickDemoScenario } from "../analysis/findings";
 import { PatientSymptom, validateSymptoms, SYMPTOM_MAP } from "../clinical/symptoms";
 import { ensurePatient, createEncounter } from "../patients/service";
 import { getModel } from "../models/registry";
+import { assetHash, routeUploadedAsset } from "../assets/assetRouter";
+import { listDocumentsByStudy } from "../documents/repository";
+import { readExtractionArtifact } from "../documents/extraction/artifacts";
+import { readExtractedRegion } from "../documents/extraction/pdfIntelligence";
+import { canonicalModality } from "../models/modalities";
 
 export interface StudyRecord {
   study_id: string;
@@ -31,6 +36,8 @@ export interface StudyRecord {
   owner_username?: string | null;
   symptoms?: PatientSymptom[];        // structured patient-reported context (NOT findings)
   symptoms_updated_at?: string;
+  /** Server-computed content routing; optional for legacy records. */
+  asset_routing?: import("../assets/assetRouter").AssetRoutingResult;
 }
 
 export interface AnalysisRecord {
@@ -52,14 +59,35 @@ export async function createStudy(
 ): Promise<StudyRecord> {
   const studyId = newId("study");
   const adapter = new SecureFileImportAdapter(declared);
+  const routing = await routeUploadedAsset(bytes, {
+    mime,
+    declaredModality: declared.scanType,
+    device: { manufacturer: declared.manufacturer, model: declared.model },
+  });
+  // An omitted/unknown declaration is completed only by a server-computed
+  // content route. Explicit declarations remain visible, while a strong
+  // content result prevents the historical UNKNOWN fall-through.
+  const declaredModality = declared.scanType ?? "unknown";
+  const contentModality = routing.modality === "FUNDUS_PHOTO" ? "fundus" : routing.modality === "OCT" ? "oct" : null;
+  const declaredCanonical = canonicalModality(declaredModality);
+  const declaredIsUnknown = !declaredModality || declaredModality.toLowerCase() === "unknown";
+  const contentCanonical = contentModality ? canonicalModality(contentModality) : null;
+  const researchModalityConflict = !!contentCanonical &&
+    (declaredCanonical === "FUNDUS" || declaredCanonical === "OCT") &&
+    (contentCanonical === "FUNDUS" || contentCanonical === "OCT") && declaredCanonical !== contentCanonical;
+  const effectiveModality = contentModality && routing.method === "CONTENT_HEURISTICS" &&
+    (declaredIsUnknown || declaredCanonical === contentCanonical)
+    ? contentModality
+    : researchModalityConflict ? "unknown" : declaredModality;
   const file: StoredFile = await saveOriginalScan(studyId, fileName, bytes, mime);
   const study: NormalizedStudy = {
     studyId,
-    modality: declared.scanType ?? "unknown",
+    modality: effectiveModality,
     eye: declared.eye ?? "unknown",
     source: "file_upload",
-    metadata: { ...declared, providedBy: "user" },
+    metadata: { ...declared, providedBy: declared.providedBy === "none" ? "none" : "user" },
     files: [file],
+    asset_routing: routing,
   };
   const record: StudyRecord = {
     study_id: studyId,
@@ -71,6 +99,7 @@ export async function createStudy(
     files: [file],
     status: "uploaded",
     original_sha256: file.sha256,
+    asset_routing: routing,
     patient_ref: patientRef?.trim() ? patientRef.trim().slice(0, 64) : undefined,
     tenant_id: scope?.tenant_id ?? null,
     owner_user_id: scope?.owner_user_id ?? null,
@@ -95,7 +124,7 @@ export async function createStudy(
       await audit({ actor: createdBy, action: "study.patient_link_failed", studyId, outcome: "error", detail: "patient workspace provisioning failed" });
     }
   }
-  await audit({ actor: "user", action: "upload", studyId, outcome: "ok", detail: `modality=${study.modality} eye=${study.eye}` });
+  await audit({ actor: "user", action: "upload", studyId, outcome: "ok", detail: `modality=${study.modality} route=${routing.modality_state} eye=${study.eye}` });
   return record;
 }
 
@@ -127,6 +156,45 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
   const bytes = await readOriginalScan(studyId);
   if (!bytes) throw new Error("Original scan missing");
 
+  const documentAssets: Array<{
+    asset_id: string; document_id: string; page: number; bbox: { x: number; y: number; w: number; h: number };
+    source_page_hash: string; roi_hash: string; content_type: "OCT_BSCAN"; modality: "OCT"; eye: "OD" | "OS" | "unknown"; bytes: Buffer;
+  }> = [];
+  const documentRouting: import("../documents/extraction/pdfIntelligence").PdfAssetRouting[] = [];
+  // Only server-created OCT_BSCAN derivatives are eligible for OCT inference.
+  // Text, tables, whole pages, and non-OCT records never enter this list.
+  for (const doc of await listDocumentsByStudy(studyId)) {
+    const artifact = await readExtractionArtifact(doc.document_id);
+    const routing = artifact?.asset_routing;
+    // A sidecar is eligible only when it is tied to this study/document and
+    // the extraction was generated from the current immutable PDF bytes.
+    // Legacy artifacts without a document hash remain displayable but cannot
+    // contribute image assets to model inference.
+    const artifactTrusted = !!artifact && (artifact.study_id === studyId) &&
+      (!!routing && routing.document_id === doc.document_id && routing.study_id === studyId) &&
+      (!!routing.source_document_hash && routing.source_document_hash === doc.sha256) &&
+      (doc.status === "READY");
+    if (routing && artifactTrusted) documentRouting.push(routing);
+    if (!artifactTrusted) continue;
+    for (const region of artifact?.asset_routing?.image_regions ?? []) {
+      if (region.content_type !== "OCT_BSCAN" || region.document_id !== doc.document_id) continue;
+      const page = artifact.asset_routing?.pages.find((p) => p.page === region.page);
+      const bbox = region.bbox;
+      const bboxValid = [bbox.x, bbox.y, bbox.w, bbox.h].every((v) => Number.isFinite(v)) &&
+        bbox.x >= 0 && bbox.y >= 0 && bbox.w > 0 && bbox.h > 0 && bbox.x + bbox.w <= 1 && bbox.y + bbox.h <= 1;
+      if (!page || !bboxValid || !page.source_page_hash || page.source_page_hash !== region.source_page_hash) continue;
+      const regionBytes = await readExtractedRegion(doc.document_id, region.region_id);
+      if (!regionBytes) continue;
+      // Never trust a JSON-declared ROI hash: recompute it from the sidecar
+      // bytes before admission. This blocks stale/tampered derivative files.
+      if (assetHash(regionBytes) !== region.roi_hash) continue;
+      documentAssets.push({
+        asset_id: region.region_id, document_id: doc.document_id, page: region.page, bbox: region.bbox,
+        source_page_hash: region.source_page_hash, roi_hash: region.roi_hash, content_type: "OCT_BSCAN", modality: "OCT",
+        eye: region.laterality === "OD" || region.laterality === "OS" ? region.laterality : "unknown", bytes: regionBytes,
+      });
+    }
+  }
   const { analysis } = await runPipeline({
     study: {
       studyId,
@@ -136,9 +204,12 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
       metadata: record.metadata,
       files: record.files,
       hashSeed: pickDemoScenario(bytes).seed,
+      asset_routing: record.asset_routing,
     },
     originalBytes: bytes,
     symptoms: record.symptoms ?? [],
+    document_assets: documentAssets,
+    document_routing: documentRouting,
   });
 
   const analysisRecord: AnalysisRecord = {
@@ -163,7 +234,7 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
     image_sha256: record.original_sha256,
     model_id: auditModel?.model_id ?? "unknown-model",
     model_version: auditModel?.model_version ?? "unknown-version",
-    model_checksum: auditModelRecord?.sha256 ?? "n/a-placeholder",
+    model_checksum: auditModelRecord?.sha256 ?? "none",
     device: record.metadata.manufacturer && record.metadata.model ? `${record.metadata.manufacturer} ${record.metadata.model}` : "unspecified",
     modality: record.modality,
     quality_score: analysis.quality.score,
@@ -173,6 +244,18 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
     triage_priority: analysis.recommendation.priority,
     symptoms_reported: (record.symptoms?.length ?? 0) > 0,
     red_flags: analysis.patient_context?.red_flags ?? [],
+    analysis_mode: analysis.analysis_mode,
+    models_attempted: analysis.model_execution?.models_attempted ?? [],
+    models_executed: analysis.model_execution?.models_executed ?? [],
+    models_failed: analysis.model_execution?.models_failed ?? [],
+    asset_routing: analysis.asset_routing ? {
+      container_type: analysis.asset_routing.container_type,
+      modality: analysis.asset_routing.modality,
+      modality_state: analysis.asset_routing.modality_state,
+      device_state: analysis.asset_routing.device_state,
+      domain_state: analysis.asset_routing.domain_state,
+      source_hash: analysis.asset_routing.source_hash,
+    } : undefined,
   });
 
   const report = await generateReport(analysis);

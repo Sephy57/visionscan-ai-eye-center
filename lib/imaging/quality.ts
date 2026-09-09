@@ -45,7 +45,26 @@ export const QUALITY_THRESHOLDS = {
   borderline_score: 0.45,  // >= borderline, below fail
 };
 
-export async function assessQuality(input: Buffer): Promise<QualityResult> {
+/**
+ * OCT B-scan report crops are intentionally bounded regions rather than
+ * whole fundus photographs. They are commonly wide strips (for example
+ * 512x128), so the primary fundus minimum of 512x512 would reject every
+ * legitimate crop before the OCT model can resize it. These lower limits are
+ * engineering defaults only and do not imply clinical validation.
+ */
+export const OCT_BSCAN_QUALITY_THRESHOLDS = {
+  ...QUALITY_THRESHOLDS,
+  min_width: 256,
+  min_height: 80,
+};
+
+export async function assessQuality(
+  input: Buffer,
+  options: { min_width?: number; min_height?: number; profile?: "primary" | "oct_bscan" } = {},
+): Promise<QualityResult> {
+  const thresholds = options.profile === "oct_bscan"
+    ? OCT_BSCAN_QUALITY_THRESHOLDS
+    : { ...QUALITY_THRESHOLDS, ...(options.min_width === undefined ? {} : { min_width: options.min_width }), ...(options.min_height === undefined ? {} : { min_height: options.min_height }) };
   const image = sharp(input, { failOn: "none" });
   const meta = await image.metadata();
   const width = meta.width ?? 0;
@@ -121,23 +140,23 @@ export async function assessQuality(input: Buffer): Promise<QualityResult> {
   const artifacts: string[] = [];
   const affected: string[] = [];
 
-  if (sharpness < QUALITY_THRESHOLDS.blur_cutoff) {
+  if (sharpness < thresholds.blur_cutoff) {
     artifacts.push("blur");
     affected.push("global");
   }
-  if (mean < QUALITY_THRESHOLDS.dark_mean) {
+  if (mean < thresholds.dark_mean) {
     artifacts.push("poor_illumination");
     affected.push("global");
   }
-  if (mean > QUALITY_THRESHOLDS.bright_mean) {
+  if (mean > thresholds.bright_mean) {
     artifacts.push("overexposure");
     affected.push("global");
   }
-  if (highlightClip > QUALITY_THRESHOLDS.glare_clip) {
+  if (highlightClip > thresholds.glare_clip) {
     artifacts.push("glare");
     affected.push("highlight_regions");
   }
-  if (width < QUALITY_THRESHOLDS.min_width || height < QUALITY_THRESHOLDS.min_height) {
+  if (width < thresholds.min_width || height < thresholds.min_height) {
     artifacts.push("insufficient_resolution");
     affected.push("global");
   }
@@ -168,8 +187,8 @@ export async function assessQuality(input: Buffer): Promise<QualityResult> {
   score = Math.max(0, Math.min(1, score));
 
   const status: QualityResult["quality_status"] =
-    score >= QUALITY_THRESHOLDS.pass_score ? "pass" :
-    score >= QUALITY_THRESHOLDS.borderline_score ? "borderline" : "fail";
+    score >= thresholds.pass_score ? "pass" :
+    score >= thresholds.borderline_score ? "borderline" : "fail";
 
   return {
     quality_score: round3(score),
@@ -189,12 +208,18 @@ export async function assessQuality(input: Buffer): Promise<QualityResult> {
       colorfulness: round3(colorfulness),
       grayscale_only: colorfulness < 0.02,
     },
-    thresholds: QUALITY_THRESHOLDS,
+    thresholds,
     limitations: [
       "Quality thresholds are engineering defaults and are not clinically validated.",
       "Modality-specific quality criteria (e.g., OCT volume completeness, angiography contrast) are not yet implemented.",
+      ...(options.profile === "oct_bscan" ? ["OCT B-scan ROI minimum dimensions are engineering defaults; scan completeness and clinical adequacy remain unvalidated."] : []),
     ],
   };
+}
+
+/** Quality gate for a bounded, explicitly typed OCT B-scan sidecar. */
+export async function assessOctBscanQuality(input: Buffer): Promise<QualityResult> {
+  return assessQuality(input, { profile: "oct_bscan" });
 }
 
 function round3(x: number): number {

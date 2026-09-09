@@ -2,7 +2,7 @@ import { createRequire } from "module";
 import zlib from "zlib";
 import { PDFDict, PDFName, PDFRawStream, PDFRef, PDFArray } from "pdf-lib";
 import type { PageExtraction } from "./types";
-import { MAX_EXTRACTION_CHARS_PER_PAGE } from "../constants";
+import { MAX_DOCUMENT_EMBEDDED_RESOURCE_BYTES, MAX_EXTRACTION_CHARS_PER_PAGE } from "../constants";
 
 /**
  * pdfjs + pdf-lib page-content access (S2).
@@ -146,11 +146,22 @@ export async function loadPdf(bytes: Buffer): Promise<LoadedPdf> {
       if (!best) throw new PageImageNotExtractableError("no embedded image on page");
 
       const { stream } = best;
+      // Refuse oversized compressed resources before decoding. This protects
+      // OCR from a small stream that expands into a decompression bomb.
+      if (stream.contents.length > MAX_DOCUMENT_EMBEDDED_RESOURCE_BYTES) {
+        throw new PageImageNotExtractableError("embedded image exceeds configured byte limit");
+      }
       const filterNames = imageFilters(stream.dict.get(PDFName.of("Filter")));
-      let decoded: { width: number; height: number; draw(ctx: import("@napi-rs/canvas").SKRSContext2D): void };
+      let decoded: { width: number; height: number; draw(ctx: import("@napi-rs/canvas").SKRSContext2D, scale?: number): void };
       if (filterNames.includes("DCTDecode")) {
         const img = await loadImage(Buffer.from(stream.contents));
-        decoded = { width: img.width, height: img.height, draw: (ctx) => ctx.drawImage(img, 0, 0) };
+        decoded = {
+          width: img.width,
+          height: img.height,
+          draw: (ctx, drawScale = 1) => ctx.drawImage(
+            img, 0, 0, Math.max(1, Math.round(img.width * drawScale)), Math.max(1, Math.round(img.height * drawScale))
+          ),
+        };
       } else if (filterNames.includes("FlateDecode")) {
         decoded = decodeFlateImage(stream.dict, stream.contents);
       } else {
@@ -165,7 +176,7 @@ export async function loadPdf(bytes: Buffer): Promise<LoadedPdf> {
       const ctx = canvas.getContext("2d");
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, outW, outH);
-      decoded.draw(ctx);
+      decoded.draw(ctx, scale);
       const png = Buffer.from(canvas.toBuffer("image/png"));
       return {
         png,
@@ -194,7 +205,7 @@ function imageFilters(filter: unknown): string[] {
  * including PNG-style row predictors (Predictor 15). Anything else is
  * rejected with an error - never guessed.
  */
-function decodeFlateImage(dict: PDFDict, contents: Uint8Array): { width: number; height: number; draw(ctx: import("@napi-rs/canvas").SKRSContext2D): void } {
+function decodeFlateImage(dict: PDFDict, contents: Uint8Array): { width: number; height: number; draw(ctx: import("@napi-rs/canvas").SKRSContext2D, scale?: number): void } {
   const num = (key: string): number | undefined => {
     const v = dict.get(PDFName.of(key));
     return v ? Number(v.toString().replace(/^\//, "")) : undefined;
@@ -214,9 +225,13 @@ function decodeFlateImage(dict: PDFDict, contents: Uint8Array): { width: number;
   const predictor = num("Predictor") ?? 1;
   const inflated = zlib.inflateSync(Buffer.from(contents));
   const rowBytes = width * components;
+  const expectedBytes = rowBytes * height;
+  if (!Number.isSafeInteger(expectedBytes) || expectedBytes <= 0 || expectedBytes > MAX_DOCUMENT_EMBEDDED_RESOURCE_BYTES * 4) {
+    throw new PageImageNotExtractableError("decoded image exceeds configured pixel limit");
+  }
   let raw: Buffer;
   if (predictor >= 10) {
-    raw = unfilterPngRows(inflated, rowBytes, height);
+    raw = unfilterPngRows(inflated, rowBytes, height, components);
   } else if (predictor === 1 || predictor === 2) {
     raw = inflated.subarray(0, rowBytes * height);
     if (raw.length < rowBytes * height) throw new PageImageNotExtractableError("truncated image data");
@@ -227,20 +242,34 @@ function decodeFlateImage(dict: PDFDict, contents: Uint8Array): { width: number;
   return {
     width,
     height,
-    draw(ctx) {
+    draw(ctx, scale = 1) {
+      const targetWidth = Math.max(1, Math.round(width * scale));
+      const targetHeight = Math.max(1, Math.round(height * scale));
       // Build RGBA ImageData from the raw samples.
-      const rgba = Buffer.alloc(width * height * 4);
-      for (let i = 0; i < width * height; i++) {
-        if (components === 3) {
-          rgba[i * 4] = raw[i * 3];
-          rgba[i * 4 + 1] = raw[i * 3 + 1];
-          rgba[i * 4 + 2] = raw[i * 3 + 2];
-        } else {
-          rgba[i * 4] = rgba[i * 4 + 1] = rgba[i * 4 + 2] = raw[i];
+      const rgba = Buffer.alloc(targetWidth * targetHeight * 4);
+      for (let y = 0; y < targetHeight; y++) {
+        const sourceY = Math.min(height - 1, Math.floor(y / Math.max(scale, Number.EPSILON)));
+        for (let x = 0; x < targetWidth; x++) {
+          const sourceX = Math.min(width - 1, Math.floor(x / Math.max(scale, Number.EPSILON)));
+          const source = sourceY * width + sourceX;
+          const target = y * targetWidth + x;
+          if (components === 3) {
+            rgba[target * 4] = raw[source * 3];
+            rgba[target * 4 + 1] = raw[source * 3 + 1];
+            rgba[target * 4 + 2] = raw[source * 3 + 2];
+          } else {
+            rgba[target * 4] = rgba[target * 4 + 1] = rgba[target * 4 + 2] = raw[source];
+          }
+          rgba[target * 4 + 3] = 255;
         }
-        rgba[i * 4 + 3] = 255;
       }
-      ctx.putImageData({ data: new Uint8ClampedArray(rgba), width, height }, 0, 0);
+      // @napi-rs/canvas requires its native ImageData instance here; a plain
+      // `{ data, width, height }` object is accepted by browser canvas but
+      // throws "Failed to recover ImageData type from napi value" in Node.
+      const imageData = new (require("@napi-rs/canvas").ImageData)(
+        new Uint8ClampedArray(rgba), targetWidth, targetHeight,
+      );
+      ctx.putImageData(imageData, 0, 0);
     },
   };
 }
@@ -251,11 +280,13 @@ function libLookupN(entry: unknown): number | undefined {
   return undefined;
 }
 
-function unfilterPngRows(data: Buffer, rowBytes: number, height: number): Buffer {
+function unfilterPngRows(data: Buffer, rowBytes: number, height: number, components: number): Buffer {
   const stride = rowBytes + 1;
   if (data.length < stride * height) throw new PageImageNotExtractableError("truncated predicted image data");
   const out = Buffer.alloc(rowBytes * height);
-  const bpp = 1; // 8 bits per component => 1 byte per component (PNG bpp parameter)
+  // PNG predictor bpp is bytes per pixel, not bytes per component. RGB rows
+  // therefore use 3; using 1 corrupts horizontal/Paeth reconstruction.
+  const bpp = Math.max(1, components);
   for (let y = 0; y < height; y++) {
     const filter = data[y * stride];
     const row = data.subarray(y * stride + 1, y * stride + 1 + rowBytes);

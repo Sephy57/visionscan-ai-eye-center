@@ -12,6 +12,7 @@ import { readExtractionArtifact, writeExtractionArtifact, deleteExtractionArtifa
 import { createDefaultOcrProvider } from "./ocr";
 import { persistTestResults, deleteTestResultsForDocument } from "./testResultService";
 import { extractClinicalFromPages } from "./clinicalExtraction";
+import { analyzePdfDocument } from "./pdfIntelligence";
 import { saveRecordExtraction, deleteRecordExtraction } from "./recordExtractionStore";
 import {
   ExtractionArtifact, PageExtraction, PageExtractionMethod, OCRProvider,
@@ -32,8 +33,10 @@ import {
  * SAFETY: extracted text never enters audit logs or error responses. Clinical
  * candidates are surfaced only through the evidence workspace as
  * AUTO_EXTRACTED/UNREVIEWED, with a separate conservative pre-review urgency
- * signal; they never enter the image model or diagnosis gate as verified data.
- * Every artifact is created verification.status = UNREVIEWED.
+ * signal; text/measurements never enter the image model or diagnosis gate as
+ * verified data. Only bounded, explicitly typed OCT_BSCAN sidecars may be
+ * offered to the OCT research provider, and every artifact starts
+ * verification.status = UNREVIEWED.
  */
 
 export interface ExtractionLimits {
@@ -111,6 +114,7 @@ export async function extractDocument(documentId: string, actor: string, opts: E
   const ownProvider = !opts.ocrProvider;
   const provider = opts.ocrProvider ?? createDefaultOcrProvider();
   const pages: PageExtraction[] = [];
+  const renderedPages = new Map<number, Buffer>();
   const docWarnings: string[] = [];
   let charsTotal = 0;
   let timeExceeded = false;
@@ -128,6 +132,12 @@ export async function extractDocument(documentId: string, actor: string, opts: E
       if (tl.warnings.length) docWarnings.push(...tl.warnings.map((w) => `page_${p}:${w}`));
 
       if (tl.char_count >= limits.minTextLayerChars) {
+        // Text-layer reports can still contain embedded diagnostic images.
+        // Render likely ophthalmic pages for the S3 visual router without
+        // changing the text-first extraction decision.
+        if (/OCT|MACULAR|FUNDUS|RETINAL|CIRRUS|B[-\s]?SCAN|THICKNESS/i.test(tl.text)) {
+          try { renderedPages.set(p, (await loaded.renderPageToPng(p, limits.maxRenderDimensionPx)).png); } catch { /* text remains usable */ }
+        }
         // Enforce the per-document character budget on text-layer output.
         const remaining = limits.maxCharsPerDoc - charsTotal;
         let text = tl.text;
@@ -150,6 +160,7 @@ export async function extractDocument(documentId: string, actor: string, opts: E
       try {
         checkCancel(opts);
         rendered = await loaded.renderPageToPng(p, limits.maxRenderDimensionPx);
+        renderedPages.set(p, rendered.png);
       } catch (err) {
         if (err instanceof ExtractionCancelledError) throw err;
         const reason = String(err instanceof Error ? err.message : err);
@@ -227,6 +238,18 @@ export async function extractDocument(documentId: string, actor: string, opts: E
     const status: ExtractionArtifact["status"] =
       docWarnings.some((w) => w.endsWith("ocr_failed") || w === "time_limit" || w === "char_limit_doc") ? "PARTIAL" : "COMPLETE";
 
+    let assetRouting: import("./pdfIntelligence").PdfAssetRouting | undefined;
+    try {
+      assetRouting = await analyzePdfDocument({
+        document_id: documentId,
+        study_id: doc.study_id,
+        source_document_hash: doc.sha256,
+        pages: pages.map((page) => ({ page: page.page, text: page.text, png: renderedPages.get(page.page) })),
+      });
+      if (assetRouting.warnings.length) docWarnings.push(...assetRouting.warnings);
+    } catch {
+      docWarnings.push("asset_routing_failed");
+    }
     const artifact: ExtractionArtifact = {
       document_id: documentId,
       study_id: doc.study_id,
@@ -252,6 +275,7 @@ export async function extractDocument(documentId: string, actor: string, opts: E
       extraction_version: EXTRACTION_VERSION,
       created_at: new Date().toISOString(),
       warnings: [...new Set(docWarnings)],
+      asset_routing: assetRouting,
     };
     await writeExtractionArtifact(artifact);
     await transition(doc, "READY");
@@ -283,6 +307,11 @@ export async function extractDocument(documentId: string, actor: string, opts: E
     }
     const message = String(err instanceof Error ? err.message : err).slice(0, 160);
     await transition(doc, "FAILED");
+    // A failed retry must not leave a previous-generation sidecar available
+    // to downstream routing. Remove the artifact before exposing FAILED.
+    await deleteExtractionArtifact(documentId);
+    await deleteTestResultsForDocument(documentId);
+    await deleteRecordExtraction(documentId);
     await auditDocumentEvent("document.extraction_failed", doc, actor, `error=${message}`);
     return { ok: false, status: "FAILED", error_code: "EXTRACTION_FAILED", error: "Extraction failed" };
   } finally {

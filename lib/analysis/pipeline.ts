@@ -1,5 +1,5 @@
 import { newId, StoredFile, readOriginalScan } from "../storage/files";
-import { assessQuality, QualityResult } from "../imaging/quality";
+import { assessQuality, assessOctBscanQuality, QualityResult } from "../imaging/quality";
 import { detectDicom } from "../imaging/dicom";
 import { NormalizedStudy } from "../devices/adapter";
 import { pickDemoScenario, buildDemoFindings } from "./findings";
@@ -23,6 +23,7 @@ import { unavailableOctAssessmentResult, resultFromResearchOct } from "../models
 import type { FundusLesionResearchRun } from "../models/fundusLesionLocalProvider";
 import type { DrGradeResearchRun } from "../models/drGradeLocalProvider";
 import type { OctResearchRun } from "../models/octLocalProvider";
+import { routeUploadedAsset, AssetRoutingResult } from "../assets/assetRouter";
 
 /**
  * S12 - maps this deployment's registry ModelStatus onto the diagnosis
@@ -56,6 +57,14 @@ export interface PipelineInput {
   study: NormalizedStudy;
   originalBytes: Buffer;
   symptoms?: PatientSymptom[];   // structured patient-reported symptoms (context ONLY)
+  asset_routing?: AssetRoutingResult;
+  document_routing?: import("../documents/extraction/pdfIntelligence").PdfAssetRouting[];
+  document_assets?: Array<{
+    asset_id: string; document_id: string; page: number;
+    bbox: { x: number; y: number; w: number; h: number };
+    source_page_hash: string; roi_hash: string; content_type: "OCT_BSCAN";
+    modality: "OCT"; eye: "OD" | "OS" | "unknown"; bytes: Buffer;
+  }>;
 }
 
 export interface PipelineOutput {
@@ -84,21 +93,67 @@ export const DISALLOWED_CLAIM_PATTERNS: Array<[RegExp, string]> = [
 
 export async function runPipeline(input: PipelineInput): Promise<PipelineOutput> {
   await ensureRegistryHydrated();
-  const { study, originalBytes } = input;
+  const { originalBytes } = input;
+  // Always recompute the route from immutable bytes.  A caller-provided
+  // routing object is display/provenance context only and must never be able
+  // to promote a PDF, random image, or another modality into a research path.
+  // This also makes a stale/tampered sidecar fail closed on every execution.
+  const routedAsset = await routeUploadedAsset(originalBytes, {
+    declaredModality: input.study.modality,
+    device: { manufacturer: input.study.metadata.manufacturer, model: input.study.metadata.model },
+  });
+  const contentModality = routedAsset.modality === "FUNDUS_PHOTO" ? "fundus" : routedAsset.modality === "OCT" ? "oct" : null;
+  const declaredCanonical = canonicalModality(input.study.modality);
+  const declaredIsUnknown = !input.study.modality || input.study.modality.toLowerCase() === "unknown";
+  const contentCanonical = contentModality ? canonicalModality(contentModality) : null;
+  const researchModalityConflict = !!contentCanonical && !!declaredCanonical &&
+    (declaredCanonical === "FUNDUS" || declaredCanonical === "OCT") &&
+    (contentCanonical === "FUNDUS" || contentCanonical === "OCT") && declaredCanonical !== contentCanonical;
+  // Content classification fills an omitted/unknown declaration. If a caller
+  // explicitly declares the other research modality, fail closed to UNKNOWN
+  // rather than sending a fundus frame to OCT (or vice versa). Unsupported
+  // non-research declarations retain their declared demo-only route so legacy
+  // integrations remain transparent and cannot gain research execution.
+  const effectiveModality = contentModality && routedAsset.method === "CONTENT_HEURISTICS" &&
+    (declaredIsUnknown || declaredCanonical === contentCanonical)
+    ? contentModality
+    : researchModalityConflict ? "unknown" : input.study.modality;
+  const study: NormalizedStudy = { ...input.study, modality: effectiveModality, asset_routing: routedAsset };
 
   // ---- Stage 0: format gate (DICOM detection) ----
   const dicom = detectDicom(originalBytes);
   if (dicom.isDicom) {
     // Safety rule: never silently analyze an unsupported scan.
-    return unsupportedResult(study, dicom.note);
+    return unsupportedResult(study, dicom.note, routedAsset);
+  }
+  if (routedAsset.container_type !== "IMAGE") {
+    // PDFs are decomposed by the document workflow before any OCT inference;
+    // the primary image pipeline must not feed a whole PDF to sharp/model
+    // code.  OTHER containers are equally explicit and fail closed.
+    return unsupportedResult(study, `Unsupported asset container: ${routedAsset.container_type}.`, routedAsset);
   }
 
   // ---- Stage 1: quality gate (REAL metrics) ----
-  const quality = await assessQuality(originalBytes);
+  let quality: QualityResult;
+  try {
+    quality = await assessQuality(originalBytes);
+  } catch {
+    // MIME/extension claims are not proof of a decodable image.  Return a
+    // structured unsuitable result rather than throwing or falling through to
+    // a demo interpretation.
+    return unsupportedResult(study, "Image bytes could not be decoded by the server quality gate.", routedAsset);
+  }
   const qualityAcceptable = quality.quality_status === "pass";
 
   // ---- Stage 1b: model registry gate + out-of-distribution check ----
-  const modelRecord = getModel("demo-fundus-synthetic-v0"); // the only registered model
+  const canonicalInputModality = canonicalModality(study.modality);
+  // Select a real modality-specific registry record for the primary gate. The
+  // DEMO record is retained only for modalities with no applicable research
+  // provider; it is never used to stand in for a failed fundus/OCT run.
+  const primaryResearchRecord = canonicalInputModality === "FUNDUS"
+    ? getModel("fundus-lesions-clementp-unet-seresnext50")
+    : canonicalInputModality === "OCT" ? getModel("oct-retinal-weights-fp32") : null;
+  const modelRecord = primaryResearchRecord ?? getModel("demo-fundus-synthetic-v0");
   const deviceInfo = study.metadata.manufacturer || study.metadata.model
     ? { manufacturer: study.metadata.manufacturer, model: study.metadata.model }
     : null;
@@ -106,14 +161,36 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   // model with incompatible/undeclared device support is hard-blocked here,
   // the same point modality already is - device is informational-only for
   // DEMO, which is unaffected by this check (see gateModelUse's doc comment).
-  const modelGate = modelRecord ? gateModelUse(modelRecord, deviceInfo) : null;
+  const modelGate = modelRecord
+    ? (modelRecord.status === "DEMO" ? gateModelUse(modelRecord, deviceInfo) : gateModelUse(modelRecord))
+    : null;
   const ood = assessOod({
     modality: study.modality,
     quality,
     model: modelRecord,
     device: deviceInfo,
     metadataProvided: study.metadata.providedBy !== "none",
+    deviceUnknownIsDomainUnknown: modelRecord?.status !== "DEMO",
   });
+
+  const modelsAttempted = new Set<string>();
+  const modelsExecuted = new Set<string>();
+  const modelsFailed = new Set<string>();
+  const modelsSkipped = new Map<string, string>();
+  const artifactHashes: Record<string, string | null> = {};
+  const artifactVerification: Record<string, "EXPECTED_REGISTRY_HASH" | "VERIFIED" | "FAILED" | "UNAVAILABLE"> = {};
+  const modelVersions: Record<string, string> = {};
+  const markModel = (record: ReturnType<typeof getModel>, state: "attempted" | "executed" | "failed" | "skipped", reason?: string) => {
+    if (!record) return;
+    modelVersions[record.model_id] = record.version;
+    artifactHashes[record.model_id] = record.sha256;
+    artifactVerification[record.model_id] = record.sha256 ? "EXPECTED_REGISTRY_HASH" : "UNAVAILABLE";
+    if (state === "attempted") modelsAttempted.add(record.model_id);
+    if (state === "executed") { modelsAttempted.add(record.model_id); modelsExecuted.add(record.model_id); }
+    if (state === "failed") { modelsAttempted.add(record.model_id); modelsFailed.add(record.model_id); }
+    if (state === "skipped") modelsSkipped.set(record.model_id, reason ?? "not eligible");
+  };
+  const markArtifactVerification = (modelId: string, trusted: boolean) => { artifactVerification[modelId] = trusted ? "VERIFIED" : "FAILED"; };
 
   // ---- Stage 1c: general fundus-abnormality gate (before any disease reasoning) ----
   // A reviewed detector plugs in here. There is intentionally no fallback to
@@ -140,6 +217,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     lesionGate?.allowed &&
     supportsModality(lesionRecord, study.modality)
   ) {
+    markModel(lesionRecord, "attempted");
     try {
       // Lazy import: the DEMO/quality/OOD path never loads the ML worker module.
       const { runFundusLesionResearchAnalysis } = await import("../models/fundusLesionLocalProvider");
@@ -152,11 +230,14 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       if (run.raw.inference_status !== "completed") {
         // Worker failed (no package, no runtime, timeout, malformed output):
         // keep the original quality/OOD verdict (it already distinguishes
-        // OOD from unavailable) and fall back to the labeled DEMO path below.
-        // The failure reason is preserved in the integrity-check notes.
+        // OOD from unavailable). Research-scoped failures never fall through
+        // to synthetic DEMO output; the reason is retained in provenance.
         researchAttemptNote = run.notes[0] ?? "Research lesion detector failed; no finding was inferred.";
+        markModel(lesionRecord, "failed", researchAttemptNote);
       } else {
         researchRun = run;
+        markModel(lesionRecord, "executed");
+        markArtifactVerification(lesionRecord.model_id, run.integrity.trusted);
         // Lesion-domain OOD: image characteristics and modality still block;
         // missing device metadata is DOMAIN_VALIDATION_UNKNOWN (disclosed in
         // provider notes), never conflated into OUT_OF_DISTRIBUTION.
@@ -180,16 +261,20 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     } catch (err) {
       researchRun = null;
       researchAttemptNote = `Research lesion detector could not run: ${String(err instanceof Error ? err.message : err).slice(0, 200)}`;
+      markModel(lesionRecord, "failed", researchAttemptNote);
     }
   } else if (canonicalModality(study.modality) === "FUNDUS" && qualityAcceptable && lesionRecord && !lesionGate?.allowed) {
     researchAttemptNote = `Research lesion detector gated off: ${(lesionGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
+    markModel(lesionRecord, "skipped", researchAttemptNote);
+  } else if (canonicalModality(study.modality) === "FUNDUS" && lesionRecord) {
+    markModel(lesionRecord, "skipped", qualityAcceptable ? "content/modality gate did not match" : "quality gate failed");
   }
 
   // ---- Stage 1d: research DR grade estimation (before any disease reasoning) ----
   // Same scoping and honesty rules as Stage 1c: FUNDUS + quality-pass input
   // only, IMAGE_ONLY model so device metadata is disclosed (not gated), and
-  // any worker failure keeps the original quality/OOD verdict with a labeled
-  // DEMO fallback. Runs after the lesion detector (sequentially, never
+  // any worker failure keeps the original quality/OOD verdict with no
+  // synthetic fallback. Runs after the lesion detector (sequentially, never
   // stacked in RAM) so the two research outputs can corroborate or disagree.
   let drAssessment = unavailableDrAssessmentResult(quality, ood, study.modality);
   let drRun: DrGradeResearchRun | null = null;
@@ -203,6 +288,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     drGate?.allowed &&
     supportsModality(drRecord, study.modality);
   if (researchScopeOk) {
+    markModel(drRecord, "attempted");
     try {
       const { runDrGradeResearchAnalysis } = await import("../models/drGradeLocalProvider");
       const run = await runDrGradeResearchAnalysis(study, {
@@ -213,8 +299,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       });
       if (run.raw.inference_status !== "completed" || !run.grade) {
         drAttemptNote = run.notes[0] ?? "Research DR grader failed; no grade was estimated.";
+        markModel(drRecord, "failed", drAttemptNote);
       } else {
         drRun = run;
+        markModel(drRecord, "executed");
+        markArtifactVerification(drRecord.model_id, run.integrity.trusted);
         const researchOod = assessOod({
           modality: study.modality,
           quality,
@@ -235,21 +324,26 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     } catch (err) {
       drRun = null;
       drAttemptNote = `Research DR grader could not run: ${String(err instanceof Error ? err.message : err).slice(0, 200)}`;
+      markModel(drRecord, "failed", drAttemptNote);
     }
   } else if (canonicalModality(study.modality) === "FUNDUS" && qualityAcceptable && drRecord && !drGate?.allowed) {
     drAttemptNote = `Research DR grader gated off: ${(drGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
+    markModel(drRecord, "skipped", drAttemptNote);
+  } else if (canonicalModality(study.modality) === "FUNDUS" && drRecord) {
+    markModel(drRecord, "skipped", qualityAcceptable ? "content/modality gate did not match" : "quality gate failed");
   }
 
-  // ---- Stage 1e: research OCT classification (OCT input only) ----
-  // Same honesty rules as Stages 1c/1d. The OCT model classifies whole
-  // B-scans; it performs no pixel segmentation and produces no localization,
-  // so no overlay is ever rendered for it. Classification-only output can
-  // never become a measurement or a diagnosis.
+  // ---- Stage 1e: research OCT classification (native OCT + PDF B-scan ROIs) ----
+  // The classifier receives only validated OCT B-scan bytes. Report pages,
+  // tables, logos, thickness maps, and whole-page screenshots are never sent.
   let octAssessment = unavailableOctAssessmentResult(quality, ood, study.modality);
   let octRun: OctResearchRun | null = null;
   let octAttemptNote: string | null = null;
   const octRecord = getModel("oct-retinal-weights-fp32");
   const octGate = octRecord ? gateModelUse(octRecord) : null;
+  const octRegionResults: NonNullable<AnalysisResult["oct_region_results"]> = [];
+  const octRegionFindings: Finding[] = [];
+  const octRegionRuns: OctResearchRun[] = [];
   const octScopeOk =
     qualityAcceptable &&
     canonicalModality(study.modality) === "OCT" &&
@@ -257,6 +351,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     octGate?.allowed &&
     supportsModality(octRecord, study.modality);
   if (octScopeOk) {
+    markModel(octRecord, "attempted");
     try {
       const { runOctResearchAnalysis } = await import("../models/octLocalProvider");
       const run = await runOctResearchAnalysis(study, {
@@ -267,8 +362,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       });
       if (run.raw.inference_status !== "completed" || !run.oct) {
         octAttemptNote = run.notes[0] ?? "Research OCT classifier failed; no class was estimated.";
+        markModel(octRecord, "failed", octAttemptNote);
       } else {
         octRun = run;
+        markModel(octRecord, "executed");
+        markArtifactVerification(octRecord.model_id, run.integrity.trusted);
         const octOod = assessOod({
           modality: study.modality,
           quality,
@@ -289,17 +387,78 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     } catch (err) {
       octRun = null;
       octAttemptNote = `Research OCT classifier could not run: ${String(err instanceof Error ? err.message : err).slice(0, 200)}`;
+      markModel(octRecord, "failed", octAttemptNote);
     }
   } else if (canonicalModality(study.modality) === "OCT" && qualityAcceptable && octRecord && !octGate?.allowed) {
     octAttemptNote = `Research OCT classifier gated off: ${(octGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
+    markModel(octRecord, "skipped", octAttemptNote);
+  } else if (canonicalModality(study.modality) === "OCT" && octRecord) {
+    markModel(octRecord, "skipped", qualityAcceptable ? "content/modality gate did not match" : "quality gate failed");
+  }
+
+  // PDF-derived B-scans are independent assets. A fundus primary study may
+  // therefore produce a mixed research result without changing the primary
+  // study modality or mixing laterality.
+  if (octRecord && octGate?.allowed && (input.document_assets?.length ?? 0) > 0) {
+    const { runOctResearchAnalysis } = await import("../models/octLocalProvider");
+    for (const asset of input.document_assets ?? []) {
+      if (asset.content_type !== "OCT_BSCAN" || asset.modality !== "OCT") continue;
+      // B-scan sidecars are bounded strips (often 512x128 or similar), so
+      // apply the explicit OCT ROI profile instead of the whole-fundus
+      // 512x512 minimum. Other quality checks remain identical and the
+      // profile is disclosed as an unvalidated engineering threshold.
+      const roiQuality = await assessOctBscanQuality(asset.bytes);
+      const base = { asset_id: asset.asset_id, document_id: asset.document_id, page: asset.page, laterality: asset.eye, source_page_hash: asset.source_page_hash, roi_hash: asset.roi_hash, content_type: "OCT_BSCAN" as const };
+      if (roiQuality.quality_status !== "pass") {
+        octRegionResults.push({ ...base, status: "SKIPPED", note: `ROI quality gate failed (${roiQuality.quality_status}; ${roiQuality.detected_artifacts.join(", ") || "unspecified"}); no OCT inference attempted.` });
+        continue;
+      }
+      const roiOod = assessOod({ modality: "oct", quality: roiQuality, model: octRecord, device: deviceInfo, metadataProvided: study.metadata.providedBy !== "none", deviceUnknownIsDomainUnknown: true, resolutionProfile: "oct_bscan" });
+      if (roiOod.detected) {
+        octRegionResults.push({ ...base, status: "SKIPPED", note: `ROI OOD gate: ${roiOod.reasons.join(" ").slice(0, 240)}` });
+        continue;
+      }
+      markModel(octRecord, "attempted");
+      try {
+        const roiStudy: NormalizedStudy = {
+          ...study,
+          studyId: `${study.studyId}:${asset.asset_id}`,
+          modality: "oct",
+          eye: asset.eye,
+          files: [],
+        };
+        const run = await runOctResearchAnalysis(roiStudy, { qualityScore: roiQuality.quality_score, eye: asset.eye, device: deviceInfo, imageBytes: asset.bytes });
+        if (run.raw.inference_status !== "completed" || !run.oct) {
+          markModel(octRecord, "failed", run.notes[0] ?? "OCT ROI classifier failed");
+          octRegionResults.push({ ...base, status: "FAILED", note: run.notes[0] ?? "OCT ROI classifier failed" });
+          continue;
+        }
+        markModel(octRecord, "executed");
+        markArtifactVerification(octRecord.model_id, run.integrity.trusted);
+        octRegionRuns.push(run);
+        const assessment = resultFromResearchOct({ oct: run.oct, raw: run.raw, quality: roiQuality, ood: roiOod, modelId: octRecord.model_id, modelVersion: octRecord.version });
+        octRegionResults.push({ ...base, status: "EXECUTED", assessment });
+        const roiFindings = run.findings.map((finding) => ({ ...finding, source_modality: "OCT", source_asset_id: asset.asset_id, source_page: asset.page, laterality: asset.eye }));
+        octRegionFindings.push(...roiFindings);
+      } catch (err) {
+        const note = `OCT ROI classifier could not run: ${String(err instanceof Error ? err.message : err).slice(0, 200)}`;
+        markModel(octRecord, "failed", note);
+        octRegionResults.push({ ...base, status: "FAILED", note });
+      }
+    }
+  } else if ((input.document_assets?.length ?? 0) > 0 && octRecord) {
+    for (const asset of input.document_assets ?? []) {
+      if (asset.content_type === "OCT_BSCAN") octRegionResults.push({ asset_id: asset.asset_id, document_id: asset.document_id, page: asset.page, laterality: asset.eye, source_page_hash: asset.source_page_hash, roi_hash: asset.roi_hash, content_type: "OCT_BSCAN", status: "SKIPPED", note: "OCT registry gate unavailable." });
+    }
   }
 
   // ---- Stage 2: anatomical segmentation (placeholder) ----
   // Emits no structures or measurements. Recorded for provenance.
 
   // ---- Stage 3: specialized detectors ----
-  // Fundus studies use REAL research-detector output when it completed;
-  // every other path keeps the labeled DEMO/synthetic behavior exactly.
+  // Fundus/OCT studies use REAL research output when it completes; unsupported
+  // modalities retain the labeled DEMO behavior, while research failures stay
+  // explicit and never receive a synthetic substitute.
   // When both research models complete, both contribute findings (each keeps
   // its own model provenance); the lesion detector remains the primary
   // registry model because it localizes.
@@ -308,13 +467,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   let activeModelGate = modelGate;
   const usedLesionResearch = !!researchRun && researchRun.raw.inference_status === "completed";
   const usedDrResearch = !!drRun && drRun.raw.inference_status === "completed" && !!drRun.grade;
-  const usedOctResearch = !!octRun && octRun.raw.inference_status === "completed" && !!octRun.oct;
+  const usedOctResearch = (!!octRun && octRun.raw.inference_status === "completed" && !!octRun.oct) || octRegionRuns.length > 0;
   const usedResearch = usedLesionResearch || usedDrResearch || usedOctResearch;
-  const tagResearch = (list: Finding[]) =>
+  const tagResearch = (list: Finding[], modality = study.modality) =>
     list.flatMap((f) => {
-      const gate = mayEmitFinding(f.type, canonicalModality(study.modality), "RESEARCH");
+      const gate = mayEmitFinding(f.type, canonicalModality(modality), "RESEARCH");
       if (!gate.ok) return []; // refuse to emit a finding the taxonomy forbids
-      return [{ ...f, taxonomy_level: "observation" as const, model_status: "RESEARCH" as const }];
+      return [{ ...f, taxonomy_level: "observation" as const, model_status: "RESEARCH" as const, source_modality: f.source_modality ?? modality }];
     });
   if (usedLesionResearch && researchRun && lesionRecord && lesionGate) {
     activeModelRecord = lesionRecord;
@@ -328,14 +487,30 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     }
     findings = [...findings, ...tagResearch(drRun.findings)];
   }
-  if (usedOctResearch && octRun && octRecord && octGate) {
+  if (octRun && octRecord && octGate) {
     if (!usedLesionResearch && !usedDrResearch) {
       activeModelRecord = octRecord;
       activeModelGate = octGate;
     }
-    findings = [...findings, ...tagResearch(octRun.findings)];
+    findings = [...findings, ...tagResearch(octRun.findings, "oct")];
   }
-  if (!usedResearch && qualityAcceptable && modelGate?.allowed) {
+  if (octRegionRuns.length > 0) {
+    if (octRegionFindings.length > 0) findings = [...findings, ...tagResearch(octRegionFindings, "oct")];
+    if (!usedLesionResearch && !usedDrResearch && !octRun && octRecord && octGate) {
+      activeModelRecord = octRecord;
+      activeModelGate = octGate;
+    }
+  }
+  // Demo is only a modality-unsupported fallback. A research model failure
+  // is represented as MODEL_FAILED with no fabricated findings.
+  const researchApplicable = canonicalInputModality === "FUNDUS" || canonicalInputModality === "OCT";
+  const unroutedImage = routedAsset.container_type === "IMAGE" &&
+    (routedAsset.modality_state === "MODALITY_UNKNOWN" || researchModalityConflict);
+  let demoUsed = false;
+  if (!usedResearch && !researchApplicable && !unroutedImage && qualityAcceptable && modelGate?.allowed) {
+    demoUsed = true;
+    markModel(modelRecord, "attempted");
+    markModel(modelRecord, "executed");
     const scenario = pickDemoScenario(originalBytes);
     findings = buildDemoFindings(scenario, quality.quality_score);
     // Taxonomy + provenance tagging; enforce taxonomy/modality/status rules.
@@ -344,6 +519,34 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       if (!gate.ok) return []; // refuse to emit a finding the taxonomy forbids
       return [{ ...f, taxonomy_level: "observation" as const, model_status: modelRecord!.status }];
     });
+  }
+  if (researchModalityConflict) {
+    if (declaredCanonical === "FUNDUS") {
+      if (lesionRecord) markModel(lesionRecord, "skipped", "declared fundus conflicts with server OCT content route");
+      if (drRecord) markModel(drRecord, "skipped", "declared fundus conflicts with server OCT content route");
+    } else if (declaredCanonical === "OCT" && octRecord) {
+      markModel(octRecord, "skipped", "declared OCT conflicts with server fundus content route");
+    }
+  }
+  const failedResearch = modelsFailed.size > 0 && !usedResearch;
+  const analysisMode: AnalysisResult["analysis_mode"] = usedResearch && demoUsed
+    ? "MIXED_RESEARCH_AND_DEMO"
+    : usedResearch ? "RESEARCH_MODEL_ANALYSIS"
+      : demoUsed ? "DEMO_ONLY"
+        : failedResearch ? "MODEL_FAILED" : "NO_MODEL_EXECUTED";
+  if (!usedResearch && !demoUsed && unroutedImage) {
+    // A real image whose pixels cannot be classified is not a safe DEMO
+    // candidate. Preserve the asset and report an explicit no-model state.
+    activeModelRecord = null;
+    activeModelGate = null;
+  }
+  if (!usedResearch && researchApplicable && modelsAttempted.size === 0) {
+    if (canonicalInputModality === "FUNDUS") {
+      if (lesionRecord) markModel(lesionRecord, "skipped", qualityAcceptable ? "research model not eligible" : "quality gate failed");
+      if (drRecord) markModel(drRecord, "skipped", qualityAcceptable ? "research model not eligible" : "quality gate failed");
+    } else if (canonicalInputModality === "OCT" && octRecord) {
+      markModel(octRecord, "skipped", qualityAcceptable ? "research model not eligible" : "quality gate failed");
+    }
   }
   // If quality gate failed: findings stay EMPTY (safety rule), and the result
   // carries the mandatory insufficient-quality message.
@@ -476,6 +679,19 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       captured_at: study.metadata.scanDateTime ?? null,
       metadata_provenance: study.metadata.providedBy,
     },
+    analysis_mode: analysisMode,
+    asset_routing: routedAsset,
+    document_routing: input.document_routing,
+    model_execution: {
+      models_attempted: [...modelsAttempted],
+      models_executed: [...modelsExecuted],
+      models_failed: [...modelsFailed],
+      models_skipped: [...modelsSkipped.entries()].map(([model_id, reason]) => ({ model_id, reason })),
+      artifact_hashes: artifactHashes,
+      artifact_verification: artifactVerification,
+      model_versions: modelVersions,
+      runtime_status: modelsFailed.size > 0 && modelsExecuted.size > 0 ? "COMPLETED_WITH_FAILURES" : modelsFailed.size > 0 ? "FAILED_OR_UNAVAILABLE" : modelsExecuted.size > 0 ? "COMPLETED" : "NOT_RUN",
+    },
     quality: {
       score: quality.quality_score,
       acceptable: qualityAcceptable,
@@ -505,6 +721,14 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     fundus_abnormality: fundusAbnormality,
     dr_assessment: drAssessment,
     oct_assessment: octAssessment,
+    oct_region_results: octRegionResults.length ? octRegionResults : undefined,
+    oct_aggregation: octRegionResults.length
+      ? (() => {
+          const classes = octRegionResults.map((r) => r.assessment?.predicted_class).filter((x): x is string => !!x);
+          if (classes.length === 0) return "INSUFFICIENT_SCAN_QUALITY" as const;
+          return new Set(classes).size === 1 ? "CONSISTENT_TARGET_CLASS" as const : "MIXED_OCT_CLASS_RESULTS" as const;
+        })()
+      : undefined,
     multi_model: {
       performed: usedLesionResearch || usedDrResearch || usedOctResearch,
       agreement: multiModelAgreement,
@@ -518,21 +742,26 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         ...(usedOctResearch && octRun && octRun.oct
           ? [{ model_id: octRun.model.model_id, model_version: octRun.model.version, model_status: octRun.model.status, output_summary: `class ${octRun.oct.predicted_class} (backbone argmax, uncalibrated)` }]
           : []),
+        ...(octRegionRuns.length > 0 && octRecord
+          ? [{ model_id: octRecord.model_id, model_version: octRecord.version, model_status: octRecord.status, output_summary: `${octRegionRuns.length} PDF OCT B-scan ROI(s) classified` }]
+          : []),
       ],
       notes: multiModelNotes,
     },
     model_registry: {
       model_id: activeModelRecord?.model_id ?? "none",
       model_version: activeModelRecord?.version ?? "none",
-      model_status: activeModelRecord?.status ?? "DEMO",
-      display_label: activeModelGate?.label ?? DEMO_LABEL,
+      model_status: activeModelRecord?.status ?? "NONE",
+      display_label: activeModelGate?.label ?? (demoUsed ? DEMO_LABEL : null),
       integrity_checks: [
         { check: "registry", passed: !!activeModelRecord, detail: activeModelRecord ? "Registered model in use." : "No registered model." },
         (() => {
-          const primaryRun = researchRun ?? drRun ?? octRun;
+          const primaryRun = researchRun ?? drRun ?? octRun ?? octRegionRuns[0];
           return usedResearch && primaryRun
             ? { check: "artifact", passed: primaryRun.integrity.trusted, detail: primaryRun.integrity.checks.map((c) => `${c.check}:${c.passed ? "pass" : "FAIL"}`).join(" ") || "Research artifact integrity verification." }
-            : { check: "artifact", passed: true, detail: "Placeholder DEMO model: no artifact on disk by design (data/models is empty)." };
+            : demoUsed
+              ? { check: "artifact", passed: true, detail: "DEMO model has no artifact by design; deterministic synthetic output is explicitly labeled." }
+              : { check: "artifact", passed: false, detail: "No research execution artifact was produced for this attempt." };
         })(),
         { check: "status_gate", passed: !!activeModelGate?.allowed, detail: activeModelGate ? activeModelGate.reasons.join(" ") || (usedResearch ? "Status permits research use only." : "Status permits demo use only.") : "No gate result." },
         ...(researchAttemptNote ? [{ check: "research_detector_attempt" as const, passed: false, detail: researchAttemptNote }] : []),
@@ -574,8 +803,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       note: ensemble.note,
     },
     demo: {
-      synthetic_result: !usedResearch,
-      label: activeModelGate?.label ?? DEMO_LABEL,
+      synthetic_result: demoUsed,
+      label: demoUsed ? DEMO_LABEL : (activeModelGate?.label ?? VALIDATION_STATUS_BANNER),
     },
     diagnosis_gate: {
       allowed: diagnosisGateResult.allowed,
@@ -596,7 +825,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       quality_gate_enforced: true,
       disclaimers: [
         VALIDATION_STATUS_BANNER,
-        activeModelGate?.label ?? DEMO_LABEL,
+        demoUsed ? DEMO_LABEL : (activeModelGate?.label ?? VALIDATION_STATUS_BANNER),
         "This system is a screening/decision-support architecture. It does not establish diagnoses. Only a qualified eye-care professional can diagnose eye disease.",
         "A negative automated result does not guarantee that no eye disease is present.",
       ],
@@ -625,7 +854,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   return { analysis, quality, triage, validationErrors };
 }
 
-function unsupportedResult(study: NormalizedStudy, note: string): PipelineOutput {
+function unsupportedResult(study: NormalizedStudy, note: string, assetRouting?: AssetRoutingResult): PipelineOutput {
   const qualityStub: QualityResult = {
     quality_score: 0,
     quality_status: "fail",
@@ -645,6 +874,12 @@ function unsupportedResult(study: NormalizedStudy, note: string): PipelineOutput
   const analysis: AnalysisResult = {
     schema_version: SCHEMA_VERSION,
     study: { study_id: study.studyId, modality: study.modality, eye: study.eye, source: study.source, captured_at: null, metadata_provenance: study.metadata.providedBy },
+    analysis_mode: "NO_MODEL_EXECUTED",
+    asset_routing: assetRouting ?? study.asset_routing,
+    model_execution: {
+      models_attempted: [], models_executed: [], models_failed: [],
+      models_skipped: [{ model_id: "all", reason: "unsupported format" }], artifact_hashes: {}, model_versions: {}, runtime_status: "NOT_RUN",
+    },
     quality: { score: 0, acceptable: false, status: "fail", artifacts: ["unsupported_format"], affected_regions: [], recommended_reacquisition: false },
     segmentation: { implemented: false, note: "Not performed." },
     findings: [],
@@ -652,6 +887,15 @@ function unsupportedResult(study: NormalizedStudy, note: string): PipelineOutput
     recommendation: { priority: triage.priority, action: triage.action, rationale: triage.rationale },
     ensemble: { performed: false, checks: [], note: "Not performed." },
     demo: { synthetic_result: false, label: DEMO_LABEL },
+    model_registry: {
+      model_id: "none",
+      model_version: "none",
+      model_status: "NONE",
+      display_label: null,
+      integrity_checks: [{ check: "container", passed: false, detail: note }],
+      device_compatibility: { compatible: false, note: "No model was eligible for this asset." },
+      model_input: "IMAGE_ONLY",
+    },
     diagnosis_gate: (() => {
       const g = unvalidatedGateResult();
       return { allowed: g.allowed, reasons: g.reasons, clinical_interpretation: g.clinicalInterpretation };

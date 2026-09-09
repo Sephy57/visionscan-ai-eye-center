@@ -149,7 +149,7 @@ export default function ScanViewer({
         />
         {showLayers && regionStyle && (
           <div className="viewer-overlay-box" style={regionStyle}>
-            <span>{regionLabel} (demo)</span>
+            <span>{regionLabel}{overlayStatus ? ` (${overlayStatus.replaceAll("_", " ")})` : ""}</span>
           </div>
         )}
         {showLayers && hasRenderableOverlays && renderableOverlays.map((loc) => loc.coordinates ? (

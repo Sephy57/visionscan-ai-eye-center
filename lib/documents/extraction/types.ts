@@ -1,8 +1,10 @@
 /**
- * Extraction model (S2). Text/OCR extraction turns a VALID document into
+ * Extraction model (S2/S3). Text/OCR extraction turns a VALID document into
  * UNCERTAIN EXTRACTED DATA - never ground truth, never verified clinical
- * data, never clinical results. Nothing in this module is connected to the
- * analysis pipeline, triage, or diagnosis (and nothing may be).
+ * data, never clinical results. Page/ROI routing may expose bounded OCT
+ * image sidecars to the modality-specific research pipeline, while extracted
+ * text and measurements remain evidence-only and never enter triage or
+ * diagnosis as verified data.
  */
 
 export type PageExtractionMethod =
@@ -59,6 +61,8 @@ export interface ExtractionArtifact {
   extraction_version: string;
   created_at: string;
   warnings: string[];
+  /** Server-computed page/region routing; optional for legacy artifacts. */
+  asset_routing?: import("./pdfIntelligence").PdfAssetRouting;
 }
 
 /** OCR provider abstraction (swappable: tesseract.js today, others later). */

@@ -25,6 +25,7 @@ import { checkModalitySupported } from "./modalities";
 import {
   OCT_MODEL_ID,
   OCT_MODEL_VERSION,
+  OCT_PREPROCESSING_VERSION,
   validateOctWorkerOutput,
   type OctWorkerOutput,
 } from "./octContract";
@@ -32,6 +33,8 @@ import { convertRawModelOutputToFindings } from "./outputConversion";
 import type { RawModelOutput } from "./outputContract";
 import type { Finding } from "../analysis/schema";
 import { lateralityForStudy } from "./fundusLesionLocalProvider";
+import { assetHash } from "../assets/assetRouter";
+import { getInferenceCache, inferenceCacheKey, setInferenceCache } from "./inferenceCache";
 
 const PROBE_SCRIPT = path.join(PROJECT_ROOT, "scripts", "inference", "oct_retinal_probe.py");
 const VENV_PYTHON = path.join(
@@ -242,15 +245,30 @@ export async function runOctResearchAnalysis(
   }
   const deviceNote = deviceCompatible(model, ctx.device ?? null);
   const disclosure = `Device compatibility: ${deviceNote.note} Domain validation: DOMAIN_VALIDATION_UNKNOWN.`;
-  const { raw, worker } = await runWithMutex(() =>
-    runProbeOnce(imageBytes, study.studyId, lateralityForStudy(study))
-  );
+  const cacheKey = inferenceCacheKey({
+    scope: study.studyId,
+    sourceHash: assetHash(imageBytes),
+    modelId: model.model_id,
+    modelVersion: model.version,
+    preprocessingVersion: OCT_PREPROCESSING_VERSION,
+    eye: lateralityForStudy(study),
+  });
+  const probe = await runWithMutex(async () => {
+    if (integrity.trusted) {
+      const hit = getInferenceCache<{ raw: RawModelOutput; worker: OctWorkerOutput | null }>(cacheKey);
+      if (hit) return { ...hit, cacheHit: true };
+    }
+    const result = await runProbeOnce(imageBytes, study.studyId, lateralityForStudy(study));
+    if (integrity.trusted && result.raw.inference_status === "completed") setInferenceCache(cacheKey, result);
+    return { ...result, cacheHit: false };
+  });
+  const { raw, worker } = probe;
   if (raw.inference_status === "failed") {
     return {
       raw,
       oct: null,
       findings: [],
-      notes: [raw.inference_error ?? "OCT inference failed; no findings produced.", disclosure],
+      notes: [raw.inference_error ?? "OCT inference failed; no findings produced.", disclosure, ...(probe.cacheHit ? ["Inference cache hit (content/model/preprocessing/study scoped)."] : [])],
       model,
       gate,
       integrity,
@@ -266,6 +284,7 @@ export async function runOctResearchAnalysis(
     findings: conversion.findings,
     notes: [
       ...conversion.notes,
+      ...(probe.cacheHit ? ["Inference cache hit (content/model/preprocessing/study scoped)."] : []),
       "Research output only (RESEARCH status): uncalibrated class estimate, not a diagnosis; requires ophthalmic review.",
       disclosure,
     ],
