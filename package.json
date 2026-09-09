@@ -15,6 +15,7 @@
     "visual-qa": "node scripts/visual-qa.mjs",
     "browser:responsive": "node scripts/browser-responsive-qa.mjs",
     "browser:a11y": "node scripts/browser-accessibility-qa.mjs",
+    "browser:keyboard": "node scripts/browser-keyboard-qa.mjs",
     "browser:asset-e2e": "node scripts/browser-asset-e2e.mjs",
     "performance:local": "node scripts/performance-local.mjs",
     "sbom": "node scripts/generate-sbom.mjs",
