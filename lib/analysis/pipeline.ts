@@ -509,7 +509,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
           eye: asset.eye,
           files: [],
         };
-        const run = await runOctResearchAnalysis(roiStudy, { qualityScore: roiQuality.quality_score, eye: asset.eye, device: deviceInfo, imageBytes: asset.bytes });
+        const run = await runOctResearchAnalysis(roiStudy, {
+          qualityScore: roiQuality.quality_score,
+          eye: asset.eye,
+          device: deviceInfo,
+          imageBytes: asset.bytes,
+          cacheProvenance: { contentHash: asset.source_page_hash, roiHash: asset.roi_hash },
+        });
         if (run.raw.inference_status !== "completed" || !run.oct) {
           markModel(octRecord, "failed", run.notes[0] ?? "OCT ROI classifier failed");
           roiRuntimeMs.set(asset.asset_id, Math.max(0, Date.now() - roiStartedAt));

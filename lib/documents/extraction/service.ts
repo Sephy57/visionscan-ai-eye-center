@@ -18,6 +18,7 @@ import {
   ExtractionArtifact, PageExtraction, PageExtractionMethod, OCRProvider,
   ExtractionCancelledError, DocumentLevel,
 } from "./types";
+import type { ProgressUpdate } from "../../jobs/control";
 
 /**
  * Extraction orchestration (S2). Turns a VALID document into an extraction
@@ -61,6 +62,7 @@ export interface ExtractOptions {
   ocrProvider?: OCRProvider;      // injectable for tests; default = tesseract.js
   limits?: Partial<ExtractionLimits>;
   shouldCancel?: () => boolean;   // cooperative cancellation between pages
+  onProgress?: (update: ProgressUpdate) => void | Promise<void>;
 }
 
 export type { DocumentLevel };
@@ -121,11 +123,19 @@ export async function extractDocument(documentId: string, actor: string, opts: E
 
   let loaded;
   try {
+    await opts.onProgress?.({ stage: "validating_source", percent: 8, message: "Document integrity verified" });
     loaded = await loadPdf(bytes);
     const pageMethods: PageExtractionMethod[] = [];
 
     for (let p = 1; p <= loaded.numPages; p++) {
       checkCancel(opts);
+      await opts.onProgress?.({
+        stage: "extracting_pages",
+        percent: 10 + Math.round(((p - 1) / Math.max(1, loaded.numPages)) * 65),
+        completed_units: p - 1,
+        total_units: loaded.numPages,
+        message: `Extracting page ${p} of ${loaded.numPages}`,
+      });
       if (Date.now() - started > limits.maxTimeMs) { timeExceeded = true; docWarnings.push("time_limit"); break; }
 
       const tl = await loaded.pageText(p, limits.maxCharsPerPage);
@@ -240,6 +250,8 @@ export async function extractDocument(documentId: string, actor: string, opts: E
 
     let assetRouting: import("./pdfIntelligence").PdfAssetRouting | undefined;
     try {
+      checkCancel(opts);
+      await opts.onProgress?.({ stage: "routing_assets", percent: 78, completed_units: loaded.numPages, total_units: loaded.numPages, message: "Classifying bounded document assets" });
       assetRouting = await analyzePdfDocument({
         document_id: documentId,
         study_id: doc.study_id,
@@ -277,6 +289,8 @@ export async function extractDocument(documentId: string, actor: string, opts: E
       warnings: [...new Set(docWarnings)],
       asset_routing: assetRouting,
     };
+    checkCancel(opts);
+    await opts.onProgress?.({ stage: "persisting_analysis", percent: 90, completed_units: loaded.numPages, total_units: loaded.numPages, message: "Persisting extraction artifacts" });
     await writeExtractionArtifact(artifact);
     await transition(doc, "READY");
     // S3: structured test-result generation from the fresh artifact.
@@ -296,6 +310,7 @@ export async function extractDocument(documentId: string, actor: string, opts: E
       await auditDocumentEvent("document.clinical_extraction_failed", doc, actor, "non-fatal; document remains READY");
     }
     await auditDocumentEvent("document.extracted", doc, actor, `status=${status} level=${documentLevel} pages=${loaded.numPages} chars=${charsTotal} version=${EXTRACTION_VERSION}`);
+    await opts.onProgress?.({ stage: "generating_report", percent: 98, completed_units: loaded.numPages, total_units: loaded.numPages, message: "Extraction evidence ready" });
     return { ok: true, status: "READY", artifact_status: status, document_level: documentLevel, pages: loaded.numPages, char_count: charsTotal };
   } catch (err) {
     if (err instanceof ExtractionCancelledError) {

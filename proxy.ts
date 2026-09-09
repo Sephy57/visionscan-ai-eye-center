@@ -3,17 +3,17 @@ import { NextRequest, NextResponse } from "next/server";
 /**
  * Page-route gatekeeper. This is a UX convenience ONLY (redirect to /login
  * when there is obviously no session cookie) - it is NOT the security
- * boundary. Middleware runs on the Edge runtime, which cannot safely read
- * the Node-based session store, so it only checks cookie PRESENCE. Every
- * protected API route independently validates the session and role
- * server-side via lib/auth/rbac.ts requireRole() - that is the real
- * enforcement point, and it still applies even if a request reaches a page
- * with a stale or forged cookie.
+ * boundary. Proxy runs on the Edge runtime, which cannot safely read the
+ * Node-based session store, so it only checks cookie PRESENCE. Every
+ * protected API route independently validates the session and role server-
+ * side via lib/auth/rbac.ts requireRole() - that is the real enforcement
+ * point, and it still applies even if a request reaches a page with a stale
+ * or forged cookie.
  */
 
 const PUBLIC_PATHS = ["/login", "/access-denied"];
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (

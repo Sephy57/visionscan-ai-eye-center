@@ -36,7 +36,9 @@ export type Collection =
   | "calibration_records"
   | "patients"
   | "encounters"
-  | "record_extractions";
+  | "record_extractions"
+  | "reasoning_records"
+  | "model_errors";
 
 interface DbShape {
   meta: { version: number; createdAt: string; lastWrite: string };
@@ -71,6 +73,8 @@ const EMPTY: DbShape = {
     patients: {},
     encounters: {},
     record_extractions: {},
+    reasoning_records: {},
+    model_errors: {},
   },
 };
 

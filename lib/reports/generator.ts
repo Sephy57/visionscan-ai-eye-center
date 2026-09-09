@@ -4,6 +4,14 @@ import { writeJson } from "../storage/files";
 import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
 import { OPHTHALMIC_COVERAGE_REGISTRY, OPHTHALMIC_COVERAGE_VERSION } from "../models/ophthalmicCoverage";
 import { canonicalModality } from "../models/modalities";
+import { REPORT_AI_SNAPSHOT_VERSION, REASONING_RECORD_SCHEMA_VERSION, reportAiPayload, sha256Canonical, type ReportVersionFreeze } from "./integrity";
+import { EVIDENCE_TAXONOMY_VERSION } from "../evidence/conditionTaxonomy";
+import { REASONING_ENGINE_VERSION } from "../models/reasoningEngine";
+import { VALIDATION_REGISTRY_VERSION } from "../models/validationRegistry";
+import { SPECIALIST_PACKAGE_VERSION } from "../clinical/specialistPackages";
+import type { ImmutableReasoningRecord } from "./reasoningRecord";
+
+export const REPORT_VERSION = "1.2.0";
 
 /**
  * Report Generator.
@@ -19,6 +27,12 @@ export interface ClinicalReport {
   study_id: string;
   generated_at: string;
   report_version: string;
+  /** Hash/version seal over server-generated AI fields. Clinician-authored
+   * review fields are additive and deliberately excluded from this seal. */
+  version_freeze: ReportVersionFreeze;
+  /** Immutable, self-contained specialist/condition reasoning produced from
+   * this exact analysis. It is attached before the report is published. */
+  reasoning_snapshot?: ImmutableReasoningRecord;
   validation_banner: string;
   demo_label: string;
   patient: {
@@ -250,13 +264,23 @@ export function buildLimitations(r: AnalysisResult): string[] {
 
 export async function generateReport(
   analysis: AnalysisResult,
-  patient?: ClinicalReport["patient"]
+  patient?: ClinicalReport["patient"],
+  reasoningSnapshot?: ImmutableReasoningRecord,
 ): Promise<ClinicalReport> {
+  const existing = await dbGet<ClinicalReport>("reports", `rep_${analysis.study.study_id}`);
+  if (existing?.review.status === "clinician_finalized") {
+    throw new Error("Finalized report is immutable; create a new study/version instead of rerunning analysis.");
+  }
+  if (reasoningSnapshot && (
+    reasoningSnapshot.study_id !== analysis.study.study_id ||
+    reasoningSnapshot.report_id !== `rep_${analysis.study.study_id}` ||
+    reasoningSnapshot.source_analysis_sha256 !== sha256Canonical(analysis)
+  )) throw new Error("Reasoning snapshot does not match this analysis/report");
   const report: ClinicalReport = {
     report_id: `rep_${analysis.study.study_id}`,
     study_id: analysis.study.study_id,
     generated_at: new Date().toISOString(),
-    report_version: "1.1.0",
+    report_version: REPORT_VERSION,
     validation_banner: VALIDATION_STATUS_BANNER,
     demo_label: analysis.analysis_mode === "DEMO_ONLY" ? DEMO_LABEL
       : analysis.analysis_mode === "MODEL_FAILED" ? "RESEARCH MODEL ANALYSIS FAILED — NO SYNTHETIC FALLBACK"
@@ -292,6 +316,7 @@ export async function generateReport(
     symptom_correlation: analysis.symptom_correlation,
     possible_conditions: analysis.possible_conditions,
     treatment_information: analysis.treatment_information,
+    reasoning_snapshot: reasoningSnapshot ? structuredClone(reasoningSnapshot) : undefined,
     diagnosis_gate: analysis.diagnosis_gate,
     review: { status: "ai_only" },
     provenance: analysis.provenance,
@@ -301,6 +326,25 @@ export async function generateReport(
         "FHIR-compatible export is architecturally planned (Observation/DiagnosticReport resources). " +
         "Not yet implemented - no FHIR payload is produced by this version.",
     },
+    // Assigned below once every AI-owned field has been constructed.
+    version_freeze: undefined as unknown as ReportVersionFreeze,
+  };
+
+  report.version_freeze = {
+    snapshot_version: REPORT_AI_SNAPSHOT_VERSION,
+    report_version: REPORT_VERSION,
+    pipeline_version: analysis.provenance.pipeline_version,
+    pipeline_ruleset_version: analysis.provenance.ruleset_version,
+    coverage_registry_version: OPHTHALMIC_COVERAGE_VERSION,
+    evidence_taxonomy_version: EVIDENCE_TAXONOMY_VERSION,
+    condition_knowledge_version: EVIDENCE_TAXONOMY_VERSION,
+    specialist_rules_version: SPECIALIST_PACKAGE_VERSION,
+    validation_registry_version: VALIDATION_REGISTRY_VERSION,
+    reasoning_engine_version: REASONING_ENGINE_VERSION,
+    reasoning_record_schema_version: REASONING_RECORD_SCHEMA_VERSION,
+    source_analysis_sha256: sha256Canonical(analysis),
+    ai_payload_sha256: sha256Canonical(reportAiPayload(report)),
+    frozen_at: report.generated_at,
   };
 
   await dbPut("reports", report.report_id, report);
@@ -310,4 +354,39 @@ export async function generateReport(
 
 export async function getReport(reportId: string): Promise<ClinicalReport | null> {
   return dbGet<ClinicalReport>("reports", reportId);
+}
+
+/** Attach exactly one immutable reasoning snapshot and reseal the complete
+ * AI report before any clinician review can be accepted. */
+export async function attachReasoningSnapshot(
+  report: ClinicalReport,
+  snapshot: ImmutableReasoningRecord,
+): Promise<ClinicalReport> {
+  if (report.review.status !== "ai_only") throw new Error("Cannot change the AI reasoning snapshot after clinician review has started");
+  if (snapshot.study_id !== report.study_id || snapshot.report_id !== report.report_id) throw new Error("Reasoning snapshot report scope mismatch");
+  if (report.reasoning_snapshot && report.reasoning_snapshot.payload_sha256 !== snapshot.payload_sha256) {
+    throw new Error("Immutable reasoning snapshot already exists for this report");
+  }
+  report.report_version = REPORT_VERSION;
+  report.reasoning_snapshot = structuredClone(snapshot);
+  report.version_freeze = {
+    snapshot_version: REPORT_AI_SNAPSHOT_VERSION,
+    report_version: report.report_version,
+    pipeline_version: report.provenance.pipeline_version,
+    pipeline_ruleset_version: report.provenance.ruleset_version,
+    coverage_registry_version: report.coverage_snapshot.registry_version,
+    evidence_taxonomy_version: snapshot.version_freeze.evidence_taxonomy_version,
+    condition_knowledge_version: snapshot.version_freeze.condition_knowledge_version,
+    specialist_rules_version: snapshot.version_freeze.specialist_rules_version,
+    validation_registry_version: snapshot.version_freeze.validation_registry_version,
+    reasoning_engine_version: snapshot.version_freeze.reasoning_engine_version,
+    reasoning_record_schema_version: snapshot.record_schema_version,
+    source_analysis_sha256: snapshot.source_analysis_sha256,
+    ai_payload_sha256: "",
+    frozen_at: new Date().toISOString(),
+  };
+  report.version_freeze.ai_payload_sha256 = sha256Canonical(reportAiPayload(report));
+  await dbPut("reports", report.report_id, report);
+  report.exports.json_path = await writeJson("reports", report.report_id, report);
+  return report;
 }

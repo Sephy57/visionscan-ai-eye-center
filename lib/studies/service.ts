@@ -18,6 +18,11 @@ import { listDocumentsByStudy } from "../documents/repository";
 import { readExtractionArtifact } from "../documents/extraction/artifacts";
 import { readExtractedRegion } from "../documents/extraction/pdfIntelligence";
 import { canonicalModality } from "../models/modalities";
+import { verifyReportVersionFreeze } from "../reports/integrity";
+import { jobCheckpoint, type JobExecutionControl } from "../jobs/control";
+import { buildStructuredClinicalEvidence } from "../evidence/structuredClinicalEvidence";
+import { DeterministicReasoningEngine } from "../models/reasoningEngine";
+import { persistReasoningRecord } from "../reports/reasoningRecord";
 
 export interface StudyRecord {
   study_id: string;
@@ -150,11 +155,20 @@ export async function setStudySymptoms(
   return { ok: true, symptoms: v.symptoms };
 }
 
-export async function analyzeStudy(studyId: string): Promise<{ analysis: AnalysisResult; report: ClinicalReport }> {
+export async function analyzeStudy(
+  studyId: string,
+  control?: JobExecutionControl,
+): Promise<{ analysis: AnalysisResult; report: ClinicalReport }> {
+  await jobCheckpoint(control, { stage: "preparing", percent: 4, message: "Loading study metadata" });
   const record = await dbGet<StudyRecord>("studies", studyId);
   if (!record) throw new Error("Study not found");
+  const existingReport = await dbGet<ClinicalReport>("reports", `rep_${studyId}`);
+  if (existingReport?.review.status === "clinician_finalized") {
+    throw new Error("Finalized report is immutable; create a new study/version instead of rerunning analysis.");
+  }
   const bytes = await readOriginalScan(studyId);
   if (!bytes) throw new Error("Original scan missing");
+  await jobCheckpoint(control, { stage: "validating_source", percent: 12, message: "Immutable source loaded" });
 
   const documentAssets: Array<{
     asset_id: string; document_id: string; page: number; bbox: { x: number; y: number; w: number; h: number };
@@ -163,7 +177,15 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
   const documentRouting: import("../documents/extraction/pdfIntelligence").PdfAssetRouting[] = [];
   // Only server-created OCT_BSCAN derivatives are eligible for OCT inference.
   // Text, tables, whole pages, and non-OCT records never enter this list.
-  for (const doc of await listDocumentsByStudy(studyId)) {
+  const linkedDocuments = await listDocumentsByStudy(studyId);
+  for (const [documentIndex, doc] of linkedDocuments.entries()) {
+    await jobCheckpoint(control, {
+      stage: "routing_assets",
+      percent: 15 + Math.round((documentIndex / Math.max(1, linkedDocuments.length)) * 15),
+      completed_units: documentIndex,
+      total_units: linkedDocuments.length,
+      message: `Validating linked document ${documentIndex + 1} of ${linkedDocuments.length}`,
+    });
     const artifact = await readExtractionArtifact(doc.document_id);
     const routing = artifact?.asset_routing;
     // A sidecar is eligible only when it is tied to this study/document and
@@ -195,6 +217,13 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
       });
     }
   }
+  await jobCheckpoint(control, {
+    stage: "running_inference",
+    percent: 35,
+    completed_units: linkedDocuments.length,
+    total_units: linkedDocuments.length,
+    message: "Running eligible research inference and safety gates",
+  });
   const { analysis } = await runPipeline({
     study: {
       studyId,
@@ -211,6 +240,10 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
     document_assets: documentAssets,
     document_routing: documentRouting,
   });
+
+  // This is the publication boundary: cancellation is checked after the
+  // longest stage and before any analysis/report record is written.
+  await jobCheckpoint(control, { stage: "persisting_analysis", percent: 78, message: "Persisting validated analysis" });
 
   const analysisRecord: AnalysisRecord = {
     analysis_id: `anl_${studyId}`,
@@ -258,7 +291,18 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
     } : undefined,
   });
 
-  const report = await generateReport(analysis);
+  await control?.onProgress?.({ stage: "generating_report", percent: 86, message: "Persisting specialist and condition reasoning" });
+  const structuredEvidence = await buildStructuredClinicalEvidence(studyId, { includeSpecialists: true });
+  if ("not_found" in structuredEvidence) throw new Error("Study disappeared before reasoning persistence");
+  const reasoning = new DeterministicReasoningEngine().analyze(structuredEvidence);
+  const reasoningSnapshot = await persistReasoningRecord({
+    report_id: `rep_${studyId}`,
+    analysis,
+    evidence: structuredEvidence,
+    reasoning,
+  });
+  await control?.onProgress?.({ stage: "generating_report", percent: 92, message: "Generating version-frozen report" });
+  const report = await generateReport(analysis, undefined, reasoningSnapshot);
 
   const safety = runSafetyChecks(analysis);
   if (!safety.ok) {
@@ -276,6 +320,8 @@ export async function analyzeStudy(studyId: string): Promise<{ analysis: Analysi
     detail: `quality=${analysis.quality.status} findings=${analysis.findings.length} triage=${analysis.recommendation.priority}`,
   });
 
+  await control?.onProgress?.({ stage: "generating_report", percent: 98, completed_units: 1, total_units: 1, message: "Analysis and report published" });
+
   return { analysis, report };
 }
 
@@ -287,8 +333,19 @@ export async function getStudyBundle(studyId: string): Promise<{
   const study = await dbGet<StudyRecord>("studies", studyId);
   const analysisRecord = await dbGet<AnalysisRecord>("analyses", `anl_${studyId}`);
   const report = await dbGet<ClinicalReport>("reports", `rep_${studyId}`);
-  // Unwrap: expose the structured AnalysisResult directly (never the storage record).
-  return { study, analysis: analysisRecord?.result ?? null, report };
+  // Unwrap: expose the structured AnalysisResult directly (never the storage
+  // record). The immutable reasoning snapshot is retained in the report store
+  // and is available to the specialist/evidence review paths, but is omitted
+  // from this broad presentation bundle: it contains source-document snippets
+  // that should only be rendered by the scoped evidence workspace. This also
+  // keeps the general result/triage payload from becoming a raw-document
+  // transport while preserving the sealed snapshot for audit and replay.
+  let presentationReport: ClinicalReport | null = null;
+  if (report) {
+    const { reasoning_snapshot: _reasoningSnapshot, ...safeReport } = report;
+    presentationReport = safeReport;
+  }
+  return { study, analysis: analysisRecord?.result ?? null, report: presentationReport };
 }
 
 export async function listStudies(): Promise<StudyRecord[]> {
@@ -310,6 +367,9 @@ export type DashboardStatus =
   | "REVIEW_REQUIRED"                  // analyzed, not yet reviewed by a clinician/reviewer
   | "REVIEWED"                         // analyzed and clinician-reviewed/finalized
   | "IMAGE_NOT_SUITABLE"               // study.status === "rejected" (quality gate failure)
+  | "MODEL_FAILED"                      // research provider failed; no finding inferred
+  | "UNSUPPORTED_MODALITY"              // asset/model modality gate rejected the input
+  | "OUT_OF_DISTRIBUTION"               // image outside documented model domain
   | "UPLOADED";                        // no analysis run yet
 
 export interface DashboardStudyRow {
@@ -326,10 +386,18 @@ export async function listStudiesWithStatus(): Promise<DashboardStudyRow[]> {
   for (const s of studies) {
     let dashboard_status: DashboardStatus = "UPLOADED";
     let triage_priority: string | undefined;
+    // An analysis record is persisted before the study status is updated. Read
+    // it for both analyzed and rejected studies so an unsupported/corrupt
+    // asset is not presented as a generic quality failure.
+    const analysisRecord = s.status === "analyzed" || s.status === "rejected"
+      ? await dbGet<AnalysisRecord>("analyses", `anl_${s.study_id}`)
+      : null;
     if (s.status === "rejected") {
-      dashboard_status = "IMAGE_NOT_SUITABLE";
+      const ledger = analysisRecord?.result.model_execution_ledger ?? [];
+      dashboard_status = ledger.length > 0 && ledger.every((row) => row.execution_status === "UNSUPPORTED_MODALITY")
+        ? "UNSUPPORTED_MODALITY"
+        : "IMAGE_NOT_SUITABLE";
     } else if (s.status === "analyzed") {
-      const analysisRecord = await dbGet<AnalysisRecord>("analyses", `anl_${s.study_id}`);
       const report = await dbGet<ClinicalReport>("reports", `rep_${s.study_id}`);
       triage_priority = analysisRecord?.result.recommendation.priority;
       const urgent = triage_priority === "emergency_evaluation" || triage_priority === "urgent_eye_care_review";
@@ -339,6 +407,17 @@ export async function listStudiesWithStatus(): Promise<DashboardStudyRow[]> {
         (analysisRecord?.result.possible_conditions?.conditions.length ?? 0) > 0;
       if (urgent) {
         dashboard_status = "URGENT_REVIEW";
+      } else if (analysisRecord?.result.analysis_mode === "MODEL_FAILED" ||
+        (analysisRecord?.result.model_execution?.models_failed.length ?? 0) > 0) {
+        dashboard_status = "MODEL_FAILED";
+      } else if (analysisRecord?.result.analysis_mode === "NO_MODEL_EXECUTED" &&
+        (analysisRecord?.result.model_execution_ledger?.length ?? 0) > 0 &&
+        analysisRecord?.result.model_execution_ledger?.every((row) => row.execution_status === "UNSUPPORTED_MODALITY")) {
+        dashboard_status = "UNSUPPORTED_MODALITY";
+      } else if (analysisRecord?.result.model_execution_ledger?.some((row) => row.execution_status === "BLOCKED_OOD")) {
+        dashboard_status = "OUT_OF_DISTRIBUTION";
+      } else if (analysisRecord?.result.model_execution_ledger?.some((row) => row.execution_status === "BLOCKED_QUALITY")) {
+        dashboard_status = "IMAGE_NOT_SUITABLE";
       } else if (report?.review.status === "clinician_reviewed" || report?.review.status === "clinician_finalized") {
         dashboard_status = "REVIEWED";
       } else if (gate && !gate.allowed && hasClinicalContent) {
@@ -427,6 +506,17 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
   const report = await dbGet<ClinicalReport>("reports", `rep_${studyId}`);
   const analysis = await dbGet<AnalysisRecord>("analyses", `anl_${studyId}`);
   if (!report || !analysis) throw new Error("Analyzed study not found");
+  const integrity = verifyReportVersionFreeze(report);
+  if (!integrity.ok) {
+    await audit({
+      actor: `clinician:${input.reviewer_id}`,
+      action: "review.integrity_rejected",
+      studyId,
+      outcome: "rejected",
+      detail: integrity.reason,
+    });
+    throw new Error(`Immutable AI report integrity check failed: ${integrity.reason}`);
+  }
 
   const change = { field: input.finding_id ?? "report", action: input.action, note: input.note, at: new Date().toISOString() };
   report.review = report.review ?? { status: "ai_only" };

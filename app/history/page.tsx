@@ -17,6 +17,10 @@ const FILTER_TO_STATUS: Record<string, string> = {
   urgent: "URGENT_REVIEW",
   correlation: "CLINICAL_CORRELATION_REQUIRED",
   review: "REVIEW_REQUIRED",
+  "model-failed": "MODEL_FAILED",
+  unsupported: "UNSUPPORTED_MODALITY",
+  "quality-blocked": "IMAGE_NOT_SUITABLE",
+  "out-of-distribution": "OUT_OF_DISTRIBUTION",
 };
 
 export default function HistoryPage() {

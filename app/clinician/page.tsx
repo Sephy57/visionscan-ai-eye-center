@@ -70,7 +70,7 @@ function ClinicianInner() {
     if (!res.ok) { setErr(json.error ?? "Not found"); setBundle(null); }
     else setBundle(json);
   }
-  useEffect(() => { if (studyId) load(studyId); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (studyId) load(studyId); }, []);
 
   async function act(action: string, findingId?: string, correction?: Record<string, string>, extra?: { condition_id?: string; medication_id?: string; note?: string }) {
     // reviewer_id is always taken server-side from the authenticated

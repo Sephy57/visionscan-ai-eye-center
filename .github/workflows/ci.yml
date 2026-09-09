@@ -31,7 +31,21 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Unit and integration tests
-        run: npm test
+        # The local JSON store serializes writes; one worker keeps the release
+        # gate deterministic instead of introducing cross-file write races.
+        run: npm test -- --pool=forks --maxWorkers=1 --minWorkers=1
+
+      - name: Synthetic validation case contract
+        run: npm run validation:cases
+
+      - name: Audit local model manifests
+        run: npm run model:audit
+
+      - name: Generate de-identified SBOM
+        run: node scripts/generate-sbom.mjs --output "$RUNNER_TEMP/visionscan-sbom.cdx.json"
+
+      - name: Generate release inventory
+        run: node scripts/release-inventory.mjs --output "$RUNNER_TEMP/visionscan-release-inventory.json"
 
       - name: Filesystem audit
         run: npm run audit:fs

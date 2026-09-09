@@ -75,7 +75,6 @@ export default function ScanViewer({
     setImgSize({ w: Math.round(img.naturalWidth * scale), h: Math.round(img.naturalHeight * scale) });
     setZoom(1);
     setOffset({ x: 0, y: 0 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, viewMode]);
 
   useEffect(() => { fitToScreen(); }, [fitToScreen, loaded]);
@@ -135,7 +134,6 @@ export default function ScanViewer({
           width: imgSize.w || undefined, height: imgSize.h || undefined,
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           ref={primary ? imgRef : undefined}
           src={src}

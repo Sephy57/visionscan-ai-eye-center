@@ -138,7 +138,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
     setLoaded(true);
   }
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
+  useEffect(() => { load(); }, [id]);
 
   async function createEncounter() {
     try {

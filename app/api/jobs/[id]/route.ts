@@ -42,7 +42,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // client-supplied `requested_by` value so a caller cannot attribute a
     // retry to another user (the authenticated session is already required
     // above).
-    const job = await retryJob(params.id, user?.username ?? "unknown");
+    const idempotencyKey = req.headers.get("idempotency-key") ?? body?.idempotency_key;
+    const job = await retryJob(params.id, user?.username ?? "unknown", idempotencyKey);
     if (!job) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(job);
   } catch (err) {

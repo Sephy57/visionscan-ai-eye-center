@@ -19,16 +19,36 @@ const entries = new Map<string, CacheEntry<unknown>>();
 
 export function inferenceCacheKey(input: {
   scope: string;
-  sourceHash: string;
+  contentHash: string;
+  roiHash: string | null;
   modelId: string;
   modelVersion: string;
   preprocessingVersion: string;
   eye: string;
 }): string {
-  return createHash("sha256").update(JSON.stringify(input)).digest("hex");
+  const fields = [input.scope, input.contentHash, input.modelId, input.modelVersion, input.preprocessingVersion, input.eye];
+  if (fields.some((value) => typeof value !== "string" || value.trim().length === 0)) {
+    throw new Error("Inference cache key fields must be non-empty strings");
+  }
+  if (!/^[a-f0-9]{64}$/i.test(input.contentHash) || (input.roiHash !== null && !/^[a-f0-9]{64}$/i.test(input.roiHash))) {
+    throw new Error("Inference cache contentHash/roiHash must be SHA-256 digests");
+  }
+  // Reconstruct the exact allow-listed shape so runtime callers cannot add
+  // undeclared data to the key contract or depend on object insertion order.
+  const canonical = {
+    scope: input.scope,
+    contentHash: input.contentHash.toLowerCase(),
+    roiHash: input.roiHash?.toLowerCase() ?? null,
+    modelId: input.modelId,
+    modelVersion: input.modelVersion,
+    preprocessingVersion: input.preprocessingVersion,
+    eye: input.eye,
+  };
+  return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
 }
 
 export function getInferenceCache<T>(key: string): T | undefined {
+  if (!/^[a-f0-9]{64}$/.test(key)) return undefined;
   const hit = entries.get(key);
   if (!hit) return undefined;
   if (Date.now() - hit.createdAt > TTL_MS) {
@@ -38,12 +58,15 @@ export function getInferenceCache<T>(key: string): T | undefined {
   // Touch the entry for simple insertion-order LRU behaviour.
   entries.delete(key);
   entries.set(key, hit);
-  return hit.value as T;
+  // Never return the stored object by reference: a caller annotating one
+  // result must not poison later inference for the same immutable asset.
+  return structuredClone(hit.value) as T;
 }
 
 export function setInferenceCache<T>(key: string, value: T): void {
+  if (!/^[a-f0-9]{64}$/.test(key)) throw new Error("Invalid inference cache key");
   entries.delete(key);
-  entries.set(key, { value, createdAt: Date.now() });
+  entries.set(key, { value: structuredClone(value), createdAt: Date.now() });
   while (entries.size > MAX_ENTRIES) entries.delete(entries.keys().next().value as string);
 }
 

@@ -10,6 +10,7 @@ import { dbGet } from "@/lib/storage/db";
 import type { StudyRecord } from "@/lib/studies/service";
 import { requireRole } from "@/lib/auth/rbac";
 import { ensureRegistryHydrated } from "@/lib/models/registryPersistence";
+import { safeValidationRun } from "@/lib/research/validationDashboard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,15 +51,22 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     },
     evidence,
     transitions,
-    evaluations: evaluations.map((r) => ({
-      run_id: r.run_id, split: r.split, dataset_ref: r.dataset_ref, cases: r.cases,
-      patient_count: r.patient_count, device_count: r.device_count,
-      sensitivity: r.metrics.sensitivity, specificity: r.metrics.specificity,
-      auroc: r.metrics.auroc, auprc: r.metrics.auprc, ece: r.metrics.ece,
-      false_negatives: r.failure_analysis.false_negatives,
-      missed_urgent: r.failure_analysis.missed_urgent_cases.length,
-      created_at: r.created_at,
-    })),
+    // The model detail endpoint is also available to RESEARCHER sessions:
+    // use the same aggregate-only projection as the validation dashboard.
+    evaluations: evaluations.map((r) => {
+      const safe = safeValidationRun(r);
+      return {
+        run_id: safe.run_id, split: safe.split, cases: safe.cases,
+        patient_count: safe.patient_count, device_count: safe.device_count,
+        sensitivity: safe.metrics.sensitivity, specificity: safe.metrics.specificity,
+        auroc: safe.metrics.auroc, auprc: safe.metrics.auprc, ece: safe.metrics.ece,
+        false_negatives: safe.errors.false_negatives,
+        missed_urgent: safe.errors.missed_urgent_cases,
+        quality_blocked: safe.errors.quality_blocked,
+        out_of_distribution: safe.errors.out_of_distribution,
+        created_at: safe.created_at,
+      };
+    }),
     model_card: generateModelCard(model),
     capabilities: STATUS_CAPABILITIES[model.status],
     note: "No single accuracy score is reported. Metrics exist only where real evaluation evidence exists.",

@@ -6,24 +6,18 @@ import { Icon } from "@/components/icons";
 
 interface Run {
   run_id: string; model_id: string; model_version: string;
-  dataset_ref: string; split: string; cases: number;
+  split: string; cases: number;
   patient_count: number | null; device_count: number | null; modality: string | null;
   metrics: {
     sensitivity: number | null; specificity: number | null; ppv: number | null;
     npv: number | null; auroc: number | null; auprc: number | null; ece: number | null;
   };
-  failure_analysis: {
+  errors: {
     false_negatives: number; false_positives: number;
-    missed_urgent_cases: unknown[];
-    fn_by_urgent_vs_non_urgent: { fn_urgent: number; urgent_total: number; urgent_fn_rate: number | null };
-    quality_failures: number; ood_failures: number;
+    missed_urgent_cases: number;
+    quality_blocked: number; out_of_distribution: number;
+    urgent_fn_rate: number | null;
   };
-  symptom_stratified: {
-    with_symptoms: { sensitivity: number | null; auroc: number | null } | null;
-    without_symptoms: { sensitivity: number | null; auroc: number | null } | null;
-    delta_notes: string[];
-    warning: string;
-  } | null;
   created_at: string;
 }
 
@@ -78,7 +72,7 @@ export default function EvaluationsPage() {
               ["PPV", pct(r.metrics.ppv)], ["NPV", pct(r.metrics.npv)],
               ["AUROC", r.metrics.auroc?.toFixed(3) ?? "—"], ["AUPRC", r.metrics.auprc?.toFixed(3) ?? "—"],
               ["Calibration (ECE)", r.metrics.ece?.toFixed(3) ?? "—"],
-              ["False negatives", String(r.failure_analysis.false_negatives)],
+              ["False negatives", String(r.errors.false_negatives)],
             ].map(([label, value]) => (
               <div key={label} className="stat-card">
                 <span className="stat-label">{label}</span>
@@ -93,31 +87,16 @@ export default function EvaluationsPage() {
               <div className="stat-label" style={{ marginBottom: 6 }}>Safety signals</div>
               <dl className="kv tiny" style={{ gridTemplateColumns: "175px 1fr" }}>
                 <dt>Missed urgent cases</dt>
-                <dd style={{ color: r.failure_analysis.missed_urgent_cases.length > 0 ? "var(--danger)" : "var(--ok)", fontWeight: 650 }}>
-                  {r.failure_analysis.missed_urgent_cases.length}
+                <dd style={{ color: r.errors.missed_urgent_cases > 0 ? "var(--danger)" : "var(--ok)", fontWeight: 650 }}>
+                  {r.errors.missed_urgent_cases}
                 </dd>
                 <dt>Urgent FN rate</dt>
-                <dd>{r.failure_analysis.fn_by_urgent_vs_non_urgent.urgent_fn_rate === null ? "—" : pct(r.failure_analysis.fn_by_urgent_vs_non_urgent.urgent_fn_rate)}</dd>
-                <dt>Quality failures</dt><dd>{r.failure_analysis.quality_failures}</dd>
-                <dt>OOD failures</dt><dd>{r.failure_analysis.ood_failures}</dd>
+                <dd>{r.errors.urgent_fn_rate === null ? "—" : pct(r.errors.urgent_fn_rate)}</dd>
+                <dt>Quality blocked</dt><dd>{r.errors.quality_blocked}</dd>
+                <dt>OOD rejections</dt><dd>{r.errors.out_of_distribution}</dd>
               </dl>
             </div>
-            <div>
-              <div className="stat-label" style={{ marginBottom: 6 }}>Symptom-stratified (image only vs image + symptoms)</div>
-              {r.symptom_stratified ? (
-                <>
-                  <dl className="kv tiny" style={{ gridTemplateColumns: "145px 1fr" }}>
-                    <dt>Sensitivity (with)</dt><dd>{pct(r.symptom_stratified.with_symptoms?.sensitivity ?? null)}</dd>
-                    <dt>Sensitivity (without)</dt><dd>{pct(r.symptom_stratified.without_symptoms?.sensitivity ?? null)}</dd>
-                    <dt>AUROC (with)</dt><dd>{r.symptom_stratified.with_symptoms?.auroc?.toFixed(3) ?? "—"}</dd>
-                    <dt>AUROC (without)</dt><dd>{r.symptom_stratified.without_symptoms?.auroc?.toFixed(3) ?? "—"}</dd>
-                  </dl>
-                  <p className="tiny muted" style={{ marginBottom: 0 }}>{r.symptom_stratified.warning}</p>
-                </>
-              ) : (
-                <p className="tiny muted" style={{ margin: 0 }}>Cases carried no symptom-context metadata; stratified comparison unavailable.</p>
-              )}
-            </div>
+            <div><div className="stat-label" style={{ marginBottom: 6 }}>Privacy boundary</div><p className="tiny muted" style={{ margin: 0 }}>Aggregate metrics only. Case identifiers, patient identifiers, dataset references, subgroup labels, and free text are withheld.</p></div>
           </div>
         </div>
       ))}

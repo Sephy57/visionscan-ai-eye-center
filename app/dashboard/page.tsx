@@ -32,6 +32,10 @@ export default function DashboardPage() {
   const urgentCount = (studies ?? []).filter((s) => s.dashboard_status === "URGENT_REVIEW").length;
   const correlationCount = (studies ?? []).filter((s) => s.dashboard_status === "CLINICAL_CORRELATION_REQUIRED").length;
   const reviewCount = (studies ?? []).filter((s) => s.dashboard_status === "REVIEW_REQUIRED").length;
+  const modelFailedCount = (studies ?? []).filter((s) => s.dashboard_status === "MODEL_FAILED").length;
+  const unsupportedCount = (studies ?? []).filter((s) => s.dashboard_status === "UNSUPPORTED_MODALITY").length;
+  const qualityBlockedCount = (studies ?? []).filter((s) => s.dashboard_status === "IMAGE_NOT_SUITABLE").length;
+  const oodCount = (studies ?? []).filter((s) => s.dashboard_status === "OUT_OF_DISTRIBUTION").length;
 
   return (
     <div>
@@ -65,7 +69,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {studies && studies.length > 0 && (urgentCount > 0 || correlationCount > 0 || reviewCount > 0) && (
+      {studies && studies.length > 0 && (urgentCount > 0 || correlationCount > 0 || reviewCount > 0 || modelFailedCount > 0 || unsupportedCount > 0 || qualityBlockedCount > 0 || oodCount > 0) && (
         <div className="grid grid-3" style={{ marginTop: 14 }} role="status" aria-label="Studies needing attention">
           {urgentCount > 0 && (
             <Link href="/history?filter=urgent" className="card hover" style={{ textDecoration: "none", color: "inherit", borderColor: "var(--danger, #b3261e)" }}>
@@ -86,6 +90,30 @@ export default function DashboardPage() {
               <span className="stat-label">Review required</span>
               <span className="stat-value">{reviewCount}</span>
               <span className="stat-detail">Analyzed, not yet reviewed by a clinician/reviewer</span>
+            </Link>
+          )}
+          {modelFailedCount > 0 && (
+            <Link href="/history?filter=model-failed" className="card hover" style={{ textDecoration: "none", color: "inherit", borderColor: "var(--danger, #b3261e)" }}>
+              <span className="stat-label">Model failure</span><span className="stat-value" style={{ color: "var(--danger, #b3261e)" }}>{modelFailedCount}</span>
+              <span className="stat-detail">No finding inferred; review the image with a qualified professional</span>
+            </Link>
+          )}
+          {unsupportedCount > 0 && (
+            <Link href="/history?filter=unsupported" className="card hover" style={{ textDecoration: "none", color: "inherit" }}>
+              <span className="stat-label">Unsupported image type</span><span className="stat-value">{unsupportedCount}</span>
+              <span className="stat-detail">No compatible model executed for this input</span>
+            </Link>
+          )}
+          {qualityBlockedCount > 0 && (
+            <Link href="/history?filter=quality-blocked" className="card hover" style={{ textDecoration: "none", color: "inherit" }}>
+              <span className="stat-label">Quality blocked</span><span className="stat-value">{qualityBlockedCount}</span>
+              <span className="stat-detail">Image quality gate prevented finding inference</span>
+            </Link>
+          )}
+          {oodCount > 0 && (
+            <Link href="/history?filter=out-of-distribution" className="card hover" style={{ textDecoration: "none", color: "inherit" }}>
+              <span className="stat-label">Outside model conditions</span><span className="stat-value">{oodCount}</span>
+              <span className="stat-detail">No automated finding produced outside documented domain</span>
             </Link>
           )}
         </div>

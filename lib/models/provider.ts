@@ -39,6 +39,9 @@ export interface ModelAnalysisContext {
    * A provider that needs pixels but receives none must fail closed.
    */
   imageBytes?: Buffer;
+  /** Server-derived immutable cache scope. For a bounded PDF ROI,
+   * contentHash is the source-page hash and roiHash must match imageBytes. */
+  cacheProvenance?: { contentHash: string; roiHash: string | null };
 }
 
 export interface ModelAnalysisOutput {

@@ -48,6 +48,9 @@ export const DASHBOARD_STATUS_META: Record<string, { label: string; tone: "ok" |
   REVIEW_REQUIRED: { label: "Review required", tone: "info" },
   REVIEWED: { label: "Reviewed", tone: "ok" },
   IMAGE_NOT_SUITABLE: { label: "Image not suitable", tone: "bad" },
+  MODEL_FAILED: { label: "Model failed — no finding", tone: "bad" },
+  UNSUPPORTED_MODALITY: { label: "Unsupported image type", tone: "warn" },
+  OUT_OF_DISTRIBUTION: { label: "Outside model conditions", tone: "warn" },
   UPLOADED: { label: "Uploaded", tone: "neutral" },
 };
 

@@ -21,31 +21,43 @@ interface Job {
   job_id: string; study_id: string;
   status: "queued" | "running" | "completed" | "failed" | "cancelled";
   attempts: number; error?: string;
+  progress?: { stage: string; percent: number; completed_units: number; total_units: number; message: string; updated_at: string };
 }
 
 function ProcessingInner() {
   const router = useRouter();
   const params = useSearchParams();
   const study = params.get("study") ?? "";
+  const resumeJobId = params.get("job");
   const [jobStatus, setJobStatus] = useState<"requesting" | "queued" | "running">("requesting");
   const [jobId, setJobId] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
+  const [progress, setProgress] = useState<Job["progress"]>({ stage: "queued", percent: 0, completed_units: 0, total_units: 0, message: "Waiting for a worker", updated_at: new Date().toISOString() });
 
   useEffect(() => {
     if (!study) { setFailed("No study id supplied. Start from the Analyze page."); return; }
     let cancelled = false;
     (async () => {
       try {
-        // Async mode: enqueue a job and poll — keeps inference off the UI request path.
-        const res = await authFetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ study_id: study, async: true }),
-        });
-        const data = await res.json();
-        if (cancelled) return;
-        if (!res.ok) throw new Error(data.error ?? "Could not start analysis");
-        setJobId(data.job_id);
+        // A retry resumes its existing job id. Only a brand-new visit creates
+        // a job, preventing refresh/retry from duplicating work or audit rows.
+        let activeJobId = resumeJobId;
+        if (!activeJobId) {
+          const res = await authFetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ study_id: study, async: true }),
+          });
+          const data = await res.json();
+          if (cancelled) return;
+          if (!res.ok) throw new Error(data.error ?? "Could not start analysis");
+          if (typeof data.job_id !== "string" || data.job_id.length === 0) throw new Error("Analysis job response did not include a job id");
+          activeJobId = data.job_id;
+          window.history.replaceState({}, "", `/processing?study=${encodeURIComponent(study)}&job=${encodeURIComponent(data.job_id)}`);
+        }
+        if (!activeJobId) throw new Error("Analysis job id is unavailable");
+        const polledJobId = activeJobId;
+        setJobId(activeJobId);
         setJobStatus("queued");
 
         // Poll job status, with a bound so a stuck job surfaces an error instead of spinning forever.
@@ -54,9 +66,10 @@ function ProcessingInner() {
           if (cancelled) return;
           if (Date.now() > pollDeadline) throw new Error("Analysis is taking longer than expected. The job may be stuck — please retry.");
           await new Promise((r) => setTimeout(r, 900));
-          const jr = await fetch(`/api/jobs/${encodeURIComponent(data.job_id)}`);
+          const jr = await fetch(`/api/jobs/${encodeURIComponent(polledJobId)}`);
           if (!jr.ok) throw new Error("Lost contact with the analysis job.");
           const job: Job = await jr.json();
+          if (job.progress) setProgress(job.progress);
           if (job.status === "running") setJobStatus("running");
           if (job.status === "completed") {
             if (cancelled) return;
@@ -82,7 +95,7 @@ function ProcessingInner() {
     })();
 
     return () => { cancelled = true; };
-  }, [study, router]);
+  }, [study, resumeJobId, router]);
 
   if (failed) {
     return (
@@ -106,13 +119,14 @@ function ProcessingInner() {
               onClick={async () => {
                 setFailed(null);
                 setJobStatus("queued");
-                await authFetch(`/api/jobs/${encodeURIComponent(jobId)}`, {
-                  method: "POST", headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ requested_by: "user" }),
+                const idempotencyKey = crypto.randomUUID();
+                const retryResponse = await authFetch(`/api/jobs/${encodeURIComponent(jobId)}`, {
+                  method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
+                  body: JSON.stringify({ idempotency_key: idempotencyKey }),
                 });
-                // Retry re-triggers polling via page refresh of job state
-                router.refresh();
-                window.location.reload();
+                const retryBody = await retryResponse.json().catch(() => ({}));
+                if (!retryResponse.ok) { setFailed(retryBody.error ?? "Retry could not be started"); return; }
+                window.location.assign(`/processing?study=${encodeURIComponent(study)}&job=${encodeURIComponent(jobId)}`);
               }}
             >
               <Icon name="reset" size={13} /> Retry
@@ -137,6 +151,10 @@ function ProcessingInner() {
             {jobStatus === "requesting" ? "Requesting analysis job" : jobStatus === "queued" ? "Analysis job queued" : "Analysis job running"}
           </span>
         </div>
+        <div style={{ margin: "14px 0 4px" }}>
+          <progress value={progress?.percent ?? 0} max={100} style={{ width: "100%" }} aria-label="Analysis progress" />
+          <div className="tiny muted" aria-live="polite">{progress?.percent ?? 0}% · {progress?.message ?? "Waiting for server progress"}</div>
+        </div>
         <ul className="state-steps" aria-label="Expected analysis pipeline sequence">
           {EXPECTED_STAGES.map((s, i) => (
             <li key={s}>
@@ -146,10 +164,19 @@ function ProcessingInner() {
           ))}
         </ul>
         <p className="tiny muted" style={{ marginBottom: 0 }}>
-          The server currently reports job-level queued/running/completed status, not per-stage completion. The list
-          above is the expected pipeline sequence and no checkmark or percentage is shown until the server confirms a result.
+          Progress is reported by server-side bounded stages. A percentage describes workflow completion, not model confidence.
           Analysis runs as a background job so the interface stays responsive.
         </p>
+        {jobId && (jobStatus === "queued" || jobStatus === "running") && (
+          <button className="btn secondary" style={{ marginTop: 14 }} onClick={async () => {
+            const response = await authFetch(`/api/jobs/${encodeURIComponent(jobId)}`, {
+              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "cancel" }),
+            });
+            const body = await response.json().catch(() => ({}));
+            if (!response.ok) { setFailed(body.error ?? "Cancellation could not be requested"); return; }
+            setProgress(body.progress);
+          }}>Cancel analysis</button>
+        )}
       </div>
     </div>
   );

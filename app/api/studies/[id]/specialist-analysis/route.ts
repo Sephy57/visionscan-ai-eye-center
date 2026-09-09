@@ -3,6 +3,10 @@ import { requireRole } from "@/lib/auth/rbac";
 import { requireStudyScope } from "@/lib/auth/scope";
 import { buildStructuredClinicalEvidence } from "@/lib/evidence/structuredClinicalEvidence";
 import { DeterministicReasoningEngine } from "@/lib/models/reasoningEngine";
+import type { AnalysisResult } from "@/lib/analysis/schema";
+import { dbGet } from "@/lib/storage/db";
+import { getReasoningRecordForAnalysis, persistReasoningRecord } from "@/lib/reports/reasoningRecord";
+import { attachReasoningSnapshot, type ClinicalReport } from "@/lib/reports/generator";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,11 +28,51 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (scoped.response) return scoped.response;
   if (!scoped.resource) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  const analysisRecord = await dbGet<{ result: AnalysisResult }>("analyses", `anl_${params.id}`);
+  if (analysisRecord?.result) {
+    const persisted = await getReasoningRecordForAnalysis(params.id, analysisRecord.result);
+    if (persisted) {
+      const report = await dbGet<ClinicalReport>("reports", `rep_${params.id}`);
+      if (report && report.review.status === "ai_only" && !report.reasoning_snapshot) {
+        await attachReasoningSnapshot(report, persisted);
+      }
+      return NextResponse.json({
+        study_id: params.id,
+        reasoning_record_id: persisted.reasoning_record_id,
+        reasoning_record_sha256: persisted.payload_sha256,
+        version_freeze: persisted.version_freeze,
+        specialist_consensus: persisted.specialist_consensus,
+        specialist_bundles: persisted.specialist_bundles,
+        specialist_packages: persisted.specialist_packages,
+        reasoning: persisted.reasoning,
+        safety_banner: "PERSISTED IMMUTABLE SPECIALIST/REASONING SNAPSHOT — NOT A DIAGNOSIS. NOT CLINICALLY VALIDATED.",
+        requires_clinician_review: true,
+      });
+    }
+  }
+
   const evidence = await buildStructuredClinicalEvidence(params.id, { includeSpecialists: true });
   if ("not_found" in evidence) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const reasoning = new DeterministicReasoningEngine().analyze(evidence);
+  const persisted = analysisRecord?.result
+    ? await persistReasoningRecord({
+        report_id: `rep_${params.id}`,
+        analysis: analysisRecord.result,
+        evidence,
+        reasoning,
+      })
+    : null;
+  if (persisted) {
+    const report = await dbGet<ClinicalReport>("reports", `rep_${params.id}`);
+    if (report && report.review.status === "ai_only" && !report.reasoning_snapshot) {
+      await attachReasoningSnapshot(report, persisted);
+    }
+  }
   return NextResponse.json({
     study_id: params.id,
+    reasoning_record_id: persisted?.reasoning_record_id ?? null,
+    reasoning_record_sha256: persisted?.payload_sha256 ?? null,
+    version_freeze: persisted?.version_freeze ?? null,
     specialist_consensus: evidence.specialist_consensus ?? null,
     specialist_bundles: evidence.specialist_bundles,
     specialist_packages: evidence.specialist_packages ?? [],

@@ -329,9 +329,14 @@ export async function runFundusLesionResearchAnalysis(
   // unvalidated and is disclosed, never assumed.
   const deviceNote = deviceCompatible(model, ctx.device ?? null);
   const disclosure = `Device compatibility: ${deviceNote.note} Domain validation: DOMAIN_VALIDATION_UNKNOWN.`;
+  const imageHash = assetHash(imageBytes);
+  if (ctx.cacheProvenance?.roiHash && ctx.cacheProvenance.roiHash.toLowerCase() !== imageHash) {
+    throw new Error("Cache ROI hash does not match immutable inference bytes");
+  }
   const cacheKey = inferenceCacheKey({
     scope: study.studyId,
-    sourceHash: assetHash(imageBytes),
+    contentHash: ctx.cacheProvenance?.contentHash ?? imageHash,
+    roiHash: ctx.cacheProvenance?.roiHash ?? null,
     modelId: model.model_id,
     modelVersion: model.version,
     preprocessingVersion: FUNDUS_LESION_PREPROCESSING_VERSION,
