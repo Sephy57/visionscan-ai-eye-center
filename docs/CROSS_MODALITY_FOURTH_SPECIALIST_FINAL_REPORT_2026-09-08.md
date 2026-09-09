@@ -329,15 +329,15 @@ the prior 50-item record or change its clinical-use limitations.
 
 1. **Starting HEAD.** Work for this phase began at `f353fce424b89bad1a94a669c66292c686d2075c` on `main`. Existing history and dirty user work were preserved; no reset, clean, restore, checkout, or stash operation was used.
 
-2. **Ending HEAD.** The implementation commit and any post-push report correction are recorded after the source/report commit is created; this section is updated with the exact final SHA before handoff.
+2. **Ending HEAD.** The final implementation SHA for this phase is `533e9c162a8ad9aa73e17e3517a4f49f57f99298`. The report close-out is committed separately so this source-release SHA remains directly auditable.
 
-3. **Working tree.** Before commit, the tree contains only the intended routing, extraction, provenance, UI, test, script, and package changes listed by `git status --short`; no uploaded patient PDF/JPEG, OCR output, credentials, or model data is staged. The final working tree will be checked clean after commit.
+3. **Working tree.** The implementation commit was made from the reviewed routing, extraction, provenance, UI, test, script, and package changes. No uploaded patient PDF/JPEG, OCR output, credentials, or model data was staged. The documentation close-out is the only follow-up change; the final tree is checked clean after that commit.
 
-4. **Commits.** The phase is committed as a focused feature change covering `assetRouter`, PDF intelligence/ROI extraction, immutable provenance checks, inference caching, modality-aware pipeline/report/UI behavior, browser acceptance, and regression tests. The exact commit SHA is recorded in the post-push release record.
+4. **Commits.** `9b9d4c29cd231f385851cf2bd9ed5f56c10c4ea7` adds the real asset router, PDF intelligence/ROI extraction, immutable provenance checks, inference caching, modality-aware pipeline/report/UI behavior, browser acceptance, regression tests, and the `browser:asset-e2e` script. `533e9c162a8ad9aa73e17e3517a4f49f57f99298` fixes fresh-checkout behavior by reserving the labeled DEMO path for absent research packages while keeping installed-provider failures as `MODEL_FAILED`. This report is the documentation close-out commit.
 
-5. **Push.** The existing `origin` remote and `main` branch are used. Push is attempted only after `git diff --check` and staged-file review; no new repository or branch is created.
+5. **Push.** Both implementation commits were pushed to the existing `origin/main` (`f353fce424b89bad1a94a669c66292c686d2075c..533e9c162a8ad9aa73e17e3517a4f49f57f99298`). The close-out report commit is pushed after this documentation edit; no new repository or branch was created and no destructive Git operation was used.
 
-6. **CI.** GitHub Actions is queried for the pushed SHA and its conclusion is recorded below only from the observed run; an unobserved or unavailable run is reported as such rather than inferred from local tests.
+6. **CI.** The first implementation run [34334517531](https://github.com/Sephy57/visionscan-ai-eye-center/actions/runs/34334517531) exposed five fresh-checkout compatibility failures. After the availability fix, run [34335757273](https://github.com/Sephy57/visionscan-ai-eye-center/actions/runs/34335757273) for `533e9c162a8ad9aa73e17e3517a4f49f57f99298` completed successfully in 1m57s with typecheck, 51/52 test files passed (1 skipped), 874/917 tests passed (43 skipped), filesystem audit, and production build green. GitHub annotated the existing checkout/setup actions because they target deprecated Node.js 20 and are forced onto Node.js 24; this is an infrastructure warning, not an application failure.
 
 7. **Root cause of fundus UNKNOWN state.** Upload creation trusted a missing/`unknown` client modality and did not derive modality from immutable image bytes. Device metadata absence therefore left the study globally unknown even when pixels were fundus-like.
 
@@ -389,7 +389,7 @@ the prior 50-item record or change its clinical-use limitations.
 
 31. **Performance.** Login/navigation remain off the model path. `npm run performance:local` passed: login API p95 72.6 ms, dashboard p95 5.5 ms, study-list API p95 6.1 ms, upload 34.7 ms, result/report page p95 4.8/4.3 ms. The ClementP cold single-run measured 7,604.7 ms (interpreter included); warmed 1024-pixel CPU forward was about 2.3 s, peak worker RSS about 1.3 GB, with serialized execution. The endpoint fixture was borderline quality and `NO_MODEL_EXECUTED`, so these are engineering timings, not clinical latency claims.
 
-32. **Test totals.** The isolated full regression using fresh temporary database/storage roots passed 52 files, 915 tests, and 2 skipped (917 total) in 494.95 s. The default shared store run had an afterAll cleanup timeout after 915 passes; it is recorded as host/store contention, not a green claim. The new asset/PDF regression file has 8 focused tests.
+32. **Test totals.** The installed-artifact isolated full regression using fresh temporary database/storage roots passed 52 files, 915 tests, and 2 skipped (917 total) in 494.95 s. The default shared store run had an afterAll cleanup timeout after 915 passes; it is recorded as host/store contention, not a green claim. The fresh-checkout CI run passed 51 files with 1 skipped and 874 passed/43 skipped tests (917 total). The new asset/PDF regression file has 8 focused tests, and the three targeted red-team/dashboard files passed 23/23 in both installed and empty-package simulations.
 
 33. **TypeScript.** `npx tsc --noEmit` passed after the routing, extraction, provenance, and UI changes.
 
@@ -409,4 +409,4 @@ the prior 50-item record or change its clinical-use limitations.
 
 41. **Exact capability boundary.** VisionScan can now content-route eligible fundus images and mixed scanned ophthalmic PDFs, preserve page/ROI/eye provenance, and run isolated local research providers when all gates pass. It cannot diagnose, establish normality, infer symptoms from pixels, interpret normative OCT colors as disease, guarantee sensitivity/specificity, or replace clinician review. Unsupported, ambiguous, low-quality, tampered, or true-OOD inputs fail closed.
 
-42. **Final classification.** **ENGINEERING PARTIAL — BLOCKERS REMAIN.** The requested routing and report-correctness behavior is implemented and locally verified, but the full release is not called complete while dev-audit/lint limitations, CI confirmation for the new SHA, and the disclosed clinical/model governance gates remain unresolved.
+42. **Final classification.** **ENGINEERING PARTIAL — BLOCKERS REMAIN.** The requested routing and report-correctness behavior is implemented, locally verified, pushed, and covered by a green CI run. The full release is not called complete while the two moderate dev-only audit findings, the stale/non-actionable `next lint` command, and the disclosed clinical/model governance gates remain unresolved.
