@@ -1,0 +1,6035 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:727ff9ee-7001-d5b1-ff49-4ae86762897d",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "application",
+      "name": "eye-ai-platform",
+      "version": "0.1.0"
+    },
+    "properties": [
+      {
+        "name": "visionscan:source",
+        "value": "package-lock.json + local research manifests"
+      },
+      {
+        "name": "visionscan:package-lock-sha256",
+        "value": "9dba08b19bdbcf392677109d34602d840065d64ed1dec3a03af99fa5b048b678"
+      },
+      {
+        "name": "visionscan:python-environment-detected",
+        "value": "true"
+      },
+      {
+        "name": "visionscan:patient-data-included",
+        "value": "false"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "@babel/code-frame",
+      "version": "7.29.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/code-frame@7.29.7",
+      "bom-ref": "npm:343859aabe9ceb890889e6ad",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/compat-data",
+      "version": "7.29.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/compat-data@7.29.7",
+      "bom-ref": "npm:873f09766f7753447ec020e7",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/core",
+      "version": "7.29.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/core@7.29.7",
+      "bom-ref": "npm:289a11f2d31493092bb8b694",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/generator",
+      "version": "7.29.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/generator@7.29.8",
+      "bom-ref": "npm:b4682d44ce314a44f88bcce5",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/helper-compilation-targets",
+      "version": "7.29.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/helper-compilation-targets@7.29.7",
+      "bom-ref": "npm:38e8c52ff041a549dd5755b9",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/helper-globals",
+      "version": "7.29.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/helper-globals@7.29.7",
+      "bom-ref": "npm:98df6ebca79bd549398a5976",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/helper-module-imports",
+      "version": "7.29.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/helper-module-imports@7.29.7",
+      "bom-ref": "npm:632718c2f054944882994cd2",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/helper-module-transforms",
+      "version": "7.29.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/helper-module-transforms@7.29.7",
+      "bom-ref": "npm:c865009d9ca112687d86bca1",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/helper-string-parser",
+      "version": "7.29.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/helper-string-parser@7.29.7",
+      "bom-ref": "npm:aa21c3ea5ec09c0b9c026f71",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/helper-validator-identifier",
+      "version": "7.29.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/helper-validator-identifier@7.29.7",
+      "bom-ref": "npm:ef74316a9ccb49317ea02398",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/helper-validator-option",
+      "version": "7.29.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/helper-validator-option@7.29.7",
+      "bom-ref": "npm:b7ee6a067537e696ae85414d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/helpers",
+      "version": "7.29.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/helpers@7.29.7",
+      "bom-ref": "npm:68c9727e57ac337a38cab374",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/parser",
+      "version": "7.29.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/parser@7.29.8",
+      "bom-ref": "npm:7601cb65196489e498a41866",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/template",
+      "version": "7.29.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/template@7.29.7",
+      "bom-ref": "npm:0b06e5fcfb251b7972d1f825",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/traverse",
+      "version": "7.29.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/traverse@7.29.8",
+      "bom-ref": "npm:905f7d062c0b8055ce8f98a8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@babel/types",
+      "version": "7.29.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40babel/types@7.29.8",
+      "bom-ref": "npm:a52c593468c1d34252f37801",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@emnapi/runtime",
+      "version": "1.11.3",
+      "scope": "required",
+      "purl": "pkg:npm/%40emnapi/runtime@1.11.3",
+      "bom-ref": "npm:159b7d555142bd5f8a39027a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/aix-ppc64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/aix-ppc64@0.28.2",
+      "bom-ref": "npm:061361195e488f13a03c5225",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/android-arm",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/android-arm@0.28.2",
+      "bom-ref": "npm:a68aa15485860cc1e7eb3567",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/android-arm64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/android-arm64@0.28.2",
+      "bom-ref": "npm:56a9b195ea3f28cc9070e992",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/android-x64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/android-x64@0.28.2",
+      "bom-ref": "npm:3c49dfeb10ddd12b6d8687c3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/darwin-arm64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/darwin-arm64@0.28.2",
+      "bom-ref": "npm:37063a8c14943908fca27a55",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/darwin-x64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/darwin-x64@0.28.2",
+      "bom-ref": "npm:be092b37348c14bc51f28be1",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/freebsd-arm64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/freebsd-arm64@0.28.2",
+      "bom-ref": "npm:5484a138c8055a983d9ed0e5",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/freebsd-x64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/freebsd-x64@0.28.2",
+      "bom-ref": "npm:2a8a0a4aaa2d61b4a10e42f0",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/linux-arm",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/linux-arm@0.28.2",
+      "bom-ref": "npm:c538db7cda79a2575d8c4964",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/linux-arm64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/linux-arm64@0.28.2",
+      "bom-ref": "npm:2bff219e5f2f48a35c36d40f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/linux-ia32",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/linux-ia32@0.28.2",
+      "bom-ref": "npm:7711f3513ef06bd335199392",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/linux-loong64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/linux-loong64@0.28.2",
+      "bom-ref": "npm:75c5fd3b73dc776033df5dd4",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/linux-mips64el",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/linux-mips64el@0.28.2",
+      "bom-ref": "npm:569bb3793654c18959a9fe80",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/linux-ppc64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/linux-ppc64@0.28.2",
+      "bom-ref": "npm:8e9eb9acfe85e8025122acb3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/linux-riscv64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/linux-riscv64@0.28.2",
+      "bom-ref": "npm:6323b72e11dbb515c65b9e21",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/linux-s390x",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/linux-s390x@0.28.2",
+      "bom-ref": "npm:0dc4f2b041767aeb353622ea",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/linux-x64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/linux-x64@0.28.2",
+      "bom-ref": "npm:1c282c7700cfacb662cd232b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/netbsd-arm64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/netbsd-arm64@0.28.2",
+      "bom-ref": "npm:9ad36cc643ced9b0747818a3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/netbsd-x64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/netbsd-x64@0.28.2",
+      "bom-ref": "npm:9929f096462a50a56d79079a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/openbsd-arm64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/openbsd-arm64@0.28.2",
+      "bom-ref": "npm:f3ec095de15137dc5303d8a1",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/openbsd-x64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/openbsd-x64@0.28.2",
+      "bom-ref": "npm:dccd556ed53c986bdade87c2",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/openharmony-arm64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/openharmony-arm64@0.28.2",
+      "bom-ref": "npm:9ef13f0be0624f4e60f42235",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/sunos-x64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/sunos-x64@0.28.2",
+      "bom-ref": "npm:280e57f1a5c66402cfe5f669",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/win32-arm64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/win32-arm64@0.28.2",
+      "bom-ref": "npm:6f96fef9e2f5d5f37cad9e7a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/win32-ia32",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/win32-ia32@0.28.2",
+      "bom-ref": "npm:65459eefcf2e6162a58a5f86",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@esbuild/win32-x64",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40esbuild/win32-x64@0.28.2",
+      "bom-ref": "npm:df9de0b17f9db4ae499a9a6c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@eslint-community/eslint-utils",
+      "version": "4.10.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40eslint-community/eslint-utils@4.10.1",
+      "bom-ref": "npm:04ab8f6e33db17d3a2144f24",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@eslint-community/eslint-utils",
+      "version": "4.9.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40eslint-community/eslint-utils@4.9.1",
+      "bom-ref": "npm:64bbdf7a0c04a24883eddac8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@eslint-community/regexpp",
+      "version": "4.12.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40eslint-community/regexpp@4.12.2",
+      "bom-ref": "npm:df18bde580382c6a890aa431",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@eslint/config-array",
+      "version": "0.21.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40eslint/config-array@0.21.2",
+      "bom-ref": "npm:e944274d793eaf230fa9254c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@eslint/config-helpers",
+      "version": "0.4.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40eslint/config-helpers@0.4.2",
+      "bom-ref": "npm:e40271eb9955f3e30e1529cd",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@eslint/core",
+      "version": "0.17.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40eslint/core@0.17.0",
+      "bom-ref": "npm:4193de4b280503940351ef15",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@eslint/eslintrc",
+      "version": "3.3.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40eslint/eslintrc@3.3.7",
+      "bom-ref": "npm:c64ad46998db9e6f9e06da7d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@eslint/js",
+      "version": "9.39.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40eslint/js@9.39.1",
+      "bom-ref": "npm:168394e4e4a655f0dcf81c9f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@eslint/object-schema",
+      "version": "2.1.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40eslint/object-schema@2.1.7",
+      "bom-ref": "npm:08bb3fb1427fd425af0cc2c4",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@eslint/plugin-kit",
+      "version": "0.4.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40eslint/plugin-kit@0.4.1",
+      "bom-ref": "npm:83138a28aadc5a33dbd55fae",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@humanfs/core",
+      "version": "0.19.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40humanfs/core@0.19.2",
+      "bom-ref": "npm:a2f8590bf473b7fa08f6ef75",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@humanfs/node",
+      "version": "0.16.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40humanfs/node@0.16.8",
+      "bom-ref": "npm:a4644c4c9fa96de4828f31f8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@humanfs/types",
+      "version": "0.15.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40humanfs/types@0.15.0",
+      "bom-ref": "npm:480528cef06c7fe85ed518be",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@humanwhocodes/module-importer",
+      "version": "1.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40humanwhocodes/module-importer@1.0.1",
+      "bom-ref": "npm:6ee0d8dc547af082a810db1d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@humanwhocodes/retry",
+      "version": "0.4.3",
+      "scope": "required",
+      "purl": "pkg:npm/%40humanwhocodes/retry@0.4.3",
+      "bom-ref": "npm:7445ba556d1308cb7c7e5a44",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/colour",
+      "version": "1.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/colour@1.1.0",
+      "bom-ref": "npm:ad02a4dd1c66317870cda857",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-darwin-arm64",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-darwin-arm64@0.35.4",
+      "bom-ref": "npm:58c431210d9ea36cd657a00f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-darwin-x64",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-darwin-x64@0.35.4",
+      "bom-ref": "npm:ffd05f7a05dde203d4e25de1",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-freebsd-wasm32",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-freebsd-wasm32@0.35.4",
+      "bom-ref": "npm:087b6888359b3a12b775f7e8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-libvips-darwin-arm64",
+      "version": "1.3.3",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-libvips-darwin-arm64@1.3.3",
+      "bom-ref": "npm:85e810df4ec0cb5a900d2eda",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-libvips-darwin-x64",
+      "version": "1.3.3",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-libvips-darwin-x64@1.3.3",
+      "bom-ref": "npm:78e7a8c8f01c79cfbb79e496",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-libvips-linux-arm",
+      "version": "1.3.3",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-libvips-linux-arm@1.3.3",
+      "bom-ref": "npm:b10e3e3492a190afa802dc6f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-libvips-linux-arm64",
+      "version": "1.3.3",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-libvips-linux-arm64@1.3.3",
+      "bom-ref": "npm:17280ac1c94002d3fc8b0f9a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-libvips-linux-ppc64",
+      "version": "1.3.3",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-libvips-linux-ppc64@1.3.3",
+      "bom-ref": "npm:f7828aab1d13154fe6230160",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-libvips-linux-riscv64",
+      "version": "1.3.3",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-libvips-linux-riscv64@1.3.3",
+      "bom-ref": "npm:339619c4d158ac8dae6110c3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-libvips-linux-s390x",
+      "version": "1.3.3",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-libvips-linux-s390x@1.3.3",
+      "bom-ref": "npm:3d636a9eb80c87450d31abd3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-libvips-linux-x64",
+      "version": "1.3.3",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-libvips-linux-x64@1.3.3",
+      "bom-ref": "npm:cbd1612ebc780169d1fb6935",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-libvips-linuxmusl-arm64",
+      "version": "1.3.3",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-libvips-linuxmusl-arm64@1.3.3",
+      "bom-ref": "npm:4c43f7020b128a1de428d774",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-libvips-linuxmusl-x64",
+      "version": "1.3.3",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-libvips-linuxmusl-x64@1.3.3",
+      "bom-ref": "npm:967477b75f3f5540f80273a8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-linux-arm",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-linux-arm@0.35.4",
+      "bom-ref": "npm:04d808c4afa242ae44d7f4ae",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-linux-arm64",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-linux-arm64@0.35.4",
+      "bom-ref": "npm:eea75e384da638182c35cefb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-linux-ppc64",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-linux-ppc64@0.35.4",
+      "bom-ref": "npm:ff17099eb358d6d02214c4ac",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-linux-riscv64",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-linux-riscv64@0.35.4",
+      "bom-ref": "npm:d20357a7865361b1f29b2afd",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-linux-s390x",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-linux-s390x@0.35.4",
+      "bom-ref": "npm:35aebe47db5feacab889d659",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-linux-x64",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-linux-x64@0.35.4",
+      "bom-ref": "npm:70e276428533a44b9c58fefb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-linuxmusl-arm64",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-linuxmusl-arm64@0.35.4",
+      "bom-ref": "npm:8be20c2287b5b3190a4ec2e0",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-linuxmusl-x64",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-linuxmusl-x64@0.35.4",
+      "bom-ref": "npm:ffcc6e6b082a6fb0b388b7f1",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-wasm32",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-wasm32@0.35.4",
+      "bom-ref": "npm:084337d8923edaf7740129bf",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-webcontainers-wasm32",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-webcontainers-wasm32@0.35.4",
+      "bom-ref": "npm:970b835203771ed825dc2f9e",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-win32-arm64",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-win32-arm64@0.35.4",
+      "bom-ref": "npm:33363b373044a9efb803dd5e",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-win32-ia32",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-win32-ia32@0.35.4",
+      "bom-ref": "npm:1c456598130811f71c2c18f6",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@img/sharp-win32-x64",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40img/sharp-win32-x64@0.35.4",
+      "bom-ref": "npm:23ab33fcf362345c2f09903c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@jridgewell/gen-mapping",
+      "version": "0.3.13",
+      "scope": "required",
+      "purl": "pkg:npm/%40jridgewell/gen-mapping@0.3.13",
+      "bom-ref": "npm:80b5ee1fab3a7dcc8223546d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@jridgewell/remapping",
+      "version": "2.3.5",
+      "scope": "required",
+      "purl": "pkg:npm/%40jridgewell/remapping@2.3.5",
+      "bom-ref": "npm:c545d9ca18eab6ad4303a800",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@jridgewell/resolve-uri",
+      "version": "3.1.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40jridgewell/resolve-uri@3.1.2",
+      "bom-ref": "npm:39a3dea75107e03f13a40070",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@jridgewell/sourcemap-codec",
+      "version": "1.6.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40jridgewell/sourcemap-codec@1.6.0",
+      "bom-ref": "npm:2763d5c37745da8ef257371d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@jridgewell/trace-mapping",
+      "version": "0.3.31",
+      "scope": "required",
+      "purl": "pkg:npm/%40jridgewell/trace-mapping@0.3.31",
+      "bom-ref": "npm:7f5ee1a338ebe86bb9d51df9",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-android-arm64",
+      "version": "0.1.100",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-android-arm64@0.1.100",
+      "bom-ref": "npm:bf9ca5ccc59de81e01486fb8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-android-arm64",
+      "version": "1.0.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-android-arm64@1.0.8",
+      "bom-ref": "npm:8ef150b69c220564de2c3dab",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-darwin-arm64",
+      "version": "0.1.100",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-darwin-arm64@0.1.100",
+      "bom-ref": "npm:61650811ad3c0add96fbacd8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-darwin-arm64",
+      "version": "1.0.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-darwin-arm64@1.0.8",
+      "bom-ref": "npm:b13165b9cb3501eb701c40d4",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-darwin-x64",
+      "version": "0.1.100",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-darwin-x64@0.1.100",
+      "bom-ref": "npm:238325e25e28f1ce64400d5c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-darwin-x64",
+      "version": "1.0.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-darwin-x64@1.0.8",
+      "bom-ref": "npm:750dc8440ff17593a9500a3b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-linux-arm-gnueabihf",
+      "version": "0.1.100",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-linux-arm-gnueabihf@0.1.100",
+      "bom-ref": "npm:06107ee812433e4f18afaf1e",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-linux-arm-gnueabihf",
+      "version": "1.0.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-linux-arm-gnueabihf@1.0.8",
+      "bom-ref": "npm:523d538371d87d696ce1876e",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-linux-arm64-gnu",
+      "version": "0.1.100",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-linux-arm64-gnu@0.1.100",
+      "bom-ref": "npm:548e784f5967ab636efc6df0",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-linux-arm64-gnu",
+      "version": "1.0.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-linux-arm64-gnu@1.0.8",
+      "bom-ref": "npm:04eb39cc0b3e87ca0ff8faf3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-linux-arm64-musl",
+      "version": "0.1.100",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-linux-arm64-musl@0.1.100",
+      "bom-ref": "npm:fa5d5aaa6f43389040bb7121",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-linux-arm64-musl",
+      "version": "1.0.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-linux-arm64-musl@1.0.8",
+      "bom-ref": "npm:a1624713938b9c0dd3633af2",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-linux-riscv64-gnu",
+      "version": "0.1.100",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-linux-riscv64-gnu@0.1.100",
+      "bom-ref": "npm:a0f4f20dca10b146962ef31d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-linux-riscv64-gnu",
+      "version": "1.0.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-linux-riscv64-gnu@1.0.8",
+      "bom-ref": "npm:ebe7b30665cf8199b1ff010f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-linux-x64-gnu",
+      "version": "0.1.100",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-linux-x64-gnu@0.1.100",
+      "bom-ref": "npm:842578ff740c96f86b11aa80",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-linux-x64-gnu",
+      "version": "1.0.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-linux-x64-gnu@1.0.8",
+      "bom-ref": "npm:0d52cd3026b8b343cff504a3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-linux-x64-musl",
+      "version": "0.1.100",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-linux-x64-musl@0.1.100",
+      "bom-ref": "npm:b308b03728701a068e1e29b9",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-linux-x64-musl",
+      "version": "1.0.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-linux-x64-musl@1.0.8",
+      "bom-ref": "npm:3e7035d88e206af6b0544ac6",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-win32-arm64-msvc",
+      "version": "0.1.100",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-win32-arm64-msvc@0.1.100",
+      "bom-ref": "npm:154c4361c8993ddd00fed15d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-win32-arm64-msvc",
+      "version": "1.0.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-win32-arm64-msvc@1.0.8",
+      "bom-ref": "npm:a8666fc3494cf86cb6d1599b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-win32-x64-msvc",
+      "version": "0.1.100",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-win32-x64-msvc@0.1.100",
+      "bom-ref": "npm:c8a046262d6fed8a7c313da3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas-win32-x64-msvc",
+      "version": "1.0.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas-win32-x64-msvc@1.0.8",
+      "bom-ref": "npm:45ab1f59f5f71864a269b0f9",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas",
+      "version": "0.1.100",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas@0.1.100",
+      "bom-ref": "npm:37e25396b90f3e84241a3464",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/canvas",
+      "version": "1.0.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/canvas@1.0.8",
+      "bom-ref": "npm:64fa58f077831f91e79847f8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@napi-rs/lzma-linux-x64-gnu",
+      "version": "1.5.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40napi-rs/lzma-linux-x64-gnu@1.5.1",
+      "bom-ref": "npm:3ae29bbf9cc76b415692fa11",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@next/env",
+      "version": "16.3.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40next/env@16.3.4",
+      "bom-ref": "npm:d5ab112bddb4743e3ac481cc",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@next/eslint-plugin-next",
+      "version": "16.3.4",
+      "scope": "optional",
+      "purl": "pkg:npm/%40next/eslint-plugin-next@16.3.4",
+      "bom-ref": "npm:d58bdaadf366b5d4dc83cfbf",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@next/swc-darwin-arm64",
+      "version": "16.3.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40next/swc-darwin-arm64@16.3.4",
+      "bom-ref": "npm:54ecf8724378eece138236c6",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@next/swc-darwin-x64",
+      "version": "16.3.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40next/swc-darwin-x64@16.3.4",
+      "bom-ref": "npm:6c229fa66d34833024be8b73",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@next/swc-linux-arm64-gnu",
+      "version": "16.3.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40next/swc-linux-arm64-gnu@16.3.4",
+      "bom-ref": "npm:f7ffc73a9f730d522be0ff65",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@next/swc-linux-arm64-musl",
+      "version": "16.3.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40next/swc-linux-arm64-musl@16.3.4",
+      "bom-ref": "npm:299b1beb8ac4f994e57dabfc",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@next/swc-linux-x64-gnu",
+      "version": "16.3.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40next/swc-linux-x64-gnu@16.3.4",
+      "bom-ref": "npm:7bb3ada9c1ed3babe4ac6ea2",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@next/swc-linux-x64-musl",
+      "version": "16.3.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40next/swc-linux-x64-musl@16.3.4",
+      "bom-ref": "npm:389e0c8e70b0f12bbf211d3c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@next/swc-win32-arm64-msvc",
+      "version": "16.3.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40next/swc-win32-arm64-msvc@16.3.4",
+      "bom-ref": "npm:40db5eb4ee0ba3a48d949420",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@next/swc-win32-x64-msvc",
+      "version": "16.3.4",
+      "scope": "required",
+      "purl": "pkg:npm/%40next/swc-win32-x64-msvc@16.3.4",
+      "bom-ref": "npm:817839bb847e290b605e7369",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@nodelib/fs.scandir",
+      "version": "2.1.5",
+      "scope": "required",
+      "purl": "pkg:npm/%40nodelib/fs.scandir@2.1.5",
+      "bom-ref": "npm:6ebe32898fe01473589c647d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@nodelib/fs.stat",
+      "version": "2.0.5",
+      "scope": "required",
+      "purl": "pkg:npm/%40nodelib/fs.stat@2.0.5",
+      "bom-ref": "npm:c2a656d63d2bc2fd8594d32d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@nodelib/fs.walk",
+      "version": "1.2.8",
+      "scope": "required",
+      "purl": "pkg:npm/%40nodelib/fs.walk@1.2.8",
+      "bom-ref": "npm:55a642b847bba0d5e7a443ea",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@pdf-lib/standard-fonts",
+      "version": "1.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40pdf-lib/standard-fonts@1.0.0",
+      "bom-ref": "npm:be1110412cdd5b8c3423ec4b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@pdf-lib/upng",
+      "version": "1.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40pdf-lib/upng@1.0.1",
+      "bom-ref": "npm:9f851d717939b5b701e4e575",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-android-arm-eabi",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-android-arm-eabi@4.63.1",
+      "bom-ref": "npm:dac3698728a6d0416147b19b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-android-arm64",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-android-arm64@4.63.1",
+      "bom-ref": "npm:86c73bb657c1ab4bb903f87b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-darwin-arm64",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-darwin-arm64@4.63.1",
+      "bom-ref": "npm:2e367f9ac5df011328a231ea",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-darwin-x64",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-darwin-x64@4.63.1",
+      "bom-ref": "npm:aa8f4a02266104e3ef13bab6",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-freebsd-arm64",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-freebsd-arm64@4.63.1",
+      "bom-ref": "npm:eafa8571fc3765ef20c0af22",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-freebsd-x64",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-freebsd-x64@4.63.1",
+      "bom-ref": "npm:69b0658ffec28a983e47f72f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-linux-arm-gnueabihf",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-linux-arm-gnueabihf@4.63.1",
+      "bom-ref": "npm:ddbacf881aae0b919c5ce193",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-linux-arm-musleabihf",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-linux-arm-musleabihf@4.63.1",
+      "bom-ref": "npm:444432e4b86c4c1a481e8173",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-linux-arm64-gnu",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-linux-arm64-gnu@4.63.1",
+      "bom-ref": "npm:cd5587d5aa6b3400a7e193d8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-linux-arm64-musl",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-linux-arm64-musl@4.63.1",
+      "bom-ref": "npm:cf380b4e58a3f80e8a534fc3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-linux-loong64-gnu",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-linux-loong64-gnu@4.63.1",
+      "bom-ref": "npm:cab1f3a30214c9519bbd68ac",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-linux-loong64-musl",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-linux-loong64-musl@4.63.1",
+      "bom-ref": "npm:f728593678e8cbd9b346ea08",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-linux-ppc64-gnu",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-linux-ppc64-gnu@4.63.1",
+      "bom-ref": "npm:47a0dc563d4304e0cfb32b42",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-linux-ppc64-musl",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-linux-ppc64-musl@4.63.1",
+      "bom-ref": "npm:4b97dab2b709f32ace63afc0",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-linux-riscv64-gnu",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-linux-riscv64-gnu@4.63.1",
+      "bom-ref": "npm:039cf1c7b994d98d09e6c2e8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-linux-riscv64-musl",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-linux-riscv64-musl@4.63.1",
+      "bom-ref": "npm:ff91f6e1527550dc7cbf8e62",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-linux-s390x-gnu",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-linux-s390x-gnu@4.63.1",
+      "bom-ref": "npm:45b4ba7bd88e310e682f6fa8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-linux-x64-gnu",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-linux-x64-gnu@4.63.1",
+      "bom-ref": "npm:5d3769257ab5a511c640bd06",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-linux-x64-musl",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-linux-x64-musl@4.63.1",
+      "bom-ref": "npm:b90341ec43a77c64ca821efb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-openbsd-x64",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-openbsd-x64@4.63.1",
+      "bom-ref": "npm:f5e9a7fe92303e07484c53f7",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-openharmony-arm64",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-openharmony-arm64@4.63.1",
+      "bom-ref": "npm:6a01665f1e099f13c40c11b6",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-win32-arm64-msvc",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-win32-arm64-msvc@4.63.1",
+      "bom-ref": "npm:3909df21718e037c556da487",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-win32-ia32-msvc",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-win32-ia32-msvc@4.63.1",
+      "bom-ref": "npm:5188d39be0e62d79440c323e",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-win32-x64-gnu",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-win32-x64-gnu@4.63.1",
+      "bom-ref": "npm:f4e1f4a2b83588fce3524228",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@rollup/rollup-win32-x64-msvc",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/%40rollup/rollup-win32-x64-msvc@4.63.1",
+      "bom-ref": "npm:3913a57827804292ed63f268",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@swc/helpers",
+      "version": "0.5.23",
+      "scope": "required",
+      "purl": "pkg:npm/%40swc/helpers@0.5.23",
+      "bom-ref": "npm:6e7d4559e8b39a5e42791762",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/chai",
+      "version": "5.2.3",
+      "scope": "required",
+      "purl": "pkg:npm/%40types/chai@5.2.3",
+      "bom-ref": "npm:b0ad587e4f10e712fa3cbaa4",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/deep-eql",
+      "version": "4.0.2",
+      "scope": "required",
+      "purl": "pkg:npm/%40types/deep-eql@4.0.2",
+      "bom-ref": "npm:14f5a92ddb2edda7e117922f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/estree",
+      "version": "1.0.9",
+      "scope": "required",
+      "purl": "pkg:npm/%40types/estree@1.0.9",
+      "bom-ref": "npm:a254f5783a1bb6c3f33e003c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/json-schema",
+      "version": "7.0.15",
+      "scope": "required",
+      "purl": "pkg:npm/%40types/json-schema@7.0.15",
+      "bom-ref": "npm:736fa1033ecc0e89f34b343f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/node",
+      "version": "20.14.10",
+      "scope": "optional",
+      "purl": "pkg:npm/%40types/node@20.14.10",
+      "bom-ref": "npm:5accb56435aab96a75dba954",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/node",
+      "version": "26.4.1",
+      "scope": "optional",
+      "purl": "pkg:npm/%40types/node@26.4.1",
+      "bom-ref": "npm:6eb1ff78c153d97f62c4a918",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/prop-types",
+      "version": "15.7.15",
+      "scope": "required",
+      "purl": "pkg:npm/%40types/prop-types@15.7.15",
+      "bom-ref": "npm:9ffbcc43665f9719054fe25b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/react-dom",
+      "version": "18.3.0",
+      "scope": "optional",
+      "purl": "pkg:npm/%40types/react-dom@18.3.0",
+      "bom-ref": "npm:5300507a7aea543546e4b5d4",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@types/react",
+      "version": "18.3.3",
+      "scope": "optional",
+      "purl": "pkg:npm/%40types/react@18.3.3",
+      "bom-ref": "npm:781699876f26989bb2083721",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@typescript-eslint/parser",
+      "version": "8.70.0",
+      "scope": "optional",
+      "purl": "pkg:npm/%40typescript-eslint/parser@8.70.0",
+      "bom-ref": "npm:54f6ed09f54d71b97b2796d8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@typescript-eslint/project-service",
+      "version": "8.70.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40typescript-eslint/project-service@8.70.0",
+      "bom-ref": "npm:2a2a5f626e2d673d74cda55e",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@typescript-eslint/scope-manager",
+      "version": "8.70.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40typescript-eslint/scope-manager@8.70.0",
+      "bom-ref": "npm:43cb5b5bf99d33fca551974b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@typescript-eslint/tsconfig-utils",
+      "version": "8.70.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40typescript-eslint/tsconfig-utils@8.70.0",
+      "bom-ref": "npm:dc9ce4c57c17c69efe62b748",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@typescript-eslint/types",
+      "version": "8.70.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40typescript-eslint/types@8.70.0",
+      "bom-ref": "npm:9a167af9b607c115c2f6133b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@typescript-eslint/typescript-estree",
+      "version": "8.70.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40typescript-eslint/typescript-estree@8.70.0",
+      "bom-ref": "npm:e6e1899ad8c91372e91534e2",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@typescript-eslint/visitor-keys",
+      "version": "8.70.0",
+      "scope": "required",
+      "purl": "pkg:npm/%40typescript-eslint/visitor-keys@8.70.0",
+      "bom-ref": "npm:939b4219dee3704d408e0a1d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@vitest/expect",
+      "version": "3.2.6",
+      "scope": "required",
+      "purl": "pkg:npm/%40vitest/expect@3.2.6",
+      "bom-ref": "npm:04688d1bcda7105389c15893",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@vitest/mocker",
+      "version": "3.2.6",
+      "scope": "required",
+      "purl": "pkg:npm/%40vitest/mocker@3.2.6",
+      "bom-ref": "npm:87a1a675c5ccdb7ad204f83f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@vitest/pretty-format",
+      "version": "3.2.6",
+      "scope": "required",
+      "purl": "pkg:npm/%40vitest/pretty-format@3.2.6",
+      "bom-ref": "npm:557eb5ae43698098d9870219",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@vitest/pretty-format",
+      "version": "3.2.6",
+      "scope": "required",
+      "purl": "pkg:npm/%40vitest/pretty-format@3.2.6",
+      "bom-ref": "npm:557eb5ae43698098d9870219",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@vitest/pretty-format",
+      "version": "3.2.7",
+      "scope": "required",
+      "purl": "pkg:npm/%40vitest/pretty-format@3.2.7",
+      "bom-ref": "npm:bad8d49c8979f138a945c970",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@vitest/runner",
+      "version": "3.2.6",
+      "scope": "required",
+      "purl": "pkg:npm/%40vitest/runner@3.2.6",
+      "bom-ref": "npm:c4e67537a2ab559ed493230b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@vitest/snapshot",
+      "version": "3.2.6",
+      "scope": "required",
+      "purl": "pkg:npm/%40vitest/snapshot@3.2.6",
+      "bom-ref": "npm:62a0aed990c385f047ac11cc",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@vitest/spy",
+      "version": "3.2.6",
+      "scope": "required",
+      "purl": "pkg:npm/%40vitest/spy@3.2.6",
+      "bom-ref": "npm:6c568628ce4e710fcf9f1eaf",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@vitest/utils",
+      "version": "3.2.6",
+      "scope": "required",
+      "purl": "pkg:npm/%40vitest/utils@3.2.6",
+      "bom-ref": "npm:3e2c1f4ca1e86837d5874dae",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "acorn-jsx",
+      "version": "5.3.2",
+      "scope": "required",
+      "purl": "pkg:npm/acorn-jsx@5.3.2",
+      "bom-ref": "npm:f58f323645ba2fe3306fa0fb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "acorn",
+      "version": "8.18.0",
+      "scope": "required",
+      "purl": "pkg:npm/acorn@8.18.0",
+      "bom-ref": "npm:7391b89a78cd7f87de11f375",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "ajv",
+      "version": "6.15.0",
+      "scope": "required",
+      "purl": "pkg:npm/ajv@6.15.0",
+      "bom-ref": "npm:815053c4578a64a4ba018e57",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "ansi-styles",
+      "version": "4.3.0",
+      "scope": "required",
+      "purl": "pkg:npm/ansi-styles@4.3.0",
+      "bom-ref": "npm:bf601b237f767abc41be5deb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "argparse",
+      "version": "2.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/argparse@2.0.1",
+      "bom-ref": "npm:399f6cf9ddf3d48a52b5a9fd",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "assertion-error",
+      "version": "2.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/assertion-error@2.0.1",
+      "bom-ref": "npm:3d14fcd9ffe17dec09b7343e",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "axe-core",
+      "version": "4.13.0",
+      "scope": "optional",
+      "purl": "pkg:npm/axe-core@4.13.0",
+      "bom-ref": "npm:58b68117b702be6f4a8033a1",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "balanced-match",
+      "version": "1.0.2",
+      "scope": "required",
+      "purl": "pkg:npm/balanced-match@1.0.2",
+      "bom-ref": "npm:e01b4e5a5ae2db64d4c4afa6",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "balanced-match",
+      "version": "1.0.2",
+      "scope": "required",
+      "purl": "pkg:npm/balanced-match@1.0.2",
+      "bom-ref": "npm:e01b4e5a5ae2db64d4c4afa6",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "balanced-match",
+      "version": "1.0.2",
+      "scope": "required",
+      "purl": "pkg:npm/balanced-match@1.0.2",
+      "bom-ref": "npm:e01b4e5a5ae2db64d4c4afa6",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "balanced-match",
+      "version": "4.0.4",
+      "scope": "required",
+      "purl": "pkg:npm/balanced-match@4.0.4",
+      "bom-ref": "npm:9cac94723f9b8eb400e66f56",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "baseline-browser-mapping",
+      "version": "2.11.21",
+      "scope": "required",
+      "purl": "pkg:npm/baseline-browser-mapping@2.11.21",
+      "bom-ref": "npm:4baab568c7caf48a114e8322",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "bmp-js",
+      "version": "0.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/bmp-js@0.1.0",
+      "bom-ref": "npm:3f6804c83fc88b626d101762",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "brace-expansion",
+      "version": "1.1.18",
+      "scope": "required",
+      "purl": "pkg:npm/brace-expansion@1.1.18",
+      "bom-ref": "npm:591212bea9fbd2511632ec71",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "brace-expansion",
+      "version": "1.1.18",
+      "scope": "required",
+      "purl": "pkg:npm/brace-expansion@1.1.18",
+      "bom-ref": "npm:591212bea9fbd2511632ec71",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "brace-expansion",
+      "version": "1.1.18",
+      "scope": "required",
+      "purl": "pkg:npm/brace-expansion@1.1.18",
+      "bom-ref": "npm:591212bea9fbd2511632ec71",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "brace-expansion",
+      "version": "5.0.9",
+      "scope": "required",
+      "purl": "pkg:npm/brace-expansion@5.0.9",
+      "bom-ref": "npm:de4394bb4ed6103f50549c90",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "braces",
+      "version": "3.0.3",
+      "scope": "required",
+      "purl": "pkg:npm/braces@3.0.3",
+      "bom-ref": "npm:991f126fda561c86e6b48eae",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "browserslist",
+      "version": "4.28.9",
+      "scope": "required",
+      "purl": "pkg:npm/browserslist@4.28.9",
+      "bom-ref": "npm:383cbc166614ec9de18a8b61",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cac",
+      "version": "6.7.14",
+      "scope": "required",
+      "purl": "pkg:npm/cac@6.7.14",
+      "bom-ref": "npm:6c30d7cc3e8a8217fcd8d588",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "callsites",
+      "version": "3.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/callsites@3.1.0",
+      "bom-ref": "npm:6c9ae2c0f1f1661c297861dd",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "caniuse-lite",
+      "version": "1.0.30001810",
+      "scope": "required",
+      "purl": "pkg:npm/caniuse-lite@1.0.30001810",
+      "bom-ref": "npm:a02cfad14f8ddfa978237e51",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "chai",
+      "version": "5.3.3",
+      "scope": "required",
+      "purl": "pkg:npm/chai@5.3.3",
+      "bom-ref": "npm:3e097e45c8dfda8c265fe6fb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "chalk",
+      "version": "4.1.2",
+      "scope": "required",
+      "purl": "pkg:npm/chalk@4.1.2",
+      "bom-ref": "npm:49a5e90c594b83c2972491de",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "check-error",
+      "version": "2.1.3",
+      "scope": "required",
+      "purl": "pkg:npm/check-error@2.1.3",
+      "bom-ref": "npm:fae85c42f6b3b223861b9ec2",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "client-only",
+      "version": "0.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/client-only@0.0.1",
+      "bom-ref": "npm:08c6bfad165c5f2dbfebd1ae",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "color-convert",
+      "version": "2.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/color-convert@2.0.1",
+      "bom-ref": "npm:aeeb5e0167993eff3518b610",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "color-name",
+      "version": "1.1.4",
+      "scope": "required",
+      "purl": "pkg:npm/color-name@1.1.4",
+      "bom-ref": "npm:7d567a0f446333fac6be8f48",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "concat-map",
+      "version": "0.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/concat-map@0.0.1",
+      "bom-ref": "npm:b6fbc5019f4b43ed2cea7a77",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "convert-source-map",
+      "version": "2.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/convert-source-map@2.0.0",
+      "bom-ref": "npm:0f769034e92195c97f395e90",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cross-spawn",
+      "version": "7.0.6",
+      "scope": "required",
+      "purl": "pkg:npm/cross-spawn@7.0.6",
+      "bom-ref": "npm:ed4ad5fb79ff4b349ee4eb91",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "csstype",
+      "version": "3.2.3",
+      "scope": "required",
+      "purl": "pkg:npm/csstype@3.2.3",
+      "bom-ref": "npm:4521817f218734bd96917610",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "debug",
+      "version": "4.4.3",
+      "scope": "required",
+      "purl": "pkg:npm/debug@4.4.3",
+      "bom-ref": "npm:82131a0549135bd3949fa1b5",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "deep-eql",
+      "version": "5.0.2",
+      "scope": "required",
+      "purl": "pkg:npm/deep-eql@5.0.2",
+      "bom-ref": "npm:8ba88c6dd841b2a9626dea04",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "deep-is",
+      "version": "0.1.4",
+      "scope": "required",
+      "purl": "pkg:npm/deep-is@0.1.4",
+      "bom-ref": "npm:95ebf148116ddeea554cb49c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "detect-libc",
+      "version": "2.1.2",
+      "scope": "required",
+      "purl": "pkg:npm/detect-libc@2.1.2",
+      "bom-ref": "npm:01c88833bd91541a0555fa8c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "electron-to-chromium",
+      "version": "1.5.425",
+      "scope": "required",
+      "purl": "pkg:npm/electron-to-chromium@1.5.425",
+      "bom-ref": "npm:5be0879b7dac7e373b98b00d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "es-module-lexer",
+      "version": "1.7.0",
+      "scope": "required",
+      "purl": "pkg:npm/es-module-lexer@1.7.0",
+      "bom-ref": "npm:3bcffd2b56e48a29e12c4abb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "esbuild",
+      "version": "0.28.2",
+      "scope": "required",
+      "purl": "pkg:npm/esbuild@0.28.2",
+      "bom-ref": "npm:6e07aa38692c148bbee85bc0",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "escalade",
+      "version": "3.2.0",
+      "scope": "required",
+      "purl": "pkg:npm/escalade@3.2.0",
+      "bom-ref": "npm:afa87c733f96bafe2e93fd5d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "escape-string-regexp",
+      "version": "4.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/escape-string-regexp@4.0.0",
+      "bom-ref": "npm:9317176d5fcba56896ae8347",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "eslint-plugin-react-hooks",
+      "version": "7.0.1",
+      "scope": "optional",
+      "purl": "pkg:npm/eslint-plugin-react-hooks@7.0.1",
+      "bom-ref": "npm:ab99ecbb8367e60073c532a7",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "eslint-scope",
+      "version": "8.4.0",
+      "scope": "required",
+      "purl": "pkg:npm/eslint-scope@8.4.0",
+      "bom-ref": "npm:9714a622b063484bc2944780",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "eslint-visitor-keys",
+      "version": "3.4.3",
+      "scope": "required",
+      "purl": "pkg:npm/eslint-visitor-keys@3.4.3",
+      "bom-ref": "npm:05128ba65dda6c0a4571940d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "eslint-visitor-keys",
+      "version": "3.4.3",
+      "scope": "required",
+      "purl": "pkg:npm/eslint-visitor-keys@3.4.3",
+      "bom-ref": "npm:05128ba65dda6c0a4571940d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "eslint-visitor-keys",
+      "version": "4.2.1",
+      "scope": "required",
+      "purl": "pkg:npm/eslint-visitor-keys@4.2.1",
+      "bom-ref": "npm:89253b256ae7271f507c9e85",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "eslint-visitor-keys",
+      "version": "4.2.1",
+      "scope": "required",
+      "purl": "pkg:npm/eslint-visitor-keys@4.2.1",
+      "bom-ref": "npm:89253b256ae7271f507c9e85",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "eslint-visitor-keys",
+      "version": "5.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/eslint-visitor-keys@5.0.1",
+      "bom-ref": "npm:ce4a9f8011305c18bc9aa2b2",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "eslint",
+      "version": "9.39.1",
+      "scope": "optional",
+      "purl": "pkg:npm/eslint@9.39.1",
+      "bom-ref": "npm:d310aee939df08ca3cac4b1b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "espree",
+      "version": "10.4.0",
+      "scope": "required",
+      "purl": "pkg:npm/espree@10.4.0",
+      "bom-ref": "npm:cf99e22f09b01343c7d4cb58",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "esquery",
+      "version": "1.7.0",
+      "scope": "required",
+      "purl": "pkg:npm/esquery@1.7.0",
+      "bom-ref": "npm:8ea91738f67d9ecc047c5bc0",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "esrecurse",
+      "version": "4.3.0",
+      "scope": "required",
+      "purl": "pkg:npm/esrecurse@4.3.0",
+      "bom-ref": "npm:3b9283f0ef118fcc2814e2b1",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "estraverse",
+      "version": "5.3.0",
+      "scope": "required",
+      "purl": "pkg:npm/estraverse@5.3.0",
+      "bom-ref": "npm:3a814fdd43a6288bd2dc9724",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "estree-walker",
+      "version": "3.0.3",
+      "scope": "required",
+      "purl": "pkg:npm/estree-walker@3.0.3",
+      "bom-ref": "npm:1c2190a49810c7cf7cec6d79",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "esutils",
+      "version": "2.0.3",
+      "scope": "required",
+      "purl": "pkg:npm/esutils@2.0.3",
+      "bom-ref": "npm:c2eb82895ddd39e4c36d735c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "expect-type",
+      "version": "1.4.0",
+      "scope": "required",
+      "purl": "pkg:npm/expect-type@1.4.0",
+      "bom-ref": "npm:4315b787972f6a835fb45473",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "fast-deep-equal",
+      "version": "3.1.3",
+      "scope": "required",
+      "purl": "pkg:npm/fast-deep-equal@3.1.3",
+      "bom-ref": "npm:bd28a7907e884f4e6ea64042",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "fast-glob",
+      "version": "3.3.1",
+      "scope": "required",
+      "purl": "pkg:npm/fast-glob@3.3.1",
+      "bom-ref": "npm:b00034ecfdd3325416f40486",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "fast-json-stable-stringify",
+      "version": "2.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/fast-json-stable-stringify@2.1.0",
+      "bom-ref": "npm:8a0ca63ea122481352c69f41",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "fast-levenshtein",
+      "version": "2.0.6",
+      "scope": "required",
+      "purl": "pkg:npm/fast-levenshtein@2.0.6",
+      "bom-ref": "npm:530697f4da35b8ffb8e48119",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "fastq",
+      "version": "1.20.3",
+      "scope": "required",
+      "purl": "pkg:npm/fastq@1.20.3",
+      "bom-ref": "npm:39149fdc069535d9c913247d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "fdir",
+      "version": "6.5.0",
+      "scope": "required",
+      "purl": "pkg:npm/fdir@6.5.0",
+      "bom-ref": "npm:bf9b741a6383287dca327eb0",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "file-entry-cache",
+      "version": "8.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/file-entry-cache@8.0.0",
+      "bom-ref": "npm:7b0ba40b1c344e25fe97df69",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "fill-range",
+      "version": "7.1.1",
+      "scope": "required",
+      "purl": "pkg:npm/fill-range@7.1.1",
+      "bom-ref": "npm:43364d3649cc482556d9c0c5",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "find-up",
+      "version": "5.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/find-up@5.0.0",
+      "bom-ref": "npm:650ec676cd04bae2aaabe940",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "flat-cache",
+      "version": "4.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/flat-cache@4.0.1",
+      "bom-ref": "npm:6e94cba468f6d9a497757711",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "flatted",
+      "version": "3.4.4",
+      "scope": "required",
+      "purl": "pkg:npm/flatted@3.4.4",
+      "bom-ref": "npm:a42b542a081ab9a07a580474",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "fsevents",
+      "version": "2.3.3",
+      "scope": "required",
+      "purl": "pkg:npm/fsevents@2.3.3",
+      "bom-ref": "npm:a8b13aee1fe5c23c1906259a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "gensync",
+      "version": "1.0.0-beta.2",
+      "scope": "required",
+      "purl": "pkg:npm/gensync@1.0.0-beta.2",
+      "bom-ref": "npm:865e985dd7c113f7dcbc6190",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "glob-parent",
+      "version": "5.1.2",
+      "scope": "required",
+      "purl": "pkg:npm/glob-parent@5.1.2",
+      "bom-ref": "npm:217814ac51333510589fa46e",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "glob-parent",
+      "version": "6.0.2",
+      "scope": "required",
+      "purl": "pkg:npm/glob-parent@6.0.2",
+      "bom-ref": "npm:4375de45f93cd81bc438b158",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "globals",
+      "version": "14.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/globals@14.0.0",
+      "bom-ref": "npm:7130fd1c7c0b927a8d4a972c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "has-flag",
+      "version": "4.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/has-flag@4.0.0",
+      "bom-ref": "npm:e4ba897e2fba4c39ec1fd3ad",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "hermes-estree",
+      "version": "0.25.1",
+      "scope": "required",
+      "purl": "pkg:npm/hermes-estree@0.25.1",
+      "bom-ref": "npm:63c31c4e3804da6699332fcb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "hermes-parser",
+      "version": "0.25.1",
+      "scope": "required",
+      "purl": "pkg:npm/hermes-parser@0.25.1",
+      "bom-ref": "npm:6eb70e9dc01bafa38530b5ca",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "idb-keyval",
+      "version": "6.3.0",
+      "scope": "required",
+      "purl": "pkg:npm/idb-keyval@6.3.0",
+      "bom-ref": "npm:d590ca1071838a5219bb5c5a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "ignore",
+      "version": "5.3.2",
+      "scope": "required",
+      "purl": "pkg:npm/ignore@5.3.2",
+      "bom-ref": "npm:d7da56e1dca5adf1c25853ee",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "import-fresh",
+      "version": "3.3.1",
+      "scope": "required",
+      "purl": "pkg:npm/import-fresh@3.3.1",
+      "bom-ref": "npm:5001e9c8a74e3cefc6e9ff45",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "imurmurhash",
+      "version": "0.1.4",
+      "scope": "required",
+      "purl": "pkg:npm/imurmurhash@0.1.4",
+      "bom-ref": "npm:fce62f3c2468d3c2db0ca17b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "is-extglob",
+      "version": "2.1.1",
+      "scope": "required",
+      "purl": "pkg:npm/is-extglob@2.1.1",
+      "bom-ref": "npm:25755b66b48cb72f3027c0f4",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "is-glob",
+      "version": "4.0.3",
+      "scope": "required",
+      "purl": "pkg:npm/is-glob@4.0.3",
+      "bom-ref": "npm:87847203b122c690a449a569",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "is-number",
+      "version": "7.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/is-number@7.0.0",
+      "bom-ref": "npm:952d69c3af77df106fed46f3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "is-url",
+      "version": "1.2.4",
+      "scope": "required",
+      "purl": "pkg:npm/is-url@1.2.4",
+      "bom-ref": "npm:5a57fe8b61dd10964e82f6ba",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "isexe",
+      "version": "2.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/isexe@2.0.0",
+      "bom-ref": "npm:57c33b21493e99f1396414af",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "js-tokens",
+      "version": "4.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/js-tokens@4.0.0",
+      "bom-ref": "npm:0e4f05d26010299a7aaa3e12",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "js-tokens",
+      "version": "9.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/js-tokens@9.0.1",
+      "bom-ref": "npm:dfd8991b08f4b6640635babc",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "js-yaml",
+      "version": "4.3.2",
+      "scope": "required",
+      "purl": "pkg:npm/js-yaml@4.3.2",
+      "bom-ref": "npm:fba372f08ca82eef612fdc1a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "jsesc",
+      "version": "3.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/jsesc@3.1.0",
+      "bom-ref": "npm:5b52d937808912ec9db7960a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "json-buffer",
+      "version": "3.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/json-buffer@3.0.1",
+      "bom-ref": "npm:97727a65ee18dd2d3f7da5d5",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "json-schema-traverse",
+      "version": "0.4.1",
+      "scope": "required",
+      "purl": "pkg:npm/json-schema-traverse@0.4.1",
+      "bom-ref": "npm:4376c1cf6e16e25879ad9405",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "json-stable-stringify-without-jsonify",
+      "version": "1.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/json-stable-stringify-without-jsonify@1.0.1",
+      "bom-ref": "npm:81679a2a5e55b8ca62fbb81f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "json5",
+      "version": "2.2.3",
+      "scope": "required",
+      "purl": "pkg:npm/json5@2.2.3",
+      "bom-ref": "npm:58c75b7485fefa4cec3286cf",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "keyv",
+      "version": "4.5.4",
+      "scope": "required",
+      "purl": "pkg:npm/keyv@4.5.4",
+      "bom-ref": "npm:862dba37f9e73debe43a7e8e",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "levn",
+      "version": "0.4.1",
+      "scope": "required",
+      "purl": "pkg:npm/levn@0.4.1",
+      "bom-ref": "npm:5107a12f2e40df138a139dfd",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "locate-path",
+      "version": "6.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/locate-path@6.0.0",
+      "bom-ref": "npm:ede690d6daa0580018909bc4",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "lodash.merge",
+      "version": "4.6.2",
+      "scope": "required",
+      "purl": "pkg:npm/lodash.merge@4.6.2",
+      "bom-ref": "npm:8a1deb4de7ab7f9b8c06d8b4",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "loose-envify",
+      "version": "1.4.0",
+      "scope": "required",
+      "purl": "pkg:npm/loose-envify@1.4.0",
+      "bom-ref": "npm:c8ece6852abbaaedec273a28",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "loupe",
+      "version": "3.2.1",
+      "scope": "required",
+      "purl": "pkg:npm/loupe@3.2.1",
+      "bom-ref": "npm:3fd91d490afc25ace1f65aa3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "lru-cache",
+      "version": "5.1.1",
+      "scope": "required",
+      "purl": "pkg:npm/lru-cache@5.1.1",
+      "bom-ref": "npm:abf1039eef4a8b7451678867",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "magic-string",
+      "version": "0.30.21",
+      "scope": "required",
+      "purl": "pkg:npm/magic-string@0.30.21",
+      "bom-ref": "npm:a8215962cbacb8e9764d874b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "merge2",
+      "version": "1.4.1",
+      "scope": "required",
+      "purl": "pkg:npm/merge2@1.4.1",
+      "bom-ref": "npm:a282290d686cda956b3a63bb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "micromatch",
+      "version": "4.0.8",
+      "scope": "required",
+      "purl": "pkg:npm/micromatch@4.0.8",
+      "bom-ref": "npm:76041756c10d61121fcefc81",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "minimatch",
+      "version": "10.2.6",
+      "scope": "required",
+      "purl": "pkg:npm/minimatch@10.2.6",
+      "bom-ref": "npm:389e652fd032c3e34b19dcea",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "minimatch",
+      "version": "3.1.5",
+      "scope": "required",
+      "purl": "pkg:npm/minimatch@3.1.5",
+      "bom-ref": "npm:ad371faabc7650f73a8426c7",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "minimatch",
+      "version": "3.1.5",
+      "scope": "required",
+      "purl": "pkg:npm/minimatch@3.1.5",
+      "bom-ref": "npm:ad371faabc7650f73a8426c7",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "minimatch",
+      "version": "3.1.5",
+      "scope": "required",
+      "purl": "pkg:npm/minimatch@3.1.5",
+      "bom-ref": "npm:ad371faabc7650f73a8426c7",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "ms",
+      "version": "2.1.3",
+      "scope": "required",
+      "purl": "pkg:npm/ms@2.1.3",
+      "bom-ref": "npm:8f9a0f49530faa3b9b70380e",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "nanoid",
+      "version": "3.3.18",
+      "scope": "required",
+      "purl": "pkg:npm/nanoid@3.3.18",
+      "bom-ref": "npm:8616cf920cb2ee2cc8603b7a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "natural-compare",
+      "version": "1.4.0",
+      "scope": "required",
+      "purl": "pkg:npm/natural-compare@1.4.0",
+      "bom-ref": "npm:fdf79a3706bf7c66c90d6d9b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "next",
+      "version": "16.3.4",
+      "scope": "required",
+      "purl": "pkg:npm/next@16.3.4",
+      "bom-ref": "npm:3bb418582822d4057f8be2ee",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "node-fetch",
+      "version": "2.7.0",
+      "scope": "required",
+      "purl": "pkg:npm/node-fetch@2.7.0",
+      "bom-ref": "npm:46d165cd594145b5856cfd93",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "node-releases",
+      "version": "2.0.55",
+      "scope": "required",
+      "purl": "pkg:npm/node-releases@2.0.55",
+      "bom-ref": "npm:2c455a285c6a0e7e08a279a8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "opencollective-postinstall",
+      "version": "2.0.3",
+      "scope": "required",
+      "purl": "pkg:npm/opencollective-postinstall@2.0.3",
+      "bom-ref": "npm:7ad986ede1fa82828dddfa5f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "optionator",
+      "version": "0.9.4",
+      "scope": "required",
+      "purl": "pkg:npm/optionator@0.9.4",
+      "bom-ref": "npm:f45e5377250459942b223b98",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "p-limit",
+      "version": "3.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/p-limit@3.1.0",
+      "bom-ref": "npm:46e75d2e83c03a21b4ce783d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "p-locate",
+      "version": "5.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/p-locate@5.0.0",
+      "bom-ref": "npm:648ce2b7a299928875b4f595",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pako",
+      "version": "1.0.11",
+      "scope": "required",
+      "purl": "pkg:npm/pako@1.0.11",
+      "bom-ref": "npm:abd2f783ed47009d4a5b140d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "parent-module",
+      "version": "1.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/parent-module@1.0.1",
+      "bom-ref": "npm:e98a017dedd8baa64b94e54c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "path-exists",
+      "version": "4.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/path-exists@4.0.0",
+      "bom-ref": "npm:04a52c47334be175daf7e717",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "path-key",
+      "version": "3.1.1",
+      "scope": "required",
+      "purl": "pkg:npm/path-key@3.1.1",
+      "bom-ref": "npm:a29e80bd108a03d4641e92f7",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pathe",
+      "version": "2.0.3",
+      "scope": "required",
+      "purl": "pkg:npm/pathe@2.0.3",
+      "bom-ref": "npm:48a6776cbdc46969d86d53ad",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pathval",
+      "version": "2.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/pathval@2.0.1",
+      "bom-ref": "npm:00e4d773bff51a00942daaf9",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pdf-lib",
+      "version": "1.17.1",
+      "scope": "required",
+      "purl": "pkg:npm/pdf-lib@1.17.1",
+      "bom-ref": "npm:b2ea307896a03c1453888151",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pdfjs-dist",
+      "version": "4.10.38",
+      "scope": "required",
+      "purl": "pkg:npm/pdfjs-dist@4.10.38",
+      "bom-ref": "npm:04760303aea9b9b5c8b50adb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "picocolors",
+      "version": "1.1.1",
+      "scope": "required",
+      "purl": "pkg:npm/picocolors@1.1.1",
+      "bom-ref": "npm:a88a90f108bb49f62a8ee27c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "picomatch",
+      "version": "2.3.2",
+      "scope": "required",
+      "purl": "pkg:npm/picomatch@2.3.2",
+      "bom-ref": "npm:11c630eca8e9acbcc76045fa",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "picomatch",
+      "version": "4.0.7",
+      "scope": "required",
+      "purl": "pkg:npm/picomatch@4.0.7",
+      "bom-ref": "npm:61cf3df4e0e03ce042045b5c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "playwright-core",
+      "version": "1.62.1",
+      "scope": "optional",
+      "purl": "pkg:npm/playwright-core@1.62.1",
+      "bom-ref": "npm:9458866923ea307237142b56",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "postcss",
+      "version": "8.5.23",
+      "scope": "required",
+      "purl": "pkg:npm/postcss@8.5.23",
+      "bom-ref": "npm:25cc0a9e6bde8fd2e8279edc",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "prelude-ls",
+      "version": "1.2.1",
+      "scope": "required",
+      "purl": "pkg:npm/prelude-ls@1.2.1",
+      "bom-ref": "npm:dff6c5e5f8791e1be2127587",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "punycode",
+      "version": "2.3.1",
+      "scope": "required",
+      "purl": "pkg:npm/punycode@2.3.1",
+      "bom-ref": "npm:f4beb173fa25d9b8502dd940",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "queue-microtask",
+      "version": "1.2.3",
+      "scope": "required",
+      "purl": "pkg:npm/queue-microtask@1.2.3",
+      "bom-ref": "npm:6ab9bc406bbd3723117385db",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-dom",
+      "version": "18.3.1",
+      "scope": "required",
+      "purl": "pkg:npm/react-dom@18.3.1",
+      "bom-ref": "npm:63a1a7ef85adc94f13c69114",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "version": "18.3.1",
+      "scope": "required",
+      "purl": "pkg:npm/react@18.3.1",
+      "bom-ref": "npm:c91fc21388155b7516ca2ad4",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "regenerator-runtime",
+      "version": "0.13.11",
+      "scope": "required",
+      "purl": "pkg:npm/regenerator-runtime@0.13.11",
+      "bom-ref": "npm:928c9ceb6903bbd38125213b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "resolve-from",
+      "version": "4.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/resolve-from@4.0.0",
+      "bom-ref": "npm:3f72c772c448cc7e78b20bf5",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "reusify",
+      "version": "1.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/reusify@1.1.0",
+      "bom-ref": "npm:526f33abf182056457c9aca1",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "rollup",
+      "version": "4.63.1",
+      "scope": "required",
+      "purl": "pkg:npm/rollup@4.63.1",
+      "bom-ref": "npm:701086ea16faf05c9486d413",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "run-parallel",
+      "version": "1.2.0",
+      "scope": "required",
+      "purl": "pkg:npm/run-parallel@1.2.0",
+      "bom-ref": "npm:9992d74a6025eeda2f298bf2",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "scheduler",
+      "version": "0.23.2",
+      "scope": "required",
+      "purl": "pkg:npm/scheduler@0.23.2",
+      "bom-ref": "npm:fa0657232d35aaaa993428bb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "semver",
+      "version": "6.3.1",
+      "scope": "required",
+      "purl": "pkg:npm/semver@6.3.1",
+      "bom-ref": "npm:6f8b593939afadb027cce51a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "semver",
+      "version": "6.3.1",
+      "scope": "required",
+      "purl": "pkg:npm/semver@6.3.1",
+      "bom-ref": "npm:6f8b593939afadb027cce51a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "semver",
+      "version": "7.8.5",
+      "scope": "required",
+      "purl": "pkg:npm/semver@7.8.5",
+      "bom-ref": "npm:bc87149f1662bf33eb3baa94",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "sharp",
+      "version": "0.35.4",
+      "scope": "required",
+      "purl": "pkg:npm/sharp@0.35.4",
+      "bom-ref": "npm:98bc72275ea1bf36e6398163",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "shebang-command",
+      "version": "2.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/shebang-command@2.0.0",
+      "bom-ref": "npm:3c85eb1a66c817b760468e30",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "shebang-regex",
+      "version": "3.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/shebang-regex@3.0.0",
+      "bom-ref": "npm:467600a9b54d94bdaa34b924",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "siginfo",
+      "version": "2.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/siginfo@2.0.0",
+      "bom-ref": "npm:ee7ce0dec86f6e1ddfedce3f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "source-map-js",
+      "version": "1.2.1",
+      "scope": "required",
+      "purl": "pkg:npm/source-map-js@1.2.1",
+      "bom-ref": "npm:0b60547f0974ced47ac25e80",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "stackback",
+      "version": "0.0.2",
+      "scope": "required",
+      "purl": "pkg:npm/stackback@0.0.2",
+      "bom-ref": "npm:da55258bbce0f2338cf4d9a9",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "std-env",
+      "version": "3.10.0",
+      "scope": "required",
+      "purl": "pkg:npm/std-env@3.10.0",
+      "bom-ref": "npm:bac4530a4243a94ce6ae71fc",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "strip-json-comments",
+      "version": "3.1.1",
+      "scope": "required",
+      "purl": "pkg:npm/strip-json-comments@3.1.1",
+      "bom-ref": "npm:e29c9f2dc5a971e33b32cf9b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "strip-literal",
+      "version": "3.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/strip-literal@3.1.0",
+      "bom-ref": "npm:5648cccd9328200b1a36d1be",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "styled-jsx",
+      "version": "5.1.6",
+      "scope": "required",
+      "purl": "pkg:npm/styled-jsx@5.1.6",
+      "bom-ref": "npm:a347891c6d793025ce40001c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "supports-color",
+      "version": "7.2.0",
+      "scope": "required",
+      "purl": "pkg:npm/supports-color@7.2.0",
+      "bom-ref": "npm:53e54b036f83f436b81790ad",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tesseract.js-core",
+      "version": "7.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/tesseract.js-core@7.0.0",
+      "bom-ref": "npm:e2a49541951ca3ae70857e7a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tesseract.js",
+      "version": "7.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/tesseract.js@7.0.0",
+      "bom-ref": "npm:b9a2379c7c83501b63dc14db",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tinybench",
+      "version": "2.9.0",
+      "scope": "required",
+      "purl": "pkg:npm/tinybench@2.9.0",
+      "bom-ref": "npm:7b2e9a920953158b4315131d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tinyexec",
+      "version": "0.3.2",
+      "scope": "required",
+      "purl": "pkg:npm/tinyexec@0.3.2",
+      "bom-ref": "npm:a0b0b211c87af62a523075d9",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tinyglobby",
+      "version": "0.2.17",
+      "scope": "required",
+      "purl": "pkg:npm/tinyglobby@0.2.17",
+      "bom-ref": "npm:6fd410d1fc02b6886b670b7c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tinypool",
+      "version": "1.1.1",
+      "scope": "required",
+      "purl": "pkg:npm/tinypool@1.1.1",
+      "bom-ref": "npm:eb9b358f7690c655785b3c6f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tinyrainbow",
+      "version": "2.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/tinyrainbow@2.0.0",
+      "bom-ref": "npm:b8e11761c04bb0762f17d3f0",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tinyspy",
+      "version": "4.0.6",
+      "scope": "required",
+      "purl": "pkg:npm/tinyspy@4.0.6",
+      "bom-ref": "npm:98f3c7add4ea5cbf0912836b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "to-regex-range",
+      "version": "5.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/to-regex-range@5.0.1",
+      "bom-ref": "npm:6837cd1aab9bc39e09f653a3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tr46",
+      "version": "0.0.3",
+      "scope": "required",
+      "purl": "pkg:npm/tr46@0.0.3",
+      "bom-ref": "npm:0a6075ca2a74c1e1621bb1cd",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "ts-api-utils",
+      "version": "2.5.0",
+      "scope": "required",
+      "purl": "pkg:npm/ts-api-utils@2.5.0",
+      "bom-ref": "npm:20035f83a662228c08dbcd64",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tslib",
+      "version": "1.14.1",
+      "scope": "required",
+      "purl": "pkg:npm/tslib@1.14.1",
+      "bom-ref": "npm:367774bbe97a85ec891792eb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tslib",
+      "version": "2.8.1",
+      "scope": "required",
+      "purl": "pkg:npm/tslib@2.8.1",
+      "bom-ref": "npm:c240f4de307d7ec89e92f3ea",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "type-check",
+      "version": "0.4.0",
+      "scope": "required",
+      "purl": "pkg:npm/type-check@0.4.0",
+      "bom-ref": "npm:ebf7f3d518a99eb5a02ba8bd",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "typescript",
+      "version": "5.5.3",
+      "scope": "optional",
+      "purl": "pkg:npm/typescript@5.5.3",
+      "bom-ref": "npm:725dff21fe1a71459b3f030c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "undici-types",
+      "version": "5.26.5",
+      "scope": "required",
+      "purl": "pkg:npm/undici-types@5.26.5",
+      "bom-ref": "npm:7aafb3b8fde20be810761407",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "undici-types",
+      "version": "8.3.0",
+      "scope": "required",
+      "purl": "pkg:npm/undici-types@8.3.0",
+      "bom-ref": "npm:e359e8cfa5d74397773f5eeb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "update-browserslist-db",
+      "version": "1.3.2",
+      "scope": "required",
+      "purl": "pkg:npm/update-browserslist-db@1.3.2",
+      "bom-ref": "npm:5452968d47ae77b50cf58040",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "uri-js",
+      "version": "4.4.1",
+      "scope": "required",
+      "purl": "pkg:npm/uri-js@4.4.1",
+      "bom-ref": "npm:36bee8ee10de5d3c02632575",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "vite-node",
+      "version": "3.2.4",
+      "scope": "required",
+      "purl": "pkg:npm/vite-node@3.2.4",
+      "bom-ref": "npm:7f67a7f927afef36cfcc82d3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "vite",
+      "version": "7.3.6",
+      "scope": "required",
+      "purl": "pkg:npm/vite@7.3.6",
+      "bom-ref": "npm:51c4ba96c150e0a025f8b818",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "vite",
+      "version": "7.3.6",
+      "scope": "required",
+      "purl": "pkg:npm/vite@7.3.6",
+      "bom-ref": "npm:51c4ba96c150e0a025f8b818",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "vitest",
+      "version": "3.2.6",
+      "scope": "optional",
+      "purl": "pkg:npm/vitest@3.2.6",
+      "bom-ref": "npm:5ff1dd929c7c9579d8c519a1",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "wasm-feature-detect",
+      "version": "1.9.0",
+      "scope": "required",
+      "purl": "pkg:npm/wasm-feature-detect@1.9.0",
+      "bom-ref": "npm:b79df3542012153fe335b681",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "webidl-conversions",
+      "version": "3.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/webidl-conversions@3.0.1",
+      "bom-ref": "npm:1c99f12c10a8a0c901ee56ce",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "whatwg-url",
+      "version": "5.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/whatwg-url@5.0.0",
+      "bom-ref": "npm:daea8978a1f3577b898b7726",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "which",
+      "version": "2.0.2",
+      "scope": "required",
+      "purl": "pkg:npm/which@2.0.2",
+      "bom-ref": "npm:cc8746e214bd8f9989483aa3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "why-is-node-running",
+      "version": "2.3.0",
+      "scope": "required",
+      "purl": "pkg:npm/why-is-node-running@2.3.0",
+      "bom-ref": "npm:62f87389d567bbcfcb92ec48",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "word-wrap",
+      "version": "1.2.5",
+      "scope": "required",
+      "purl": "pkg:npm/word-wrap@1.2.5",
+      "bom-ref": "npm:9948f78a2c0a4e1423f72abe",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "yallist",
+      "version": "3.1.1",
+      "scope": "required",
+      "purl": "pkg:npm/yallist@3.1.1",
+      "bom-ref": "npm:5cd4fa49f847825acbd9b4be",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "yocto-queue",
+      "version": "0.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/yocto-queue@0.1.0",
+      "bom-ref": "npm:63dd14f733935ee42de2a12c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "zlibjs",
+      "version": "0.3.1",
+      "scope": "required",
+      "purl": "pkg:npm/zlibjs@0.3.1",
+      "bom-ref": "npm:c3685bc2ef265402b21dad30",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "zod-validation-error",
+      "version": "4.0.2",
+      "scope": "required",
+      "purl": "pkg:npm/zod-validation-error@4.0.2",
+      "bom-ref": "npm:dc9925c5a4e24c74f4d5e54c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "zod",
+      "version": "4.5.4",
+      "scope": "required",
+      "purl": "pkg:npm/zod@4.5.4",
+      "bom-ref": "npm:5125e329bf18e4e14d1ce098",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "scope": "required",
+      "purl": "pkg:pypi/annotated-doc@0.0.5",
+      "bom-ref": "pypi:2750b3108d02eac7fd1f15a0",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "anyio",
+      "version": "4.14.2",
+      "scope": "required",
+      "purl": "pkg:pypi/anyio@4.14.2",
+      "bom-ref": "pypi:21a3e1c88bf8747873ad2a86",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "beautifulsoup4",
+      "version": "4.15.0",
+      "scope": "required",
+      "purl": "pkg:pypi/beautifulsoup4@4.15.0",
+      "bom-ref": "pypi:4369aa57e99c4e7df34cc547",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "certifi",
+      "version": "2026.7.22",
+      "scope": "required",
+      "purl": "pkg:pypi/certifi@2026.7.22",
+      "bom-ref": "pypi:1ae58196ab0c7639d923ef9d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "charset-normalizer",
+      "version": "3.5.1",
+      "scope": "required",
+      "purl": "pkg:pypi/charset-normalizer@3.5.1",
+      "bom-ref": "pypi:3ed10ae58f80145bc4f0790c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "click",
+      "version": "8.5.0",
+      "scope": "required",
+      "purl": "pkg:pypi/click@8.5.0",
+      "bom-ref": "pypi:f88786e06278bb3e4c3e9889",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "colorama",
+      "version": "0.4.6",
+      "scope": "required",
+      "purl": "pkg:pypi/colorama@0.4.6",
+      "bom-ref": "pypi:3712c69c81a7eb256e35b8d6",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "coloredlogs",
+      "version": "15.0.1",
+      "scope": "required",
+      "purl": "pkg:pypi/coloredlogs@15.0.1",
+      "bom-ref": "pypi:f7b6842a31d875de47c08f72",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "einops",
+      "version": "0.8.1",
+      "scope": "required",
+      "purl": "pkg:pypi/einops@0.8.1",
+      "bom-ref": "pypi:0c2a3f928b4f6db4b876b6dd",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "filelock",
+      "version": "3.32.3",
+      "scope": "required",
+      "purl": "pkg:pypi/filelock@3.32.3",
+      "bom-ref": "pypi:fb69702a51ccb6cb26fa96b6",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "flatbuffers",
+      "version": "25.12.19",
+      "scope": "required",
+      "purl": "pkg:pypi/flatbuffers@25.12.19",
+      "bom-ref": "pypi:e9fea7a95ce91b58dd91feed",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "fsspec",
+      "version": "2026.7.0",
+      "scope": "required",
+      "purl": "pkg:pypi/fsspec@2026.7.0",
+      "bom-ref": "pypi:2cc2cc97dcfd43d973314d7d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "gdown",
+      "version": "5.2.0",
+      "scope": "required",
+      "purl": "pkg:pypi/gdown@5.2.0",
+      "bom-ref": "pypi:9bce1bfc62c933ffd64702ff",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "h11",
+      "version": "0.16.0",
+      "scope": "required",
+      "purl": "pkg:pypi/h11@0.16.0",
+      "bom-ref": "pypi:a23c38d462a751e9f08b2fef",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "hf-xet",
+      "version": "1.6.0",
+      "scope": "required",
+      "purl": "pkg:pypi/hf-xet@1.6.0",
+      "bom-ref": "pypi:f34334b11943af62a6a528eb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "httpcore",
+      "version": "1.0.9",
+      "scope": "required",
+      "purl": "pkg:pypi/httpcore@1.0.9",
+      "bom-ref": "pypi:dadd5a269eae7cf65179960a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "httpx",
+      "version": "0.28.1",
+      "scope": "required",
+      "purl": "pkg:pypi/httpx@0.28.1",
+      "bom-ref": "pypi:cb7fbb86fbbd7aadeff6f453",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "huggingface_hub",
+      "version": "1.29.0",
+      "scope": "required",
+      "purl": "pkg:pypi/huggingface_hub@1.29.0",
+      "bom-ref": "pypi:9447bd5b79861bc8006cafed",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "humanfriendly",
+      "version": "10.0",
+      "scope": "required",
+      "purl": "pkg:pypi/humanfriendly@10.0",
+      "bom-ref": "pypi:6e4592ad790406a78ac40852",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "idna",
+      "version": "3.19",
+      "scope": "required",
+      "purl": "pkg:pypi/idna@3.19",
+      "bom-ref": "pypi:b464899e755efdc206acb478",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "Jinja2",
+      "version": "3.1.6",
+      "scope": "required",
+      "purl": "pkg:pypi/jinja2@3.1.6",
+      "bom-ref": "pypi:381efe7ce7a4167992831d07",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "scope": "required",
+      "purl": "pkg:pypi/markdown-it-py@4.2.0",
+      "bom-ref": "pypi:d625ef7578f80e222a26b16f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "MarkupSafe",
+      "version": "3.0.3",
+      "scope": "required",
+      "purl": "pkg:pypi/markupsafe@3.0.3",
+      "bom-ref": "pypi:adacf48020ba09e82c47d0d5",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mdurl",
+      "version": "0.1.2",
+      "scope": "required",
+      "purl": "pkg:pypi/mdurl@0.1.2",
+      "bom-ref": "pypi:091c3614ce69bfaba65edce0",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mpmath",
+      "version": "1.3.0",
+      "scope": "required",
+      "purl": "pkg:pypi/mpmath@1.3.0",
+      "bom-ref": "pypi:1c54312cc646916c858dc032",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "networkx",
+      "version": "3.6.1",
+      "scope": "required",
+      "purl": "pkg:pypi/networkx@3.6.1",
+      "bom-ref": "pypi:6b9743bc793d4c8f8e4a8c64",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "numpy",
+      "version": "2.5.2",
+      "scope": "required",
+      "purl": "pkg:pypi/numpy@2.5.2",
+      "bom-ref": "pypi:af179d9f663310c5ddeb4d41",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "onnxruntime",
+      "version": "1.23.2",
+      "scope": "required",
+      "purl": "pkg:pypi/onnxruntime@1.23.2",
+      "bom-ref": "pypi:e30a8b63130e9e09d73d5602",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "opencv-python-headless",
+      "version": "5.0.0.93",
+      "scope": "required",
+      "purl": "pkg:pypi/opencv-python-headless@5.0.0.93",
+      "bom-ref": "pypi:515baf61cb8c20377b2261e3",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "packaging",
+      "version": "26.3",
+      "scope": "required",
+      "purl": "pkg:pypi/packaging@26.3",
+      "bom-ref": "pypi:823403dfa0ae966f20a22e1e",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pillow",
+      "version": "12.3.0",
+      "scope": "required",
+      "purl": "pkg:pypi/pillow@12.3.0",
+      "bom-ref": "pypi:3b723e44342a9721a6f799b2",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "protobuf",
+      "version": "7.36.1",
+      "scope": "required",
+      "purl": "pkg:pypi/protobuf@7.36.1",
+      "bom-ref": "pypi:0e0e28ee2bbec43be6bf9232",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "psutil",
+      "version": "7.1.0",
+      "scope": "required",
+      "purl": "pkg:pypi/psutil@7.1.0",
+      "bom-ref": "pypi:bd57ebc7b44a3c7955ff8d03",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pyarrow",
+      "version": "22.0.0",
+      "scope": "required",
+      "purl": "pkg:pypi/pyarrow@22.0.0",
+      "bom-ref": "pypi:1686caaf3a1c48cde3f67c22",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "Pygments",
+      "version": "2.21.0",
+      "scope": "required",
+      "purl": "pkg:pypi/pygments@2.21.0",
+      "bom-ref": "pypi:d4d34ef12ec37a343aca1aed",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pyreadline3",
+      "version": "3.5.6",
+      "scope": "required",
+      "purl": "pkg:pypi/pyreadline3@3.5.6",
+      "bom-ref": "pypi:d6028890d65ef94af6d90587",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "PySocks",
+      "version": "1.7.1",
+      "scope": "required",
+      "purl": "pkg:pypi/pysocks@1.7.1",
+      "bom-ref": "pypi:3d70e72b6cf618f717ed57c8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "PyYAML",
+      "version": "6.0.3",
+      "scope": "required",
+      "purl": "pkg:pypi/pyyaml@6.0.3",
+      "bom-ref": "pypi:022c4f8abc6755515202b52c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "regex",
+      "version": "2026.9.3",
+      "scope": "required",
+      "purl": "pkg:pypi/regex@2026.9.3",
+      "bom-ref": "pypi:8369e2bf13f45c2e4ca9203e",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "requests",
+      "version": "2.34.2",
+      "scope": "required",
+      "purl": "pkg:pypi/requests@2.34.2",
+      "bom-ref": "pypi:aac373eac9a8af33216adb64",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "rich",
+      "version": "15.0.0",
+      "scope": "required",
+      "purl": "pkg:pypi/rich@15.0.0",
+      "bom-ref": "pypi:d0f969d5ac1819d1859f82e7",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "safetensors",
+      "version": "0.8.0",
+      "scope": "required",
+      "purl": "pkg:pypi/safetensors@0.8.0",
+      "bom-ref": "pypi:81b86d587a89d48817484baa",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "setuptools",
+      "version": "78.1.0",
+      "scope": "required",
+      "purl": "pkg:pypi/setuptools@78.1.0",
+      "bom-ref": "pypi:f8ae44fb7e35d525cd359da7",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "shellingham",
+      "version": "1.5.4",
+      "scope": "required",
+      "purl": "pkg:pypi/shellingham@1.5.4",
+      "bom-ref": "pypi:b7e8ec2c81524d50a8261e92",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "soupsieve",
+      "version": "2.9.2",
+      "scope": "required",
+      "purl": "pkg:pypi/soupsieve@2.9.2",
+      "bom-ref": "pypi:fb6b9e25819996bf387d114f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "sympy",
+      "version": "1.14.0",
+      "scope": "required",
+      "purl": "pkg:pypi/sympy@1.14.0",
+      "bom-ref": "pypi:0f2e035b7aa4a5a8add99764",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "timm",
+      "version": "1.0.22",
+      "scope": "required",
+      "purl": "pkg:pypi/timm@1.0.22",
+      "bom-ref": "pypi:ec0249786d7cf7072fd05086",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tokenizers",
+      "version": "0.23.1",
+      "scope": "required",
+      "purl": "pkg:pypi/tokenizers@0.23.1",
+      "bom-ref": "pypi:518b8d5966ef3220cfdd4a58",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "torch",
+      "version": "2.14.0+cpu",
+      "scope": "required",
+      "purl": "pkg:pypi/torch@2.14.0+cpu",
+      "bom-ref": "pypi:35da1d64688d11d544ff7305",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "torchvision",
+      "version": "0.29.0+cpu",
+      "scope": "required",
+      "purl": "pkg:pypi/torchvision@0.29.0+cpu",
+      "bom-ref": "pypi:6a5064f506597688f8b19467",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tqdm",
+      "version": "4.70.0",
+      "scope": "required",
+      "purl": "pkg:pypi/tqdm@4.70.0",
+      "bom-ref": "pypi:a3ea8b4460827d1ffe76a1e9",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "transformers",
+      "version": "5.16.1",
+      "scope": "required",
+      "purl": "pkg:pypi/transformers@5.16.1",
+      "bom-ref": "pypi:d98138a78af76edde347275d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "typer",
+      "version": "0.27.2",
+      "scope": "required",
+      "purl": "pkg:pypi/typer@0.27.2",
+      "bom-ref": "pypi:740ca85437ccae52046be7f0",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "scope": "required",
+      "purl": "pkg:pypi/typing_extensions@4.16.0",
+      "bom-ref": "pypi:569caf74cada7093a42a3bf5",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "urllib3",
+      "version": "2.7.0",
+      "scope": "required",
+      "purl": "pkg:pypi/urllib3@2.7.0",
+      "bom-ref": "pypi:7136e540473cf56a72f5dbed",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "pip"
+        }
+      ]
+    },
+    {
+      "type": "machine-learning-model",
+      "name": "fundus-dr-grading-effb0",
+      "version": "aa5741419b90",
+      "bom-ref": "model:fundus-dr-grading-effb0:aa5741419b90",
+      "properties": [
+        {
+          "name": "visionscan:task",
+          "value": "research"
+        },
+        {
+          "name": "visionscan:validation-status",
+          "value": "RESEARCH"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "0d9a18b0cb6c90d1f30bf2e66153b368bd7ff0bcb45b6690e8d5ce14fa19f69b"
+        }
+      ]
+    },
+    {
+      "type": "machine-learning-model",
+      "name": "fundus-lesions-clementp-unet-seresnext50",
+      "version": "a2cfcb594e483",
+      "bom-ref": "model:fundus-lesions-clementp-unet-seresnext50:a2cfcb594e483",
+      "properties": [
+        {
+          "name": "visionscan:task",
+          "value": "research"
+        },
+        {
+          "name": "visionscan:validation-status",
+          "value": "RESEARCH"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2"
+        }
+      ]
+    },
+    {
+      "type": "machine-learning-model",
+      "name": "oct-retinal-weights-fp32",
+      "version": "hf-main-2026",
+      "bom-ref": "model:oct-retinal-weights-fp32:hf-main-2026",
+      "properties": [
+        {
+          "name": "visionscan:task",
+          "value": "research"
+        },
+        {
+          "name": "visionscan:validation-status",
+          "value": "RESEARCH"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "22b1fffb5a0ab88284d4c5817c581bedb1b54c09011d87c3f6472cb2c36b2b1f"
+        }
+      ]
+    }
+  ]
+}
