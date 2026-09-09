@@ -659,3 +659,131 @@ This section supersedes earlier phase measurements where they conflict with the 
 50. **Exact capability boundary.** VisionScan is a local research / clinician decision-support workstation that can route eligible fundus, OCT, and mixed-document inputs; preserve byte/page/ROI/eye/model provenance; execute explicitly labeled research providers; organize symptoms and objective measurements; persist deterministic reasoning; and present cautious specialist/condition evidence. It cannot diagnose, prove normality, infer undocumented symptoms, guarantee sensitivity/specificity, prescribe, or replace a clinician. Unsupported, ambiguous, low-quality, tampered, and true-OOD inputs fail closed.
 
 51. **Final classification.** ENGINEERING PARTIAL — BLOCKERS REMAIN
+
+## K. TRANSACTIONAL DATA & ZERO-FAILURE RELEASE REPORT (2026-09-10)
+
+This close-out records the production-data-layer hardening evidence actually
+run on the local research workstation. It does not promote any clinical claim
+or turn synthetic/retrospective checks into clinical validation.
+
+1. **Starting HEAD.** This phase started at `a11881ef7ab01d9ee2cc49720c975d2fa444578c` on `main`.
+
+2. **Ending HEAD.** The implementation/release-gate head before this report close-out is `6992be96150724779494eebf7d70b61f787fd714`; the report and generated-artifact commit is documentation-only.
+
+3. **Commits.** `700681969666b46b153548eb54211f47fd5c670c` adds transactional SQLite persistence, migration, backup/restore, job CAS, isolated tests, and safe file writes; `6992be96150724779494eebf7d70b61f787fd714` adds the browser keyboard gate.
+
+4. **Push.** Both implementation commits were pushed to `origin/main` without force-push; this documentation close-out is pushed with the generated SBOM/inventory.
+
+5. **Final CI.** GitHub Actions run `34390846769` for `6992be96150724779494eebf7d70b61f787fd714` completed successfully in 2m17s. Typecheck, single-worker tests, migration dry-run, backup plan, benchmark, validation contract, model audit, SBOM, inventory, filesystem audit, and build were all green.
+
+6. **Sub-agents.** The three requested independent investigations were reconciled: storage forensics, test isolation, and migration/security/release review; each returned limitations that are retained below rather than silently promoted to PASS.
+
+7. **Original cleanup root cause.** The prior suite rewrote and reparsed an approximately 20 MB JSON envelope for each mutation; teardown then scanned/re-wrote accumulated data and hit two 30-second `afterAll` timeouts. Forensics found 39 stale JSON temporary files (~164.9 MB).
+
+8. **Storage architecture before.** `dbGet/dbPut/dbAll/dbDelete` used a process-local read-modify-write JSON store; files and audit logs were separate, and multi-record changes had no database transaction.
+
+9. **Storage architecture after.** The same async seam now defaults to SQLite; explicit `VISIONSCAN_PERSISTENCE_BACKEND=json` remains only for legacy inspection. SQLite rows retain structured JSON payloads, timestamps, and primary IDs so callers need no ORM rewrite.
+
+10. **Database choice.** `better-sqlite3` was selected for the local-first Next.js stack: synchronous transactions, low operational overhead, no hosted service, and a small compatibility surface; Next externalizes the native module.
+
+11. **Schema.** SQLite creates 38 allowlisted collection tables plus `persistence_meta`, covering users, patients, encounters, studies, documents/pages/assets/OCT ROIs, analyses/ledger/evidence/reasoning, reports/reviews, jobs/audit, validation/model errors, sessions/consent, and legacy collections. Payloads remain immutable JSON envelopes rather than blindly normalized columns.
+
+12. **Transactions.** `dbTransaction` commits cross-collection writes atomically and rejects asynchronous callbacks; analysis/report completion, test-result replacement, study deletion, and job state changes use one transaction where their database records must agree.
+
+13. **Immutable records.** Reads and writes are deep-cloned; source hashes, page/ROI hashes, model ledgers, reasoning hashes, report version freezes, clinician review history, and model-error adjudications remain append-only or sealed by existing service gates.
+
+14. **File/database consistency.** Large originals, PDFs, derived regions, and model weights stay filesystem-backed with hash/path/size metadata. Database/file operations are reconciled and idempotent, but they are not one atomic resource; a residual crash window remains during post-commit file cleanup.
+
+15. **Legacy migration.** `npm run migrate:data -- --apply` imports the immutable JSON source into a temporary SQLite database, creates a hashed backup, verifies counts and `PRAGMA integrity_check`, then atomically installs it. The original `eye-ai.json` remains untouched.
+
+16. **Migration dry-run.** The current dry-run found 16,931 valid records, 0 invalid records, 5,660 records needing manual reference review, 51 legacy reports, source SHA-256 `7ec65302b223e9a18972eae92cfc4bc6ed64884ef5510708ebf6624ee31ebe13`, and an estimated SQLite size of 15,338,453 bytes; no destination or backup was written.
+
+17. **Migration idempotency.** A second apply against the same source returns `already_applied` from the recorded source hash; fixture tests verify no duplicate rows, ledgers, evidence, reports, or audit events.
+
+18. **Migration rollback.** Fixture tests cover invalid-source rejection and temporary-database cleanup; atomic rename restores the prior destination on swap failure. A separate durable failure-report artifact for every possible mid-import exception remains a gap.
+
+19. **Legacy report policy.** Reports without `version_freeze` or `reasoning_snapshot` are delivered as `LEGACY_UNSEALED` with a prominent warning; the generator refuses to replace them and no historical seal or reasoning is fabricated.
+
+20. **Report replay.** An explicit legacy replay command that creates a superseding report/reasoning record is not implemented. Original reports remain preserved and cannot be silently upgraded; this is an engineering blocker.
+
+21. **Concurrency.** SQLite WAL/full-sync settings plus 100 concurrent `dbPut` operations and same-key contention tests completed without lost rows; cross-collection commit/rollback tests also passed.
+
+22. **Crash recovery.** Migration temp files, hash checks, integrity checks, and restore-on-rename-failure are covered. Process-kill recovery for every application stage and a durable lease reaper are not yet proven.
+
+23. **Job claiming.** Queue claims use a transaction and conditional queued/version state, recording worker, claim time, lease expiry, and monotonic version so two workers cannot claim one attempt in the tested race.
+
+24. **Cancellation races.** Queued cancellation and running safe-checkpoint behavior passed the progress-safety tests; cancellation after persistence/report publication is refused. Cancellation flags remain process-local, so restart recovery is incomplete.
+
+25. **Retry.** Retries require an 8–128 character idempotency key; exact replay returns the existing attempt and avoids duplicate audit/worker work. The durable replay-key history is bounded to the last 16 keys.
+
+26. **Cache.** Inference keys include content, model/version, preprocessing, optional ROI, scope, and eye; malformed keys are rejected and entries are cloned on read/write. Cross-study cache poisoning tests pass.
+
+27. **Cross-patient isolation.** Service scope checks and existing evidence/tenant tests reject cross-study and cross-patient references; the SQLite payload schema itself does not yet enforce full relational foreign keys for every typed reference.
+
+28. **Audit integrity.** Audit output remains append-only, PHI-sanitized, hash-chained NDJSON with serialized writes. The chain is process-local/file-backed rather than a transactionally linked SQLite audit ledger, so tamper-evident verification across processes remains limited.
+
+29. **Clinician amendment integrity.** Clinician finalization/amendments remain additive review records with author/time/prior-report context; AI reruns refuse to overwrite clinician content.
+
+30. **Model-error integrity.** Error records are insert-only and adjudication transitions require an explicit reviewer/lifecycle gate; automated inference cannot clinically close its own model error.
+
+31. **Backup.** `npm run backup:data -- --dry-run` planned a hash-verified backup of the 18,518,016-byte SQLite database plus 9,951 asset files; model weights and credentials are excluded. The real backup/manifest path passed fixture tests.
+
+32. **Restore.** Restore verifies database and asset hashes/integrity and defaults to a new ignored directory; activation requires explicit `--activate --target` and preactivation backup. Sidecar/asset rollback is not yet a multi-resource transaction.
+
+33. **Corruption testing.** A corrupted SQLite payload fails closed with `PersistenceCorruptionError`, and backup/restore verifies hashes. Direct asset/ROI/report-byte corruption drills were not run as a complete matrix.
+
+34. **Database performance.** Synthetic SQLite benchmark results: 1,000 inserts 13.88 ms, dashboard count 0.19 ms, cleanup 9.18 ms; 10,000 inserts 78.44 ms, dashboard 0.77 ms, cleanup 24.22 ms. The 50,000-record run and production-shaped pagination benchmark remain outstanding.
+
+35. **Cleanup benchmark.** The previously failing S2/S4 extraction/verification teardown now passed 42/42 tests under isolated SQLite with no 30-second hook timeout; the fix removes global-store accumulation rather than increasing the timeout.
+
+36. **Stress test.** The suite covers 100 concurrent writes, same-key races, migration/restore fixtures, and the browser mixed-document workload. The requested 100-patient/500-study create-query-retry-cancel-delete workload has not yet been run as a dedicated stress scenario.
+
+37. **Keyboard QA.** New `npm run browser:keyboard` passed 21/21: Enter login, skip-link activation, programmatic main focus, bounded Tab walks on dashboard/patient/study/result/report/validation/clinician routes, and mobile drawer Enter/focus trap/Escape restoration.
+
+38. **Focus QA.** Automated checks confirm visible first-focus skip behavior, logical focus target, drawer focus trap, and trigger restoration; broader modal/error-focus inventory is still not a manual certification.
+
+39. **Screen-reader structure.** Landmarks, headings, labels, table semantics, dialogs, status/live regions, and keyboard targets are exercised by axe and DOM assertions; NVDA/JAWS manual certification was not performed.
+
+40. **Responsive QA.** Real headless Chrome passed 80/80 route/viewport checks at 320, 375, 414, 768, 1024, 1280, 1440, and 1920 px with no horizontal overflow.
+
+41. **Accessibility.** Axe WCAG A/AA passed 20/20 at 320 and 1280 px after correcting the patient-link contrast from 4.43:1 to 5.07:1; keyboard QA passed 21/21. Manual assistive-technology coverage remains outside the claim.
+
+42. **Security red-team.** Existing route/RBAC/CSRF, malformed provenance, retry, corruption, path, and cross-scope tests pass; limitations remain around typed-reference database constraints, encrypted/retained backups, durable leases, and exhaustive traversal/fault injection.
+
+43. **PHI review.** Staged source/tests/manifests are synthetic or de-identified; no PDFs, JPEGs, PNGs, local SQLite databases, backups, tokens, or weights are tracked. Local ignored data and the one-way-hashed smoke account remain outside Git.
+
+44. **Gitignore.** `git check-ignore` confirms `data/` covers `.db`, `-wal`, `-shm`, backups, restores, migrations, uploads, processed files, reports, and logs; required migration scripts/fixtures remain tracked.
+
+45. **Vitest advisory.** `npm audit --omit=dev --json` exits 0 with zero production vulnerabilities. Full `npm audit --json` exits 1 for two moderate dev-only `vitest/@vitest-mocker` GHSA-82fw-gwwq-j7x9 findings; the available fix is a major Vitest upgrade not forced without compatibility review.
+
+46. **GitHub Actions.** Official `actions/checkout@v5` and `actions/setup-node@v5` remove the prior Node 20 action-deprecation annotation. Run `34390846769` is green for the implementation head.
+
+47. **SBOM.** `docs/generated/SBOM.cdx.json` is CycloneDX 1.5 with 464 components, SHA-256 `df9dff9e2f2148ab0e911832e388b4282359d138df3a10eff69fb3b6a4dde930`, `visionscan:phi-included=false`, SQLite metadata, local research manifests, and no patient assets or model weights.
+
+48. **Release inventory.** `docs/generated/release-inventory.json` records commit `6992be96150724779494eebf7d70b61f787fd714`, Node `v20.20.2`, Python `3.12.10`, three research-only model hashes, ruleset versions, SQLite schema/migration `1/1`, and the SBOM hash. Its clean-tree flag is false because the inventory was generated immediately before committing the report/artifacts; this is retained as an honest generation-time snapshot.
+
+49. **Test totals.** The final local single-worker Vitest run exited 0: 59 test files, 950 passed tests, and 2 skipped (952 total), duration 565.76 seconds; no `afterAll` timeout or unhandled rejection was emitted.
+
+50. **TypeScript.** `npx tsc --noEmit --pretty false` exited 0 after the persistence, migration, queue, report, and UI changes.
+
+51. **ESLint.** `npm run lint` exited 0 with no reported errors or warnings after the keyboard gate and contrast correction.
+
+52. **Build.** `npm run build` exited 0 under Next 16.3.4 webpack, compiled and typechecked successfully, generated 21/21 static pages, and introduced no new Next.js warning.
+
+53. **Smoke.** Against the restarted SQLite server with the explicit local-only HTTP auth flag, `npm run smoke` passed 16/16: authentication, upload, symptoms, research analysis, urgent triage, report, clinician finalize, comparison, self-test, deletion, and access controls.
+
+54. **Browser E2E.** Real Chrome asset E2E passed metadata-free fundus research execution, mixed PDF extraction, three routed pages/eight OCT ROIs, execution-ledger checks, and report provenance display.
+
+55. **Performance.** Current local CPU-only samples: login page 6.5/10.3 ms p50/p95, login API 115.5/195.0 ms, dashboard 5.7/6.9 ms, study listing 12.9/15.1 ms, upload 192.1 ms, no-model demo pipeline 435.9 ms, result bundle 7.4/8.8 ms, result page 5.1/7.3 ms, report page 4.7/5.9 ms. ClementP cold worker was 12,723.9 ms; warmed note remains ~2.3 s/1024 px and ~1.3 GB RSS, serialized. These are engineering observations, not SLOs or clinical performance.
+
+56. **Remaining engineering blockers.** Full relational constraints, durable worker lease/reaper and process-crash recovery, multi-resource file/database reconciliation, legacy replay, complete 50k/production-shaped pagination and stress benchmarks, encrypted backup/retention, and exhaustive corruption/traversal fault injection remain.
+
+57. **Remaining model blockers.** All installed providers remain research-only and uncalibrated; patient-separated multi-device/domain validation, subgroup/error analysis, approved data rights, operating-point freeze, and powered sensitivity/false-negative measurement are absent. Fixed/heuristic OCT ROI extraction and material CPU/memory latency remain.
+
+58. **Remaining clinical blockers.** No prospective clinical validation, reference-standard adjudication, governance sign-off, normative OCT policy, regulatory assessment, or post-deployment monitoring plan has been completed.
+
+59. **Exact capability boundary.** VisionScan is a local research/clinician decision-support workstation that preserves byte/page/ROI/eye/model provenance, executes explicitly labeled research providers, organizes symptoms and objective measurements, persists deterministic reasoning, and presents cautious evidence. It cannot diagnose, prove normality, infer undocumented symptoms, guarantee sensitivity/specificity, prescribe, or replace an eye-care professional; unsupported, ambiguous, low-quality, tampered, and OOD inputs fail closed.
+
+60. **Engineering classification.** ENGINEERING PARTIAL — BLOCKERS REMAIN.
+
+61. **Clinical classification.** NOT CLINICALLY VALIDATED — NOT A MEDICAL DEVICE — NOT FOR AUTONOMOUS DIAGNOSIS.

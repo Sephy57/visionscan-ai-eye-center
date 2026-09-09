@@ -5,9 +5,9 @@
     "version": "0.1.0"
   },
   "source": {
-    "commit": "17fda11462a2eb59e622d9cf710fc41de3ddd660",
+    "commit": "6992be96150724779494eebf7d70b61f787fd714",
     "branch": "main",
-    "working_tree_clean": true
+    "working_tree_clean": false
   },
   "runtime": {
     "node": "v20.20.2",
@@ -40,10 +40,16 @@
     "validation_registry_version": "2026-09-08.2"
   },
   "dependencies": {
-    "package_lock_sha256": "9dba08b19bdbcf392677109d34602d840065d64ed1dec3a03af99fa5b048b678",
+    "package_lock_sha256": "578f9898fe3222c787e547659c92265d70c012a19eb7207e504fcf620d71acef",
     "sbom_path": "docs/generated/SBOM.cdx.json",
-    "sbom_sha256": "ed21a1e6845d514452979af74594c125a81e1f0a23783a9112253168fc208715"
+    "sbom_sha256": "df9dff9e2f2148ab0e911832e388b4282359d138df3a10eff69fb3b6a4dde930"
+  },
+  "persistence": {
+    "backend": "sqlite",
+    "database_schema_version": "1",
+    "migration_version": "1",
+    "database_file_extension": ".db"
   },
   "phi_included": false,
-  "generated_at": "2026-09-09T13:47:05.271Z"
+  "generated_at": "2026-09-09T18:43:57.846Z"
 }

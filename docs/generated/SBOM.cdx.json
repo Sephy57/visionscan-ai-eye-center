@@ -1,7 +1,7 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:727ff9ee-7001-d5b1-ff49-4ae86762897d",
+  "serialNumber": "urn:uuid:1b7b5409-8901-a492-1467-8f5a687181d6",
   "version": 1,
   "metadata": {
     "component": {
@@ -16,7 +16,7 @@
       },
       {
         "name": "visionscan:package-lock-sha256",
-        "value": "9dba08b19bdbcf392677109d34602d840065d64ed1dec3a03af99fa5b048b678"
+        "value": "578f9898fe3222c787e547659c92265d70c012a19eb7207e504fcf620d71acef"
       },
       {
         "name": "visionscan:python-environment-detected",
@@ -25,6 +25,14 @@
       {
         "name": "visionscan:patient-data-included",
         "value": "false"
+      },
+      {
+        "name": "visionscan:phi-included",
+        "value": "false"
+      },
+      {
+        "name": "visionscan:persistence",
+        "value": "sqlite (better-sqlite3); legacy JSON import tooling only"
       }
     ]
   },
@@ -2215,6 +2223,20 @@
     },
     {
       "type": "library",
+      "name": "@types/better-sqlite3",
+      "version": "9.6.0",
+      "scope": "optional",
+      "purl": "pkg:npm/%40types/better-sqlite3@9.6.0",
+      "bom-ref": "npm:94508b8c9926c12acc327f95",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "@types/chai",
       "version": "5.2.3",
       "scope": "required",
@@ -2719,11 +2741,67 @@
     },
     {
       "type": "library",
+      "name": "base64-js",
+      "version": "1.5.1",
+      "scope": "required",
+      "purl": "pkg:npm/base64-js@1.5.1",
+      "bom-ref": "npm:12b04a9307da00963d080be6",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "baseline-browser-mapping",
       "version": "2.11.21",
       "scope": "required",
       "purl": "pkg:npm/baseline-browser-mapping@2.11.21",
       "bom-ref": "npm:4baab568c7caf48a114e8322",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "better-sqlite3",
+      "version": "11.10.0",
+      "scope": "required",
+      "purl": "pkg:npm/better-sqlite3@11.10.0",
+      "bom-ref": "npm:39febb273138aa51d8f93ef1",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "bindings",
+      "version": "1.5.0",
+      "scope": "required",
+      "purl": "pkg:npm/bindings@1.5.0",
+      "bom-ref": "npm:219527428d42b28e22c2ab0d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "bl",
+      "version": "4.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/bl@4.1.0",
+      "bom-ref": "npm:6c36e1aebb91c7481260bc6a",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -2831,6 +2909,20 @@
     },
     {
       "type": "library",
+      "name": "buffer",
+      "version": "5.7.1",
+      "scope": "required",
+      "purl": "pkg:npm/buffer@5.7.1",
+      "bom-ref": "npm:a5b51dc1ecf20642f178da9b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "cac",
       "version": "6.7.14",
       "scope": "required",
@@ -2906,6 +2998,20 @@
       "scope": "required",
       "purl": "pkg:npm/check-error@2.1.3",
       "bom-ref": "npm:fae85c42f6b3b223861b9ec2",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "chownr",
+      "version": "1.1.4",
+      "scope": "required",
+      "purl": "pkg:npm/chownr@1.1.4",
+      "bom-ref": "npm:8899f560103fcf70a62466ab",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -3027,11 +3133,39 @@
     },
     {
       "type": "library",
+      "name": "decompress-response",
+      "version": "6.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/decompress-response@6.0.0",
+      "bom-ref": "npm:f1d5261e745bb8a229e294ca",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "deep-eql",
       "version": "5.0.2",
       "scope": "required",
       "purl": "pkg:npm/deep-eql@5.0.2",
       "bom-ref": "npm:8ba88c6dd841b2a9626dea04",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "deep-extend",
+      "version": "0.6.0",
+      "scope": "required",
+      "purl": "pkg:npm/deep-extend@0.6.0",
+      "bom-ref": "npm:3148d8499342612d755fb2f2",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -3074,6 +3208,20 @@
       "scope": "required",
       "purl": "pkg:npm/electron-to-chromium@1.5.425",
       "bom-ref": "npm:5be0879b7dac7e373b98b00d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "end-of-stream",
+      "version": "1.4.5",
+      "scope": "required",
+      "purl": "pkg:npm/end-of-stream@1.4.5",
+      "bom-ref": "npm:3dbddbd22d6c0550c249ee18",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -3335,6 +3483,20 @@
     },
     {
       "type": "library",
+      "name": "expand-template",
+      "version": "2.0.3",
+      "scope": "required",
+      "purl": "pkg:npm/expand-template@2.0.3",
+      "bom-ref": "npm:8569ab754de2ccc2b159931c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "expect-type",
       "version": "1.4.0",
       "scope": "required",
@@ -3447,6 +3609,20 @@
     },
     {
       "type": "library",
+      "name": "file-uri-to-path",
+      "version": "1.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/file-uri-to-path@1.0.0",
+      "bom-ref": "npm:22af49e3ecceb09c3a3c940e",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "fill-range",
       "version": "7.1.1",
       "scope": "required",
@@ -3503,6 +3679,20 @@
     },
     {
       "type": "library",
+      "name": "fs-constants",
+      "version": "1.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/fs-constants@1.0.0",
+      "bom-ref": "npm:2cc4659d6c747861e2389463",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "fsevents",
       "version": "2.3.3",
       "scope": "required",
@@ -3522,6 +3712,20 @@
       "scope": "required",
       "purl": "pkg:npm/gensync@1.0.0-beta.2",
       "bom-ref": "npm:865e985dd7c113f7dcbc6190",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "github-from-package",
+      "version": "0.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/github-from-package@0.0.0",
+      "bom-ref": "npm:5d360ef88af86b9b646f39cd",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -3629,6 +3833,20 @@
     },
     {
       "type": "library",
+      "name": "ieee754",
+      "version": "1.2.1",
+      "scope": "required",
+      "purl": "pkg:npm/ieee754@1.2.1",
+      "bom-ref": "npm:f3dcfb365d673b85506fa680",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "ignore",
       "version": "5.3.2",
       "scope": "required",
@@ -3662,6 +3880,34 @@
       "scope": "required",
       "purl": "pkg:npm/imurmurhash@0.1.4",
       "bom-ref": "npm:fce62f3c2468d3c2db0ca17b",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "inherits",
+      "version": "2.0.4",
+      "scope": "required",
+      "purl": "pkg:npm/inherits@2.0.4",
+      "bom-ref": "npm:5b2ebfeeeee52bfcc55a43fb",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "ini",
+      "version": "1.3.8",
+      "scope": "required",
+      "purl": "pkg:npm/ini@1.3.8",
+      "bom-ref": "npm:f344f4f57cc4fdb3e817d973",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -3993,6 +4239,20 @@
     },
     {
       "type": "library",
+      "name": "mimic-response",
+      "version": "3.1.0",
+      "scope": "required",
+      "purl": "pkg:npm/mimic-response@3.1.0",
+      "bom-ref": "npm:5772ed4bdcb50bdabc8a9d7f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "minimatch",
       "version": "10.2.6",
       "scope": "required",
@@ -4049,6 +4309,34 @@
     },
     {
       "type": "library",
+      "name": "minimist",
+      "version": "1.2.8",
+      "scope": "required",
+      "purl": "pkg:npm/minimist@1.2.8",
+      "bom-ref": "npm:ce5147788fcf2661db3a95ca",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mkdirp-classic",
+      "version": "0.5.3",
+      "scope": "required",
+      "purl": "pkg:npm/mkdirp-classic@0.5.3",
+      "bom-ref": "npm:16805d114d406ff627b1a77f",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "ms",
       "version": "2.1.3",
       "scope": "required",
@@ -4068,6 +4356,20 @@
       "scope": "required",
       "purl": "pkg:npm/nanoid@3.3.18",
       "bom-ref": "npm:8616cf920cb2ee2cc8603b7a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "napi-build-utils",
+      "version": "2.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/napi-build-utils@2.0.0",
+      "bom-ref": "npm:e862e4a5d349f5f87407bc4e",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -4105,6 +4407,20 @@
     },
     {
       "type": "library",
+      "name": "node-abi",
+      "version": "3.96.0",
+      "scope": "required",
+      "purl": "pkg:npm/node-abi@3.96.0",
+      "bom-ref": "npm:3667fba25976603fbffe888d",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "node-fetch",
       "version": "2.7.0",
       "scope": "required",
@@ -4124,6 +4440,20 @@
       "scope": "required",
       "purl": "pkg:npm/node-releases@2.0.55",
       "bom-ref": "npm:2c455a285c6a0e7e08a279a8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "once",
+      "version": "1.4.0",
+      "scope": "required",
+      "purl": "pkg:npm/once@1.4.0",
+      "bom-ref": "npm:e319f1cd728cee6675f6a62a",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -4371,11 +4701,39 @@
     },
     {
       "type": "library",
+      "name": "prebuild-install",
+      "version": "7.1.3",
+      "scope": "required",
+      "purl": "pkg:npm/prebuild-install@7.1.3",
+      "bom-ref": "npm:cfbbd1115d1ca2cc792a0adc",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "prelude-ls",
       "version": "1.2.1",
       "scope": "required",
       "purl": "pkg:npm/prelude-ls@1.2.1",
       "bom-ref": "npm:dff6c5e5f8791e1be2127587",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pump",
+      "version": "3.0.4",
+      "scope": "required",
+      "purl": "pkg:npm/pump@3.0.4",
+      "bom-ref": "npm:8dc8bc8cf0fe42f6af2e0558",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -4413,6 +4771,20 @@
     },
     {
       "type": "library",
+      "name": "rc",
+      "version": "1.2.8",
+      "scope": "required",
+      "purl": "pkg:npm/rc@1.2.8",
+      "bom-ref": "npm:873e58308675cf82f41f9b58",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "react-dom",
       "version": "18.3.1",
       "scope": "required",
@@ -4432,6 +4804,20 @@
       "scope": "required",
       "purl": "pkg:npm/react@18.3.1",
       "bom-ref": "npm:c91fc21388155b7516ca2ad4",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "readable-stream",
+      "version": "3.6.2",
+      "scope": "required",
+      "purl": "pkg:npm/readable-stream@3.6.2",
+      "bom-ref": "npm:58423469699990bce1b2b5c3",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -4502,6 +4888,20 @@
       "scope": "required",
       "purl": "pkg:npm/run-parallel@1.2.0",
       "bom-ref": "npm:9992d74a6025eeda2f298bf2",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "safe-buffer",
+      "version": "5.2.1",
+      "scope": "required",
+      "purl": "pkg:npm/safe-buffer@5.2.1",
+      "bom-ref": "npm:670ee7452f225ad20135fe6f",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -4623,6 +5023,34 @@
     },
     {
       "type": "library",
+      "name": "simple-concat",
+      "version": "1.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/simple-concat@1.0.1",
+      "bom-ref": "npm:fa6bc2156633eacaddde009a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "simple-get",
+      "version": "4.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/simple-get@4.0.1",
+      "bom-ref": "npm:a2e6e7003b7e0354952c5db8",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "source-map-js",
       "version": "1.2.1",
       "scope": "required",
@@ -4656,6 +5084,34 @@
       "scope": "required",
       "purl": "pkg:npm/std-env@3.10.0",
       "bom-ref": "npm:bac4530a4243a94ce6ae71fc",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "string_decoder",
+      "version": "1.3.0",
+      "scope": "required",
+      "purl": "pkg:npm/string_decoder@1.3.0",
+      "bom-ref": "npm:4338eed6e0bc5b6e8035b43a",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "strip-json-comments",
+      "version": "2.0.1",
+      "scope": "required",
+      "purl": "pkg:npm/strip-json-comments@2.0.1",
+      "bom-ref": "npm:7a9b8260083fb5e670b813ed",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -4712,6 +5168,34 @@
       "scope": "required",
       "purl": "pkg:npm/supports-color@7.2.0",
       "bom-ref": "npm:53e54b036f83f436b81790ad",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tar-fs",
+      "version": "2.1.5",
+      "scope": "required",
+      "purl": "pkg:npm/tar-fs@2.1.5",
+      "bom-ref": "npm:c935bb02268bd1c23b7bcf7c",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tar-stream",
+      "version": "2.2.0",
+      "scope": "required",
+      "purl": "pkg:npm/tar-stream@2.2.0",
+      "bom-ref": "npm:4666d01a015a8c261051605f",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -4903,6 +5387,20 @@
     },
     {
       "type": "library",
+      "name": "tunnel-agent",
+      "version": "0.6.0",
+      "scope": "required",
+      "purl": "pkg:npm/tunnel-agent@0.6.0",
+      "bom-ref": "npm:65078304ee8526d7fc280e62",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "type-check",
       "version": "0.4.0",
       "scope": "required",
@@ -4978,6 +5476,20 @@
       "scope": "required",
       "purl": "pkg:npm/uri-js@4.4.1",
       "bom-ref": "npm:36bee8ee10de5d3c02632575",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "util-deprecate",
+      "version": "1.0.2",
+      "scope": "required",
+      "purl": "pkg:npm/util-deprecate@1.0.2",
+      "bom-ref": "npm:68fd667470e6c37ba8992d55",
       "properties": [
         {
           "name": "visionscan:package-manager",
@@ -5118,6 +5630,20 @@
       "scope": "required",
       "purl": "pkg:npm/word-wrap@1.2.5",
       "bom-ref": "npm:9948f78a2c0a4e1423f72abe",
+      "properties": [
+        {
+          "name": "visionscan:package-manager",
+          "value": "npm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "wrappy",
+      "version": "1.0.2",
+      "scope": "required",
+      "purl": "pkg:npm/wrappy@1.0.2",
+      "bom-ref": "npm:66d7067b6b146e9c4c8a3f8c",
       "properties": [
         {
           "name": "visionscan:package-manager",
