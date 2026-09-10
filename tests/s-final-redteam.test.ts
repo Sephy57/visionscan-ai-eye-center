@@ -86,7 +86,14 @@ describe("S-FINAL scenario 1 - query-string spoofing has no intake point and no 
   it("GET /api/studies/:id ignores every spoofed query param and returns identical safety-critical fields", async () => {
     const STUDY_ROUTE = (await import("@/app/api/studies/[id]/route")) as typeof import("@/app/api/studies/[id]/route");
     const bytes = await makeFundusLikeImage(1);
-    const study = await createStudy("sf-qs.png", "image/png", bytes, DECLARED);
+    // This is a route/query-boundary test, not a model-runtime test.  Use an
+    // explicitly non-fundus modality so the fixture cannot enter an installed
+    // research provider while it is being prepared.  Otherwise the security
+    // assertion inherits a 10--120s model subprocess budget and can report a
+    // false query-spoof timeout even though GET itself only reads the stored
+    // bundle.  The route remains the same and the diagnosis gate is still
+    // required to be closed below.
+    const study = await createStudy("sf-qs.png", "image/png", bytes, { ...DECLARED, scanType: "external_eye" });
     createdStudyIds.push(study.study_id);
     await analyzeStudy(study.study_id);
 
