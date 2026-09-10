@@ -8,15 +8,15 @@ commands recorded below.
 
 1. **Starting HEAD.** The actual repository tip at the start of this final pass was `c58595234cfb109ba8e65aeaab185575920c24c6` on `main`, with the earlier prompt candidate `a9b989fd9365eb4336f4fed143f622439cf5faab` in its history. The working tree was inspected with `git status --short`, `git diff --check`, and `git diff --stat`; no reset, clean, checkout, restore, or stash was used.
 
-2. **Ending HEAD.** The runtime/evidence integration tip is `1521443ed021d06bbf868bb160a26fdbbe85cebc` (`ci: satisfy synthetic account password policy`). The report and inventory are documentation follow-ups to that candidate; they do not change runtime behavior or data.
+2. **Ending HEAD.** The runtime/evidence integration tip is `5cfe4901ba8ec03d767f9cf908d334b51a3855e0` (`test: wait for login hydration in browser smoke`). The report and inventory are documentation follow-ups to that candidate; they do not change runtime behavior or data.
 
 3. **Branch.** `main`; remote `origin` is `https://github.com/Sephy57/visionscan-ai-eye-center.git`.
 
-4. **Commits.** The relevant blocker-closure history is linear and preserved: `a9b989f` (reconciliation/FK evidence), `e6743c4` (optional bridge policy and browser smoke), `56e42bf` (Vitest compatibility evidence), `8b4c56c` (future-write integrity and release data gates), `1ef098b` (query-spoof isolation), `e992e73` (hosted-browser storage isolation), `c585952` (bounded model benchmark), `a75bb13` (current red-team fixture bound, hydration warning fix, current generated evidence, and inventory metadata fields), `ad05f9d` (report/inventory snapshot), `0e27ab4` (report normalization), `49e5643` (runner storage context), `65c66fe` (Chromium discovery and secret masking), and `1521443` (synthetic account password policy).
+4. **Commits.** The relevant blocker-closure history is linear and preserved: `a9b989f` (reconciliation/FK evidence), `e6743c4` (optional bridge policy and browser smoke), `56e42bf` (Vitest compatibility evidence), `8b4c56c` (future-write integrity and release data gates), `1ef098b` (query-spoof isolation), `e992e73` (hosted-browser storage isolation), `c585952` (bounded model benchmark), `a75bb13` (current red-team fixture bound, hydration warning fix, current generated evidence, and inventory metadata fields), `ad05f9d` (report/inventory snapshot), `0e27ab4` (report normalization), `49e5643` (runner storage context), `65c66fe` (Chromium discovery and secret masking), `1521443` (synthetic account password policy), and `5cfe490` (browser hydration wait and login-response assertion).
 
-5. **Push.** `1521443` was pushed successfully to `origin/main`; no credentials or tokens are recorded in this report. The resulting final-head workflow was observed to completion below.
+5. **Push.** `5cfe490` was pushed successfully to `origin/main`; no credentials or tokens are recorded in this report. The resulting final-head workflow was observed to completion below.
 
-6. **Final-head CI.** GitHub Actions run `34534833184` for `1521443` completed green: Ubuntu `verify` (job `103063902315`, 2m22s), Windows `verify-windows` (job `103063902624`, 3m27s), and hosted `verify-browser` (job `103063902773`, 1m04s). This conclusion was taken from completed jobs, not queue state; the earlier workflow-plan and browser-bootstrap failures were corrected before this run.
+6. **Final-head CI.** GitHub Actions run `34536546802` for `5cfe490` completed green: Ubuntu `verify` (job `103069391295`, 2m26s), Windows `verify-windows` (job `103069391448`, 4m44s), and hosted `verify-browser` (job `103069391127`, 1m18s). This conclusion was taken from completed jobs, not queue state. The immediately preceding inventory-only run exposed a fast-runner SSR-to-React hydration race; the browser smoke fix now waits for the hydrated submit handler and verifies the login POST before waiting for redirect.
 
 7. **Sub-agents.** The required parallel review was completed by `/root/integrity_closure` (reconciliation, FK, future-write and release-data gates), `/root/runtime_stability` (worker/model runtime, S9 benchmark and red-team stability), and `/root/toolchain_browser` (Vitest/bridge policy and hosted browser CI). Main-agent review integrated their non-overlapping changes. Data integrity, model runtime, security, toolchain, CI, and release classification were each independently checked; no FAIL was left unaddressed in the local evidence.
 
@@ -72,7 +72,7 @@ commands recorded below.
 
 33. **Request-path profile.** The real GET study route performs authentication, identifier validation, stored-study access, and response shaping. `useSearchParams()` consumers only use navigation identifiers such as `study`/`job`; safety fields are re-fetched from the server. The route does not send unknown query keys to OCR, filesystem scans, full-database traversal, or model inference.
 
-34. **Fail-fast changes.** Static route tests assert no privileged safety query parameter is read, and body tests assert `/api/analyze` reads only the permitted study/async fields. Security-boundary scenarios now declare `external_eye` so their real route/service assertions remain bounded on both model-equipped and clean checkouts. No production timeout was increased and no arbitrary query parameter is passed into a domain object.
+34. **Fail-fast changes.** Static route tests assert no privileged safety query parameter is read, and body tests assert `/api/analyze` reads only the permitted study/async fields. Security-boundary scenarios now declare `external_eye` so their real route/service assertions remain bounded on both model-equipped and clean checkouts. The hosted login smoke waits for React hydration and asserts a successful `/api/auth/login` POST before waiting for `/dashboard`. No production timeout was increased and no arbitrary query parameter is passed into a domain object.
 
 35. **Repeated spoof test.** Three consecutive `tests/s-final-redteam.test.ts` runs completed 9/9, with elapsed times 34.95 s, 37.16 s, and 35.35 s. They recorded zero timeouts, zero mutation bypasses, and the expected server-derived reviewer/diagnosis-gate values.
 
@@ -88,7 +88,7 @@ commands recorded below.
 
 41. **Dependency advisory decision.** `npm audit --audit-level=high` exits 0 with two disclosed moderate dev-only Vitest advisories (`GHSA-82fw-gwwq-j7x9` family); `npm audit --omit=dev --audit-level=high` exits 0 with zero production vulnerabilities. `npm audit fix --force` was not used. The advisory is accepted as a development-only limitation.
 
-42. **Browser CI.** `.github/workflows/ci.yml` contains a live `verify-browser` job that installs Chromium, starts an isolated local server/SQLite store, and checks login, dashboard, patients, analyze, result, and report with synthetic data only. The local hosted-equivalent and remote job `103063902773` both passed 6/6 checks in 1m04s; the synthetic password was masked in runner logs.
+42. **Browser CI.** `.github/workflows/ci.yml` contains a live `verify-browser` job that installs Chromium, starts an isolated local server/SQLite store, and checks login, dashboard, patients, analyze, result, and report with synthetic data only. The local hosted-equivalent and remote job `103069391127` both passed 6/6 checks in 1m18s; the synthetic password was masked in runner logs.
 
 43. **Windows CI.** `verify-windows` remains configured on `windows-latest` for npm install, schema/migration, typecheck, path/reparse safety, tests, backup dry-run, model audit, SBOM, filesystem audit, and build. No Windows path safety gate was removed.
 
@@ -108,7 +108,7 @@ commands recorded below.
 
 51. **SBOM.** `npm run sbom` generated CycloneDX 1.5 with 464 components, SHA-256 `df9dff9e2f2148ab0e911832e388b4282359d138df3a10eff69fb3b6a4dde930`, and `phi_included=false`. No model weights, database, backup, or patient binary is in the SBOM.
 
-52. **Release inventory.** `docs/generated/release-inventory.json` is regenerated for the `1521443` runtime candidate and records Node `v20.20.2`, Python `3.12.10`, SQLite schema/migration `1/1`, three research manifests and hashes, ruleset versions, package-lock/SBOM hashes, verified encrypted backup metadata, reconciliation 235/66, FK state, model cold/warm timing, hosted-browser status, final CI run `34534833184`, and `phi_included=false`.
+52. **Release inventory.** `docs/generated/release-inventory.json` is regenerated for the `5cfe490` runtime candidate and records Node `v20.20.2`, Python `3.12.10`, SQLite schema/migration `1/1`, three research manifests and hashes, ruleset versions, package-lock/SBOM hashes, verified encrypted backup metadata, reconciliation 235/66, FK state, model cold/warm timing, hosted-browser status, final CI run `34536546802`, and `phi_included=false`.
 
 53. **Full test totals.** Final model-enabled total: 67 files passed, 1 skipped; 986 tests passed, 10 skipped; exit 0 in 628.23 s. Independent fresh no-model checkout evidence was 66 files passed/1 skipped and 951 tests passed/43 skipped in 199.60 s. Final focused red-team was 9/9 on each of three repetitions; S9 functional and model benchmark gates were green.
 
@@ -148,7 +148,7 @@ commands recorded below.
 
 71. **Original blocker F/G status.** `ACCEPTED_DEV_ONLY_LIMITATION`: two moderate Vitest advisories remain disclosed; Vitest 4 is not adopted because of the proven child-runner incompatibility. Production dependencies are unaffected.
 
-72. **Original blocker H status.** `RESOLVED`: a real `verify-browser` hosted job exists, the isolated hosted-equivalent smoke is 6/6, and remote final-head job `103063902773` is green in run `34534833184`.
+72. **Original blocker H status.** `RESOLVED`: a real `verify-browser` hosted job exists, the isolated hosted-equivalent smoke is 6/6, and remote final-head job `103069391127` is green in run `34536546802`.
 
 73. **Remaining engineering blockers.** The active release blockers are the 235 unavailable source dependencies and the unsafe direct migration of 5,263 legacy FK references. `npm run release:data-check` intentionally exits non-zero for those active conditions. No functional model-suite or focused red-team failure remains locally.
 
