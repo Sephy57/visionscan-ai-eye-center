@@ -12,7 +12,10 @@
     "/report HTTP 200"
   ],
   "remote_workflow": "verify-browser",
-  "remote_status": "PENDING_FINAL_PUSH",
+  "remote_status": "GREEN",
+  "remote_run_id": "34534833184",
+  "remote_job_id": "103063902773",
+  "remote_duration_seconds": 64,
   "fixture_scope": "synthetic account, empty isolated SQLite store, no patient data, no model weights, no provider credentials",
   "phi_included": false
 }
