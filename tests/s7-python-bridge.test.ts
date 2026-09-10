@@ -18,7 +18,11 @@ import { getProviderForModel, defaultProvider } from "@/lib/models/provider";
  * now passes.
  */
 
-const RUN_LIVE_PYTHON = process.env.VISIONSCAN_RUN_LIVE_PYTHON === "1" || !process.env.CI;
+// A clean checkout must not inherit assumptions about the developer's Python
+// installation.  Opt into the real environment probe explicitly when the
+// dedicated research runtime is present; CI and model-optional runs retain the
+// structured fail-closed contract without requiring torch/torchvision.
+const RUN_LIVE_PYTHON = process.env.VISIONSCAN_RUN_LIVE_PYTHON === "1";
 
 describe.skipIf(!RUN_LIVE_PYTHON)("S7 - live Python environment readiness (real subprocess, no mocks)", () => {
   it("reports the actual current environment state truthfully", async () => {
