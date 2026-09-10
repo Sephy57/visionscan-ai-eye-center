@@ -48,6 +48,64 @@ function modelInventory() {
     }];
   });
 }
+
+function backupInventory() {
+  const root = path.join(ROOT, "data", "backups");
+  let candidates = [];
+  try {
+    candidates = fs.readdirSync(root, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && entry.name.startsWith("backup-"))
+      .map((entry) => entry.name)
+      .sort()
+      .reverse();
+  } catch { return { status: "NO_VERIFIED_BACKUP", latest: null }; }
+  for (const name of candidates) {
+    const relativePath = path.posix.join("data", "backups", name);
+    const manifest = json(path.join(relativePath, "manifest.json"));
+    if (!manifest || manifest.format !== "visionscan-data-backup-v1") continue;
+    const verified = manifest.database?.integrity_check === "ok" &&
+      typeof manifest.database?.backup_sha256 === "string" &&
+      typeof manifest.assets?.manifest_backup_sha256 === "string" &&
+      manifest.credentials_included === false;
+    return {
+      status: verified ? "VERIFIED_BACKUP_AVAILABLE" : "UNVERIFIED_BACKUP",
+      latest: {
+        path: relativePath,
+        created_at: manifest.created_at ?? null,
+        encrypted: manifest.encryption?.enabled === true,
+        integrity_check: manifest.database?.integrity_check ?? null,
+        schema_version: manifest.database?.schema_version ?? null,
+        migration_version: manifest.database?.migration_version ?? null,
+        asset_count: Number.isInteger(manifest.assets?.asset_count) ? manifest.assets.asset_count : null,
+        credentials_included: manifest.credentials_included === true,
+      },
+    };
+  }
+  return { status: "NO_VERIFIED_BACKUP", latest: null };
+}
+
+function reconciliationInventory() {
+  const relativePath = "docs/generated/reconciliation-adjudication.json";
+  const report = json(relativePath);
+  if (!report || report.format !== "visionscan-reconciliation-adjudication-v1") {
+    return { status: "NOT_GENERATED", path: relativePath, total_findings: null, counts: null, quarantine_applied: false };
+  }
+  const counts = report.counts && typeof report.counts === "object" ? report.counts : {};
+  const unresolved = Number(counts.MISSING_REQUIRED_ARTIFACT ?? 0) + Number(counts.MANUAL_REVIEW_REQUIRED ?? 0);
+  return {
+    status: unresolved === 0 ? "ADJUDICATED_NO_UNRESOLVED" : "ADJUDICATED_BLOCKERS_REMAIN",
+    path: relativePath,
+    total_findings: Number.isInteger(report.total_findings) ? report.total_findings : null,
+    counts,
+    quarantine_applied: report.quarantine_applied === true,
+    unresolved_blocking_findings: unresolved,
+  };
+}
+
+function ciRunIds() {
+  const raw = process.env.VISIONSCAN_CI_RUN_IDS ?? "";
+  return raw.split(",").map((value) => value.trim()).filter(Boolean).slice(0, 20);
+}
 function versionFrom(source, name) {
   const match = source.match(new RegExp(name + "\\s*=\\s*\"([^\"]+)\""));
   return match?.[1] ?? null;
@@ -102,6 +160,9 @@ const inventory = {
     validation_registry_version: versionFrom(read("lib/models/validationRegistry.ts"), "VALIDATION_REGISTRY_VERSION"),
   },
   dependencies: { package_lock_sha256: lockSha, sbom_path: sbomRelative, sbom_sha256: sha256File(sbomRelative) },
+  backup: backupInventory(),
+  reconciliation: reconciliationInventory(),
+  ci_run_ids: ciRunIds(),
   persistence: persistenceInventory(),
   phi_included: false,
   generated_at: new Date().toISOString(),

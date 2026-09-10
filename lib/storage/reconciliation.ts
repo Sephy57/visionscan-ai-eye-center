@@ -64,6 +64,16 @@ function idFor(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/**
+ * Reconciliation findings are deterministic so an adjudication record can be
+ * re-applied to a later scan without relying on a process-local random id.
+ * The path is normalized before hashing by the scanner caller; no payload or
+ * patient content is included in the identifier.
+ */
+function issueId(input: { kind: ReconciliationIssueKind; resource: string; resource_id: string; path?: string }): string {
+  return `issue_${sha256(Buffer.from(`${input.kind}|${input.resource}|${input.resource_id}|${input.path ?? ""}`, "utf8")).slice(0, 20)}`;
+}
+
 function iso(): string { return new Date().toISOString(); }
 
 export async function prepareRecoveryJournal(input: {
@@ -124,13 +134,21 @@ export async function recoverPendingReconciliations(): Promise<RecoveryJournalEn
 async function listFilesRecursive(root: string): Promise<string[]> {
   const result: string[] = [];
   async function visit(dir: string): Promise<void> {
+    const directoryStat = await fs.lstat(dir).catch((error) => {
+      if (error?.code === "ENOENT") return null;
+      throw error;
+    });
+    if (!directoryStat) return;
+    if (directoryStat.isSymbolicLink()) throw new Error(`Symlink/reparse path rejected: ${dir}`);
+    if (!directoryStat.isDirectory()) return;
     let names: string[];
     try { names = await fs.readdir(dir); } catch { return; }
     for (const name of names) {
       let absolute: string;
       try { absolute = safeJoin(root, path.relative(root, path.join(dir, name))); } catch { continue; }
-      const stat = await fs.stat(absolute).catch(() => null);
+      const stat = await fs.lstat(absolute).catch(() => null);
       if (!stat) continue;
+      if (stat.isSymbolicLink()) throw new Error(`Symlink/reparse path rejected: ${absolute}`);
       if (stat.isDirectory()) await visit(absolute);
       else if (stat.isFile()) result.push(absolute);
     }
@@ -159,7 +177,7 @@ export async function scanReconciliation(): Promise<ReconciliationPlan> {
   const issues: ReconciliationIssue[] = [];
   const counts = emptyCounts();
   const add = (issue: Omit<ReconciliationIssue, "issue_id">) => {
-    const full = { ...issue, issue_id: idFor("issue") };
+    const full = { ...issue, issue_id: issueId(issue) };
     issues.push(full);
     counts[full.kind] += 1;
   };

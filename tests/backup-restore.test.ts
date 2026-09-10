@@ -2,7 +2,8 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import crypto from "crypto";
-import { execFileSync } from "child_process";
+import Database from "better-sqlite3";
+import { execFileSync, spawn } from "child_process";
 import { afterAll, describe, expect, it } from "vitest";
 
 const repo = process.cwd();
@@ -129,6 +130,42 @@ describe("data backup and restore controls", () => {
     expect(runFailure("backup-data.mjs", ["--encrypt", "--output", path.join(runRoot, "backup-no-key")], { VISIONSCAN_BACKUP_KEY: "" })).toMatch(/no backup key/i);
     expect(fs.existsSync(path.join(runRoot, "backup-no-key"))).toBe(false);
   });
+
+  it("takes a transactionally consistent snapshot while an inference-like writer is active", async () => {
+    const writer = path.join(runRoot, "active-writer.mjs");
+    fs.writeFileSync(writer, `
+      import { createRequire } from "node:module";
+      const Database = createRequire(import.meta.url)(${JSON.stringify(path.join(repo, "node_modules", "better-sqlite3"))});
+      const db = new Database(process.argv[2]);
+      db.pragma("busy_timeout = 5000");
+      db.exec("BEGIN IMMEDIATE; CREATE TABLE IF NOT EXISTS backup_write_probe (id INTEGER PRIMARY KEY, marker TEXT NOT NULL); DELETE FROM backup_write_probe;");
+      const insert = db.prepare("INSERT INTO backup_write_probe(marker) VALUES (?)");
+      for (let i = 0; i < 1000; i += 1) insert.run("INFERENCE_WRITE_" + i);
+      setTimeout(() => { db.exec("COMMIT"); db.close(); }, 500);
+    `, "utf8");
+    const child = spawn(process.execPath, [writer, database], { cwd: runRoot, windowsHide: true });
+    const childExit = new Promise<number | null>((resolve, reject) => {
+      child.once("error", reject);
+      child.once("exit", (code) => resolve(code));
+    });
+    await new Promise((resolve) => setTimeout(resolve, 75));
+    const duringBackup = path.join(runRoot, "backup-during-write");
+    const output = JSON.parse(run("backup-data.mjs", ["--output", duringBackup]));
+    expect(output.database.snapshot_method).toBe("sqlite_online_backup");
+    const exitCode = await childExit;
+    expect(exitCode).toBe(0);
+    const restored = JSON.parse(run("restore-data.mjs", ["--backup", duringBackup]));
+    const restoredDbPath = path.join(restored.output, "eye-ai.db");
+    const restoredDb = new Database(restoredDbPath, { readonly: true, fileMustExist: true });
+    try {
+      expect(restoredDb.pragma("integrity_check", { simple: true })).toBe("ok");
+      let rows = 0;
+      try { rows = Number((restoredDb.prepare("SELECT count(*) AS count FROM backup_write_probe").get() as { count: number }).count); } catch { /* snapshot preceded the commit */ }
+      expect([0, 1000]).toContain(rows);
+    } finally {
+      restoredDb.close();
+    }
+  }, 60_000);
 });
 
 afterAll(() => fs.rmSync(runRoot, { recursive: true, force: true }));

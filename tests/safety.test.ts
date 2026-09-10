@@ -203,4 +203,15 @@ describe("path safety", () => {
   it("allows normal nested paths", () => {
     expect(() => safeJoin("D:\\data", "study1", "original.png")).not.toThrow();
   });
+
+  it("rejects absolute, UNC, drive-qualified, and extended-length segments", () => {
+    const candidates = [
+      "\\\\server\\share\\patient.png",
+      "//server/share/patient.png",
+      "\\\\?\\D:\\data\\patient.png",
+      "C:\\outside\\patient.png",
+      "C:relative-to-drive",
+    ];
+    for (const candidate of candidates) expect(() => safeJoin("D:\\data", candidate)).toThrow();
+  });
 });

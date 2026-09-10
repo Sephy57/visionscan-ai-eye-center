@@ -61,3 +61,48 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+  # Keep a native Windows gate in addition to the Linux gate above.  This
+  # exercises drive-qualified/UNC path handling and reparse-point rejection
+  # on the platform where those hazards are real; no patient data or model
+  # weights are required.
+  verify-windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Windows path and reparse-point tests
+        run: npm exec vitest run tests/windows-path-redteam.test.ts tests/safety.test.ts --pool=forks --maxWorkers=1 --minWorkers=1
+
+      - name: Unit and integration tests
+        run: npm test -- --pool=forks --maxWorkers=1 --minWorkers=1
+
+      - name: Legacy migration dry run
+        run: npm run migrate:data -- --dry-run --source tests/fixtures/legacy-store.json --destination "$env:RUNNER_TEMP\visionscan-test.db"
+
+      - name: Backup plan (read-only)
+        run: npm run backup:data -- --dry-run
+
+      - name: Audit local model manifests
+        run: npm run model:audit
+
+      - name: Generate de-identified SBOM
+        run: node scripts/generate-sbom.mjs --output "$env:RUNNER_TEMP\visionscan-sbom.cdx.json"
+
+      - name: Filesystem audit
+        run: npm run audit:fs
+
+      - name: Production build
+        run: npm run build

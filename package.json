@@ -26,6 +26,8 @@
     "seed:admin": "node scripts/seed-admin.mjs",
     "ocr:warmup": "node scripts/ocr-warmup.mjs",
     "migration:preflight": "node scripts/persistence-migration-preflight.mjs",
+    "fk:preflight": "node scripts/fk-preflight.mjs",
+    "reconciliation:adjudicate": "vite-node scripts/reconciliation-adjudicate.ts",
     "migrate:data": "node scripts/migrate-data.mjs",
     "backup:data": "node scripts/backup-data.mjs",
     "restore:data": "node scripts/restore-data.mjs",

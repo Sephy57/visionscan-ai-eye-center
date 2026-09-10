@@ -11,6 +11,7 @@
  */
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -159,11 +160,11 @@ function appVersion() {
   try { return JSON.parse(fsSync.readFileSync(path.join(repo, "package.json"), "utf8")).version ?? null; } catch { return null; }
 }
 
-function sqliteInfo() {
-  if (!fsSync.existsSync(database) || fsSync.statSync(database).size === 0) return { kind: "missing_or_empty" };
-  const header = fsSync.readFileSync(database).subarray(0, 16).toString("ascii");
+function sqliteInfo(filePath = database) {
+  if (!fsSync.existsSync(filePath) || fsSync.statSync(filePath).size === 0) return { kind: "missing_or_empty" };
+  const header = fsSync.readFileSync(filePath).subarray(0, 16).toString("ascii");
   if (header !== sqliteHeader) return { kind: "legacy_or_non_sqlite" };
-  const db = new Database(database, { readonly: true, fileMustExist: true });
+  const db = new Database(filePath, { readonly: true, fileMustExist: true });
   try {
     const integrity = db.pragma("integrity_check", { simple: true });
     const schema = db.prepare("SELECT value FROM persistence_meta WHERE key='schema_version'").get()?.value ?? null;
@@ -216,6 +217,40 @@ async function copyPayload(source, destination, logicalName, key, expectedHash) 
   return { sha256: sha256(payload), bytes: payload.length };
 }
 
+async function verifyDatabaseSourcesUnchanged() {
+  // The online-backup snapshot is already a consistent point-in-time copy;
+  // only the legacy file-copy path needs a live-source race check. In that
+  // path compare with the hash captured before any payload copy.
+  if (!snapshotBackedUp && dbExists && (await hashFile(database)) !== liveDatabaseHash) throw new Error("Database changed during backup; retry after writes quiesce");
+  if (!snapshotBackedUp) for (const sidecar of sidecars) {
+    const source = path.join(path.dirname(database), sidecar.file_name);
+    if ((await hashFile(source)) !== sidecar.sha256) throw new Error(`Database sidecar changed during backup: ${sidecar.file_name}`);
+  }
+}
+
+/**
+ * SQLite's online backup API copies a transactionally consistent snapshot even
+ * while another connection has an active writer. Copying the live database
+ * file directly is unsafe with WAL because the main file and sidecar can be
+ * observed at different points in time. The snapshot is placed outside the
+ * data tree and removed at process exit.
+ */
+async function createSqliteSnapshot(source, destination) {
+  const db = new Database(source, { readonly: true, fileMustExist: true });
+  try {
+    await db.backup(destination);
+  } finally {
+    db.close();
+  }
+  const check = new Database(destination, { readonly: true, fileMustExist: true });
+  try {
+    const integrity = check.pragma("integrity_check", { simple: true });
+    if (integrity !== "ok") throw new Error(`SQLite online backup integrity_check failed: ${integrity}`);
+  } finally {
+    check.close();
+  }
+}
+
 let backupKey = null;
 let encryption = { enabled: false, version: 1, algorithm: null, kdf: null, manifest_authentication: null, manifest_hmac: null };
 let encryptionSalt = null;
@@ -242,23 +277,36 @@ for (const { rootName, root, files } of rootPlans) {
   assetManifest.push(...files.map((file) => ({ root: rootName, ...file })));
   plans.push({ root: rootName, path: root, files: files.length, bytes: files.reduce((sum, file) => sum + file.size, 0) });
 }
+const dbName = path.basename(database);
 const dbStat = fsSync.existsSync(database) ? fsSync.lstatSync(database) : null;
 if (dbStat?.isSymbolicLink()) throw new Error("Database source symlink/reparse path rejected");
 const dbExists = Boolean(dbStat?.isFile());
-const dbBytes = dbExists ? fsSync.statSync(database).size : 0;
-const dbHash = dbExists ? await hashFile(database) : null;
+let databaseSource = database;
+let databaseSnapshotDir = null;
+let snapshotBackedUp = false;
+let dbBytes = dbExists ? fsSync.statSync(database).size : 0;
+const liveDatabaseHash = dbExists ? await hashFile(database) : null;
+let dbHash = liveDatabaseHash;
+if (!dryRun && dbExists && fsSync.readFileSync(database).subarray(0, 16).toString("ascii") === sqliteHeader) {
+  databaseSnapshotDir = await fs.mkdtemp(path.join(os.tmpdir(), "visionscan-backup-snapshot-"));
+  process.once("exit", () => { if (databaseSnapshotDir) fsSync.rmSync(databaseSnapshotDir, { recursive: true, force: true }); });
+  databaseSource = path.join(databaseSnapshotDir, dbName);
+  await createSqliteSnapshot(database, databaseSource);
+  dbBytes = fsSync.statSync(databaseSource).size;
+  dbHash = await hashFile(databaseSource);
+  snapshotBackedUp = true;
+}
 const legacyStat = fsSync.existsSync(legacyDatabase) ? fsSync.lstatSync(legacyDatabase) : null;
 if (legacyStat?.isSymbolicLink()) throw new Error("Legacy database source symlink/reparse path rejected");
 const legacyExists = Boolean(legacyStat?.isFile());
 const legacyBytes = legacyExists ? fsSync.statSync(legacyDatabase).size : 0;
 const legacyHash = legacyExists ? await hashFile(legacyDatabase) : null;
-const dbName = path.basename(database);
 const legacyName = path.basename(legacyDatabase);
 const databaseBackupFile = encryptionRequested ? `${dbName}.enc` : dbName;
 const legacyBackupFile = encryptionRequested ? `${legacyName}.enc` : legacyName;
 const assetManifestFile = encryptionRequested ? "asset-manifest.json.enc" : "asset-manifest.json";
 const sidecars = [];
-for (const suffix of ["-wal", "-shm"]) {
+for (const suffix of snapshotBackedUp ? [] : ["-wal", "-shm"]) {
   const source = `${database}${suffix}`;
   const stat = fsSync.existsSync(source) ? fsSync.lstatSync(source) : null;
   if (stat?.isSymbolicLink()) throw new Error(`Database sidecar symlink/reparse path rejected: ${source}`);
@@ -274,7 +322,7 @@ const manifest = {
   repository: repo,
   git_commit: gitCommit(),
   app_version: appVersion(),
-  database: { path: database, file_name: dbName, backup_file: databaseBackupFile, bytes: dbBytes, sha256: dbHash, sidecars, ...sqliteInfo() },
+  database: { path: database, file_name: dbName, backup_file: databaseBackupFile, bytes: dbBytes, sha256: dbHash, sidecars, snapshot_method: snapshotBackedUp ? "sqlite_online_backup" : "file_copy", ...sqliteInfo(databaseSource) },
   legacy_database: { path: legacyDatabase, file_name: legacyName, backup_file: legacyBackupFile, bytes: legacyBytes, sha256: legacyHash },
   assets: { roots: plans, asset_count: assetCount, manifest_file: assetManifestFile, manifest_sha256: sha256(JSON.stringify(assetManifest)) },
   encryption,
@@ -305,7 +353,7 @@ if (fsSync.existsSync(staging)) throw new Error(`Backup staging path already exi
 await fs.mkdir(staging, { recursive: true });
 try {
   if (dbExists) {
-    const result = await copyPayload(database, path.join(staging, databaseBackupFile), `database/${dbName}`, backupKey, dbHash);
+    const result = await copyPayload(databaseSource, path.join(staging, databaseBackupFile), `database/${dbName}`, backupKey, dbHash);
     manifest.database.backup_sha256 = result.sha256;
     manifest.database.backup_bytes = result.bytes;
   }
@@ -327,6 +375,11 @@ try {
     entry.backup_sha256 = result.sha256;
     entry.backup_bytes = result.bytes;
   }
+  // A copy can race a WAL checkpoint or another writer after its individual
+  // read/hash. Re-check all SQLite source bytes immediately before publishing
+  // the backup so an overlapping write fails closed instead of producing a
+  // falsely complete snapshot. A caller can retry after quiescing writers.
+  await verifyDatabaseSourcesUnchanged();
   // Asset entries may contain encrypted-file metadata and their hash therefore
   // must be finalized before signing the manifest.
   manifest.assets.manifest_sha256 = sha256(JSON.stringify(assetManifest));

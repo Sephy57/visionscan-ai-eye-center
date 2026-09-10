@@ -78,7 +78,18 @@ export function tmpPath(name: string): string {
 /** Paths must never escape the configured roots. */
 export function safeJoin(root: string, ...segments: string[]): string {
   // Treat both slash styles as separators so Windows-form input is safe on Unix.
-  const portableSegments = segments.map((segment) => segment.replaceAll("\\", path.sep));
+  // Reject absolute, drive-qualified, UNC, and extended-length inputs before
+  // joining.  A lexical `path.resolve` check alone is insufficient on Windows:
+  // drive-relative and UNC segments can otherwise select a different volume or
+  // network share while still looking like an in-root path after normalization.
+  const portableSegments = segments.map((segment) => {
+    if (typeof segment !== "string" || segment.includes("\u0000")) throw new Error("Unsafe path segment");
+    const portable = segment.replaceAll("\\", "/");
+    if (portable.startsWith("/") || portable.startsWith("//") || /^[A-Za-z]:/.test(portable)) {
+      throw new Error("Absolute path segment rejected");
+    }
+    return portable.replaceAll("/", path.sep);
+  });
   const resolved = path.resolve(path.join(root, ...portableSegments));
   const normalizedRoot = path.resolve(root);
   if (!resolved.startsWith(normalizedRoot + path.sep) && resolved !== normalizedRoot) {
