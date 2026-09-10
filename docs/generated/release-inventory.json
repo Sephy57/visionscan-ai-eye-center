@@ -5,7 +5,7 @@
     "version": "0.1.0"
   },
   "source": {
-    "commit": "8b2bdb31219ac499cfcb256cd34db4746dbdd05f",
+    "commit": "a9b989fd9365eb4336f4fed143f622439cf5faab",
     "branch": "main",
     "working_tree_clean": true
   },
@@ -44,6 +44,33 @@
     "sbom_path": "docs/generated/SBOM.cdx.json",
     "sbom_sha256": "df9dff9e2f2148ab0e911832e388b4282359d138df3a10eff69fb3b6a4dde930"
   },
+  "backup": {
+    "status": "VERIFIED_BACKUP_AVAILABLE",
+    "latest": {
+      "path": "data/backups/backup-release-20260910143502",
+      "created_at": "2026-09-10T06:35:03.380Z",
+      "encrypted": true,
+      "integrity_check": "ok",
+      "schema_version": "1",
+      "migration_version": "1",
+      "asset_count": 9968,
+      "credentials_included": false
+    }
+  },
+  "reconciliation": {
+    "status": "ADJUDICATED_BLOCKERS_REMAIN",
+    "path": "docs/generated/reconciliation-adjudication.json",
+    "total_findings": 290,
+    "counts": {
+      "MISSING_REQUIRED_ARTIFACT": 235,
+      "VALID_LEGACY_STATE": 55
+    },
+    "quarantine_applied": false,
+    "unresolved_blocking_findings": 235
+  },
+  "ci_run_ids": [
+    "34519366185"
+  ],
   "persistence": {
     "backend": "sqlite",
     "database_schema_version": "1",
@@ -51,5 +78,5 @@
     "database_file_extension": ".db"
   },
   "phi_included": false,
-  "generated_at": "2026-09-09T20:50:49.136Z"
+  "generated_at": "2026-09-10T19:20:44.006Z"
 }
