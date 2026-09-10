@@ -123,19 +123,6 @@ jobs:
       BASE_URL: http://127.0.0.1:3000
       ALLOW_INSECURE_LOCAL_AUTH: "true"
       BROWSER_CI_USERNAME: browser-ci-admin
-      # .env contains developer-local absolute paths. Set every storage root
-      # explicitly so the browser job always uses an empty runner-local tree.
-      DATA_ROOT: ${{ runner.temp }}/visionscan-browser-data
-      UPLOAD_ROOT: ${{ runner.temp }}/visionscan-browser-data/uploads
-      DOCUMENTS_ROOT: ${{ runner.temp }}/visionscan-browser-data/documents
-      PROCESSED_ROOT: ${{ runner.temp }}/visionscan-browser-data/processed
-      REPORT_ROOT: ${{ runner.temp }}/visionscan-browser-data/reports
-      DATABASE_ROOT: ${{ runner.temp }}/visionscan-browser-data/database
-      DATABASE_FILE: ${{ runner.temp }}/visionscan-browser-data/database/eye-ai.db
-      LEGACY_DATABASE_FILE: ${{ runner.temp }}/visionscan-browser-data/database/eye-ai.json
-      MODEL_ROOT: ${{ runner.temp }}/visionscan-browser-data/models
-      LOG_ROOT: ${{ runner.temp }}/visionscan-browser-data/logs
-      TMP_ROOT: ${{ runner.temp }}/visionscan-browser-data/tmp
     steps:
       - uses: actions/checkout@v5
 
@@ -146,6 +133,23 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Configure isolated storage roots
+        shell: bash
+        run: |
+          # .env contains developer-local absolute paths. Set every storage
+          # root explicitly so this job always uses an empty runner-local tree.
+          echo "DATA_ROOT=$RUNNER_TEMP/visionscan-browser-data" >> "$GITHUB_ENV"
+          echo "UPLOAD_ROOT=$RUNNER_TEMP/visionscan-browser-data/uploads" >> "$GITHUB_ENV"
+          echo "DOCUMENTS_ROOT=$RUNNER_TEMP/visionscan-browser-data/documents" >> "$GITHUB_ENV"
+          echo "PROCESSED_ROOT=$RUNNER_TEMP/visionscan-browser-data/processed" >> "$GITHUB_ENV"
+          echo "REPORT_ROOT=$RUNNER_TEMP/visionscan-browser-data/reports" >> "$GITHUB_ENV"
+          echo "DATABASE_ROOT=$RUNNER_TEMP/visionscan-browser-data/database" >> "$GITHUB_ENV"
+          echo "DATABASE_FILE=$RUNNER_TEMP/visionscan-browser-data/database/eye-ai.db" >> "$GITHUB_ENV"
+          echo "LEGACY_DATABASE_FILE=$RUNNER_TEMP/visionscan-browser-data/database/eye-ai.json" >> "$GITHUB_ENV"
+          echo "MODEL_ROOT=$RUNNER_TEMP/visionscan-browser-data/models" >> "$GITHUB_ENV"
+          echo "LOG_ROOT=$RUNNER_TEMP/visionscan-browser-data/logs" >> "$GITHUB_ENV"
+          echo "TMP_ROOT=$RUNNER_TEMP/visionscan-browser-data/tmp" >> "$GITHUB_ENV"
 
       - name: Initialize isolated SQLite schema
         run: npm run db:init
