@@ -27,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Initialize SQLite schema
+        run: npm run db:init
+
       - name: Typecheck
         run: npx tsc --noEmit
 
@@ -79,6 +82,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Initialize SQLite schema
+        run: npm run db:init
 
       - name: Typecheck
         run: npx tsc --noEmit

@@ -22,6 +22,7 @@
     "model:audit": "node scripts/model-manifest-audit.mjs",
     "release:inventory": "node scripts/release-inventory.mjs",
     "setup": "node scripts/setup-dirs.mjs",
+    "db:init": "vite-node scripts/init-db.ts",
     "audit:fs": "node scripts/audit-filesystem.mjs",
     "seed:admin": "node scripts/seed-admin.mjs",
     "ocr:warmup": "node scripts/ocr-warmup.mjs",
