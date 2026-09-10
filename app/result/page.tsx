@@ -123,7 +123,7 @@ function checksumNote(a: NonNullable<Bundle["analysis"]>): string {
 }
 
 function ResultSkeleton() {  return (
-    <div className="zone-3" aria-busy="true" aria-label="Loading study">
+    <div className="zone-3" role="status" aria-busy="true" aria-label="Loading study">
       <div className="zone-viewer"><div className="skel" style={{ height: 420 }} /></div>
       <div>
         <div className="skel" style={{ height: 180, marginBottom: 14 }} />
