@@ -75,9 +75,22 @@ async function main() {
     const response = await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded" });
     if (response?.status() !== 200) fail(`/login returned HTTP ${response?.status() ?? "unknown"}`);
     await page.getByRole("heading", { name: "VisionScan AI" }).waitFor({ state: "visible" });
+    // The page can be visible from SSR before React has attached the submit
+    // handler. Waiting for React's delegated props prevents a fast hosted
+    // runner from falling through to the browser's native GET form submit.
+    await page.waitForFunction(() => {
+      const submit = document.querySelector("button[type='submit']");
+      return Boolean(submit && Object.keys(submit).some((key) => key.startsWith("__reactProps$")));
+    }, undefined, { timeout: 10_000 });
     await page.getByLabel("Username").fill(USERNAME);
     await page.getByLabel("Password").fill(PASSWORD);
+    const loginResponsePromise = page.waitForResponse((candidate) =>
+      candidate.url() === `${BASE}/api/auth/login` && candidate.request().method() === "POST",
+      { timeout: 10_000 },
+    );
     await page.getByRole("button", { name: "Sign in" }).click({ noWaitAfter: true });
+    const loginResponse = await loginResponsePromise;
+    if (!loginResponse.ok()) fail(`/api/auth/login returned HTTP ${loginResponse.status()}`);
     await page.waitForURL((url) => url.pathname === "/dashboard", { waitUntil: "domcontentloaded", timeout: 20_000 });
     checks += 1;
     console.log("[ok ] login -> dashboard");
