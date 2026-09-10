@@ -5,7 +5,7 @@
     "version": "0.1.0"
   },
   "source": {
-    "commit": "a9b989fd9365eb4336f4fed143f622439cf5faab",
+    "commit": "a75bb13b70cef94bb09853d3517f82a53537b6d5",
     "branch": "main",
     "working_tree_clean": true
   },
@@ -60,13 +60,62 @@
   "reconciliation": {
     "status": "ADJUDICATED_BLOCKERS_REMAIN",
     "path": "docs/generated/reconciliation-adjudication.json",
-    "total_findings": 290,
+    "total_findings": 301,
     "counts": {
       "MISSING_REQUIRED_ARTIFACT": 235,
-      "VALID_LEGACY_STATE": 55
+      "VALID_LEGACY_STATE": 66
     },
     "quarantine_applied": false,
     "unresolved_blocking_findings": 235
+  },
+  "model_performance": {
+    "status": "MEASURED",
+    "path": "docs/generated/model-performance.json",
+    "measured_at": "2026-09-10T21:35:40.247Z",
+    "model_id": "segformer-optic-disc-cup-refuge",
+    "artifact_sha256": "22e45131b64eb07a5d29a2e5388a7709d10696b13f48d2d0cdcf56cafa1f9ea5",
+    "cold": {
+      "samples": 3,
+      "p50_ms": 9900.7,
+      "p95_ms": 10356,
+      "min_ms": 9845.5,
+      "max_ms": 10356,
+      "python_import_ms": [
+        7535,
+        7033,
+        7030
+      ],
+      "model_load_ms": [
+        506,
+        461,
+        467
+      ],
+      "inference_ms": [
+        1341,
+        1343,
+        1379
+      ]
+    },
+    "warm": {
+      "samples": 3,
+      "p50_ms": 9514.6,
+      "p95_ms": 10026.4,
+      "min_ms": 9500.2,
+      "max_ms": 10026.4,
+      "process_wall_ms": 30042.1
+    },
+    "peak_rss_bytes": null,
+    "peak_rss_observed": false,
+    "phi_included": false
+  },
+  "browser_ci": {
+    "status": "LOCAL_HOSTED_EQUIVALENT_PASS",
+    "path": "docs/generated/browser-ci.json",
+    "workflow": "verify-browser",
+    "remote_status": "PENDING_FINAL_PUSH",
+    "checks_passed": 6,
+    "checks_failed": 0,
+    "phi_included": false
   },
   "ci_run_ids": [
     "34519366185"
@@ -78,5 +127,5 @@
     "database_file_extension": ".db"
   },
   "phi_included": false,
-  "generated_at": "2026-09-10T19:20:44.006Z"
+  "generated_at": "2026-09-10T21:39:32.558Z"
 }
