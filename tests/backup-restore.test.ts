@@ -166,6 +166,17 @@ describe("data backup and restore controls", () => {
       restoredDb.close();
     }
   }, 60_000);
+
+  it("records expired eligibility without deleting an archived or legal-held backup", () => {
+    const expired = path.join(runRoot, "backup-expired-eligible");
+    const output = JSON.parse(run("backup-data.mjs", [
+      "--retention-days", "0", "--deletion-eligible-at", "2000-01-01T00:00:00.000Z",
+      "--legal-hold", "--archive-state", "ARCHIVED", "--output", expired,
+    ]));
+    expect(output.retention).toMatchObject({ retention_days: 0, legal_hold: true, archive_state: "ARCHIVED", automatic_deletion: false, operator_action_required: true });
+    expect(output.retention.deletion_eligible_at).toBe("2000-01-01T00:00:00.000Z");
+    expect(fs.existsSync(path.join(expired, "manifest.json"))).toBe(true);
+  });
 });
 
 afterAll(() => fs.rmSync(runRoot, { recursive: true, force: true }));

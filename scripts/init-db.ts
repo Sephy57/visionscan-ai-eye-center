@@ -7,7 +7,7 @@ try {
   console.log(JSON.stringify({
     status: "initialized",
     backend: info.backend,
-    schema_version: info.schema_version,
+    schema_version: info.database_schema_version,
     migration_version: info.migration_version,
     database_file: "<configured-database>",
   }, null, 2));
