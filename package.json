@@ -19,6 +19,7 @@
     "browser:asset-e2e": "node scripts/browser-asset-e2e.mjs",
     "browser:ci": "node scripts/browser-ci.mjs",
     "performance:local": "node scripts/performance-local.mjs",
+    "model:performance": "node scripts/model-performance.mjs",
     "sbom": "node scripts/generate-sbom.mjs",
     "model:audit": "node scripts/model-manifest-audit.mjs",
     "release:inventory": "node scripts/release-inventory.mjs",
