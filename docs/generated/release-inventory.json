@@ -5,7 +5,7 @@
     "version": "0.1.0"
   },
   "source": {
-    "commit": "a75bb13b70cef94bb09853d3517f82a53537b6d5",
+    "commit": "84b31446f775943504da6fbc8a6109af3abee988",
     "branch": "main",
     "working_tree_clean": true
   },
@@ -112,13 +112,13 @@
     "status": "LOCAL_HOSTED_EQUIVALENT_PASS",
     "path": "docs/generated/browser-ci.json",
     "workflow": "verify-browser",
-    "remote_status": "PENDING_FINAL_PUSH",
+    "remote_status": "GREEN",
     "checks_passed": 6,
     "checks_failed": 0,
     "phi_included": false
   },
   "ci_run_ids": [
-    "34519366185"
+    "34534833184"
   ],
   "persistence": {
     "backend": "sqlite",
@@ -127,5 +127,5 @@
     "database_file_extension": ".db"
   },
   "phi_included": false,
-  "generated_at": "2026-09-10T21:39:32.558Z"
+  "generated_at": "2026-09-10T22:00:59.609Z"
 }
