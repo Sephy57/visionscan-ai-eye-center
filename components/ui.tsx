@@ -74,7 +74,7 @@ export function EmptyState({ icon, title, children, action }: { icon: React.Reac
     <div className="empty-state">
       <div className="es-icon" aria-hidden="true">{icon}</div>
       <h3>{title}</h3>
-      {children && <p className="muted small" style={{ maxWidth: 420, margin: "4px auto 16px" }}>{children}</p>}
+      {children && <div className="muted small" style={{ maxWidth: 420, margin: "4px auto 16px" }}>{children}</div>}
       {action}
     </div>
   );

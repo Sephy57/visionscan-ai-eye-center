@@ -29,8 +29,8 @@ status/lifecycle evidence, and opaque application identifiers; it never emits
 payload clinical text.
 
 The current source reconciliation snapshot contains 235 active unresolved
-source dependencies (233 study originals and 2 detached analyses) and 55
-historical findings (30 deleted-study originals and 25 deleted-report exports).
+source dependencies (233 study originals and 2 detached analyses) and 66
+historical findings (36 deleted-study originals and 30 deleted-report exports).
 Missing active source bytes are represented as unavailable; no bytes are
 reconstructed. The adjudication record is augmented with `active_or_legacy`,
 `source_classification`, `release_impact`, and PHI-minimizing evidence fields.
@@ -55,7 +55,7 @@ The observed release-data result is:
 
 ```text
 active_unresolved_sources=235
-legacy_unresolved_sources=55
+legacy_unresolved_sources=66
 active_fk_orphan_count=0
 legacy_orphan_count=5263
 cross_tenant_count=0

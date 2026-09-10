@@ -1,0 +1,18 @@
+{
+  "format": "visionscan-browser-ci-v1",
+  "status": "LOCAL_HOSTED_EQUIVALENT_PASS",
+  "checks_passed": 6,
+  "checks_failed": 0,
+  "checks": [
+    "login -> dashboard",
+    "/dashboard HTTP 200",
+    "/patients HTTP 200",
+    "/analyze HTTP 200",
+    "/result HTTP 200",
+    "/report HTTP 200"
+  ],
+  "remote_workflow": "verify-browser",
+  "remote_status": "PENDING_FINAL_PUSH",
+  "fixture_scope": "synthetic account, empty isolated SQLite store, no patient data, no model weights, no provider credentials",
+  "phi_included": false
+}

@@ -102,6 +102,41 @@ function reconciliationInventory() {
   };
 }
 
+function modelPerformanceInventory() {
+  const report = json("docs/generated/model-performance.json");
+  if (!report || report.format !== "visionscan-model-performance-v1") {
+    return { status: "NOT_GENERATED", path: "docs/generated/model-performance.json" };
+  }
+  return {
+    status: report.status ?? "UNKNOWN",
+    path: "docs/generated/model-performance.json",
+    measured_at: report.measured_at ?? null,
+    model_id: report.model?.id ?? null,
+    artifact_sha256: report.model?.artifact_sha256 ?? null,
+    cold: report.metrics?.cold_subprocess ?? null,
+    warm: report.metrics?.warm_provider ?? null,
+    peak_rss_bytes: report.peak_rss_bytes ?? null,
+    peak_rss_observed: report.peak_rss_observed === true,
+    phi_included: report.phi_included === true,
+  };
+}
+
+function browserCiInventory() {
+  const report = json("docs/generated/browser-ci.json");
+  if (!report || report.format !== "visionscan-browser-ci-v1") {
+    return { status: "NOT_GENERATED", path: "docs/generated/browser-ci.json" };
+  }
+  return {
+    status: report.status ?? "UNKNOWN",
+    path: "docs/generated/browser-ci.json",
+    workflow: report.remote_workflow ?? null,
+    remote_status: report.remote_status ?? null,
+    checks_passed: Number.isInteger(report.checks_passed) ? report.checks_passed : null,
+    checks_failed: Number.isInteger(report.checks_failed) ? report.checks_failed : null,
+    phi_included: report.phi_included === true,
+  };
+}
+
 function ciRunIds() {
   const raw = process.env.VISIONSCAN_CI_RUN_IDS ?? "";
   return raw.split(",").map((value) => value.trim()).filter(Boolean).slice(0, 20);
@@ -162,6 +197,8 @@ const inventory = {
   dependencies: { package_lock_sha256: lockSha, sbom_path: sbomRelative, sbom_sha256: sha256File(sbomRelative) },
   backup: backupInventory(),
   reconciliation: reconciliationInventory(),
+  model_performance: modelPerformanceInventory(),
+  browser_ci: browserCiInventory(),
   ci_run_ids: ciRunIds(),
   persistence: persistenceInventory(),
   phi_included: false,

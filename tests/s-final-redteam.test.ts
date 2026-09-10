@@ -17,6 +17,10 @@ import type { DeviceMetadata } from "@/lib/devices/adapter";
  */
 
 const DECLARED: DeviceMetadata = { scanType: "fundus", eye: "OD", providedBy: "none" };
+// Security-boundary scenarios do not assert model behavior. Keep their
+// fixtures outside the fundus research path so a locally installed research
+// checkpoint cannot turn a request-spoof test into a multi-minute CPU run.
+const SECURITY_BOUNDARY_DECLARED: DeviceMetadata = { scanType: "external_eye", eye: "unknown", providedBy: "none" };
 
 /**
  * True when this machine has the installed RESEARCH lesion package AND the
@@ -155,7 +159,7 @@ describe("S-FINAL scenario 2 - client-supplied validation/confidence/treatment/m
   it("a malicious /api/analyze body with a broad field set is fully ignored by the real, persisted result", async () => {
     const ANALYZE_ROUTE = (await import("@/app/api/analyze/route")) as typeof import("@/app/api/analyze/route");
     const bytes = await makeFundusLikeImage(2);
-    const study = await createStudy("sf-payload.png", "image/png", bytes, DECLARED);
+    const study = await createStudy("sf-payload.png", "image/png", bytes, SECURITY_BOUNDARY_DECLARED);
     createdStudyIds.push(study.study_id);
 
     const cookies = await sessionCookies("CLINICIAN", "payload2");
@@ -208,13 +212,10 @@ describe("S-FINAL scenario 2 - client-supplied validation/confidence/treatment/m
     // see scenario 3 below).
     expect(report.review?.reviewer_id).not.toBe("attacker");
     expect(json.overall_result).not.toMatch(/proliferative diabetic retinopathy/i);
-  // The endpoint performs a real, hash-verified research inference on this
-  // equipped checkout. The route is intentionally synchronous for this
-  // direct handler test, so two full runs (the POST plus the independent
-  // persisted-result re-fetch) can exceed the old 30-second DEMO budget on a
-  // cold CPU worker. Keep the security assertion intact while allowing the
-  // bounded research runtime to complete; the production UI uses async=true
-  // and polls the job instead of blocking a browser request.
+  // This is intentionally a non-fundus fixture: the security assertion is
+  // about request-field authority, not model behavior. Keeping it outside the
+  // optional research provider makes the red-team path fail-fast and bounded
+  // on both model-equipped and clean checkouts.
   }, 120000);
 
   it("the model registry status backing model_status is never client-writable via any studies/analyze route", async () => {
@@ -254,7 +255,7 @@ describe("S-FINAL scenario 3 - review and evidence-workspace trust/condition sta
   it("POST /api/review/:id ignores an attempted reviewer_id spoof and any attempted condition-state field", async () => {
     const REVIEW_ROUTE = (await import("@/app/api/review/[id]/route")) as typeof import("@/app/api/review/[id]/route");
     const bytes = await makeFundusLikeImage(3);
-    const study = await createStudy("sf-review.png", "image/png", bytes, DECLARED);
+    const study = await createStudy("sf-review.png", "image/png", bytes, SECURITY_BOUNDARY_DECLARED);
     createdStudyIds.push(study.study_id);
     await analyzeStudy(study.study_id);
 
