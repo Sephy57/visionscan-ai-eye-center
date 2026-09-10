@@ -156,7 +156,10 @@ jobs:
 
       - name: Generate ephemeral synthetic account password
         shell: bash
-        run: echo "BROWSER_CI_PASSWORD=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+        run: |
+          browser_ci_password="$(openssl rand -hex 24)"
+          echo "::add-mask::$browser_ci_password"
+          echo "BROWSER_CI_PASSWORD=$browser_ci_password" >> "$GITHUB_ENV"
 
       - name: Install Chromium
         run: npx playwright-core install --with-deps chromium
@@ -164,7 +167,7 @@ jobs:
       - name: Locate Chromium
         shell: bash
         run: |
-          browser_path="$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux/chrome' -print -quit)"
+          browser_path="$(find "$HOME/.cache/ms-playwright" -type f \( -path '*/chrome-linux/chrome' -o -path '*/chrome-linux64/chrome' -o -name chrome \) -print -quit)"
           test -n "$browser_path"
           echo "CHROME_PATH=$browser_path" >> "$GITHUB_ENV"
 
