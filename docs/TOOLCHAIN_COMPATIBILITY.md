@@ -18,6 +18,15 @@ not start and exited with code 1, before it reached the intentional
 dependency/layout incompatibility, not a change in lease ownership,
 recovery, cancellation, or late-worker fencing semantics.
 
+During the later future-write FK hardening, the main Vitest 3 run briefly
+reported the same observed child exit code (1). That was a separate fixture
+failure: the child attempted to insert a job whose `study_id` did not yet
+exist, and the new `MISSING_TYPED_REFERENCE` guard correctly rejected it.
+Seeding that synthetic study in the child fixture restored the intentional
+exit-17 crash phase; the focused Vitest 3 run then passed all 11/11 tests.
+This distinction is why the FK test fixture was repaired rather than the
+lease assertions or the future-write invariant being weakened.
+
 The experiment also confirmed that the project invocation's
 `--minWorkers` option is removed in Vitest 4. The compatible invocation is
 `--pool=forks --maxWorkers=1`; removing the obsolete flag does not repair the
