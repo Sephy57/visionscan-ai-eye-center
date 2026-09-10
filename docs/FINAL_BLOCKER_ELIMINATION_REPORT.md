@@ -12,7 +12,7 @@ commands recorded below.
 
 3. **Branch.** `main`; remote `origin` is `https://github.com/Sephy57/visionscan-ai-eye-center.git`.
 
-4. **Commits.** The relevant blocker-closure history is linear and preserved: `a9b989f` (reconciliation/FK evidence), `e6743c4` (optional bridge policy and browser smoke), `56e42bf` (Vitest compatibility evidence), `8b4c56c` (future-write integrity and release data gates), `1ef098b` (query-spoof isolation), `e992e73` (hosted-browser storage isolation), `c585952` (bounded model benchmark), and `a75bb13` (current red-team fixture bound, hydration warning fix, current generated evidence, and inventory metadata fields).
+4. **Commits.** The relevant blocker-closure history is linear and preserved: `a9b989f` (reconciliation/FK evidence), `e6743c4` (optional bridge policy and browser smoke), `56e42bf` (Vitest compatibility evidence), `8b4c56c` (future-write integrity and release data gates), `1ef098b` (query-spoof isolation), `e992e73` (hosted-browser storage isolation), `c585952` (bounded model benchmark), `a75bb13` (current red-team fixture bound, hydration warning fix, current generated evidence, and inventory metadata fields), and `ad05f9d` (this final blocker-elimination report and inventory snapshot).
 
 5. **Push.** The runtime/evidence candidate is ready for `git push origin main`; no credentials or tokens are recorded in this report. Push and the resulting final-head workflow are an explicit release gate, not assumed from a local commit.
 
@@ -167,4 +167,3 @@ commands recorded below.
     `NOT A MEDICAL DEVICE`
 
     `NOT FOR AUTONOMOUS DIAGNOSIS`
-
