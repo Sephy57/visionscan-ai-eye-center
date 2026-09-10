@@ -1,11 +1,17 @@
 /**
- * S7 — reference architecture for a real local-inference provider that
+ * S7 — optional reference architecture for a real local-inference provider that
  * would run a PyTorch model (e.g. the RETFound candidate,
  * lib/models/candidateDossiers.ts) via a local Python subprocess, following
  * the S6 authorization's "LOCAL INFERENCE" security default: images/PDFs/
  * OCR/symptoms/patient identifiers are NEVER sent to a cloud AI API. The
  * subprocess runs on this machine only, communicates over stdio, and never
  * opens a network listener or makes an outbound network call itself.
+ *
+ * RELEASE STATUS: OPTIONAL_NOT_RELEASE_BLOCKING. This generic bridge is
+ * candidate-only infrastructure. It is not required by the DEMO workflow or
+ * by the live provider map; its real-environment probe is therefore explicit
+ * opt-in (`VISIONSCAN_RUN_LIVE_PYTHON=1`). The model-specific local providers
+ * have separate, reviewed runtime contracts.
  *
  * HARD RULES (identical to lib/models/candidateProvider.ts):
  *  - never registered in PROVIDERS (lib/models/provider.ts) or MODELS

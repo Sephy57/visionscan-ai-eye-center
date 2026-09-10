@@ -17,6 +17,7 @@
     "browser:a11y": "node scripts/browser-accessibility-qa.mjs",
     "browser:keyboard": "node scripts/browser-keyboard-qa.mjs",
     "browser:asset-e2e": "node scripts/browser-asset-e2e.mjs",
+    "browser:ci": "node scripts/browser-ci.mjs",
     "performance:local": "node scripts/performance-local.mjs",
     "sbom": "node scripts/generate-sbom.mjs",
     "model:audit": "node scripts/model-manifest-audit.mjs",

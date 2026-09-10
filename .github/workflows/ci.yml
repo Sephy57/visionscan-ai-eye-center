@@ -112,3 +112,62 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+  # A small authenticated browser smoke gate. It intentionally uses an empty
+  # local SQLite database, a synthetic first-run account, and no model/data
+  # assets; the full asset/responsive/a11y suite remains a local gate.
+  verify-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BASE_URL: http://127.0.0.1:3000
+      ALLOW_INSECURE_LOCAL_AUTH: "true"
+      BROWSER_CI_USERNAME: browser-ci-admin
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Initialize isolated SQLite schema
+        run: npm run db:init
+
+      - name: Generate ephemeral synthetic account password
+        shell: bash
+        run: echo "BROWSER_CI_PASSWORD=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+
+      - name: Install Chromium
+        run: npx playwright-core install --with-deps chromium
+
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          browser_path="$(find "$HOME/.cache/ms-playwright" -type f -path '*/chrome-linux/chrome' -print -quit)"
+          test -n "$browser_path"
+          echo "CHROME_PATH=$browser_path" >> "$GITHUB_ENV"
+
+      - name: Start isolated local server
+        shell: bash
+        run: |
+          nohup npm run dev -- --hostname 127.0.0.1 > "$RUNNER_TEMP/visionscan-browser.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/visionscan-browser.pid"
+          curl --fail --retry 30 --retry-delay 2 --retry-connrefused "$BASE_URL/login" > /dev/null
+
+      - name: Hosted browser smoke
+        run: npm run browser:ci
+
+      - name: Stop server and show log
+        if: always()
+        shell: bash
+        run: |
+          if test -f "$RUNNER_TEMP/visionscan-browser.pid"; then
+            kill "$(cat "$RUNNER_TEMP/visionscan-browser.pid")" || true
+          fi
+          if test -f "$RUNNER_TEMP/visionscan-browser.log"; then
+            cat "$RUNNER_TEMP/visionscan-browser.log"
+          fi
