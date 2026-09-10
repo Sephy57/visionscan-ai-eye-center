@@ -12,9 +12,12 @@ function envPath(name: string, fallback: string): string {
   return v && v.trim().length > 0 ? v.trim() : fallback;
 }
 
-// Keep the deployment default on D: for Windows, but use the checked-out
-// workspace on Unix CI/dev hosts so paths never become invalid Windows literals.
-const DEFAULT_PROJECT_ROOT = process.platform === "win32" ? "D:\\AI EYE ANALYSIS PLATFORM" : process.cwd();
+// Resolve the checkout from the process working directory.  A previous
+// Windows-only literal (`D:\\AI EYE ANALYSIS PLATFORM`) made a fresh clone
+// accidentally read the original machine's data/models tree, breaking the
+// no-model reproducibility contract.  Deployments that need a fixed location
+// can still set PROJECT_ROOT explicitly.
+const DEFAULT_PROJECT_ROOT = process.cwd();
 const DEFAULT_DATA_ROOT = path.join(DEFAULT_PROJECT_ROOT, "data");
 
 export const PROJECT_ROOT = envPath("PROJECT_ROOT", DEFAULT_PROJECT_ROOT);
