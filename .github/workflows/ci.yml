@@ -123,6 +123,19 @@ jobs:
       BASE_URL: http://127.0.0.1:3000
       ALLOW_INSECURE_LOCAL_AUTH: "true"
       BROWSER_CI_USERNAME: browser-ci-admin
+      # .env contains developer-local absolute paths. Set every storage root
+      # explicitly so the browser job always uses an empty runner-local tree.
+      DATA_ROOT: ${{ runner.temp }}/visionscan-browser-data
+      UPLOAD_ROOT: ${{ runner.temp }}/visionscan-browser-data/uploads
+      DOCUMENTS_ROOT: ${{ runner.temp }}/visionscan-browser-data/documents
+      PROCESSED_ROOT: ${{ runner.temp }}/visionscan-browser-data/processed
+      REPORT_ROOT: ${{ runner.temp }}/visionscan-browser-data/reports
+      DATABASE_ROOT: ${{ runner.temp }}/visionscan-browser-data/database
+      DATABASE_FILE: ${{ runner.temp }}/visionscan-browser-data/database/eye-ai.db
+      LEGACY_DATABASE_FILE: ${{ runner.temp }}/visionscan-browser-data/database/eye-ai.json
+      MODEL_ROOT: ${{ runner.temp }}/visionscan-browser-data/models
+      LOG_ROOT: ${{ runner.temp }}/visionscan-browser-data/logs
+      TMP_ROOT: ${{ runner.temp }}/visionscan-browser-data/tmp
     steps:
       - uses: actions/checkout@v5
 
