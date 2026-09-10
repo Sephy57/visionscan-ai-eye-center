@@ -61,18 +61,24 @@ async function quarantine(issue: ReconciliationIssue): Promise<{ action: string;
   return { action: "quarantine_orphan", path: relFromRepo(destination), hash };
 }
 
-const [studies, reports] = await Promise.all([
+const [studies, reports, analyses] = await Promise.all([
   dbAll<Record<string, unknown>>("studies"),
   dbAll<Record<string, unknown>>("reports"),
+  dbAll<Record<string, unknown>>("analyses"),
 ]);
 const studyById = new Map(studies.map((row) => [String(row.study_id), row]));
 const reportById = new Map(reports.map((row) => [String(row.report_id), row]));
+const analysisById = new Map(analyses.map((row) => [String(row.analysis_id), row]));
 const records: Array<Record<string, unknown>> = [];
 let quarantineCount = 0;
 for (const issue of (await scanReconciliation()).issues) {
   const study = studyById.get(issue.resource_id);
   const report = reportById.get(issue.resource_id);
-  const lifecycle = String(study?.lifecycle ?? report?.lifecycle ?? "");
+  const analysis = analysisById.get(issue.resource_id);
+  const sourceRecord = study ?? report ?? analysis;
+  const lifecycle = String(sourceRecord?.lifecycle ?? sourceRecord?.archive_state ?? "").toUpperCase();
+  const sourceStatus = typeof sourceRecord?.status === "string" ? sourceRecord.status.toUpperCase() : null;
+  const activeOrLegacy = lifecycle === "DELETED" || sourceStatus === "DELETED" ? "LEGACY" : "ACTIVE";
   let classification: string;
   let repairAction: string;
   let result: string;
@@ -124,6 +130,17 @@ for (const issue of (await scanReconciliation()).issues) {
     timestamp: runAt,
     result,
     source_lifecycle: lifecycle || null,
+    source_status: sourceStatus,
+    active_or_legacy: activeOrLegacy,
+    source_classification: activeOrLegacy === "LEGACY" ? "LEGACY_STALE_REFERENCE" : "REAL_REQUIRED_SOURCE",
+    release_impact: activeOrLegacy === "LEGACY" ? "NON_BLOCKING_LEGACY" : "ACTIVE_RELEASE_BLOCKER",
+    evidence: {
+      source_bytes_present: issue.kind !== "DB_ROW_WITHOUT_FILE" ? null : false,
+      content_hash_present: Boolean(hash),
+      parent_or_source_missing: issue.kind === "DB_ROW_WITHOUT_FILE",
+      lifecycle_explicit: Boolean(lifecycle),
+      status_explicit: Boolean(sourceStatus),
+    },
     safe_scope_note: "Patient and tenant identifiers are intentionally omitted; correlate by finding_id in the local operator console.",
   });
 }

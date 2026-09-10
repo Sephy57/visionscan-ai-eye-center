@@ -1,0 +1,31 @@
+{
+  "format": "visionscan-release-data-check-v1",
+  "generated_at": "2026-09-10T19:49:32.414Z",
+  "database_file": "<configured-database>",
+  "active_unresolved_sources": 235,
+  "legacy_unresolved_sources": 55,
+  "active_fk_orphan_count": 0,
+  "legacy_orphan_count": 5263,
+  "cross_tenant_count": 0,
+  "hash_mismatch_count": 0,
+  "quarantine_count": 81,
+  "source_reason_counts": {
+    "active:MISSING_REQUIRED_ARTIFACT": 233,
+    "legacy:MISSING_REQUIRED_ARTIFACT": 30,
+    "active:DETACHED_ANALYSIS_PARENT": 2,
+    "legacy:MISSING_REPORT_EXPORT": 25
+  },
+  "fk_classification_counts": {
+    "LEGACY_DETACHED_DOCUMENT": 5260,
+    "LEGACY_DETACHED_ANALYSIS": 2,
+    "LEGACY_DETACHED_JOB": 1
+  },
+  "fk_relation_counts": {
+    "documents.study_id->studies": 5260,
+    "analyses.study_id->studies": 2,
+    "jobs.study_id->studies": 1
+  },
+  "active_data_release_safe": false,
+  "status": "BLOCKERS_REMAIN",
+  "phi_included": false
+}

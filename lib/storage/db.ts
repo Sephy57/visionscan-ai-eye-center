@@ -118,6 +118,18 @@ const REFERENCE_TARGETS: Partial<Record<Collection, Partial<Record<RelationalCol
   model_errors: { study_id: "studies", analysis_id: "analyses" },
 };
 
+// These records are created by the current ingestion/analysis/worker paths.
+// They must never introduce another dangling study link.  Other typed links
+// remain nullable during the phased legacy migration because their historical
+// rows are imported from the pre-relational store and are reconciled out of
+// band.  Keeping this allow-list narrow also preserves the report/reasoning
+// publication ordering (a reasoning record can be written before its report).
+const REQUIRED_FUTURE_REFERENCES: Partial<Record<Collection, Partial<Record<RelationalColumn, Collection>>>> = {
+  documents: { study_id: "studies" },
+  analyses: { study_id: "studies" },
+  jobs: { study_id: "studies" },
+};
+
 /**
  * Validate the tenant boundary for a typed reference. Missing legacy targets
  * are reported by reconciliation/migration instead of being guessed here;
@@ -139,6 +151,28 @@ function assertTenantReferences(
     const targetTenant = tenantValue(target);
     if (sourceTenant && targetTenant && sourceTenant !== targetTenant) {
       throw new Error(`CROSS_TENANT_REFERENCE:${collection}.${column}->${targetCollection}/${id}`);
+    }
+  }
+}
+
+/**
+ * Current writes may not create the historical missing-study state.  Legacy
+ * imports bypass this application writer and remain visible to the read-only
+ * FK/reconciliation reports, so this is a future-write guard rather than a
+ * destructive cleanup or an attempted data repair.
+ */
+function assertRequiredFutureReferences(
+  collection: Collection,
+  doc: unknown,
+  lookup: <T>(target: Collection, id: string) => T | null,
+): void {
+  const targets = REQUIRED_FUTURE_REFERENCES[collection];
+  if (!targets) return;
+  for (const [column, targetCollection] of Object.entries(targets) as Array<[RelationalColumn, Collection]>) {
+    const id = referenceValue(doc, column);
+    if (!id) continue;
+    if (!lookup(targetCollection, id)) {
+      throw new Error(`MISSING_TYPED_REFERENCE:${collection}.${column}->${targetCollection}/${id}`);
     }
   }
 }
@@ -478,6 +512,7 @@ function sqliteTransaction(): SyncTransaction {
       return rows.map((row) => clone(parsePayload<T>(collection, row.id, row.payload)));
     },
     put<T>(collection: Collection, id: string, doc: T) {
+      assertRequiredFutureReferences(collection, doc, readTarget);
       assertTenantReferences(collection, doc, readTarget);
       const payload = jsonPayload(doc);
       const timestamp = now();
@@ -575,6 +610,10 @@ export async function dbTransaction<T>(work: (tx: DbTransaction) => T): Promise<
       );
     },
     put<TValue>(collection: Collection, id: string, doc: TValue) {
+      assertRequiredFutureReferences(collection, doc, <T>(target: Collection, targetId: string) => {
+        const value = (draft.collections[target] as Record<string, unknown> | undefined)?.[targetId];
+        return value === undefined ? null : value as T;
+      });
       if (!draft.collections[collection]) draft.collections[collection] = {};
       (draft.collections[collection] as Record<string, unknown>)[id] = clone(doc);
     },
@@ -615,6 +654,10 @@ export async function dbPut<T>(collection: Collection, id: string, doc: T): Prom
     return;
   }
   const db = await loadJson();
+  assertRequiredFutureReferences(collection, doc, <TValue>(target: Collection, targetId: string) => {
+    const value = (db.collections[target] as Record<string, unknown> | undefined)?.[targetId];
+    return value === undefined ? null : value as TValue;
+  });
   if (!db.collections[collection]) db.collections[collection] = {};
   db.collections[collection]![id] = clone(doc);
   await persistJson(db);

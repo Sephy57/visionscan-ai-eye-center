@@ -182,6 +182,16 @@ export async function analyzeStudy(
   if (existingReport?.review.status === "clinician_finalized") {
     throw new Error("Finalized report is immutable; create a new study/version instead of rerunning analysis.");
   }
+  // Source availability is a precondition for every analysis/replay path,
+  // including reuse of an already sealed report.  Checking it before the
+  // idempotent-replay shortcut prevents a deleted or detached original from
+  // being presented as if it were still replayable.  The recorded hash is
+  // verified from the bytes again whenever it is a canonical SHA-256 value.
+  const bytes = await readOriginalScan(studyId);
+  if (!bytes) throw new Error("Original scan missing; SOURCE_PERMANENTLY_UNAVAILABLE");
+  if (/^[a-f0-9]{64}$/i.test(record.original_sha256) && assetHash(bytes) !== record.original_sha256) {
+    throw new Error("Original scan integrity check failed; SOURCE_PERMANENTLY_UNAVAILABLE");
+  }
   const existingAnalysis = await dbGet<AnalysisRecord>("analyses", `anl_${studyId}`);
   // A sealed analysis/report pair is reusable only when the complete immutable
   // input envelope is unchanged. Linked documents are added asynchronously by
@@ -221,8 +231,6 @@ export async function analyzeStudy(
     // Reuse the sealed pair instead of running inference or rewriting history.
     return { analysis: existingAnalysis.result, report: existingReport };
   }
-  const bytes = await readOriginalScan(studyId);
-  if (!bytes) throw new Error("Original scan missing");
   await jobCheckpoint(control, { stage: "validating_source", percent: 12, message: "Immutable source loaded" });
 
   const documentAssets: Array<{

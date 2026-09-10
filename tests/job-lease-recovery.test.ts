@@ -21,9 +21,11 @@ import {
 } from "@/lib/jobs/queue";
 
 const cleanup: string[] = [];
+const studyCleanup: string[] = [];
 
 afterEach(async () => {
   while (cleanup.length) await dbDelete("jobs", cleanup.pop()!);
+  while (studyCleanup.length) await dbDelete("studies", studyCleanup.pop()!);
 });
 
 function fixture(id: string, overrides: Partial<AnalysisJob> = {}): AnalysisJob {
@@ -46,6 +48,20 @@ function fixture(id: string, overrides: Partial<AnalysisJob> = {}): AnalysisJob 
 }
 
 async function put(job: AnalysisJob): Promise<void> {
+  if (!(await dbGet("studies", job.study_id))) {
+    await dbPut("studies", job.study_id, {
+      study_id: job.study_id,
+      created_at: new Date().toISOString(),
+      modality: "unknown",
+      eye: "unknown",
+      source: "test",
+      metadata: {},
+      files: [],
+      status: "uploaded",
+      original_sha256: "fixture",
+    });
+    studyCleanup.push(job.study_id);
+  }
   cleanup.push(job.job_id);
   await dbPut("jobs", job.job_id, job);
 }
@@ -286,6 +302,11 @@ const { makeJobProgress } = await import(${JSON.stringify(controlModule)});
 const { claimJob, recoverJobsOnStartup } = await import(${JSON.stringify(queueModule)});
 const jobId = "job_process_boundary";
 if (phase === "claim") {
+  await dbPut("studies", "study_process_boundary", {
+    study_id: "study_process_boundary", created_at: "2026-01-01T00:00:00.000Z",
+    modality: "unknown", eye: "unknown", source: "test", metadata: {}, files: [],
+    status: "uploaded", original_sha256: "fixture",
+  });
   await dbPut("jobs", jobId, {
     job_id: jobId, study_id: "study_process_boundary", kind: "analysis", status: "queued", state: "queued",
     attempts: 0, version: 0, claim_version: 0, cancellation_requested: false,

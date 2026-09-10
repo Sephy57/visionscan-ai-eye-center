@@ -109,6 +109,11 @@ describe("immutable specialist/reasoning report records", () => {
 describe("job progress, cancellation, and retry safety", () => {
   it("cancels a queued job persistently with bounded progress", async () => {
     const jobId = `job_cancel_${Date.now()}`;
+    await dbPut("studies", "missing", {
+      study_id: "missing", created_at: new Date().toISOString(), modality: "unknown", eye: "unknown",
+      source: "test", metadata: {}, files: [], status: "uploaded", original_sha256: "fixture",
+    });
+    cleanup.push(() => dbDelete("studies", "missing"));
     const job: AnalysisJob = {
       job_id: jobId, study_id: "missing", kind: "analysis", status: "queued", attempts: 0,
       created_at: new Date().toISOString(), progress: makeJobProgress({ stage: "queued", percent: -5, message: "queued" }),
@@ -124,8 +129,14 @@ describe("job progress, cancellation, and retry safety", () => {
 
   it("requires an explicit retry key and exact replay never creates another attempt", async () => {
     const jobId = `job_retry_${Date.now()}`;
+    const retryStudyId = `missing_${jobId}`;
+    await dbPut("studies", retryStudyId, {
+      study_id: retryStudyId, created_at: new Date().toISOString(), modality: "unknown", eye: "unknown",
+      source: "test", metadata: {}, files: [], status: "uploaded", original_sha256: "fixture",
+    });
+    cleanup.push(() => dbDelete("studies", retryStudyId));
     const job: AnalysisJob = {
-      job_id: jobId, study_id: `missing_${jobId}`, kind: "analysis", status: "failed", attempts: 0,
+      job_id: jobId, study_id: retryStudyId, kind: "analysis", status: "failed", attempts: 0,
       error: "fixture", created_at: new Date().toISOString(), completed_at: new Date().toISOString(),
       progress: makeJobProgress({ stage: "failed", percent: 10, message: "failed" }),
     };
