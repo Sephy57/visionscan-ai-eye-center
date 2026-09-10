@@ -157,7 +157,7 @@ jobs:
       - name: Generate ephemeral synthetic account password
         shell: bash
         run: |
-          browser_ci_password="$(openssl rand -hex 24)"
+          browser_ci_password="$(openssl rand -hex 24)Aa1!"
           echo "::add-mask::$browser_ci_password"
           echo "BROWSER_CI_PASSWORD=$browser_ci_password" >> "$GITHUB_ENV"
 
