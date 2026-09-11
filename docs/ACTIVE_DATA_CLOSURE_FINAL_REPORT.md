@@ -14,10 +14,10 @@ working tree was inspected and preserved rather than reset.
 
 ## 2. Ending HEAD
 
-The implementation tip for this report is the commit recorded in the final
-release inventory after local gates. The report commit itself is intentionally
-not self-referential; the final `git rev-parse HEAD` and CI run are recorded in
-the handoff response and the release inventory.
+The implementation tip is `ff52ff69481dc3b4ff71a5bdf7ab57be65f7ab7a`.
+This report is maintained in documentation follow-up commits after that
+implementation tip; those documentation-only commits do not change the
+verified implementation result.
 
 ## 3. Branch
 
@@ -32,14 +32,15 @@ operation was used.
 
 ## 5. Push
 
-Push is performed only after the local matrix and generated evidence are
-consistent. No force-push or history rewrite is permitted.
+`ff52ff6` was pushed to `origin/main` after the local matrix and generated
+evidence were consistent. No force-push or history rewrite was used.
 
 ## 6. Final-head CI
 
-Pending the final focused commit: the required hosted Ubuntu, Windows, and
-browser jobs must all complete successfully before this is called release
-green. Prior hosted runs were green on the runtime/docs tips.
+Hosted CI run `34575555760` completed successfully for
+`ff52ff69481dc3b4ff71a5bdf7ab57be65f7ab7a`. The required Ubuntu, Windows, and
+browser jobs all passed; this is the final observed CI result for the
+implementation tip.
 
 ## 7. Pre-migration backup
 
@@ -430,18 +431,22 @@ no untracked runtime state.
 
 ## 65. Ubuntu CI
 
-Prior hosted Ubuntu jobs passed on the runtime/docs tips. The final focused
-tip must be observed green and recorded in the release inventory.
+The final focused Ubuntu job `103187092213` passed in 2m37s as part of CI run
+`34575555760`, including typecheck, unit/integration tests, legacy dry run,
+backup plan, model audit, SBOM, filesystem audit, and production build.
 
 ## 66. Windows CI
 
-Prior hosted Windows jobs passed on the runtime/docs tips. The final focused
-tip must be observed green and recorded in the release inventory.
+The final focused Windows job `103187092379` passed in 3m24s as part of CI run
+`34575555760`, including Windows path/reparse tests, typecheck, unit/integration
+tests, legacy dry run, backup plan, model audit, SBOM, filesystem audit, and
+production build.
 
 ## 67. browser CI
 
-Prior hosted browser jobs passed after the hydration/login race fix. The final
-focused tip must be observed green; browser CI remains a release gate.
+The final focused browser job `103187092375` passed in 1m19s as part of CI run
+`34575555760`, including isolated storage, ephemeral account setup, Chromium
+install, local server startup, hosted browser smoke, and clean shutdown.
 
 ## 68. Independent data-auditor verdict
 
@@ -519,4 +524,4 @@ They were not changed by this data-integrity phase.
 * [x] Legacy FK exceptions represented by transactional registry tooling
 * [x] Release-data gate remains blocking with original semantics
 * [x] Post-closure encrypted backup and isolated restore verified
-* [ ] Final focused commit and hosted CI observation (must be completed before release handoff)
+* [x] Final focused commit `ff52ff6` pushed and hosted CI observation green
