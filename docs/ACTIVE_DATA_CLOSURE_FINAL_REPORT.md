@@ -16,7 +16,7 @@ working tree was inspected and preserved rather than reset.
 
 The implementation tip is `ff52ff69481dc3b4ff71a5bdf7ab57be65f7ab7a`.
 The latest documentation/inventory tip is
-`69fcf4da5a1ee06f42c93eb793fa4ca2b5951bc3`. This report is maintained in
+`fbbd6d3bea05a70f52784900b8a9db8ee05a6c11`. This report is maintained in
 documentation follow-up commits after the implementation tip; those
 documentation-only commits do not change the verified implementation result.
 
@@ -33,17 +33,19 @@ operation was used.
 
 ## 5. Push
 
-`ff52ff6` and the documentation/inventory follow-up `69fcf4d` were pushed to
-`origin/main` after the local matrix and generated evidence were consistent.
-No force-push or history rewrite was used.
+`ff52ff6`, `69fcf4d`, and the report/inventory follow-up `fbbd6d3` were pushed
+to `origin/main` after the local matrix and generated evidence were
+consistent. No force-push or history rewrite was used.
 
 ## 6. Final-head CI
 
 Hosted CI run `34575555760` completed successfully for the implementation tip
 `ff52ff69481dc3b4ff71a5bdf7ab57be65f7ab7a`. A second hosted run
 `34576036818` completed successfully for the documentation/inventory tip
-`69fcf4da5a1ee06f42c93eb793fa4ca2b5951bc3`; the required Ubuntu, Windows, and
-browser jobs passed in both runs.
+`69fcf4da5a1ee06f42c93eb793fa4ca2b5951bc3`. The final report/inventory tip
+`fbbd6d3bea05a70f52784900b8a9db8ee05a6c11` was also verified by run
+`34576525712`; the required Ubuntu, Windows, and browser jobs passed in all
+three runs.
 
 ## 7. Pre-migration backup
 
@@ -436,25 +438,28 @@ no untracked runtime state.
 
 The implementation-tip Ubuntu job `103187092213` passed in 2m37s in CI run
 `34575555760`. The documentation-tip Ubuntu job `103188586592` passed in
-2m35s in CI run `34576036818`; both included typecheck, unit/integration
-tests, legacy dry run, backup plan, model audit, SBOM, filesystem audit, and
-production build.
+2m35s in CI run `34576036818`, and the final report-tip job `103190124516`
+passed in 2m37s in CI run `34576525712`; all included typecheck,
+unit/integration tests, legacy dry run, backup plan, model audit, SBOM,
+filesystem audit, and production build.
 
 ## 66. Windows CI
 
 The implementation-tip Windows job `103187092379` passed in 3m24s in CI run
 `34575555760`. The documentation-tip Windows job `103188586864` passed in
-4m04s in CI run `34576036818`; both included Windows path/reparse tests,
-typecheck, unit/integration tests, legacy dry run, backup plan, model audit,
-SBOM, filesystem audit, and production build.
+4m04s in CI run `34576036818`, and the final report-tip job `103190124780`
+passed in 4m08s in CI run `34576525712`; all included Windows path/reparse
+tests, typecheck, unit/integration tests, legacy dry run, backup plan, model
+audit, SBOM, filesystem audit, and production build.
 
 ## 67. browser CI
 
 The implementation-tip browser job `103187092375` passed in 1m19s in CI run
 `34575555760`. The documentation-tip browser job `103188586829` passed in
-1m05s in CI run `34576036818`; both included isolated storage, ephemeral
-account setup, Chromium install, local server startup, hosted browser smoke,
-and clean shutdown.
+1m05s in CI run `34576036818`, and the final report-tip job `103190124761`
+passed in 1m09s in CI run `34576525712`; all included isolated storage,
+ephemeral account setup, Chromium install, local server startup, hosted
+browser smoke, and clean shutdown.
 
 ## 68. Independent data-auditor verdict
 
@@ -532,5 +537,5 @@ They were not changed by this data-integrity phase.
 * [x] Legacy FK exceptions represented by transactional registry tooling
 * [x] Release-data gate remains blocking with original semantics
 * [x] Post-closure encrypted backup and isolated restore verified
-* [x] Implementation `ff52ff6` plus documentation/inventory tip `69fcf4d`
-  pushed; both hosted CI observations green
+* [x] Implementation `ff52ff6` plus report/inventory tip `fbbd6d3` pushed;
+  hosted CI observations green
