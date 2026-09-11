@@ -5,7 +5,7 @@
     "version": "0.1.0"
   },
   "source": {
-    "commit": "6bd5edd54c1379bf683ca759372fca3643dce906",
+    "commit": "d866e6735b3eebde4dbf85f87525add5e4957f75",
     "branch": "main",
     "working_tree_clean": true
   },
@@ -60,10 +60,10 @@
   "reconciliation": {
     "status": "ADJUDICATED_BLOCKERS_REMAIN",
     "path": "docs/generated/reconciliation-adjudication.json",
-    "total_findings": 301,
+    "total_findings": 310,
     "counts": {
       "MISSING_REQUIRED_ARTIFACT": 235,
-      "VALID_LEGACY_STATE": 66
+      "VALID_LEGACY_STATE": 75
     },
     "quarantine_applied": false,
     "unresolved_blocking_findings": 235
@@ -118,7 +118,7 @@
     "phi_included": false
   },
   "ci_run_ids": [
-    "34536546802"
+    "34575555760"
   ],
   "persistence": {
     "backend": "sqlite",
@@ -127,5 +127,5 @@
     "database_file_extension": ".db"
   },
   "phi_included": false,
-  "generated_at": "2026-09-10T22:23:05.245Z"
+  "generated_at": "2026-09-11T07:46:57.901Z"
 }
