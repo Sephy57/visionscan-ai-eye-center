@@ -128,6 +128,8 @@ const REQUIRED_FUTURE_REFERENCES: Partial<Record<Collection, Partial<Record<Rela
   documents: { study_id: "studies" },
   analyses: { study_id: "studies" },
   jobs: { study_id: "studies" },
+  reports: { analysis_id: "analyses" },
+  clinician_reviews: { report_id: "reports" },
 };
 
 /**
@@ -614,6 +616,10 @@ export async function dbTransaction<T>(work: (tx: DbTransaction) => T): Promise<
         const value = (draft.collections[target] as Record<string, unknown> | undefined)?.[targetId];
         return value === undefined ? null : value as T;
       });
+      assertTenantReferences(collection, doc, <T>(target: Collection, targetId: string) => {
+        const value = (draft.collections[target] as Record<string, unknown> | undefined)?.[targetId];
+        return value === undefined ? null : value as T;
+      });
       if (!draft.collections[collection]) draft.collections[collection] = {};
       (draft.collections[collection] as Record<string, unknown>)[id] = clone(doc);
     },
@@ -655,6 +661,10 @@ export async function dbPut<T>(collection: Collection, id: string, doc: T): Prom
   }
   const db = await loadJson();
   assertRequiredFutureReferences(collection, doc, <TValue>(target: Collection, targetId: string) => {
+    const value = (db.collections[target] as Record<string, unknown> | undefined)?.[targetId];
+    return value === undefined ? null : value as TValue;
+  });
+  assertTenantReferences(collection, doc, <TValue>(target: Collection, targetId: string) => {
     const value = (db.collections[target] as Record<string, unknown> | undefined)?.[targetId];
     return value === undefined ? null : value as TValue;
   });

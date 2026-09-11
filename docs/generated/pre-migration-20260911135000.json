@@ -1,0 +1,94 @@
+{
+  "format": "visionscan-pre-migration-snapshot-v1",
+  "generated_at": "2026-09-11T06:03:08.175Z",
+  "repository": {
+    "branch": "main",
+    "starting_head": "d1d17d6ff451bc5d945976db3d37c6015701eee3"
+  },
+  "database": {
+    "file": "<configured-database>",
+    "sha256": "57082a374de09d54923c7a268f5fe37ea21ec6126bb7143fb6d640cfd4eb7222",
+    "integrity_check": "ok",
+    "schema_version": "1",
+    "migration_version": "1",
+    "row_counts": {
+      "persistence_meta": 7,
+      "users": 461,
+      "patients": 321,
+      "encounters": 109,
+      "studies": 455,
+      "documents": 5576,
+      "document_pages": 0,
+      "derived_assets": 0,
+      "oct_rois": 0,
+      "analyses": 93,
+      "model_executions": 0,
+      "evidence": 111,
+      "evidence_dependencies": 0,
+      "reasoning_records": 116,
+      "condition_assessments": 0,
+      "specialist_packages": 0,
+      "reports": 98,
+      "clinician_reviews": 0,
+      "jobs": 11,
+      "audit_events": 0,
+      "validation_cases": 0,
+      "model_errors": 0,
+      "model_error_adjudications": 0,
+      "test_results": 417,
+      "reviews": 0,
+      "devices": 0,
+      "comparisons": 30,
+      "datasets": 776,
+      "dataset_samples": 501,
+      "adjudications": 232,
+      "transitions": 568,
+      "evaluation_runs": 110,
+      "model_registry_state": 0,
+      "sessions": 4841,
+      "access_grants": 43,
+      "consent": 109,
+      "reset_tokens": 0,
+      "calibration_records": 284,
+      "record_extractions": 1972,
+      "reconciliation_journal": 78,
+      "persistence_entities": 345,
+      "persistence_links": 224
+    }
+  },
+  "source_counts": {
+    "active_unresolved_sources": 235,
+    "legacy_unresolved_sources": 66,
+    "hash_mismatch_count": 0,
+    "source_reason_counts": {
+      "active:MISSING_REQUIRED_ARTIFACT": 233,
+      "legacy:MISSING_REQUIRED_ARTIFACT": 36,
+      "active:DETACHED_ANALYSIS_PARENT": 2,
+      "legacy:MISSING_REPORT_EXPORT": 30
+    }
+  },
+  "fk_counts": {
+    "active_orphan_count": 0,
+    "legacy_orphan_count": 5263,
+    "cross_tenant_count": 0,
+    "classification_counts": {
+      "LEGACY_DETACHED_DOCUMENT": 5260,
+      "LEGACY_DETACHED_ANALYSIS": 2,
+      "LEGACY_DETACHED_JOB": 1
+    }
+  },
+  "quarantine_count": 81,
+  "release_status": "BLOCKERS_REMAIN",
+  "verified_backup": {
+    "backup_id": "pre-migration-20260911135000",
+    "manifest_sha256": "e16cd47adedd76f6355359da5b16d627eb4e09abeb2b8285373e102e0a6fb7bf",
+    "created_at": "2026-09-11T05:46:24.337Z",
+    "source_database_sha256": "c1b253d048cf71e137f9f290143524730a20128a43f077740ec0c2192a5c80ad",
+    "schema_version": "1",
+    "migration_version": "1",
+    "integrity_check": "ok",
+    "asset_count": 9891,
+    "credentials_included": false
+  },
+  "phi_included": false
+}

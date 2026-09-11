@@ -7,11 +7,15 @@ const ids = {
   document: "future-integrity-document",
   analysis: "future-integrity-analysis",
   job: "future-integrity-job",
+  report: "future-integrity-report",
+  review: "future-integrity-review",
 };
 
 afterEach(async () => {
   for (const [collection, id] of [
     ["jobs", ids.job],
+    ["clinician_reviews", ids.review],
+    ["reports", ids.report],
     ["analyses", ids.analysis],
     ["documents", ids.document],
     ["studies", ids.study],
@@ -31,10 +35,20 @@ describe("future-write relationship invariants", () => {
       job_id: ids.job,
       study_id: "missing-study-for-job",
     })).rejects.toThrow("MISSING_TYPED_REFERENCE");
+    await expect(dbPut("reports", ids.report, {
+      report_id: ids.report,
+      analysis_id: "missing-analysis-for-report",
+    })).rejects.toThrow("MISSING_TYPED_REFERENCE");
+    await expect(dbPut("clinician_reviews", ids.review, {
+      review_id: ids.review,
+      report_id: "missing-report-for-review",
+    })).rejects.toThrow("MISSING_TYPED_REFERENCE");
 
     expect(await dbGet("documents", ids.document)).toBeNull();
     expect(await dbGet("analyses", ids.analysis)).toBeNull();
     expect(await dbGet("jobs", ids.job)).toBeNull();
+    expect(await dbGet("reports", ids.report)).toBeNull();
+    expect(await dbGet("clinician_reviews", ids.review)).toBeNull();
   });
 
   it("fails closed before replay when an active study source is unavailable", async () => {

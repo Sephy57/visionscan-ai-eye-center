@@ -57,6 +57,13 @@ describe("immutable specialist/reasoning report records", () => {
     const studyId = `study_persist_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const a = analysis(studyId);
     const e = evidence(studyId);
+    await dbPut("studies", studyId, {
+      study_id: studyId, created_at: new Date().toISOString(), modality: "unknown", eye: "unknown", source: "test",
+      metadata: {}, files: [], status: "analyzed", original_sha256: "a".repeat(64),
+    });
+    cleanup.push(() => dbDelete("studies", studyId));
+    await dbPut("analyses", `anl_${studyId}`, { ...a, analysis_id: `anl_${studyId}`, study_id: studyId });
+    cleanup.push(() => dbDelete("analyses", `anl_${studyId}`));
     const reasoning = new DeterministicReasoningEngine().analyze(e);
     const snapshot = await persistReasoningRecord({ report_id: `rep_${studyId}`, analysis: a, evidence: e, reasoning });
     cleanup.push(() => dbDelete("reasoning_records", snapshot.reasoning_record_id));
@@ -84,6 +91,13 @@ describe("immutable specialist/reasoning report records", () => {
     const studyId = `study_final_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const a = analysis(studyId);
     const e = evidence(studyId);
+    await dbPut("studies", studyId, {
+      study_id: studyId, created_at: new Date().toISOString(), modality: "unknown", eye: "unknown", source: "test",
+      metadata: {}, files: [], status: "analyzed", original_sha256: "a".repeat(64),
+    });
+    cleanup.push(() => dbDelete("studies", studyId));
+    await dbPut("analyses", `anl_${studyId}`, { ...a, analysis_id: `anl_${studyId}`, study_id: studyId });
+    cleanup.push(() => dbDelete("analyses", `anl_${studyId}`));
     const reasoning = new DeterministicReasoningEngine().analyze(e);
     const snapshot = await persistReasoningRecord({ report_id: `rep_${studyId}`, analysis: a, evidence: e, reasoning });
     cleanup.push(() => dbDelete("reasoning_records", snapshot.reasoning_record_id));
@@ -97,11 +111,6 @@ describe("immutable specialist/reasoning report records", () => {
     await dbPut("reports", report.report_id, report);
     cleanup.push(() => dbDelete("reports", report.report_id));
     await expect(generateReport(a, undefined, snapshot)).rejects.toThrow(/Finalized report is immutable/);
-    await dbPut("studies", studyId, {
-      study_id: studyId, created_at: new Date().toISOString(), modality: "unknown", eye: "unknown", source: "test",
-      metadata: { scanType: "unknown", eye: "unknown", providedBy: "none" }, files: [], status: "analyzed", original_sha256: "a".repeat(64),
-    });
-    cleanup.push(() => dbDelete("studies", studyId));
     await expect(analyzeStudy(studyId)).rejects.toThrow(/Finalized report is immutable/);
   });
 });

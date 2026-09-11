@@ -1,0 +1,1233 @@
+{
+  "format": "visionscan-data-closure-dry-run-v1",
+  "generated_at": "2026-09-11T07:10:47.770Z",
+  "database": {
+    "file": "<configured-database>",
+    "sha256": "1bb77fc8068d0024aca2e8b9bc191efff855e9faf6f0d59c53a56664baa1ad13",
+    "content_sha256": "1bb77fc8068d0024aca2e8b9bc191efff855e9faf6f0d59c53a56664baa1ad13",
+    "integrity_check": "ok",
+    "schema_version": "1",
+    "migration_version": "1"
+  },
+  "ledger": {
+    "file": "docs/generated/active-source-forensics.json",
+    "sha256": "d19efd811d563f0c45e36be0791f4cf619193b942ec5aabfada641759faba7c3"
+  },
+  "counts": {
+    "total_findings": 235,
+    "recoverable": 0,
+    "retireable": 0,
+    "active_lost": 2,
+    "ambiguous": 233,
+    "legacy": 0,
+    "unchanged": 235
+  },
+  "actions": [
+    {
+      "finding_id": "finding_01c799a96a37b30c1de413ab",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_020234484606857ae519a7a7",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_02a57d5b92d2a8b5a0b5aa47",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_0422dad1c6d217d329e6f08b",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_0468591122267985e71c08b8",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_053ef15971a98627d4c514b3",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_05990dcbd41dfc78b21abc4d",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_0606d148d9b6e6535f2a0364",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_061f1a2dfcb06503c9bc54f7",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_077cc2d83966af67e03f61f6",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_079f2e9dcbe610bc48d58362",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_07cbcfa52f42a5d26066b2b4",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_09c16607cccbac46c1cf66dd",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_0abb5669a8cce23ade7de95c",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_0c36d35480cbce66d38b42d3",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_0ce793c5aec5d5e7710dd22f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_0f8822e5cffe4d26527284bb",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_0fb041ee8135e759c5cb8989",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_0fe43a2584dd22cb8881491a",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_110030b8c2d3942bced5fd2f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_112d5b682b71630a78edbb6c",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_117509bbd5bd2d2dfd9043a6",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_130560f57440666bd51da3c7",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_13c571675a7364ecb93bebf6",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_1556d1a24ed8360d5ba7781e",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_19e455535d0aca7640bbdc32",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_1aa9febfca01026bce96f34a",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_1aba1d0feb9143d8d7d9d4a8",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_1bfa4817c79dcaee5f65740d",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_1c3930bbde5f5eacafe92a6f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_1e6f881479a86bb1e036f1ff",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_1f15c2a4596d73f4a55b8bee",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_1fc0da88eadbabddbddc27e8",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_2229097ad5465abe721e160c",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_23390be24cd1559fc7fe0214",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_238685d0b2eb028f60988e41",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_2391851df0664b9fff5c3f1f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_23de4a872f023ac3a5edbd68",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_252a7b3b3f20d0f9862805e6",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_27443c11952766a418720aaf",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_2a03df0ba35a29b7bd63ad06",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_2a84ecbd0c596ee44506a0fb",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_2b5f90ca1601860ae11d96f3",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_2cb0129d55b91f7f97180e31",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_2cce61cce51e9242780afb0f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_2edc9bf67dfa3d566b72fe56",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_2feb1eb4f44c042b56811602",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_305c1d377d6bd5d2247a9db2",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_30cf83fd660e27ab11c50f1e",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_32b3b336528f4bb4bf8c7c71",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_34a2536e638be0b33e3a3534",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_3830d67bc1124a5920126f13",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_3878c02b262bf71ea36fba96",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_39aaac195f3edc68838af0b4",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_3c3fea259f36ab38fd7ea946",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_3e06846332d141eefa395bee",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_3e1155577c690adfa2328549",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_3ebdc8edee8efdfa7f8a41dd",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_3fd6d7fd61730184701e67e2",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_418142b43beed66d1cb3f939",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_43d7c4b795ff9dec7c75eca7",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_44b472a5a65fe7215a0266ab",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_48d1ccabe7ea9f3a324ac900",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_4ab6c1aa5df8c4bf21d7f1d1",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_4b693bf3886820b8964311e1",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_4cd5bc2b6115fb622bfe86ab",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_4d385bbb8253320e820c8d14",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_4dadab7881059b13e99894b0",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_4db713f949216a0399de1394",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_4f4fd0b906c94b15ffd178c4",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_4fe361cfe59d68a3fe0b3fc1",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_5055ec5c795ac5d515baee11",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_5130931c5bef4bc33ff8540d",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_52705185ae722bfc1541454f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_534d9710a59ea9dfd3af05b8",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_54e22cf101192ae30729b24e",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_5504e0f0940b8ff482820568",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_557b62f4c1a3707d41f79386",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_55a8d20e170c49ec8840df12",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_56025ac7c0d091e1d53ff88f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_561cde87cdb952f683ed4500",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_57e824f9f2a78474cdf6a37a",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_57fd3fd54cf8b39c938307be",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_586d3ea2dc72ce6b3cc913fb",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_5892a23065c7a41afa82e0a9",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_59c1ec24af2d9dc8c418023f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_59ffa759da985627f3bffb65",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_5bbd588fc14a48ab89d1342c",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_5bc86321c6ae3c8ad9d8c0de",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_5c0618d1bfda31c8c1607f13",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_5cbbff6e71c1a0cca28e7e4a",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_5cd21a8fff0ed6c31e471cb7",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_5d34f7e8f1e7031797ea6425",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_5d97757339d3a96854b5bbc5",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_600899e2fe3de96ff476854f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_621a14a5d2ec587311bcd70e",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_62dc1ae0ee052c61b037021e",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_63959c55fc1ef338bb8cfdea",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_653d608fb1706f98a5f3c2cc",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_671fc2c7293f85b647ad3add",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_69b650fa1a1aca64074beec0",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_6b18cfef335e7f521e7c9b44",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_6c48d4e5a2b4fa63e2515003",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_6d3cdf490bf8ef1d47ecae98",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_6dcabb70a7e53f9fcaeb996b",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_6df1a285991b63ecd53b2b69",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_6f66e53c086ca85115567428",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_7010d0ad340e22a130882c74",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_701b8d9e18caba0708895b64",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_7087a6e43c6e98da4fdb368e",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_70db5547c235a1759288aa3e",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_7202c631a206bc0c06932a25",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_737ef231209240b3801812cc",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_74d98766ab1223214e78df57",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_7574f944ad144f87e4f6906e",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_79288979ea921fb28d8f09c8",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_7ab02178f9ea73ad7ccd80a0",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_7ad3b67d54d4e7e638f707b9",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_7cfb59e9125d15b546790672",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_7d73e7b5ad72c98d7517d7e6",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_7fde9db05e86e603a8066ece",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_7ff8e0df2a1854ed8f8a35eb",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_80e2fe55e88b7031892196ae",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_83c144dfb61255834ad41819",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_848c46e3d1475a7f800fd214",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_867d74d1cb173622c11cb0bf",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_86b6a47ad6772f85e6e29f95",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_87326e8e148c2702fd9af28f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_87ec7b572d7a41b8ef0ba239",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_88920607c94558564079cffa",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_88e16370f30a6994730282ff",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_895e98afab6ecd6e38e42dd7",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_89d9ce51ddbcdf84d0ab1af2",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_8a12a484cc1927c293b15ad9",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_8a68c2d9fe89ca6fcffb158c",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_8aa6d2c68cea468311c294de",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_8ab2327c1f5da1ea6534787c",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_8be51be90d8a8f9aa38836a3",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_8ca3fe2bf1edc3bc085e7b1a",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_8e3cdb042a73a1a2ea6078ed",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_9176e40a806942af5c224e92",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_927d1944e63534720f325197",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_93596c140b95de8dfd9f4060",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_979d8567a0ca2b465c2f5e09",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_9a2311dddcf2ccb17734a8b0",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_9b4781782cea88ad50688ef7",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_9c5ee59eb34c8a6129ef10f3",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_9c9f3d1c5e315ba71eccb170",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_9e15fce1ab0b626e1da401c2",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_9e5f982c9e84fc7aaac856bf",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_a02a7f29e501b0357815b0b1",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_a4aafe4b4a833a41bb1cf20d",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_a5476ea6b04f407754ca1b29",
+      "action": "KEEP_BLOCKED",
+      "classification": "DERIVATIVE_WITHOUT_REQUIRED_PARENT"
+    },
+    {
+      "finding_id": "finding_a60d4ac5c6395ce30c63763f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_a729c75c6f9985374d13833c",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_a85ef5047d11c7745f57aca3",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_a922b90450c09da98fdf7fc7",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_a93b47926137a9e9106fbda0",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_a9d2cb9a124406aac18c33f2",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_ac2f4acc92e550d15973d325",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_acb74211f4b7fd2009601943",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_acb88eae53464826f65bbdd5",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_ad482d99340039526ebdd844",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_af63b53641dd36fa2b8f3a56",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_b03fed40ec69c0e596ad3c23",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_b213894e606481d048cf84db",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_b4df770dd8e6951ce3a26a0e",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_ba0e6a925ceef2894d051221",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_bb5e89fbca0b1d37a854ec2f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_bcee065c6ca0977da5ae2357",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_bd2749cf50330e4866228546",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_c02b951724b7064ef8c3f3cf",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_c0b60573b920d5e0cc8ee053",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_c153bc0294d410d221f65e12",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_c347744009d18aeaceaed306",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_c4cb3b0e49cdbab862365855",
+      "action": "KEEP_BLOCKED",
+      "classification": "DERIVATIVE_WITHOUT_REQUIRED_PARENT"
+    },
+    {
+      "finding_id": "finding_c687f102cb87032cd6e23971",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_c6ce75cfd31556fe79bda9d1",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_c829319f82ab28d94d87e1dc",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_c88a161f8666ec1fa3bc3d84",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_c8fa3dacb1658c7b1370a734",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_c9d8df4e3ac387c25594c8d7",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_cc8464a5ccc5773920bc208c",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_ccb203306877d7ece26767d7",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_cd1ccd1e92972ab73d3e939d",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_cd9bb02641c5a72b21078e24",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_ce04c6f62ccc9ad645aecf73",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_cf695ac057c8c8071774991c",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_d13eb648de72e3b339882b59",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_d47028a466b0b80c5e7a4d87",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_d48ca1c2c63d09bc4d552337",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_d4ad62bef291a78e3e592398",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_d4e3e2266fc58cb9ae8b7de3",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_d53b5a01faadcdc7eae6de79",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_d60b17237930790539617ade",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_d866f88341520fe2abeebd92",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_d9136b1003c48152df953070",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_db11af7ae88011b0f78a7e0a",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_dc34c4187aeed5afc2c3c916",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_dcafdc50ef294997f16cdaed",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_decc5b35b25a1ca921129687",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_df3d1164f3fe5c84bb9673c7",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_e11413a1e3e948fa59554ec1",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_e27ec7c58503ce48a97bbdac",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_e2e038ebb3f564c911d8b451",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_e3bf9e7dc9f803279cf0dea5",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_e3e8101795d9c37b84f4a46f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_e5c162951e4f9d9a8e722c2a",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_e69b38512e2bbeb5f71bc6e5",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_e72c856958bc8e6b66e8df4b",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_e8ea8f4a2453030d195765a4",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_eb758c8fddd9d1f0913dfda9",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_ed54848029508dffcd3e6fe7",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_ed7b41b09079b42e03ad900d",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_eff6fcf58583df8958bd283e",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f0b05ab5e52880c76b766d6b",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f1246b133449eb39f7816535",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f153ef863f2ec2eae707b1df",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f2b3c637024c93ad45bc6be0",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f42566562ff1f045aadef79f",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f43683a745b3350c4ede9471",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f47a2e7b4cfcc4da06ea7f44",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f4de01424b878b3d84d1a4b9",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f6ed674d4bb84a54b9dd1223",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f83a54729a446a60f7737c2e",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f86e06d2cc0b2c297c391c98",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f8742849cf3b5d8b2497f381",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f8fcb6813ef9a1f145f22432",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f96d3227c778a9b8d9875287",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_f9d27fa9a9f4c85104e882a4",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_fa6cc7df381ca84dc44b8573",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_fae65071ebee6b3c5b5ae8ab",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_fb28ef1688ee84e27f366cea",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_fd80284bf5ae537a8ea7adfb",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    },
+    {
+      "finding_id": "finding_feaddcea14f4970849d09b1c",
+      "action": "KEEP_BLOCKED",
+      "classification": "UNKNOWN_REQUIRES_REVIEW"
+    }
+  ],
+  "search": {
+    "files_scanned": 49588,
+    "exact_hash_matches": 67579,
+    "exact_hash_matches_rejected_for_scope_or_provenance": 67579,
+    "rejected_candidate_reasons": {},
+    "trusted_roots": [
+      "uploads",
+      "documents",
+      "processed",
+      "reports",
+      "quarantine",
+      "verified isolated restores"
+    ]
+  },
+  "mutation": {
+    "performed": false,
+    "source_rows_changed": 0,
+    "source_files_changed": 0,
+    "audit_events_written": 0
+  },
+  "preconditions": {
+    "verified_backup_required": true,
+    "backup_id_required": true,
+    "expected_database_sha256_required": true,
+    "independent_review_artifact_required": true,
+    "admin_role_required": true,
+    "confirmation_required": true
+  },
+  "phi_included": false,
+  "credentials_included": false,
+  "plan_digest": "80e0cfb1b569232171902b1361e1510b538491829fc31e58a135bead504bf9b0"
+}
