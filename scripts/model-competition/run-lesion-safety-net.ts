@@ -107,58 +107,62 @@ async function main(): Promise<void> {
     // the nonreferable path (319 rows), not only to ground-truth negatives.
     // This keeps the added-review denominator available without using labels
     // to choose which production-facing cases would be escalated.
-    const bucket = isFn ? fn : Number(raw?.dr_grade ?? -1) < 2 ? nonreferable : null;
+    const isBaselineNonreferable = Number(raw?.dr_grade ?? -1) < 2;
+    const buckets = [
+      ...(isFn ? [fn] : []),
+      ...(isBaselineNonreferable ? [nonreferable] : []),
+    ];
     all.input_cases += 1;
-    if (bucket) bucket.input_cases += 1;
+    for (const bucket of buckets) bucket.input_cases += 1;
     if (!fs.existsSync(imagePath)) {
-      all.source_images_missing += 1; if (bucket) bucket.source_images_missing += 1;
+      all.source_images_missing += 1; for (const bucket of buckets) bucket.source_images_missing += 1;
       unavailableReasons.source_image_missing = (unavailableReasons.source_image_missing ?? 0) + 1;
       continue;
     }
-    all.source_images_present += 1; if (bucket) bucket.source_images_present += 1;
+    all.source_images_present += 1; for (const bucket of buckets) bucket.source_images_present += 1;
     const imageBytes = fs.readFileSync(imagePath);
     const started = Date.now();
     let quality;
     try { quality = await assessQuality(imageBytes); } catch {
-      all.quality_blocked += 1; if (bucket) bucket.quality_blocked += 1;
+      all.quality_blocked += 1; for (const bucket of buckets) bucket.quality_blocked += 1;
       unavailableReasons.quality_gate_error = (unavailableReasons.quality_gate_error ?? 0) + 1;
       continue;
     }
     if (quality.quality_status !== "pass") {
-      all.quality_blocked += 1; if (bucket) bucket.quality_blocked += 1;
+      all.quality_blocked += 1; for (const bucket of buckets) bucket.quality_blocked += 1;
       unavailableReasons.quality_not_pass = (unavailableReasons.quality_not_pass ?? 0) + 1;
       continue;
     }
-    all.quality_pass += 1; if (bucket) bucket.quality_pass += 1;
+    all.quality_pass += 1; for (const bucket of buckets) bucket.quality_pass += 1;
     const ood = assessOod({ modality: "fundus", quality, model, device: null, metadataProvided: false, deviceUnknownIsDomainUnknown: true });
     if (ood.detected) {
-      all.ood_blocked += 1; if (bucket) bucket.ood_blocked += 1;
+      all.ood_blocked += 1; for (const bucket of buckets) bucket.ood_blocked += 1;
       unavailableReasons.ood_blocked = (unavailableReasons.ood_blocked ?? 0) + 1;
       continue;
     }
-    all.ood_pass += 1; if (bucket) bucket.ood_pass += 1;
+    all.ood_pass += 1; for (const bucket of buckets) bucket.ood_pass += 1;
     try {
       const result = await runFundusLesionResearchAnalysis(
         { studyId: `phase6-${caseKey}`, modality: "fundus", eye: row.image_id.includes("_l") ? "OS" : row.image_id.includes("_r") ? "OD" : "unknown", source: "file_upload", metadata: { providedBy: "none" }, files: [] },
         { qualityScore: quality.quality_score, eye: "unknown", device: null, imageBytes },
       );
       const elapsed = Date.now() - started;
-      all.service_ms.push(elapsed); if (bucket) bucket.service_ms.push(elapsed);
+      all.service_ms.push(elapsed); for (const bucket of buckets) bucket.service_ms.push(elapsed);
       if (result.raw.inference_status !== "completed") {
-        all.inference_failed += 1; if (bucket) bucket.inference_failed += 1;
+        all.inference_failed += 1; for (const bucket of buckets) bucket.inference_failed += 1;
         unavailableReasons.model_failed = (unavailableReasons.model_failed ?? 0) + 1;
         continue;
       }
-      all.inference_completed += 1; if (bucket) bucket.inference_completed += 1;
+      all.inference_completed += 1; for (const bucket of buckets) bucket.inference_completed += 1;
       // runFundusLesionResearchAnalysis validates the worker's strict output
       // contract before returning; a completed result is therefore a valid
       // region-output observation, even when it contains zero regions.
-      all.valid_region_output += 1; if (bucket) bucket.valid_region_output += 1;
+      all.valid_region_output += 1; for (const bucket of buckets) bucket.valid_region_output += 1;
       const hasSignal = result.findings.length > 0;
-      if (hasSignal) { all.signal_cases += 1; if (bucket) bucket.signal_cases += 1; addClasses(all.class_signals, result.findings); if (bucket) addClasses(bucket.class_signals, result.findings); }
-      else { all.no_signal_cases += 1; if (bucket) bucket.no_signal_cases += 1; }
+      if (hasSignal) { all.signal_cases += 1; for (const bucket of buckets) bucket.signal_cases += 1; addClasses(all.class_signals, result.findings); for (const bucket of buckets) addClasses(bucket.class_signals, result.findings); }
+      else { all.no_signal_cases += 1; for (const bucket of buckets) bucket.no_signal_cases += 1; }
     } catch {
-      all.inference_failed += 1; if (bucket) bucket.inference_failed += 1;
+      all.inference_failed += 1; for (const bucket of buckets) bucket.inference_failed += 1;
       unavailableReasons.provider_exception = (unavailableReasons.provider_exception ?? 0) + 1;
     }
   }

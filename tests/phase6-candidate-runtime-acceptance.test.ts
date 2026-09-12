@@ -73,6 +73,14 @@ describe("Phase 6 candidate and runtime acceptance", () => {
     if (result.scope.selected_cases < result.scope.frozen_validation_cases) {
       expect(result.measurement_state).toBe("PARTIAL_TECHNICAL_RESEARCH");
     }
+    if (result.scope.selected_cases === result.scope.frozen_validation_cases) {
+      expect(result.scope.baseline_fn_cases_selected).toBe(result.scope.baseline_fn_cases_expected);
+      expect(result.scope.baseline_fn_cases_expected).toBe(101);
+      expect(result.aggregate.input_cases).toBe(400);
+      expect(result.nonreferable.input_cases).toBe(319);
+      expect(result.nonreferable.extra_review_escalations_per_100).toEqual(expect.any(Number));
+      expect(result.measurement_state).toBe("MEASURED_TECHNICAL_RESEARCH");
+    }
   });
 
   it("keeps the candidate out of the ordinary live model registry and exposes a read-only Phase 6 route", () => {
