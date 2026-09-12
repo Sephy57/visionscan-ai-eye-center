@@ -1,5 +1,10 @@
 # Clinical Safety
 
+Current implementation note: the analysis service validates the complete
+structured result before writing analysis, reasoning, or report artifacts, and
+the broad study read path re-validates stored analysis plus any report version
+seal before presentation. A failed check is fail-closed and returns no result.
+
 ## Separation of concern levels
 
 | Level | Meaning | Who can establish it |
@@ -17,7 +22,8 @@ Enforced by the finding taxonomy (`lib/analysis/taxonomy.ts`):
 
 ## Safety validator (`lib/clinical/safety.ts`)
 
-Runs after AI generation, before storage/display. Current checks:
+Runs after AI generation, before storage, and again before broad display.
+Current checks:
 
 1. `no_findings_when_quality_failed` — quality gate blocks all findings
 2. `confidence_in_bounds` — 0..1
@@ -33,6 +39,9 @@ Runs after AI generation, before storage/display. Current checks:
 12. `ood_no_normality_claim` — OOD inputs cannot yield "no abnormality detected"
 13. `model_validation_status_recorded`
 14. `no_fabricated_validation`
+15. `claim_ledger_evidence_gate` — every current observation/triage claim has
+    evidence references and remains research-review-only unless a validated
+    intended-use gate is independently satisfied
 15. `demo_isolation` — synthetic results always carry the demo flag + label
 
 Additionally, the pipeline's claim scanner rejects results containing forbidden claim patterns before storage.

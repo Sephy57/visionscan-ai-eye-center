@@ -1,5 +1,12 @@
 # Architecture
 
+Current checkout note (2026-09-12): SQLite is the default persistence
+backend; the equipped deployment can run three hash-verified local
+RESEARCH-only providers. The pipeline and report paths below are historical
+descriptions where they say “DEMO only”; current availability is recorded in
+the release report and model manifests. Safety validation now occurs before
+publication and is rechecked on broad reads.
+
 ## Pipeline (safety-critical ordering)
 
 ```
@@ -21,7 +28,9 @@ IMAGE INGESTION (device adapters)
      + relevant findings detected)
   -> CLINICAL RULE ENGINE / TRIAGE (deterministic, conservative; red-flag symptoms escalate
      without a model diagnosis; AI can never downgrade)
-  -> SAFETY VALIDATOR (schema + claims + labeling + measurement + OOD checks)
+  -> SAFETY VALIDATOR (schema + claims + labeling + measurement + OOD checks;
+     publication precondition and read-time recheck)
+  -> CLAIM / EVIDENCE LEDGER (server-derived refs, laterality, model provenance)
   -> STRUCTURED RESULT (schema-validated JSON)
   -> REPORT GENERATOR (cannot modify findings; model card + validation status surfaced)
   -> CLINICIAN REVIEW (confirm/reject/correct/indeterminate/request-new-scan/finalize;
@@ -35,7 +44,7 @@ IMAGE INGESTION (device adapters)
 |---|---|
 | `lib/config.ts` | Windows-safe paths from env; all data on D:; path traversal guard |
 | `lib/storage/files.ts` | Originals (immutable, SHA-256), processed/reports JSON, temp cleanup |
-| `lib/storage/db.ts` | JSON document store on D: (SQLite-swappable interface; development only) |
+| `lib/storage/db.ts` | SQLite transactional document store (legacy JSON import tooling remains explicit) |
 | `lib/audit/index.ts` | NDJSON audit logs; sanitizes potentially sensitive content |
 | `lib/observability/metrics.ts` | Bounded, PHI-free process-local operational counters (not production telemetry) |
 | `lib/imaging/quality.ts` | Real quality metrics: sharpness (Laplacian variance), illumination, clipping, glare, resolution, FOV |
@@ -60,11 +69,12 @@ IMAGE INGESTION (device adapters)
 | `lib/studies/service.ts` | Study lifecycle, review workflow, temporal comparison |
 | `tests/` | vitest safety/registry/research tests + end-to-end self-test |
 
-## Why the detector is "demo/synthetic"
+## Why the legacy detector is "demo/synthetic"
 
-Per project mandate: **do not fake medical capability.** No validated lesion-detection model exists in this
-deployment. The detector stage is a registered DEMO model (`demo-fundus-synthetic-v0`) behind the
-EyeModelProvider interface that emits explicitly-labeled synthetic findings with:
+Per project mandate: **do not fake medical capability.** The legacy fallback
+detector is a registered DEMO model (`demo-fundus-synthetic-v0`) behind the
+EyeModelProvider interface that emits explicitly-labeled synthetic findings
+with:
 - `synthetic: true` on every finding, taxonomy level "observation"
 - result-level label `DEMO / SYNTHETIC RESULT - NOT FOR CLINICAL USE`
 - confidence capped below "high" (no ensemble available), no calibrated percentages
@@ -72,8 +82,11 @@ EyeModelProvider interface that emits explicitly-labeled synthetic findings with
   specialist-review language)
 - taxonomy enforcement: only registry-declared findings for the matching modality are emitted
 
-This keeps the entire downstream pipeline (triage, reporting, review, audit, comparison) real and testable
-while making it impossible to mistake demo output for validated clinical output.
+This keeps the entire downstream pipeline (triage, reporting, review, audit,
+comparison) real and testable while making it impossible to mistake demo
+output for validated clinical output. The current checkout also equips three
+hash-verified local RESEARCH-only provider packages; their availability,
+limitations, and routing status are recorded in the current release report.
 
 ## Adding a real model later (integration path)
 
@@ -97,12 +110,12 @@ while making it impossible to mistake demo output for validated clinical output.
    provider boundary, output-contract validation, calibration registry, and device-compatibility gate this
    requires are now implemented and tested (Phase 6 infrastructure); only the actual model artifact and
    provider implementation remain.
-2. SQLite on D: (`data\database\eye-ai.db`) replacing the JSON store behind the same interface.
-   Run `npm run migration:preflight` before any reviewed importer; it is a
-   non-destructive dry-run that emits source hashes and collection counts.
+2. ~~SQLite on D: (`data\database\eye-ai.db`) replacing the JSON store behind the same interface~~ — **completed**;
+    `npm run migration:preflight` remains the non-destructive importer preflight.
 3. DICOM parser (dcmjs or equivalent) inside a device adapter; pixel-data normalization.
 4. FHIR DiagnosticReport/Observation export.
-5. ~~Authentication, RBAC~~ — **implemented, Phase 5B** (see `docs/AUTH_RBAC.md`). Encryption at rest, consent
-   enforcement (the data model exists, Phase 5B; not wired as a hard gate — see
-   `docs/CONSENT_DATA_GOVERNANCE.md`), and retention schedules remain open.
+5. ~~Authentication, RBAC, purpose-specific consent enforcement~~ —
+    **implemented in the current checkout** (see `docs/AUTH_RBAC.md` and
+    `docs/CONSENT_DATA_GOVERNANCE.md`). Encryption at rest and retention
+    schedules remain open.
 6. In-image overlays: bounding regions, segmentation masks, "AI-highlighted region" heatmaps.

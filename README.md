@@ -1,7 +1,7 @@
 # VisionScan AI — AI Eye Scan Analysis & Clinical Decision-Support Platform
 
-A medical-grade **architecture** for AI-assisted analysis of ophthalmic images — engineered as a screening and
-clinical decision-support system with mandatory human oversight, not as a diagnostic product.
+A safety-first **research architecture** for AI-assisted analysis of ophthalmic images — engineered for controlled
+local experimentation with mandatory human oversight, not as a diagnostic product.
 
 > **Honest status: NOT VALIDATED — NOT A MEDICAL DEVICE — NOT FOR CLINICAL USE.**
 > The equipped deployment runs three hash-verified **RESEARCH-only** local models (fundus lesions, DR grade, and OCT
@@ -41,6 +41,7 @@ clinical decision-support system with mandatory human oversight, not as a diagno
 cd "D:\AI EYE ANALYSIS PLATFORM"
 npm install        # first time only
 npm run setup      # (re)create data directories on D:
+npm run db:init    # initialize the default SQLite store
 npm run dev        # start dev server at http://localhost:3000
 ```
 
@@ -50,6 +51,11 @@ Production-style run:
 npm run build
 npm start
 ```
+
+For the isolated synthetic workflow and the complete local release matrix,
+see [docs/DEVELOPMENT_RUNBOOK.md](docs/DEVELOPMENT_RUNBOOK.md). `npm run
+demo:reset` only resets `data/demo`; `npm run release:verify` retains every
+failed gate and exits non-zero when release evidence is incomplete.
 
 Stop: press `Ctrl+C` in the terminal running the server (or stop the Node process).
 
@@ -62,8 +68,12 @@ npm test           # vitest: schema, triage, ensemble, safety, wording, DICOM, p
 End-to-end self-test (synthetic images, cleans up after itself):
 
 ```powershell
-# via the Admin page (/admin -> Run self-test) or:
+# via the Admin page (/admin -> Run self-test), or an authenticated ADMIN session:
 curl http://localhost:3000/api/selftest
+
+# An unauthenticated curl is intentionally rejected (401); the smoke script
+# demonstrates the authenticated synthetic flow:
+npm run smoke
 ```
 
 Filesystem audit (verifies data is on D:):
@@ -92,14 +102,14 @@ npm run audit:fs
 API: `/api/upload`, `/api/analyze`, `/api/studies[/:id][/image]`, `/api/compare`, `/api/review/:id`,
 `/api/models`, `/api/research/metrics`, `/api/selftest`, `/api/admin`.
 
-## Storage layout (all on D:)
+## Storage layout (the checkout's configured data root)
 
 ```
 data\uploads\    original scans (never modified, SHA-256 recorded)
 data\processed\  structured analysis results
 data\reports\    generated reports
-data\database\   JSON document store (SQLite file path reserved: data\database\eye-ai.db)
-data\models\     model storage (no models installed yet)
+data\database\   SQLite transactional store (legacy JSON import tooling only)
+data\models\     hash-verified local research model manifests/weights
 data\logs\       audit NDJSON logs (metadata only, never images)
 data\tmp\        temp files, auto-cleaned
 ```
@@ -131,5 +141,6 @@ protection, per-device validation, locked test sets) that must be completed befo
 ## Known C: dependencies
 
 Node.js, npm, and the global npm cache live on C: (system installations). npm's cache can be redirected to D:
-(`npm config set cache "D:\npm-cache"`). Everything this application creates is on D: — see
-`npm run audit:fs`.
+(`npm config set cache "D:\npm-cache"`). Everything this application creates is under the configured data root — see
+`npm run audit:fs`. The equipped checkout contains three RESEARCH-only local model packages; their presence does not
+imply clinical validation, calibration, or permission to diagnose.

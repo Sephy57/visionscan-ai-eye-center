@@ -97,18 +97,16 @@ handoff's own instruction not to add a role the workflow doesn't need).
 | `/api/evaluations` | GET/POST | ADMIN, RESEARCHER |
 | `/api/research/metrics` | POST | ADMIN, RESEARCHER |
 | `/api/auth/users` | GET/POST | ADMIN |
-| `/api/selftest` | GET | **intentionally unauthenticated** - see below |
+| `/api/selftest` | GET | **ADMIN only** - synthetic diagnostic, cleans up after itself |
 
-### Why `/api/selftest` is intentionally unauthenticated
+### Why `/api/selftest` is ADMIN-only
 
-It is a self-contained diagnostic/health-check endpoint: it creates its own
-synthetic (non-patient) test images, exercises the pipeline, and deletes
-everything it created. It exposes no real patient data. This mirrors a
-common `/healthz`-style convention. In a real production deployment this
-should additionally be restricted at the infrastructure layer (internal
-network only, or behind its own auth) - marked **REQUIRES EXTERNAL
-INFRASTRUCTURE / operational decision**, not implemented here because it
-depends on the specific deployment topology.
+It is a self-contained diagnostic endpoint: it creates its own synthetic
+(non-patient) test images, exercises the pipeline, and deletes everything it
+created. It exposes no real patient data, but it executes against the real
+local storage and pipeline, so the route requires an authenticated `ADMIN`
+session. In a production deployment it should also be restricted at the
+infrastructure layer (internal network only or an equivalent control).
 
 ## Study access control
 

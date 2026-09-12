@@ -1,17 +1,17 @@
 {
   "format": "visionscan-data-closure-dry-run-v1",
-  "generated_at": "2026-09-11T07:10:47.770Z",
+  "generated_at": "2026-09-12T15:01:46.711Z",
   "database": {
     "file": "<configured-database>",
-    "sha256": "1bb77fc8068d0024aca2e8b9bc191efff855e9faf6f0d59c53a56664baa1ad13",
-    "content_sha256": "1bb77fc8068d0024aca2e8b9bc191efff855e9faf6f0d59c53a56664baa1ad13",
+    "sha256": "9644adb4796e629721cca2fed9ecbd5e34e62dac9a44eec4114b09748dddf70e",
+    "content_sha256": "9644adb4796e629721cca2fed9ecbd5e34e62dac9a44eec4114b09748dddf70e",
     "integrity_check": "ok",
     "schema_version": "1",
     "migration_version": "1"
   },
   "ledger": {
     "file": "docs/generated/active-source-forensics.json",
-    "sha256": "d19efd811d563f0c45e36be0791f4cf619193b942ec5aabfada641759faba7c3"
+    "sha256": "3436428bcc24556b3f461d88e50448319820ad8309be58f434239f0881cd3d22"
   },
   "counts": {
     "total_findings": 235,
@@ -1200,9 +1200,9 @@
     }
   ],
   "search": {
-    "files_scanned": 49588,
-    "exact_hash_matches": 67579,
-    "exact_hash_matches_rejected_for_scope_or_provenance": 67579,
+    "files_scanned": 69353,
+    "exact_hash_matches": 91745,
+    "exact_hash_matches_rejected_for_scope_or_provenance": 91745,
     "rejected_candidate_reasons": {},
     "trusted_roots": [
       "uploads",
@@ -1229,5 +1229,5 @@
   },
   "phi_included": false,
   "credentials_included": false,
-  "plan_digest": "80e0cfb1b569232171902b1361e1510b538491829fc31e58a135bead504bf9b0"
+  "plan_digest": "7e2fd65050039d9c759dac6ccf40216c8add8c4111cd097172a1c7fda0527191"
 }

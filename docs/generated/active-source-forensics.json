@@ -1,9 +1,9 @@
 {
   "format": "visionscan-active-source-forensics-v1",
-  "generated_at": "2026-09-11T07:10:47.735Z",
+  "generated_at": "2026-09-12T15:01:46.676Z",
   "database": {
     "file": "<configured-database>",
-    "sha256": "1bb77fc8068d0024aca2e8b9bc191efff855e9faf6f0d59c53a56664baa1ad13",
+    "sha256": "9644adb4796e629721cca2fed9ecbd5e34e62dac9a44eec4114b09748dddf70e",
     "integrity_check": "ok",
     "schema_version": "1",
     "migration_version": "1"
@@ -168,8 +168,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -251,8 +251,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 45,
-        "exact_hash_matches_total": 45
+        "exact_hash_matches_rejected_for_scope_or_provenance": 66,
+        "exact_hash_matches_total": 66
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -334,8 +334,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -416,8 +416,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -499,8 +499,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -582,8 +582,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -664,8 +664,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 45,
-        "exact_hash_matches_total": 45
+        "exact_hash_matches_rejected_for_scope_or_provenance": 66,
+        "exact_hash_matches_total": 66
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -747,8 +747,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -830,8 +830,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -912,8 +912,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -995,8 +995,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -1078,8 +1078,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -1161,8 +1161,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -1243,8 +1243,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -1326,8 +1326,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -1409,8 +1409,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -1492,8 +1492,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -1575,8 +1575,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -1658,8 +1658,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -1741,8 +1741,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 28,
-        "exact_hash_matches_total": 28
+        "exact_hash_matches_rejected_for_scope_or_provenance": 32,
+        "exact_hash_matches_total": 32
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -1824,8 +1824,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -1907,8 +1907,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -1990,8 +1990,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -2073,8 +2073,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -2155,8 +2155,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -2238,8 +2238,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -2321,8 +2321,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -2404,8 +2404,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -2653,8 +2653,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -2736,8 +2736,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -2819,8 +2819,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -2902,8 +2902,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -3150,8 +3150,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -3233,8 +3233,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -3399,8 +3399,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -3482,8 +3482,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -3565,8 +3565,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -3814,8 +3814,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -3980,8 +3980,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -4063,8 +4063,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -4146,8 +4146,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -4229,8 +4229,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 28,
-        "exact_hash_matches_total": 28
+        "exact_hash_matches_rejected_for_scope_or_provenance": 32,
+        "exact_hash_matches_total": 32
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -4312,8 +4312,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 5,
-        "exact_hash_matches_total": 5
+        "exact_hash_matches_rejected_for_scope_or_provenance": 7,
+        "exact_hash_matches_total": 7
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -4394,8 +4394,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -4560,8 +4560,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -4726,8 +4726,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -4809,8 +4809,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 45,
-        "exact_hash_matches_total": 45
+        "exact_hash_matches_rejected_for_scope_or_provenance": 66,
+        "exact_hash_matches_total": 66
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -4975,8 +4975,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -5057,8 +5057,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 28,
-        "exact_hash_matches_total": 28
+        "exact_hash_matches_rejected_for_scope_or_provenance": 32,
+        "exact_hash_matches_total": 32
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -5140,8 +5140,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -5389,8 +5389,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 5,
-        "exact_hash_matches_total": 5
+        "exact_hash_matches_rejected_for_scope_or_provenance": 7,
+        "exact_hash_matches_total": 7
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -5472,8 +5472,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -5555,8 +5555,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -5638,8 +5638,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -5721,8 +5721,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -5804,8 +5804,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -5970,8 +5970,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -6053,8 +6053,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -6136,8 +6136,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -6219,8 +6219,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -6301,8 +6301,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -6383,8 +6383,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -6549,8 +6549,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -6631,8 +6631,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -6713,8 +6713,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -6796,8 +6796,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -6879,8 +6879,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -6961,8 +6961,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -7209,8 +7209,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -7291,8 +7291,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -7374,8 +7374,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -7457,8 +7457,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -7540,8 +7540,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 45,
-        "exact_hash_matches_total": 45
+        "exact_hash_matches_rejected_for_scope_or_provenance": 66,
+        "exact_hash_matches_total": 66
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -7872,8 +7872,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -7955,8 +7955,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -8121,8 +8121,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -8204,8 +8204,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -8287,8 +8287,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -8536,8 +8536,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -8785,8 +8785,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -8868,8 +8868,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -8951,8 +8951,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 5,
-        "exact_hash_matches_total": 5
+        "exact_hash_matches_rejected_for_scope_or_provenance": 7,
+        "exact_hash_matches_total": 7
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -9117,8 +9117,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 28,
-        "exact_hash_matches_total": 28
+        "exact_hash_matches_rejected_for_scope_or_provenance": 32,
+        "exact_hash_matches_total": 32
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -9200,8 +9200,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 28,
-        "exact_hash_matches_total": 28
+        "exact_hash_matches_rejected_for_scope_or_provenance": 32,
+        "exact_hash_matches_total": 32
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -9283,8 +9283,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -9366,8 +9366,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -9449,8 +9449,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 5,
-        "exact_hash_matches_total": 5
+        "exact_hash_matches_rejected_for_scope_or_provenance": 7,
+        "exact_hash_matches_total": 7
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -9532,8 +9532,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 28,
-        "exact_hash_matches_total": 28
+        "exact_hash_matches_rejected_for_scope_or_provenance": 32,
+        "exact_hash_matches_total": 32
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -9698,8 +9698,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -9781,8 +9781,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -10030,8 +10030,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -10113,8 +10113,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 5,
-        "exact_hash_matches_total": 5
+        "exact_hash_matches_rejected_for_scope_or_provenance": 7,
+        "exact_hash_matches_total": 7
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -10278,8 +10278,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -10361,8 +10361,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -10444,8 +10444,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -10527,8 +10527,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -10610,8 +10610,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -10693,8 +10693,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -10776,8 +10776,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -10859,8 +10859,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -10942,8 +10942,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -11107,8 +11107,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -11190,8 +11190,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -11439,8 +11439,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -11522,8 +11522,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -11605,8 +11605,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -11688,8 +11688,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -11771,8 +11771,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -11853,8 +11853,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -12019,8 +12019,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -12102,8 +12102,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -12184,8 +12184,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -12267,8 +12267,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 28,
-        "exact_hash_matches_total": 28
+        "exact_hash_matches_rejected_for_scope_or_provenance": 32,
+        "exact_hash_matches_total": 32
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -12433,8 +12433,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -12516,8 +12516,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -12599,8 +12599,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -12751,8 +12751,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 5,
-        "exact_hash_matches_total": 5
+        "exact_hash_matches_rejected_for_scope_or_provenance": 7,
+        "exact_hash_matches_total": 7
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -12834,8 +12834,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -13000,8 +13000,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -13166,8 +13166,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -13249,8 +13249,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -13332,8 +13332,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -13414,8 +13414,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -13497,8 +13497,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -13580,8 +13580,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -13746,8 +13746,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 5,
-        "exact_hash_matches_total": 5
+        "exact_hash_matches_rejected_for_scope_or_provenance": 7,
+        "exact_hash_matches_total": 7
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -13829,8 +13829,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -13912,8 +13912,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -14078,8 +14078,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -14161,8 +14161,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 45,
-        "exact_hash_matches_total": 45
+        "exact_hash_matches_rejected_for_scope_or_provenance": 66,
+        "exact_hash_matches_total": 66
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -14243,8 +14243,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -14409,8 +14409,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -14644,8 +14644,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 28,
-        "exact_hash_matches_total": 28
+        "exact_hash_matches_rejected_for_scope_or_provenance": 32,
+        "exact_hash_matches_total": 32
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -14727,8 +14727,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -14893,8 +14893,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -14976,8 +14976,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -15059,8 +15059,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -15225,8 +15225,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -15308,8 +15308,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -15391,8 +15391,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -15474,8 +15474,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -15723,8 +15723,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -15806,8 +15806,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -15888,8 +15888,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -15970,8 +15970,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -16053,8 +16053,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 45,
-        "exact_hash_matches_total": 45
+        "exact_hash_matches_rejected_for_scope_or_provenance": 66,
+        "exact_hash_matches_total": 66
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -16219,8 +16219,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 28,
-        "exact_hash_matches_total": 28
+        "exact_hash_matches_rejected_for_scope_or_provenance": 32,
+        "exact_hash_matches_total": 32
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -16302,8 +16302,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -16468,8 +16468,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -16717,8 +16717,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -16800,8 +16800,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 28,
-        "exact_hash_matches_total": 28
+        "exact_hash_matches_rejected_for_scope_or_provenance": 32,
+        "exact_hash_matches_total": 32
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -16883,8 +16883,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -17048,8 +17048,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -17131,8 +17131,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -17214,8 +17214,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 45,
-        "exact_hash_matches_total": 45
+        "exact_hash_matches_rejected_for_scope_or_provenance": 66,
+        "exact_hash_matches_total": 66
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -17380,8 +17380,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 28,
-        "exact_hash_matches_total": 28
+        "exact_hash_matches_rejected_for_scope_or_provenance": 32,
+        "exact_hash_matches_total": 32
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -17463,8 +17463,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -17546,8 +17546,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -17629,8 +17629,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -17795,8 +17795,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -17878,8 +17878,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -17961,8 +17961,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -18044,8 +18044,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -18127,8 +18127,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -18293,8 +18293,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -18376,8 +18376,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -18458,8 +18458,8 @@
           "no_provenance_consistent_candidate_observed"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -18541,8 +18541,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 337,
-        "exact_hash_matches_total": 337
+        "exact_hash_matches_rejected_for_scope_or_provenance": 449,
+        "exact_hash_matches_total": 449
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -18790,8 +18790,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 28,
-        "exact_hash_matches_total": 28
+        "exact_hash_matches_rejected_for_scope_or_provenance": 32,
+        "exact_hash_matches_total": 32
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -18873,8 +18873,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -18956,8 +18956,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -19039,8 +19039,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -19288,8 +19288,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 566,
-        "exact_hash_matches_total": 566
+        "exact_hash_matches_rejected_for_scope_or_provenance": 772,
+        "exact_hash_matches_total": 772
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -19371,8 +19371,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 45,
-        "exact_hash_matches_total": 45
+        "exact_hash_matches_rejected_for_scope_or_provenance": 66,
+        "exact_hash_matches_total": 66
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -19454,8 +19454,8 @@
           "legacy_delete_event_has_no_matching_modern_lifecycle_state"
         ],
         "exact_hash_candidates": 0,
-        "exact_hash_matches_rejected_for_scope_or_provenance": 23,
-        "exact_hash_matches_total": 23
+        "exact_hash_matches_rejected_for_scope_or_provenance": 31,
+        "exact_hash_matches_total": 31
       },
       "allowed_action": "KEEP_BLOCKED",
       "action_result": "UNCHANGED",
@@ -19470,20 +19470,20 @@
     },
     "source_summary": {
       "active_unresolved_sources": 235,
-      "legacy_unresolved_sources": 75,
+      "legacy_unresolved_sources": 107,
       "hash_mismatch_count": 0,
       "source_reason_counts": {
         "active:MISSING_REQUIRED_ARTIFACT": 233,
-        "legacy:MISSING_REQUIRED_ARTIFACT": 41,
+        "legacy:MISSING_REQUIRED_ARTIFACT": 59,
         "active:DETACHED_ANALYSIS_PARENT": 2,
-        "legacy:MISSING_REPORT_EXPORT": 34
+        "legacy:MISSING_REPORT_EXPORT": 48
       }
     }
   },
   "trusted_storage_search": {
-    "files_scanned": 49588,
-    "exact_hash_matches": 67579,
-    "exact_hash_matches_rejected_for_scope_or_provenance": 67579,
+    "files_scanned": 69353,
+    "exact_hash_matches": 91745,
+    "exact_hash_matches_rejected_for_scope_or_provenance": 91745,
     "rejected_candidate_reasons": {},
     "trusted_roots": [
       "uploads",
@@ -19495,7 +19495,7 @@
     ]
   },
   "creation_history": {
-    "total_audit_events": 87770,
+    "total_audit_events": 87995,
     "matching_event_count": 1682,
     "upload_ok_study_count": 233,
     "delete_event_study_count": 208,

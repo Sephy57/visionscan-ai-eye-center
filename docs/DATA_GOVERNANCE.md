@@ -1,5 +1,10 @@
 # Data Governance
 
+Current checkout note (2026-09-12): SQLite is the transactional default and
+the three installed local models are RESEARCH-only. The dated historical
+storage statements below are superseded where they conflict with the current
+runbook and release report.
+
 ## Principles
 
 Eye scans are sensitive medical information. Uploaded scans are **never** used for model training in this
@@ -13,9 +18,9 @@ training occurs).
 | Original scans | `data\uploads\<study_id>\` (byte-for-byte, SHA-256) |
 | Analyses | `data\processed\` |
 | Reports | `data\reports\` |
-| Database | `data\database\eye-ai.json` (SQLite-ready interface) |
+| Database | `data\database\eye-ai.db` (SQLite; legacy JSON import tooling only) |
 | Audit logs | `data\logs\audit-*.ndjson`, `data\logs\analyses.ndjson` |
-| Models | `data\models\` (empty by design) |
+| Models | `data\models\` (local hash-verified RESEARCH-only packages; no clinical validation) |
 | Temp | `data\tmp\` (auto-cleaned) |
 
 ## Audit trail

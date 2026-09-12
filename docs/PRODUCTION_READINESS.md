@@ -1,8 +1,22 @@
 # Production Readiness — Phase 5B
 
+## Current checkout snapshot (2026-09-12)
+
+This document is a historical phase record. For the current source of truth,
+use [docs/VISIONSCAN_FULL_SYSTEM_REPORT_2026-09-12.md](VISIONSCAN_FULL_SYSTEM_REPORT_2026-09-12.md)
+and [docs/DEVELOPMENT_RUNBOOK.md](DEVELOPMENT_RUNBOOK.md). The current
+checkout defaults to SQLite, includes three hash-verified local RESEARCH-only
+model packages, enforces purpose-specific consent at HTTP and durable-job
+processing boundaries, validates safety before publication and on broad reads,
+and exposes a claim/evidence ledger. Clinical deployment remains blocked.
+
+The Phase 5B statements below are retained as historical evidence of the
+earlier implementation state; where they conflict with the current checkout,
+the current report and executable code take precedence.
+
 ## Overall status
 
-**PRODUCTION ENGINEERING READY — SECURE SOFTWARE FOUNDATION**
+**HISTORICAL PHASE 5B STATUS — SUPERSEDED BY CURRENT CHECKOUT REPORT**
 **NOT CLINICALLY DEPLOYABLE**
 **NOT VALIDATED — NOT A MEDICAL DEVICE — NOT FOR CLINICAL USE**
 
@@ -21,7 +35,7 @@ Added: persistent model lifecycle state (survives restart), full
 username/password authentication with scrypt hashing, session cookies with
 CSRF protection, five-role RBAC enforced server-side on every protected API
 route, a fixed path-traversal vulnerability in the scan-image route, a
-consent data model (architecture only, not wired as a hard gate), audit-log
+purpose-specific consent data model and HTTP/durable-job hard gate, audit-log
 hash-chaining with a fixed write-race, 36 new security tests, and
 authenticated end-to-end verification in both `next dev` and `next start`
 (production) modes. Did not change: the clinical safety pipeline, red-flag
@@ -66,7 +80,7 @@ in this codebase should be read as a risk classification.
 | Cybersecurity - auth, RBAC, session management, CSRF, rate limiting, audit | **IMPLEMENTED**, tested (see `docs/PHASE5B_SECURITY.md`) |
 | Cybersecurity - encryption in transit / at rest | **REQUIRES EXTERNAL INFRASTRUCTURE** (TLS terminator, disk/volume encryption) - not implemented by this application, and should not be |
 | Privacy - de-identification boundary, research/clinical separation | **IMPLEMENTED** (see `docs/CONSENT_DATA_GOVERNANCE.md`) |
-| Privacy - consent architecture | **IMPLEMENTED (data layer)**, **NOT wired as a hard gate** (deliberate - see that doc) |
+| Privacy - consent architecture | **IMPLEMENTED (data layer + API + processing gate)**; direct library fixtures remain explicitly ungated and production operations still require policy |
 | Quality management system (design controls, CAPA, etc.) | **NOT APPLICABLE YET** - no QMS exists because there is no product being taken to market; would be required before any real clinical deployment |
 
 ## Clinical evaluation
@@ -129,9 +143,9 @@ silently fixed and left unmentioned.
 2. No populated medication knowledge base - `MEDICATIONS` is empty by design.
 3. TLS termination and disk encryption are infrastructure the deploying
    organization must provide - not application code.
-4. Consent is architecturally ready but not wired as an enforcement gate -
-   a deployment handling real patients must decide the policy and wire
-   `requireGrantedConsent()` in explicitly.
+4. Purpose-specific consent processing gates are implemented in the current
+   checkout; a deployment handling real patients must retain that gate and
+   canonical subject binding.
 5. Retention policy, backup/restore automation, and a formal data-subject-
    rights workflow are documented as gaps, not built.
 6. No QMS, no clinical evaluation, no regulatory pathway determination -

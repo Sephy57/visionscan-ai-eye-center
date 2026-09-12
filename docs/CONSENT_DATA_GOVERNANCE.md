@@ -1,8 +1,10 @@
 # Consent & Data Governance
 
-Status: **PARTIALLY IMPLEMENTED** - see per-section markers.
+Status: **PARTIALLY IMPLEMENTED** - purpose-specific processing gates are now
+enforced at HTTP and durable-job boundaries; direct library fixtures remain
+deliberately ungated and operational retention/erasure still requires policy.
 
-## Consent architecture — IMPLEMENTED (data layer + API), NOT wired as a hard gate
+## Consent architecture — IMPLEMENTED (data layer + API + processing gate)
 
 `lib/consent/consent.ts` implements the requested record shape:
 
@@ -21,31 +23,26 @@ GRANTED", "a withdrawn consent is reported as WITHDRAWN, not GRANTED").
 
 `GET/POST/DELETE /api/studies/[id]/consent` exposes this as a reachable
 route (`CLINICIAN`/`ADMIN`/`TECHNICIAN` can record consent, `CLINICIAN`/
-`ADMIN` can withdraw it, `CLINICIAN`/`ADMIN`/`REVIEWER` can read it) -
-consistent with the Phase 4 audit's specific complaint that some
-Phase-4-era library code (multi-grader adjudication) was real but had zero
-API route, so it was unreachable outside unit tests. This module does not
-repeat that mistake.
+`ADMIN` can withdraw it, `CLINICIAN`/`ADMIN`/`REVIEWER` can read it). When a
+study is bound to a patient, the server validates any supplied subject
+reference and persists the canonical study subject, never a caller-selected
+identity.
 
-### Why it is not wired as a hard gate in front of analysis
+### Purpose-specific hard gates
 
-The brief for this phase explicitly says: **"DO NOT CHANGE: existing safety
-validator, red-flag logic, OOD logic, ... clinician review separation"**.
-Making consent a hard precondition for `analyzeStudy()` would change the
-existing, already-reviewed clinical pipeline's control flow - exactly the
-kind of change that instruction asks not to make casually in a phase whose
-stated primary focus is infrastructure, not the clinical pipeline itself.
+`lib/consent/policy.ts` maps the required purposes and returns a structured
+`CONSENT_REQUIRED` response. The following boundaries require a current
+`GRANTED` record before they read/process the study:
 
-`requireGrantedConsent(studyId, purpose)` exists and is ready to be called
-at whatever policy point a deployment chooses (e.g. inside
-`createStudy()`, inside `analyzeStudy()`, or at the UI layer before upload)
-- it is deliberately **not called from anywhere** in this codebase yet.
-This is disclosed as a real, present gap, not silently deferred: **a
-deployment that needs consent to block clinical processing must wire this
-in explicitly** before going anywhere near real patient data. The
-architecture is ready; the policy decision of *where exactly* to enforce it
-(and what UX a blocked-for-no-consent state should show) was left to
-whoever owns that clinical decision, not decided unilaterally here.
+- `IMAGE_MODEL_ANALYSIS`: `/api/analyze` and analysis queue jobs;
+- `DOCUMENT_EXTRACTION`: document upload/extraction routes and extraction jobs;
+- `CLINICAL_RESEARCH_ANALYSIS`: research, record, and specialist analysis routes.
+
+The durable worker rechecks consent after claiming a job. If consent is
+missing, withdrawn, or expired, the job fails with a structured consent error
+and no result is published. Direct calls to deterministic library services are
+not automatically gated so existing unit fixtures can exercise pure clinical
+logic; production callers must use the authenticated HTTP/job boundaries.
 
 ## Data governance
 
@@ -57,7 +54,7 @@ whoever owns that clinical decision, not decided unilaterally here.
 | Data export | **PARTIALLY IMPLEMENTED** | Every analysis/report is already written to a JSON file (`lib/storage/files.ts writeJson`) and the report UI has a "download JSON" action. A structured, access-controlled bulk-export *endpoint* (e.g. "export everything for study X as a signed package") does not exist - **DEFERRED**. |
 | Correction workflow | **IMPLEMENTED** | The clinician review `correct` action (`lib/studies/service.ts submitReview`) lets a clinician amend a finding; the original AI output is never overwritten (see immutability note below). |
 | Retention policy | **DOCUMENTED ONLY** | No automatic time-based deletion exists. This is a policy decision (how long to keep research/demo data) that depends on the deploying organization's actual retention requirements and cannot be invented here - **REQUIRES POLICY DECISION**, then straightforward to implement as a scheduled job once decided. |
-| Backup / restore | **DOCUMENTED ONLY** | Storage is a single JSON file (`data/database/eye-ai.json`) plus flat files under `data/`. Backup today means copying that directory tree; there is no automated backup/restore tooling. **REQUIRES EXTERNAL INFRASTRUCTURE** (a real backup schedule, offsite copy, restore drill) for a genuine production deployment. |
+| Backup / restore | **PARTIALLY IMPLEMENTED** | SQLite-aware `npm run backup:data` / `npm run restore:data` preserve hashes, integrity metadata, and asset manifests; AES-256-GCM backup encryption is available when explicitly configured. Scheduling, key custody, offsite storage, and a completed restore drill remain operational requirements. |
 | De-identification boundary | **IMPLEMENTED (research layer)** | `lib/research/datasets.ts deidentifyPatientKey()` salts+hashes raw identifiers before they ever enter a research dataset; patient keys are never raw in that layer. The *clinical* layer (`StudyRecord.patient_ref`) intentionally keeps whatever identifier a clinician chose to enter (e.g. an MRN-like reference) - it is operational data, not research data, and de-identifying it would break the clinical workflow's own record-keeping. |
 | Research-vs-clinical separation | **IMPLEMENTED** | Research data lives in dedicated collections (`datasets`, `dataset_samples`, `evidence`, `evaluation_runs`) with their own patient-level-leakage and locked-dataset protections (Phase 4). `RESEARCHER` role cannot reach raw clinical study routes at all (see `docs/AUTH_RBAC.md`'s route matrix) - it is restricted to the research-only endpoints (`/api/evaluations`, `/api/research/metrics`). |
 | Data subject rights (access/correction/erasure) | **PARTIALLY IMPLEMENTED** | Erasure = `deleteStudy()` (works). Access = the existing bundle/report endpoints (works, subject to RBAC). A dedicated "subject rights request" workflow (formal request intake, SLA tracking) does not exist - **DEFERRED**, this is an organizational process question, not purely a code gap. |
