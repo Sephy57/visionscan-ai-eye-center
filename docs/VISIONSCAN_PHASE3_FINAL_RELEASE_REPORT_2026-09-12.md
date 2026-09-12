@@ -365,7 +365,9 @@ Backup/restore integrity tests passed in the full suite, and the release pack in
 
 ## 82. clean checkout
 
-The clean-checkout gate requires a no-model detached worktree to run npm ci, setup, database initialization, lint, TypeScript, and build, while model-equipped evidence remains tied to the original D: checkout with hash-verified artifacts. The fresh no-model worktree is created and checked without copying PHI-capable data or large model weights; the final handoff records its exact path and command results.
+Fresh no-model verification used detached worktree D:/visionscan-phase3-clean-20260912 at 3b0bdd1. It started without node_modules, data, .env, cache, reports, or a local database. npm ci, setup, db:init, lint, TypeScript, build, filesystem audit, and SBOM passed. The no-model model audit passed with manifests_found=0 and patient_data_included=false. The legacy closure dry-run passed with orphan_count=0 and phi_included=false. The full no-model suite passed 75 files with 1 skipped and 996 tests passed with 43 skipped. An isolated server smoke run passed 16/16 at port 3010. The data-dependent migration:preflight command was not runnable because the fresh checkout intentionally had no ignored legacy JSON file; it failed only with the expected ENOENT for that absent data input. No model weights or PHI-capable data were copied into the clean worktree.
+
+Model-equipped verification remained on D:/AI EYE ANALYSIS PLATFORM with hash-verified artifacts: model audit passed 3/3, the full equipped suite passed 75 files with 1 skipped and 1,028 tests passed with 10 skipped, and the browser asset E2E passed login/dashboard, metadata-free fundus analysis with two local models, mixed-PDF extraction, three routed pages, eight OCT ROI candidates, and report provenance.
 
 ## 83. current-head CI
 
