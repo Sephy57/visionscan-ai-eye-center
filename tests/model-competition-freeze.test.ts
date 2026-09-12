@@ -7,9 +7,10 @@ import { validateRunManifest, validateRunResult } from "@/lib/models/competition
 
 const repo = process.cwd();
 const script = path.join(repo, "scripts", "model-competition", "freeze-dr-baseline.mjs");
+const baselineManifest = path.join(repo, "data", "models", "fundus-dr-grading-effb0", "manifest.json");
 
 describe("DR competition baseline freezer", () => {
-  it("freezes only the existing DR evidence and emits valid immutable contracts", () => {
+  it.skipIf(!fs.existsSync(baselineManifest))("freezes only the existing DR evidence and emits valid immutable contracts", () => {
     const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "visionscan-dr-competition-"));
     const stdout = execFileSync(process.execPath, [script, "--output-dir", outputDir], { cwd: repo, encoding: "utf8" });
     const bundle = JSON.parse(stdout);
@@ -26,4 +27,3 @@ describe("DR competition baseline freezer", () => {
     expect(JSON.parse(fs.readFileSync(path.join(outputDir, "dr-baseline-run-result.json"), "utf8")).result_sha256).toBe(bundle.result.result_sha256);
   });
 });
-
