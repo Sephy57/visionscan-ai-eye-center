@@ -46,6 +46,7 @@ import type { IntegrityResult } from "./integrity";
 import type { EyeModelProvider, ModelAnalysisContext, ModelAnalysisOutput, ModelCapabilities } from "./provider";
 import { CANDIDATE_MODEL_DOSSIER_MAP, type CandidateModelDossier } from "./candidateDossiers";
 import { trackChildProcess } from "../jobs/processControl";
+import { buildThreadGovernedEnv } from "../runtime/threadGovernance";
 
 export class PythonEnvironmentNotReadyError extends Error {
   constructor(missing: string[]) {
@@ -110,7 +111,7 @@ function runCheckWith(command: string): Promise<{ code: number | null; stdout: s
     let stdout = "";
     let stderr = "";
     let settled = false;
-    const proc = spawn(command, [CHECK_SCRIPT], { timeout: CHECK_TIMEOUT_MS });
+    const proc = spawn(command, [CHECK_SCRIPT], { timeout: CHECK_TIMEOUT_MS, env: buildThreadGovernedEnv(1) });
     trackChildProcess(proc);
     proc.stdout.on("data", (d) => { stdout += d.toString(); });
     proc.stderr.on("data", (d) => { stderr += d.toString(); });

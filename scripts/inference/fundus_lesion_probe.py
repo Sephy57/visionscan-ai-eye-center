@@ -211,7 +211,15 @@ def main() -> None:
         mean = torch.tensor([0.485, 0.456, 0.406], dtype=tensor.dtype).view(1, 3, 1, 1)
         std = torch.tensor([0.229, 0.224, 0.225], dtype=tensor.dtype).view(1, 3, 1, 1)
         tensor = (tensor - mean) / std
-        torch.set_num_threads(max(1, min(args.threads, 16)))
+        intra_threads = max(1, min(int(os.environ.get("VISIONSCAN_PYTORCH_INTRA_OP_THREADS", args.threads)), 16))
+        inter_threads = max(1, min(int(os.environ.get("VISIONSCAN_PYTORCH_INTER_OP_THREADS", "1")), 16))
+        torch.set_num_threads(intra_threads)
+        try:
+            torch.set_num_interop_threads(inter_threads)
+        except RuntimeError:
+            # See the DR probe: late inter-op changes can be rejected after
+            # runtime initialization, while the process remains bounded.
+            pass
         model = torchseg.create_model(arch="unet", encoder_name="seresnext50_32x4d", encoder_weights=None, in_channels=3, classes=5)
         state = load_file(str(artifact), device="cpu")
         # Hash again after the SafeTensors read to detect a hash-then-load
@@ -278,7 +286,7 @@ def main() -> None:
                     "region_semantics": "UNFILTERED_ARGMAX_COMPONENT_NOT_VALIDATED_AS_LESION",
                 })
         summary = "NO_TARGET_ABNORMALITY_DETECTED" if not regions else ("MULTIPLE_ABNORMALITIES" if len(regions) > 1 else "SUSPICIOUS_ABNORMALITY")
-        print(json.dumps({"inference_status": "completed", "model_id": EXPECTED_MODEL_ID, "model_version": "a2cfcb594e483", "artifact_sha256": EXPECTED_SHA256, "image_id": image_id, "coordinate_space": "ORIGINAL_IMAGE_NORMALIZED", "original_image_size": transform["original"], "preprocessing_transform": transform, "raw_output_shape": [5, 1024, 1024], "output_order": EXPECTED_OUTPUT_ORDER, "preprocessing_version": "clementp-source-pinned-1024-v1", "threshold_version": "argmax-components-no-threshold-no-calibration", "validation_status": "CANDIDATE_ONLY", "image_level_summary": summary, "class_masks": masks, "class_scores": [{"class_name": c, "score_semantics": "NOT_CALIBRATED", "score": None} for c in EXPECTED_OUTPUT_ORDER], "lesion_regions": regions, "limitations": ["CANDIDATE_ONLY; no clinical or independent validation", "Connected components are unfiltered argmax regions, not validated lesions", "Argmax masks are not calibrated probabilities", "No auditable mask artifact is persisted"]}))
+        print(json.dumps({"inference_status": "completed", "model_id": EXPECTED_MODEL_ID, "model_version": "a2cfcb594e483", "artifact_sha256": EXPECTED_SHA256, "image_id": image_id, "coordinate_space": "ORIGINAL_IMAGE_NORMALIZED", "original_image_size": transform["original"], "preprocessing_transform": transform, "raw_output_shape": [5, 1024, 1024], "output_order": EXPECTED_OUTPUT_ORDER, "preprocessing_version": "clementp-source-pinned-1024-v1", "threshold_version": "argmax-components-no-threshold-no-calibration", "validation_status": "CANDIDATE_ONLY", "thread_governance": {"intra_op": intra_threads, "inter_op": inter_threads}, "image_level_summary": summary, "class_masks": masks, "class_scores": [{"class_name": c, "score_semantics": "NOT_CALIBRATED", "score": None} for c in EXPECTED_OUTPUT_ORDER], "lesion_regions": regions, "limitations": ["CANDIDATE_ONLY; no clinical or independent validation", "Connected components are unfiltered argmax regions, not validated lesions", "Argmax masks are not calibrated probabilities", "No auditable mask artifact is persisted"]}))
     except SystemExit:
         raise
     except Exception as exc:

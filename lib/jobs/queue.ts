@@ -19,8 +19,13 @@ import { checkProcessingConsent, PROCESSING_CONSENT_PURPOSES } from "../consent/
 import { DEMO_MODE } from "../config";
 import { createJobDeadline, resolveOverallJobDeadlineMs, withOverallJobDeadline, JobDeadlineExceededError } from "./jobDeadline";
 import { withProcessTreeScope, terminateTrackedProcessTrees } from "./processControl";
-import { reserveJobResources, JOB_RESOURCE_REQUESTS } from "./resourceAdmission";
-import type { ModelJobReservation } from "../runtime";
+import {
+  reserveJobResourcesHostWide,
+  releaseJobResourceLease,
+  startResourceLeaseHeartbeat,
+  JOB_RESOURCE_REQUESTS,
+} from "./resourceAdmission";
+import type { ModelJobReservation, ResourceLeaseHandle } from "../runtime";
 
 /**
  * Durable lifecycle states. `stale` and `retryable` are intentionally
@@ -894,7 +899,9 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
   const attemptId = claim.attemptId;
   const workerId = job.worker_id ?? requestedWorkerId;
   let reservation: ModelJobReservation | null = null;
+  let hostResourceLease: ResourceLeaseHandle | null = null;
   let stopHeartbeat: (() => void) | null = null;
+  let stopResourceLeaseHeartbeat: (() => void) | null = null;
   let consent;
   try {
     consent = await checkProcessingConsent(job.study_id, consentPurposeForJob(job.kind));
@@ -933,7 +940,12 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
     }
     return;
   }
-  const admission = reserveJobResources(job.kind, { demoMode: DEMO_MODE });
+  const admission = await reserveJobResourcesHostWide(job.kind, {
+    jobId,
+    workerId,
+    modelId: `job:${job.kind}`,
+    demoMode: DEMO_MODE,
+  });
   await updateRunningJobMetadata(jobId, attemptId, workerId, {
     resource_reservation_state: admission.bypassedDemoMode ? "bypassed_demo" : admission.admitted ? "admitted" : "rejected",
     resource_rejection_reason: admission.reason ?? undefined,
@@ -952,7 +964,9 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
     return;
   }
   reservation = admission.reservation;
+  hostResourceLease = admission.resourceLease;
   stopHeartbeat = startLeaseHeartbeat(jobId, attemptId, workerId);
+  if (hostResourceLease) stopResourceLeaseHeartbeat = startResourceLeaseHeartbeat(hostResourceLease);
 
   const updateProgress = async (update: ProgressUpdate): Promise<void> => {
     await dbTransaction((tx) => {
@@ -1047,6 +1061,10 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
     // ANALYSIS FAILED with Retry / Request New Scan.
   } finally {
     stopHeartbeat?.();
+    stopResourceLeaseHeartbeat?.();
+    if (hostResourceLease) {
+      await releaseJobResourceLease(hostResourceLease).catch(() => false);
+    }
     if (reservation) {
       const { getHostModelJobResourceGovernor } = await import("../runtime");
       getHostModelJobResourceGovernor().release(reservation);

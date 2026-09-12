@@ -1,0 +1,84 @@
+{
+  "format": "visionscan-model-manifest/v1",
+  "model_id": "retguard-dr-v1.0.0",
+  "model_name": "RETGUARD DR referable diabetic retinopathy research classifier",
+  "version": "v1.0.0",
+  "status": "CANDIDATE_ONLY",
+  "purpose": "Phase 6 candidate acquisition and integrity review; excluded from ordinary analysis",
+  "input_shape": "batch,3,480,480",
+  "preprocessing_version": "retguard-publisher-reconstructed-480-v1-unverified",
+  "source_revision": "v1.0.0",
+  "license_state": "RIGHTS_RESTRICTED",
+  "validation_state": "NOT_BENCHMARK_READY",
+  "runtime_state": "GRAPH_LOAD_ONLY",
+  "artifact": {
+    "file": "scratch/phase6-candidates/retguard-dr-v1.0.0/retguard_dr_v1.0.0.onnx",
+    "format": "onnx",
+    "sha256": "f0e19fa86d5a27a05731550d1d6708c01f6f363f45a1fa57849de988f91e775b",
+    "size_bytes": 212474298,
+    "source_archive": "scratch/phase6-candidates/retguard-dr-v1.0.0/retguard-dr-v1.0.0.zip",
+    "source_archive_sha256": "663c7f8bbc3676df2fe353efa0f3913c757db8c35cf9bf97ab451a756792d2e0"
+  },
+  "source": {
+    "repository": "https://github.com/anchor-neuro/retguard",
+    "revision": "v1.0.0",
+    "artifact_url": "https://github.com/anchor-neuro/retguard/releases/download/v1.0.0/retguard-dr-v1.0.0.zip"
+  },
+  "task": {
+    "modality": "FUNDUS",
+    "target": "REFERABLE_DIABETIC_RETINOPATHY",
+    "classes": ["NON_REFERABLE", "REFERABLE"],
+    "positive_rule": "ICDR_GRADE_GE_2",
+    "dme_included": false
+  },
+  "architecture": {
+    "family": "EfficientNetV2-M",
+    "source_name": "tf_efficientnetv2_m.in21k_ft_in1k",
+    "export_opset": 17
+  },
+  "input": {
+    "shape": "batch,3,480,480",
+    "type": "tensor(float)",
+    "source_preprocessing": "RECONSTRUCTED_FROM_RELEASED_SOURCE; LOCAL_PARITY_NOT_VERIFIED",
+    "full_fundus_only": true,
+    "augmentation_at_inference": "8_VIEW_D4_TTA_REPORTED_BY_SOURCE; NOT_REIMPLEMENTED_HERE"
+  },
+  "rights": {
+    "state": "RIGHTS_RESTRICTED",
+    "code_license": "PolyForm Noncommercial 1.0.0",
+    "weights_license": "CC BY-NC 4.0",
+    "commercial_use": "SEPARATE_WRITTEN_LICENSE_REQUIRED",
+    "attribution": "Cite the RETGUARD preprint and link https://github.com/anchor-neuro/retguard",
+    "dossier": "docs/PHASE6_CANDIDATE_RIGHTS_DOSSIER.md"
+  },
+  "validation": {
+    "state": "NOT_BENCHMARK_READY",
+    "local_head_to_head": "NOT_RUN",
+    "stop_rule": "ONNX_LOGIT_PARITY_FAILED",
+    "publisher_parity_observation": {
+      "samples": 6,
+      "max_probability_difference": 0.000626,
+      "max_logit_difference": 0.002526,
+      "logit_tolerance": 0.001,
+      "probability_parity": "PASSED",
+      "logit_parity": "FAILED"
+    },
+    "publisher_calibration_observation": {
+      "held_out_messidor_ece": 0.0811,
+      "publisher_gate": 0.05,
+      "status": "ABOVE_GATE"
+    }
+  },
+  "runtime": {
+    "provider": "CPUExecutionProvider",
+    "local_graph_load": "PASSED",
+    "local_input_shape_probe": "PASSED",
+    "local_inference": "NOT_RUN_BECAUSE_PARITY_GATE_FAILED"
+  },
+  "limitations": [
+    "Acquisition and graph loading do not establish validity, safety, or clinical utility.",
+    "The publisher's logit-parity gate failed; the released ONNX artifact is not benchmark-ready under the Phase 6 protocol.",
+    "No local candidate prediction, paired false-negative recovery, false-positive cost, or threshold result exists.",
+    "The candidate is not registered, promoted, or reachable from ordinary VisionScan analysis."
+  ]
+}

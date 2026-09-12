@@ -1,0 +1,140 @@
+{
+  "format": "visionscan-dr-competition-run-result/v1",
+  "result_id": "dr-baseline-result-deepdrid-regular-validation-20260908",
+  "manifest_id": "dr-baseline-deepdrid-regular-validation-20260908",
+  "manifest_sha256": "78473be50a8f18b4f28d13704e576eb3c67f6fa413e8f8127a6832a37dbb4b04",
+  "semantics_fingerprint": "e5a7ce31719a38b3b8340fdabfe27d40f7beb4b607fde30c7e628bffbc091a2b",
+  "measurement_state": "MEASURED",
+  "calculation_method": "COPIED_FROM_EXISTING_EVIDENCE_SUMMARY",
+  "model": {
+    "role": "BASELINE",
+    "model_id": "fundus-dr-grading-effb0",
+    "model_version": "aa5741419b90",
+    "artifact_path": "data/models/fundus-dr-grading-effb0/model.safetensors",
+    "artifact_sha256": "0d9a18b0cb6c90d1f30bf2e66153b368bd7ff0bcb45b6690e8d5ce14fa19f69b",
+    "artifact_format": "safetensors"
+  },
+  "metrics": {
+    "sample_count": 400,
+    "multiclass": {
+      "accuracy": 0.5025,
+      "balanced_accuracy": 0.28416086074609753,
+      "macro_f1": 0.26203700605009556,
+      "quadratic_weighted_kappa": 0.495,
+      "confusion_true_x_pred": {
+        "0": {
+          "0": 162,
+          "1": 12,
+          "2": 0,
+          "3": 0,
+          "4": 0
+        },
+        "1": {
+          "0": 39,
+          "1": 5,
+          "2": 2,
+          "3": 0,
+          "4": 0
+        },
+        "2": {
+          "0": 25,
+          "1": 34,
+          "2": 31,
+          "3": 2,
+          "4": 0
+        },
+        "3": {
+          "0": 12,
+          "1": 18,
+          "2": 35,
+          "3": 3,
+          "4": 0
+        },
+        "4": {
+          "0": 5,
+          "1": 7,
+          "2": 8,
+          "3": 0,
+          "4": 0
+        }
+      }
+    },
+    "referable": {
+      "confusion": {
+        "tp": 79,
+        "fp": 2,
+        "tn": 218,
+        "fn": 101
+      },
+      "sensitivity": 0.4388888888888889,
+      "specificity": 0.990909090909091,
+      "ppv": 0.9753086419753086,
+      "npv": 0.6833855799373041,
+      "fpr": 0.00909090909090909,
+      "fnr": 0.5611111111111111,
+      "auroc": 0.8845,
+      "auprc": 0.8967
+    },
+    "confidence_intervals": {
+      "method": "WILSON_95_PERCENT",
+      "referable": {
+        "sensitivity": [
+          0.3684199690754824,
+          0.5119117028927147
+        ],
+        "specificity": [
+          0.9674652989147715,
+          0.9975033942754591
+        ],
+        "ppv": [
+          0.9143727407780347,
+          0.9932024125763359
+        ],
+        "npv": [
+          0.6304164506237414,
+          0.7319905352305188
+        ]
+      }
+    }
+  },
+  "evidence": [
+    {
+      "id": "dr-model-manifest",
+      "path": "data/models/fundus-dr-grading-effb0/manifest.json",
+      "sha256": "5406649ecea10740b98ca67c456e66fd9874149751cb02e69a1848c527fef626",
+      "role": "model_manifest"
+    },
+    {
+      "id": "dr-validation-summary",
+      "path": "docs/model-validation/validation-summary.json",
+      "sha256": "7120a8cf97ae5dc0a64b54a96eb4c12c46aa351641ebe2328d6ab595acefef0f",
+      "role": "validation_summary"
+    },
+    {
+      "id": "dr-deepdrid-validation-export",
+      "path": "docs/evaluations/deepdr-external-20260908-raw.json",
+      "sha256": "c040638f5397a86af54599a6c21b3e047d6a68bcbf93a28f186e6feb802a12e5",
+      "role": "dataset_export"
+    },
+    {
+      "id": "dr-preprocessing-implementation",
+      "path": "scripts/inference/dr_grade_probe.py",
+      "sha256": "8efd0cfa7e0bebde025752c5323d5e855c1211b33cef74998ae328143ec4fe9d",
+      "role": "preprocessing_implementation"
+    }
+  ],
+  "limitations": [
+    "Metrics are copied from docs/model-validation/validation-summary.json and are not new measurements.",
+    "RESEARCH status; no clinical validation and no independent external validation completed at install time",
+    "Single regression logit rounded to an integer grade; grade boundaries are uncalibrated",
+    "No calibrated confidence exists for any grade; raw logit is a ranking score only",
+    "Device compatibility is unvalidated for every device; domain validation is UNKNOWN for every study",
+    "Publisher training data (EyePACS/APTOS/DDR/IDRiD per collection) overlaps common benchmarks; validate only on non-overlapping cohorts",
+    "Frozen from existing repository evidence; no new inference was executed by this command.",
+    "The DeepDRiD validation split is a held-out publisher split, not prospective clinical validation or independent external validation.",
+    "Device metadata is not recorded in the source export, so device-specific generalization is not measured.",
+    "The raw DR logit is a ranking score, not a calibrated probability; calibration metrics are intentionally absent.",
+    "APTOS overlap-disclosed comparability evidence is not part of this frozen baseline."
+  ],
+  "result_sha256": "b8646c195a2369171a2e230e38302513cbca44c5a6e059e3e55da404ee517072"
+}

@@ -61,6 +61,11 @@ jobs:
         # resource, deadline, process, lease, and security contracts.
         run: npm run validation:phase5
 
+      - name: Phase 6 candidate and runtime acceptance
+        # Candidate artifacts stay out of hosted inference; this validates the
+        # immutable candidate bundle, fail-closed gates, and SQLite lease race.
+        run: npm run validation:phase6
+
       - name: Audit local model manifests
         run: npm run model:audit
 
@@ -117,6 +122,9 @@ jobs:
 
       - name: Phase 5 false-negative reduction acceptance
         run: npm run validation:phase5
+
+      - name: Phase 6 candidate and runtime acceptance
+        run: npm run validation:phase6
 
       - name: Audit local model manifests
         run: npm run model:audit

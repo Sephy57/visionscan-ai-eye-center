@@ -1,0 +1,32 @@
+{
+  "schema_version": "visionscan-phase6-paired-errors-v1",
+  "measurement_state": "NOT_MEASURED",
+  "case_set": {
+    "dataset": "DeepDRiD regular fundus",
+    "case_count": 400,
+    "patient_count": 100,
+    "case_keys": "NOT_INCLUDED_HASH_ONLY_POLICY"
+  },
+  "counts": {
+    "baseline_wrong_candidate_correct": null,
+    "baseline_correct_candidate_wrong": null,
+    "both_correct": null,
+    "both_wrong": null
+  },
+  "fn_recovery": {
+    "baseline_fn_count": 101,
+    "fn_recovered": null,
+    "fn_shared": null,
+    "fn_new": null,
+    "candidate_failed": null,
+    "candidate_unavailable": 400
+  },
+  "fp_cost": {
+    "baseline_fp": 2,
+    "candidate_fp": null,
+    "new_fp": null,
+    "removed_fp": null,
+    "shared_fp": null
+  },
+  "reason": "Candidate did not reach benchmark-ready status; no candidate row was generated."
+}

@@ -42,6 +42,14 @@ SIZE = 224
 CLASSES = ["CNV", "DME", "DRUSEN", "NORMAL"]
 
 
+def env_threads(name: str, fallback: int = 1) -> int:
+    try:
+        value = int(os.environ.get(name, str(fallback)))
+    except ValueError:
+        value = fallback
+    return max(1, min(value, 16))
+
+
 def fail(message: str) -> None:
     print(json.dumps({"inference_status": "failed", "inference_error": message[:500]}))
     raise SystemExit(2)
@@ -140,7 +148,12 @@ def main() -> None:
         resized = cv2.resize(rgb, (SIZE, SIZE), interpolation=cv2.INTER_LINEAR)
         normed = (resized.astype(np.float32) / 255.0 - np.array([0.485, 0.456, 0.406], dtype=np.float32)) / np.array([0.229, 0.224, 0.225], dtype=np.float32)
         batch = np.expand_dims(normed, axis=0).astype(np.float32)
-        session = ort.InferenceSession(str(artifact), providers=["CPUExecutionProvider"])
+        intra_threads = env_threads("VISIONSCAN_ONNX_INTRA_OP_THREADS")
+        inter_threads = env_threads("VISIONSCAN_ONNX_INTER_OP_THREADS")
+        session_options = ort.SessionOptions()
+        session_options.intra_op_num_threads = intra_threads
+        session_options.inter_op_num_threads = inter_threads
+        session = ort.InferenceSession(str(artifact), sess_options=session_options, providers=["CPUExecutionProvider"])
         if session.get_providers() != ["CPUExecutionProvider"]:
             fail("non-CPU execution provider refused")
         outputs = session.run(None, {session.get_inputs()[0].name: batch})
@@ -161,6 +174,7 @@ def main() -> None:
             "predicted_index": pred,
             "reported_temperature": reported_temperature,
             "temperature_applied": False,
+            "thread_governance": {"intra_op": intra_threads, "inter_op": inter_threads},
             "validation_status": "CANDIDATE_ONLY",
             "calibration_state": "NOT_CALIBRATED",
             "limitations": [

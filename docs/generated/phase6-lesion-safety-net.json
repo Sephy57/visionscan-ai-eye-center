@@ -1,0 +1,124 @@
+{
+  "schema_version": "visionscan-phase6-lesion-safety-net-v2",
+  "observed_at": "2026-09-12T21:30:45.100Z",
+  "measurement_state": "PARTIAL_TECHNICAL_RESEARCH",
+  "scope": {
+    "selected_cases": 3,
+    "frozen_validation_cases": 400,
+    "baseline_fn_cases_selected": 0,
+    "baseline_fn_cases_expected": 101,
+    "all_cases_processed_serially": false
+  },
+  "model": {
+    "model_id": "fundus-lesions-clementp-unet-seresnext50",
+    "model_version": "a2cfcb594e483",
+    "artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+    "preprocessing_version": "clementp-source-pinned-1024-v1",
+    "output_contract": "fundus-lesion-segmentation-contract/2-original-image-geometry",
+    "threshold_version": "argmax-components-no-threshold-no-calibration"
+  },
+  "gate_definition": {
+    "source_image": "regular-fundus-validation/Images/<patient>/<image>.jpg",
+    "quality": "assessQuality quality_status=pass",
+    "ood": "assessOod fundus with missing device treated as DOMAIN_VALIDATION_UNKNOWN",
+    "model_execution": "runFundusLesionResearchAnalysis completed",
+    "region_output": "provider strict transport contract accepted"
+  },
+  "aggregate": {
+    "input_cases": 6,
+    "source_images_present": 6,
+    "source_images_missing": 0,
+    "quality_pass": 6,
+    "quality_blocked": 0,
+    "ood_pass": 6,
+    "ood_blocked": 0,
+    "inference_completed": 6,
+    "inference_failed": 0,
+    "valid_region_output": 6,
+    "signal_cases": 6,
+    "no_signal_cases": 0,
+    "class_signals": {
+      "MA-like": 0,
+      "HE-like": 0,
+      "EX-like": 0,
+      "CWS-like": 0
+    },
+    "service_ms": {
+      "count": 6,
+      "p50": 7635,
+      "p95": 7812,
+      "max": 7812
+    }
+  },
+  "baseline_fn": {
+    "input_cases": 0,
+    "source_images_present": 0,
+    "source_images_missing": 0,
+    "quality_pass": 0,
+    "quality_blocked": 0,
+    "ood_pass": 0,
+    "ood_blocked": 0,
+    "inference_completed": 0,
+    "inference_failed": 0,
+    "valid_region_output": 0,
+    "signal_cases": 0,
+    "no_signal_cases": 0,
+    "class_signals": {
+      "MA-like": 0,
+      "HE-like": 0,
+      "EX-like": 0,
+      "CWS-like": 0
+    },
+    "service_ms": {
+      "count": 0,
+      "p50": null,
+      "p95": null,
+      "max": null
+    },
+    "review_escalation_coverage": null,
+    "label": "REVIEW ESCALATION COVERAGE",
+    "forbidden_label": "DISEASE RECOVERY"
+  },
+  "nonreferable": {
+    "input_cases": 0,
+    "source_images_present": 0,
+    "source_images_missing": 0,
+    "quality_pass": 0,
+    "quality_blocked": 0,
+    "ood_pass": 0,
+    "ood_blocked": 0,
+    "inference_completed": 0,
+    "inference_failed": 0,
+    "valid_region_output": 0,
+    "signal_cases": 0,
+    "no_signal_cases": 0,
+    "class_signals": {
+      "MA-like": 0,
+      "HE-like": 0,
+      "EX-like": 0,
+      "CWS-like": 0
+    },
+    "service_ms": {
+      "count": 0,
+      "p50": null,
+      "p95": null,
+      "max": null
+    },
+    "extra_review_escalations_per_100": null
+  },
+  "unavailable_reasons": {},
+  "source_hashes": {
+    "source_csv_sha256": "54c2f11bf0647fe3cc64496cd83646ea4a4fdf0aab82b1cd4891ad998f220332",
+    "raw_export_sha256": "c040638f5397a86af54599a6c21b3e047d6a68bcbf93a28f186e6feb802a12e5",
+    "failure_registry_sha256": "8b5f258b3f56d437739436e1512b3b72052049c06185d91a90eb7f35a2206597",
+    "script_sha256": "d70aeace812d59099139be4bbcef150ae280a80696a0879447062fb25cb7b86b"
+  },
+  "phi_included": false,
+  "limitations": [
+    "Counts are aggregate and contain no case, patient, image, or source-path identifiers.",
+    "The source quality labels are not used as a substitute for the platform quality gate.",
+    "Missing device metadata is disclosed as DOMAIN_VALIDATION_UNKNOWN; it is not a device compatibility pass.",
+    "Lesion-like regions are uncalibrated research observations, not clinically confirmed lesions.",
+    "The study does not establish DR disease recovery, clinical sensitivity, or safe referral utility."
+  ]
+}

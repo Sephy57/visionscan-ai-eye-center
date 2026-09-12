@@ -1,0 +1,46 @@
+{
+  "format": "visionscan-dr-competition-run-result/v1",
+  "result_id": "phase6-retguard-20260913-candidate-result",
+  "manifest_id": "phase6-retguard-20260913-candidate-manifest",
+  "manifest_sha256": "7eedf9a229e86cf721b0e2035c9fc7579cec83d74298fd312b191c7c640dfcf4",
+  "semantics_fingerprint": "e5a7ce31719a38b3b8340fdabfe27d40f7beb4b607fde30c7e628bffbc091a2b",
+  "measurement_state": "NOT_MEASURED",
+  "calculation_method": "NO_MEASUREMENT_AVAILABLE",
+  "model": {
+    "model_id": "retguard-dr-v1.0.0",
+    "model_version": "v1.0.0",
+    "artifact_path": "scratch/phase6-candidates/retguard-dr-v1.0.0/extracted/retguard_dr_v1.0.0.onnx",
+    "artifact_sha256": "f0e19fa86d5a27a05731550d1d6708c01f6f363f45a1fa57849de988f91e775b",
+    "artifact_format": "onnx",
+    "role": "CANDIDATE"
+  },
+  "metrics": null,
+  "evidence": [
+    {
+      "id": "retguard-candidate-manifest",
+      "path": "docs/model-manifests/retguard-dr-v1.0.0-candidate.json",
+      "sha256": "39d3463626ed8350a28e0d0cbbd4a58820bef7af68e5e48b44db9cee3d755984",
+      "role": "model_manifest"
+    },
+    {
+      "id": "retguard-rights-dossier",
+      "path": "docs/PHASE6_CANDIDATE_RIGHTS_DOSSIER.md",
+      "sha256": "a9a8377942a581868ec358bcfd5485d44d123f12b905c034d3beffa55c4a0a16",
+      "role": "result_source"
+    },
+    {
+      "id": "retguard-acquisition-record",
+      "path": "docs/model-manifests/retguard-dr-v1.0.0-acquisition.json",
+      "sha256": "819c54c5fdad2c6467424e21131c09864b122a28d2e11d7ab2d874fc777b897f",
+      "role": "result_source"
+    }
+  ],
+  "limitations": [
+    "Candidate is RIGHTS_RESTRICTED and CANDIDATE_ONLY; no promotion or redistribution authorization is recorded.",
+    "Published RetGuard ONNX logit parity gate failed: maximum logit difference 0.002526 against a 0.001 tolerance on six samples.",
+    "Candidate input is 480x480 while the frozen VisionScan competition contract is 3x512x512; no semantic conversion was accepted.",
+    "Publisher-reported calibration ECE is above its stated gate; this is not local calibration evidence.",
+    "Candidate inference was stopped before predictions; FN recovery, FP burden, high-grade behavior, threshold curves, and ensembles are unmeasured."
+  ],
+  "result_sha256": "eb5414b64daef89d14002a1db8d1bb105007dccecc1b71e81f761128a68b2261"
+}

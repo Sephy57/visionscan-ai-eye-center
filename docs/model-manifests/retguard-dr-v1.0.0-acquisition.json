@@ -1,0 +1,29 @@
+{
+  "format": "visionscan-phase6-candidate-acquisition/v1",
+  "candidate_id": "retguard-dr-v1.0.0",
+  "reviewed_at": "2026-09-13T00:00:00.000Z",
+  "source_url": "https://github.com/anchor-neuro/retguard/releases/download/v1.0.0/retguard-dr-v1.0.0.zip",
+  "source_revision": "v1.0.0",
+  "archive": {
+    "filename": "retguard-dr-v1.0.0.zip",
+    "bytes": 204707438,
+    "sha256": "663c7f8bbc3676df2fe353efa0f3913c757db8c35cf9bf97ab451a756792d2e0",
+    "publisher_sha256_match": true
+  },
+  "members": {
+    "LICENSE.txt": { "bytes": 19947, "sha256": "c925d59d1d98fa8c8957273dfbe81386acc69f53079a55abb4be62ac6d2fb2df" },
+    "MODEL_CARD_dr.md": { "bytes": 33617, "sha256": "458b059546bb8295fd00694d91d1a4ae12c7056450dab1e55a5608f5bb6eda06" },
+    "ood_gate_dr_v1.0.0.npz": { "bytes": 13543724, "sha256": "cb99b4d375ecc384ce6fbeff4f9b94c42613964b32b7a96cef8b3e1227dbf5b2" },
+    "retguard_dr_v1.0.0.onnx": { "bytes": 212474298, "sha256": "f0e19fa86d5a27a05731550d1d6708c01f6f363f45a1fa57849de988f91e775b" }
+  },
+  "rights_state": "RIGHTS_RESTRICTED",
+  "validation_state": "CANDIDATE_ONLY",
+  "runtime_state": "NOT_BENCHMARK_READY",
+  "stop_rule": "ONNX_LOGIT_PARITY_FAILED",
+  "phi_included": false,
+  "limitations": [
+    "This committed record contains hashes and release metadata only; it does not contain the restricted archive or learned weights.",
+    "The canonical archive was verified locally before the candidate parity stop; no archive code was executed.",
+    "A signed redirected download URL is intentionally not retained."
+  ]
+}

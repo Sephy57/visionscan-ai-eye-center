@@ -19,6 +19,7 @@ closed on a non-zero exit or a "failed" inference_status.
 """
 import hashlib
 import json
+import os
 import sys
 import time
 
@@ -42,6 +43,21 @@ def main() -> int:
         print(json.dumps({"inference_status": "failed", "inference_error": f"import failure: {exc}"[:300]}))
         return 1
     t_import = time.time() - t0
+
+    def env_threads(name: str, fallback: int = 1) -> int:
+        try:
+            value = int(os.environ.get(name, str(fallback)))
+        except ValueError:
+            value = fallback
+        return max(1, min(value, 16))
+
+    intra_threads = env_threads("VISIONSCAN_PYTORCH_INTRA_OP_THREADS")
+    inter_threads = env_threads("VISIONSCAN_PYTORCH_INTER_OP_THREADS")
+    torch.set_num_threads(intra_threads)
+    try:
+        torch.set_num_interop_threads(inter_threads)
+    except RuntimeError:
+        pass
 
     try:
         model = SegformerForSemanticSegmentation.from_pretrained(model_dir, use_safetensors=True, local_files_only=True)
@@ -142,6 +158,7 @@ def main() -> int:
             "class_pixel_counts": class_pixel_counts,
             "timing_seconds": {"import": round(t_import, 3), "model_load": round(t_load, 3), "inference": round(t_inference, 3)},
             "torch_version": torch.__version__,
+            "thread_governance": {"intra_op": intra_threads, "inter_op": inter_threads},
         },
     }
     print(json.dumps(result))

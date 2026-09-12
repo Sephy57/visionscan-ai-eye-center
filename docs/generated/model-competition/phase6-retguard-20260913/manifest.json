@@ -1,0 +1,225 @@
+{
+  "schema_version": "visionscan-phase6-model-competition-bundle-v1",
+  "run_id": "phase6-retguard-20260913",
+  "source_commit": "9eef23e3bd95b2d0fb9c4cd00685b8d71ad9f5b6",
+  "generated_at": "2026-09-12T22:06:55.788Z",
+  "phi_included": false,
+  "frozen_baseline_manifest": {
+    "format": "visionscan-dr-competition-run-manifest/v1",
+    "manifest_id": "dr-baseline-deepdrid-regular-validation-20260908",
+    "state": "FROZEN",
+    "frozen_at": "2026-09-08T00:00:00.000Z",
+    "task": {
+      "target": "ICDR_DR_GRADE",
+      "modality": "FUNDUS",
+      "label_space": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "referable_threshold_grade": 2,
+      "grade_rule": "ROUND_CLAMP_0_4",
+      "score_semantics": "MODEL_SCORE_NOT_CALIBRATED",
+      "calibration": "NOT_MEASURED"
+    },
+    "dataset": {
+      "name": "DeepDRiD regular fundus",
+      "version": "repository-evidence-20260908",
+      "split": "regular-fundus-validation",
+      "case_count": 400,
+      "patient_count": 100,
+      "patient_separation": "PATIENT_SEPARATED_CONFIRMED",
+      "case_id_source_fields": [
+        "patient_id",
+        "image"
+      ],
+      "result_case_id_policy": "SOURCE_KEYS_MUST_BE_HASHED_OR_STABLE_NON_PHI_IDS"
+    },
+    "preprocessing": {
+      "version": "clementp-dr-source-pinned-512-v1",
+      "implementation_path": "scripts/inference/dr_grade_probe.py",
+      "input_shape": "3x512x512",
+      "decode": "CV2_IMREAD_COLOR_BGR",
+      "crop": "CHANNEL_0_THRESHOLD_10_AUTOCROP_DEGENERATE_WHOLE_IMAGE",
+      "resize": "LONGEST_SIDE_512_INTER_LINEAR",
+      "pad": "CENTERED_ZERO_PAD_TO_512_SQUARE",
+      "scale": "DIVIDE_BY_255",
+      "normalization": "IMAGENET_MEAN_STD_IN_SAME_CHANNEL_ORDER",
+      "tensor_layout": "HWC_TO_CHW_FLOAT32",
+      "caveats": [
+        "Publisher used OpenCV 4.9 while the reviewed runtime reports OpenCV 5.0; last-bit resize differences remain possible."
+      ]
+    },
+    "protocol": {
+      "ground_truth_field": "eye_grade",
+      "prediction_field": "dr_grade",
+      "score_field": "dr_logit",
+      "referable_truth_rule": "GROUND_TRUTH_GRADE_GE_2",
+      "referable_prediction_rule": "PREDICTED_GRADE_GE_2",
+      "row_policy": "ALL_ROWS_IN_DECLARED_SPLIT_NO_ADDITIONAL_FILTER",
+      "score_metrics_policy": "REQUIRE_FINITE_SCORE_ON_EVERY_ROW_OR_REPORT_UNMEASURED"
+    },
+    "model": {
+      "role": "BASELINE",
+      "model_id": "fundus-dr-grading-effb0",
+      "model_version": "aa5741419b90",
+      "artifact_path": "data/models/fundus-dr-grading-effb0/model.safetensors",
+      "artifact_sha256": "0d9a18b0cb6c90d1f30bf2e66153b368bd7ff0bcb45b6690e8d5ce14fa19f69b",
+      "artifact_format": "safetensors"
+    },
+    "evidence": [
+      {
+        "id": "dr-model-manifest",
+        "path": "data/models/fundus-dr-grading-effb0/manifest.json",
+        "sha256": "5406649ecea10740b98ca67c456e66fd9874149751cb02e69a1848c527fef626",
+        "role": "model_manifest"
+      },
+      {
+        "id": "dr-validation-summary",
+        "path": "docs/model-validation/validation-summary.json",
+        "sha256": "7120a8cf97ae5dc0a64b54a96eb4c12c46aa351641ebe2328d6ab595acefef0f",
+        "role": "validation_summary"
+      },
+      {
+        "id": "dr-deepdrid-validation-export",
+        "path": "docs/evaluations/deepdr-external-20260908-raw.json",
+        "sha256": "c040638f5397a86af54599a6c21b3e047d6a68bcbf93a28f186e6feb802a12e5",
+        "role": "dataset_export"
+      },
+      {
+        "id": "dr-preprocessing-implementation",
+        "path": "scripts/inference/dr_grade_probe.py",
+        "sha256": "8efd0cfa7e0bebde025752c5323d5e855c1211b33cef74998ae328143ec4fe9d",
+        "role": "preprocessing_implementation"
+      }
+    ],
+    "limitations": [
+      "RESEARCH status; no clinical validation and no independent external validation completed at install time",
+      "Single regression logit rounded to an integer grade; grade boundaries are uncalibrated",
+      "No calibrated confidence exists for any grade; raw logit is a ranking score only",
+      "Device compatibility is unvalidated for every device; domain validation is UNKNOWN for every study",
+      "Publisher training data (EyePACS/APTOS/DDR/IDRiD per collection) overlaps common benchmarks; validate only on non-overlapping cohorts",
+      "Frozen from existing repository evidence; no new inference was executed by this command.",
+      "The DeepDRiD validation split is a held-out publisher split, not prospective clinical validation or independent external validation.",
+      "Device metadata is not recorded in the source export, so device-specific generalization is not measured.",
+      "The raw DR logit is a ranking score, not a calibrated probability; calibration metrics are intentionally absent.",
+      "APTOS overlap-disclosed comparability evidence is not part of this frozen baseline."
+    ],
+    "semantics_fingerprint": "e5a7ce31719a38b3b8340fdabfe27d40f7beb4b607fde30c7e628bffbc091a2b",
+    "manifest_sha256": "78473be50a8f18b4f28d13704e576eb3c67f6fa413e8f8127a6832a37dbb4b04"
+  },
+  "candidate_manifest": {
+    "format": "visionscan-dr-competition-run-manifest/v1",
+    "manifest_id": "phase6-retguard-20260913-candidate-manifest",
+    "state": "FROZEN",
+    "frozen_at": "2026-09-13T00:00:00.000Z",
+    "task": {
+      "target": "ICDR_DR_GRADE",
+      "modality": "FUNDUS",
+      "label_space": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "referable_threshold_grade": 2,
+      "grade_rule": "ROUND_CLAMP_0_4",
+      "score_semantics": "MODEL_SCORE_NOT_CALIBRATED",
+      "calibration": "NOT_MEASURED"
+    },
+    "dataset": {
+      "name": "DeepDRiD regular fundus",
+      "version": "repository-evidence-20260908",
+      "split": "regular-fundus-validation",
+      "case_count": 400,
+      "patient_count": 100,
+      "patient_separation": "PATIENT_SEPARATED_CONFIRMED",
+      "case_id_source_fields": [
+        "patient_id",
+        "image"
+      ],
+      "result_case_id_policy": "SOURCE_KEYS_MUST_BE_HASHED_OR_STABLE_NON_PHI_IDS"
+    },
+    "preprocessing": {
+      "version": "clementp-dr-source-pinned-512-v1",
+      "implementation_path": "scripts/inference/dr_grade_probe.py",
+      "input_shape": "3x512x512",
+      "decode": "CV2_IMREAD_COLOR_BGR",
+      "crop": "CHANNEL_0_THRESHOLD_10_AUTOCROP_DEGENERATE_WHOLE_IMAGE",
+      "resize": "LONGEST_SIDE_512_INTER_LINEAR",
+      "pad": "CENTERED_ZERO_PAD_TO_512_SQUARE",
+      "scale": "DIVIDE_BY_255",
+      "normalization": "IMAGENET_MEAN_STD_IN_SAME_CHANNEL_ORDER",
+      "tensor_layout": "HWC_TO_CHW_FLOAT32",
+      "caveats": [
+        "Publisher used OpenCV 4.9 while the reviewed runtime reports OpenCV 5.0; last-bit resize differences remain possible."
+      ]
+    },
+    "protocol": {
+      "ground_truth_field": "eye_grade",
+      "prediction_field": "dr_grade",
+      "score_field": "dr_logit",
+      "referable_truth_rule": "GROUND_TRUTH_GRADE_GE_2",
+      "referable_prediction_rule": "PREDICTED_GRADE_GE_2",
+      "row_policy": "ALL_ROWS_IN_DECLARED_SPLIT_NO_ADDITIONAL_FILTER",
+      "score_metrics_policy": "REQUIRE_FINITE_SCORE_ON_EVERY_ROW_OR_REPORT_UNMEASURED"
+    },
+    "model": {
+      "model_id": "retguard-dr-v1.0.0",
+      "model_version": "v1.0.0",
+      "artifact_path": "scratch/phase6-candidates/retguard-dr-v1.0.0/extracted/retguard_dr_v1.0.0.onnx",
+      "artifact_sha256": "f0e19fa86d5a27a05731550d1d6708c01f6f363f45a1fa57849de988f91e775b",
+      "artifact_format": "onnx",
+      "role": "CANDIDATE"
+    },
+    "evidence": [
+      {
+        "id": "dr-model-manifest",
+        "path": "data/models/fundus-dr-grading-effb0/manifest.json",
+        "sha256": "5406649ecea10740b98ca67c456e66fd9874149751cb02e69a1848c527fef626",
+        "role": "model_manifest"
+      },
+      {
+        "id": "dr-validation-summary",
+        "path": "docs/model-validation/validation-summary.json",
+        "sha256": "7120a8cf97ae5dc0a64b54a96eb4c12c46aa351641ebe2328d6ab595acefef0f",
+        "role": "validation_summary"
+      },
+      {
+        "id": "dr-deepdrid-validation-export",
+        "path": "docs/evaluations/deepdr-external-20260908-raw.json",
+        "sha256": "c040638f5397a86af54599a6c21b3e047d6a68bcbf93a28f186e6feb802a12e5",
+        "role": "dataset_export"
+      },
+      {
+        "id": "dr-preprocessing-implementation",
+        "path": "scripts/inference/dr_grade_probe.py",
+        "sha256": "8efd0cfa7e0bebde025752c5323d5e855c1211b33cef74998ae328143ec4fe9d",
+        "role": "preprocessing_implementation"
+      }
+    ],
+    "limitations": [
+      "RESEARCH status; no clinical validation and no independent external validation completed at install time",
+      "Single regression logit rounded to an integer grade; grade boundaries are uncalibrated",
+      "No calibrated confidence exists for any grade; raw logit is a ranking score only",
+      "Device compatibility is unvalidated for every device; domain validation is UNKNOWN for every study",
+      "Publisher training data (EyePACS/APTOS/DDR/IDRiD per collection) overlaps common benchmarks; validate only on non-overlapping cohorts",
+      "Frozen from existing repository evidence; no new inference was executed by this command.",
+      "The DeepDRiD validation split is a held-out publisher split, not prospective clinical validation or independent external validation.",
+      "Device metadata is not recorded in the source export, so device-specific generalization is not measured.",
+      "The raw DR logit is a ranking score, not a calibrated probability; calibration metrics are intentionally absent.",
+      "APTOS overlap-disclosed comparability evidence is not part of this frozen baseline."
+    ],
+    "semantics_fingerprint": "e5a7ce31719a38b3b8340fdabfe27d40f7beb4b607fde30c7e628bffbc091a2b",
+    "manifest_sha256": "7eedf9a229e86cf721b0e2035c9fc7579cec83d74298fd312b191c7c640dfcf4"
+  },
+  "candidate_governance": {
+    "rights_state": "RIGHTS_RESTRICTED",
+    "lifecycle_status": "CANDIDATE_ONLY",
+    "validation_state": "NOT_BENCHMARK_READY",
+    "runtime_state": "GRAPH_LOAD_ONLY"
+  }
+}

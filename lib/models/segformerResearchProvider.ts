@@ -30,6 +30,7 @@ import { PROJECT_ROOT } from "../config";
 import type { RawModelOutput } from "./outputContract";
 import { validateRawModelOutput } from "./outputContract";
 import { trackChildProcess } from "../jobs/processControl";
+import { buildThreadGovernedEnv } from "../runtime/threadGovernance";
 
 export const SEGFORMER_MODEL_DIR = path.join(PROJECT_ROOT, "scratch", "models", "segformer-optic-disc-cup-refuge");
 export const SEGFORMER_ARTIFACT_SHA256 = "22e45131b64eb07a5d29a2e5388a7709d10696b13f48d2d0cdcf56cafa1f9ea5";
@@ -40,6 +41,7 @@ const VENV_PYTHON = path.join(PROJECT_ROOT, ".venv-ophthalmic", process.platform
 // enough time for model import + load under contention; this provider is not
 // on the live request path.
 const INFERENCE_TIMEOUT_MS = 120_000;
+const PROBE_THREADS = 4;
 
 export class ArtifactNotFoundError extends Error {
   constructor() {
@@ -95,7 +97,7 @@ function runPython(args: string[]): Promise<{ code: number | null; stdout: strin
     let settled = false;
     const candidates = fs.existsSync(VENV_PYTHON) ? [VENV_PYTHON] : ["python3", "python"];
     const command = candidates[0];
-    const proc = spawn(command, args, { timeout: INFERENCE_TIMEOUT_MS });
+    const proc = spawn(command, args, { timeout: INFERENCE_TIMEOUT_MS, env: buildThreadGovernedEnv(PROBE_THREADS) });
     trackChildProcess(proc);
     proc.stdout.on("data", (d) => { stdout += d.toString(); });
     proc.stderr.on("data", (d) => { stderr += d.toString(); });

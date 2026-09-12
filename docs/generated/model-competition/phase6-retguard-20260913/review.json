@@ -1,0 +1,21 @@
+{
+  "schema_version": "visionscan-phase6-review-v1",
+  "promotion_decision": "NOT_ELIGIBLE",
+  "candidate_lifecycle": "CANDIDATE_ONLY",
+  "formal_three_reviewer_gate": "NOT_COMPLETE",
+  "reviewers": [
+    {
+      "role": "Implementation Reviewer",
+      "status": "PENDING_FORMAL_SIGNOFF"
+    },
+    {
+      "role": "Validation/Statistics Reviewer",
+      "status": "PENDING_FORMAL_SIGNOFF"
+    },
+    {
+      "role": "Safety/Governance Reviewer",
+      "status": "PENDING_FORMAL_SIGNOFF"
+    }
+  ],
+  "reason": "No candidate promotion is permitted without three independent reviewer sign-offs and a measured, comparable result."
+}

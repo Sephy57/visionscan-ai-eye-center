@@ -1,0 +1,93 @@
+{
+  "schema_version": "visionscan-phase6-metrics-v1",
+  "baseline": {
+    "sample_count": 400,
+    "multiclass": {
+      "accuracy": 0.5025,
+      "balanced_accuracy": 0.28416086074609753,
+      "macro_f1": 0.26203700605009556,
+      "quadratic_weighted_kappa": 0.495,
+      "confusion_true_x_pred": {
+        "0": {
+          "0": 162,
+          "1": 12,
+          "2": 0,
+          "3": 0,
+          "4": 0
+        },
+        "1": {
+          "0": 39,
+          "1": 5,
+          "2": 2,
+          "3": 0,
+          "4": 0
+        },
+        "2": {
+          "0": 25,
+          "1": 34,
+          "2": 31,
+          "3": 2,
+          "4": 0
+        },
+        "3": {
+          "0": 12,
+          "1": 18,
+          "2": 35,
+          "3": 3,
+          "4": 0
+        },
+        "4": {
+          "0": 5,
+          "1": 7,
+          "2": 8,
+          "3": 0,
+          "4": 0
+        }
+      }
+    },
+    "referable": {
+      "confusion": {
+        "tp": 79,
+        "fp": 2,
+        "tn": 218,
+        "fn": 101
+      },
+      "sensitivity": 0.4388888888888889,
+      "specificity": 0.990909090909091,
+      "ppv": 0.9753086419753086,
+      "npv": 0.6833855799373041,
+      "fpr": 0.00909090909090909,
+      "fnr": 0.5611111111111111,
+      "auroc": 0.8845,
+      "auprc": 0.8967
+    },
+    "confidence_intervals": {
+      "method": "WILSON_95_PERCENT",
+      "referable": {
+        "sensitivity": [
+          0.3684199690754824,
+          0.5119117028927147
+        ],
+        "specificity": [
+          0.9674652989147715,
+          0.9975033942754591
+        ],
+        "ppv": [
+          0.9143727407780347,
+          0.9932024125763359
+        ],
+        "npv": [
+          0.6304164506237414,
+          0.7319905352305188
+        ]
+      }
+    }
+  },
+  "candidate": null,
+  "comparison": {
+    "status": "BLOCKED",
+    "reasons": [
+      "Candidate result is NOT_MEASURED; no metric is inferred."
+    ]
+  }
+}

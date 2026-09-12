@@ -161,7 +161,15 @@ def main() -> None:
         mean = torch.tensor([0.485, 0.456, 0.406], dtype=tensor.dtype).view(1, 3, 1, 1)
         std = torch.tensor([0.229, 0.224, 0.225], dtype=tensor.dtype).view(1, 3, 1, 1)
         tensor = (tensor - mean) / std
-        torch.set_num_threads(max(1, min(args.threads, 16)))
+        intra_threads = max(1, min(int(os.environ.get("VISIONSCAN_PYTORCH_INTRA_OP_THREADS", args.threads)), 16))
+        inter_threads = max(1, min(int(os.environ.get("VISIONSCAN_PYTORCH_INTER_OP_THREADS", "1")), 16))
+        torch.set_num_threads(intra_threads)
+        try:
+            torch.set_num_interop_threads(inter_threads)
+        except RuntimeError:
+            # The process may already have initialized a parallel runtime;
+            # the environment remains the authoritative cooperative hint.
+            pass
         model = timm.create_model("efficientnet_b0", num_classes=1, pretrained=False)
         state = load_file(str(artifact), device="cpu")
         if sha256_file(artifact) != EXPECTED_SHA256:
@@ -190,6 +198,7 @@ def main() -> None:
             },
             "raw_logit": raw_logit,
             "score_semantics": "MODEL_SCORE_NOT_CALIBRATED",
+            "thread_governance": {"intra_op": intra_threads, "inter_op": inter_threads},
             "predicted_grade": grade,
             "grade_label": GRADE_LABELS[grade],
             "referable_dr": grade >= 2,

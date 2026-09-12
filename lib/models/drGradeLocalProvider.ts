@@ -36,6 +36,7 @@ import { lateralityForStudy } from "./fundusLesionLocalProvider";
 import { assetHash } from "../assets/assetRouter";
 import { getInferenceCache, inferenceCacheKey, setInferenceCache } from "./inferenceCache";
 import { trackChildProcess } from "../jobs/processControl";
+import { buildThreadGovernedEnv } from "../runtime/threadGovernance";
 
 const PROBE_SCRIPT = path.join(PROJECT_ROOT, "scripts", "inference", "dr_grade_probe.py");
 const VENV_PYTHON = path.join(
@@ -72,7 +73,7 @@ function spawnBounded(
     let truncated = false;
     let proc: ReturnType<typeof spawn>;
     try {
-      proc = spawn(command, args, { timeout: timeoutMs });
+      proc = spawn(command, args, { timeout: timeoutMs, env: buildThreadGovernedEnv(PROBE_THREADS) });
     } catch (err) {
       resolve({ spawnError: err instanceof Error ? err : new Error(String(err)) });
       return;

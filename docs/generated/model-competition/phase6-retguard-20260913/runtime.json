@@ -1,0 +1,28 @@
+{
+  "schema_version": "visionscan-phase6-runtime-v1",
+  "candidate": {
+    "model_id": "retguard-dr-v1.0.0",
+    "artifact_sha256": "f0e19fa86d5a27a05731550d1d6708c01f6f363f45a1fa57849de988f91e775b",
+    "archive_sha256": "663c7f8bbc3676df2fe353efa0f3913c757db8c35cf9bf97ab451a756792d2e0",
+    "graph_load": "PASSED",
+    "cpu_execution_provider": "PASSED",
+    "input_shape": [
+      "batch_size",
+      3,
+      480,
+      480
+    ],
+    "inference": "NOT_RUN_STOP_RULE_ONNX_LOGIT_PARITY_FAILED",
+    "process_tree": "NOT_APPLICABLE"
+  },
+  "approved_local_artifacts": {
+    "source": "docs/generated/phase6-model-benchmark.json",
+    "status": "BOUNDED_ONE_COLD_ONE_WARM_OBSERVATION"
+  },
+  "claims_not_supported": [
+    "production capacity",
+    "resident-worker safety",
+    "1/5/10/25 model load curve",
+    "universal orphan freedom"
+  ]
+}

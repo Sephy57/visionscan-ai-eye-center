@@ -1,0 +1,83 @@
+{
+  "schema_version": "visionscan-phase6-resource-load-v1",
+  "observed_at": "2026-09-12T21:38:49.967Z",
+  "status": "CONTROL_PLANE_ONLY",
+  "concurrency_mode": "single_process_concurrent_admission_requests",
+  "model_inference_started": false,
+  "config": {
+    "memory_bytes": 2147483648,
+    "threads": 4,
+    "headroom_bytes": 0,
+    "lease_ms": 10000,
+    "max_active_leases": 25
+  },
+  "host_memory": {
+    "platform": "win32",
+    "totalBytes": 16425873408,
+    "availableBytes": 8533356544,
+    "source": "node_os_freemem",
+    "enforcement": "observation_only"
+  },
+  "points": [
+    {
+      "requested": 1,
+      "admitted": 1,
+      "rejected": 0,
+      "rejection_reasons": {},
+      "queue_wait_ms": {
+        "p50": 60.77,
+        "p95": 60.77,
+        "max": 60.77
+      },
+      "total_ms": 83.09
+    },
+    {
+      "requested": 5,
+      "admitted": 4,
+      "rejected": 1,
+      "rejection_reasons": {
+        "thread_budget_exceeded": 1
+      },
+      "queue_wait_ms": {
+        "p50": 35.59,
+        "p95": 36.58,
+        "max": 38.19
+      },
+      "total_ms": 124.39
+    },
+    {
+      "requested": 10,
+      "admitted": 4,
+      "rejected": 6,
+      "rejection_reasons": {
+        "thread_budget_exceeded": 6
+      },
+      "queue_wait_ms": {
+        "p50": 168.32,
+        "p95": 173.19,
+        "max": 174.74
+      },
+      "total_ms": 251.78
+    },
+    {
+      "requested": 25,
+      "admitted": 4,
+      "rejected": 21,
+      "rejection_reasons": {
+        "thread_budget_exceeded": 21
+      },
+      "queue_wait_ms": {
+        "p50": 164.92,
+        "p95": 175.76,
+        "max": 178.31
+      },
+      "total_ms": 263.39
+    }
+  ],
+  "limitations": [
+    "These points exercise SQLite lease contention only; no model process was started.",
+    "They cannot establish model throughput, resident capacity, production SLOs, or multi-host behavior.",
+    "The real model benchmark remains separately reported as one cold and one warm isolated subprocess per installed artifact."
+  ],
+  "phi_included": false
+}

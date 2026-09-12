@@ -22,6 +22,8 @@ const IMAGE_DIR = path.join(ROOT, "scratch", "test_images");
 const RUNS = Math.max(1, Math.min(3, Number.parseInt(process.env.MODEL_BENCHMARK_RUNS ?? "3", 10) || 3));
 const TIMEOUT_MS = Math.max(20_000, Math.min(600_000, Number.parseInt(process.env.MODEL_BENCHMARK_TIMEOUT_MS ?? "240000", 10) || 240_000));
 const SAMPLE_MS = Math.max(100, Math.min(2_000, Number.parseInt(process.env.MODEL_BENCHMARK_SAMPLE_MS ?? "250", 10) || 250));
+const OUTPUT_INDEX = process.argv.indexOf("--output");
+const OUTPUT_PATH = OUTPUT_INDEX >= 0 ? process.argv[OUTPUT_INDEX + 1] : null;
 
 const MODELS = [
   {
@@ -198,4 +200,12 @@ const output = {
 };
 
 for (const model of MODELS) output.models.push(await runModel(model));
-console.log(JSON.stringify(output, null, 2));
+const serialized = `${JSON.stringify(output, null, 2)}\n`;
+if (OUTPUT_PATH) {
+  const resolved = path.resolve(ROOT, OUTPUT_PATH);
+  fs.mkdirSync(path.dirname(resolved), { recursive: true });
+  fs.writeFileSync(resolved, serialized, "utf8");
+  console.log(JSON.stringify({ status: "MODEL_BENCHMARK_WRITTEN", output: path.relative(ROOT, resolved), models: output.models.length }, null, 2));
+} else {
+  console.log(serialized);
+}

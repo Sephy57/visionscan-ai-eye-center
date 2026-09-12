@@ -1,0 +1,42 @@
+{
+  "schema_version": "visionscan-phase6-confusion-v1",
+  "baseline": {
+    "0": {
+      "0": 162,
+      "1": 12,
+      "2": 0,
+      "3": 0,
+      "4": 0
+    },
+    "1": {
+      "0": 39,
+      "1": 5,
+      "2": 2,
+      "3": 0,
+      "4": 0
+    },
+    "2": {
+      "0": 25,
+      "1": 34,
+      "2": 31,
+      "3": 2,
+      "4": 0
+    },
+    "3": {
+      "0": 12,
+      "1": 18,
+      "2": 35,
+      "3": 3,
+      "4": 0
+    },
+    "4": {
+      "0": 5,
+      "1": 7,
+      "2": 8,
+      "3": 0,
+      "4": 0
+    }
+  },
+  "candidate": null,
+  "note": "Candidate confusion matrix is not generated because no candidate case was executed."
+}

@@ -162,6 +162,52 @@ interface OperationsResponse {
   deadline?: { default_ms?: number; enforced_from_claim?: boolean; no_unbounded_jobs?: boolean };
 }
 
+interface Phase6Response {
+  schema_version?: string;
+  phi_included?: boolean;
+  notice?: string;
+  classifications?: {
+    software?: string;
+    model?: string;
+    performance?: string;
+    data?: string;
+    demo?: string;
+    clinical?: string[];
+  };
+  candidate?: {
+    model_id?: string;
+    model_version?: string;
+    lifecycle_status?: string;
+    rights_state?: string;
+    validation_state?: string;
+    runtime_state?: string;
+    artifact?: { format?: string; size_bytes?: number; sha256_masked?: string | null; integrity_state?: string };
+    parity?: { state?: string; max_logit_difference?: number; declared_tolerance?: number; samples?: number };
+    promotion?: string;
+  };
+  competition?: {
+    state?: string;
+    comparison_status?: string;
+    baseline?: { cases?: number; patients?: number; referable?: { confusion?: { fn?: number; fp?: number; tp?: number; tn?: number } | null } | null; grade_3_sensitivity?: number; grade_4_sensitivity?: number };
+    candidate?: { measurement_state?: string; metrics?: unknown };
+    paired?: unknown;
+    reasons?: string[];
+  };
+  lesion_safety_net?: {
+    measurement_state?: string;
+    scope?: { selected_cases?: number; frozen_validation_cases?: number; baseline_fn_cases_selected?: number; baseline_fn_cases_expected?: number; all_cases_processed_serially?: boolean } | null;
+    aggregate?: { signal_cases?: number; no_signal_cases?: number; inference_completed?: number; inference_failed?: number; service_ms?: { p50?: number | null; p95?: number | null; max?: number | null } | null } | null;
+    baseline_fn?: { input_cases?: number; signal_cases?: number; review_escalation_coverage?: number | null; class_signals?: Record<string, number> } | null;
+    nonreferable?: { input_cases?: number; signal_cases?: number; extra_review_escalations_per_100?: number | null } | null;
+  };
+  runtime?: {
+    load_points?: Record<string, string>;
+    resident_worker?: string;
+    crash_matrix?: string;
+    model_benchmark?: { status?: string; models?: Array<{ model_id?: string; status?: string; cold?: { wall_time?: { p50_ms?: number | null; p95_ms?: number | null } | null; resources?: { peak_rss_bytes?: number | null } | null } | null; warm?: { wall_time?: { p50_ms?: number | null; p95_ms?: number | null } | null; resources?: { peak_rss_bytes?: number | null } | null } | null }> };
+  };
+}
+
 interface Source<T> {
   data: T | null;
   error: string | null;
@@ -176,6 +222,7 @@ interface CenterData {
   metrics: Source<AdminMetricsResponse>;
   admin: Source<AdminResponse>;
   operations: Source<OperationsResponse>;
+  phase6: Source<Phase6Response>;
   health: Record<string, Source<HealthResponse>>;
 }
 
@@ -190,6 +237,7 @@ const initialData: CenterData = {
   metrics: emptySource(),
   admin: emptySource(),
   operations: emptySource(),
+  phase6: emptySource(),
   health: {},
 };
 
@@ -272,7 +320,7 @@ export default function ValidationCenterClient() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [dashboard, models, registry, live, ready, metrics, admin, operations] = await Promise.all([
+    const [dashboard, models, registry, live, ready, metrics, admin, operations, phase6] = await Promise.all([
       readSource<DashboardResponse>("/api/validation/dashboard"),
       readSource<ModelsResponse>("/api/models"),
       readSource<ValidationRegistryResponse>("/api/models/validation"),
@@ -281,6 +329,7 @@ export default function ValidationCenterClient() {
       readSource<AdminMetricsResponse>("/api/admin/metrics"),
       readSource<AdminResponse>("/api/admin"),
       readSource<OperationsResponse>("/api/admin/operations"),
+      readSource<Phase6Response>("/api/validation/phase6"),
     ]);
 
     const modelsForHealth = models.data?.models ?? [];
@@ -289,7 +338,7 @@ export default function ValidationCenterClient() {
       await readSource<HealthResponse>(`/api/models/${encodeURIComponent(model.model_id)}/health`),
     ] as const));
 
-    setData({ dashboard, models, registry, live, ready, metrics, admin, operations, health: Object.fromEntries(healthEntries) });
+    setData({ dashboard, models, registry, live, ready, metrics, admin, operations, phase6, health: Object.fromEntries(healthEntries) });
     setRefreshedAt(new Date().toISOString());
     setLoading(false);
   }, []);
@@ -379,8 +428,64 @@ export default function ValidationCenterClient() {
         </div>
       </section>
 
+      <section aria-labelledby="phase6-title">
+        <SectionHeading eyebrow="02 / Phase 6 evidence" title="Candidate, FN recovery, and runtime gates" detail="Candidate-only research evidence is shown separately from the live registry. Missing measurements remain missing; no result here promotes a model." />
+        <div className={styles.boundary} role="note" id="phase6-title">
+          <span className={styles.boundaryMark} aria-hidden="true">!</span>
+          <div><strong>{data.phase6.data?.classifications?.model ?? "DR CANDIDATE EVALUATED — IMPROVEMENT NOT ESTABLISHED"}</strong><br />{data.phase6.data?.notice ?? "Phase 6 evidence is unavailable or role-restricted. No candidate claim is inferred."}</div>
+        </div>
+        <div className={styles.statusGrid}>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>RetGuard lifecycle</span><StatusPill status="warn">Candidate only</StatusPill></div>
+            <strong className={styles.statusValue}>{label(data.phase6.data?.candidate?.lifecycle_status)}</strong>
+            <span className={styles.cardNote}>{data.phase6.data?.candidate?.model_id ?? "retguard-dr-v1.0.0"} · {data.phase6.data?.candidate?.model_version ?? "v1.0.0"}</span>
+          </article>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>Candidate gate</span><StatusPill status="bad">Blocked</StatusPill></div>
+            <strong className={styles.statusValue}>{label(data.phase6.data?.candidate?.validation_state)}</strong>
+            <span className={styles.cardNote}>Rights: {label(data.phase6.data?.candidate?.rights_state)} · runtime: {label(data.phase6.data?.candidate?.runtime_state)}</span>
+          </article>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>Frozen head-to-head</span><StatusPill status="bad">Not comparable</StatusPill></div>
+            <strong className={styles.statusValue}>{label(data.phase6.data?.competition?.candidate?.measurement_state)}</strong>
+            <span className={styles.cardNote}>Baseline FN {integer(data.phase6.data?.competition?.baseline?.referable?.confusion?.fn)} · FP {integer(data.phase6.data?.competition?.baseline?.referable?.confusion?.fp)}</span>
+          </article>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>Clinical boundary</span><StatusPill status="bad">No clinical claim</StatusPill></div>
+            <strong className={styles.statusValue}>Not validated</strong>
+            <span className={styles.cardNote}>{(data.phase6.data?.classifications?.clinical ?? ["NOT CLINICALLY VALIDATED", "NOT A MEDICAL DEVICE"]).join(" · ")}</span>
+          </article>
+        </div>
+        <div className={styles.evidenceGrid}>
+          <article className={styles.evidenceCard}>
+            <div className={styles.cardTop}><div><span className={styles.cardLabel}>DR candidate</span><h3>Integrity and parity</h3></div><StatusPill status="bad">{label(data.phase6.data?.candidate?.parity?.state)}</StatusPill></div>
+            <dl className={styles.definitionList}>
+              <dt>Artifact</dt><dd>{data.phase6.data?.candidate?.artifact?.format ?? "ONNX"} · {bytes(data.phase6.data?.candidate?.artifact?.size_bytes)} · <code>{data.phase6.data?.candidate?.artifact?.sha256_masked ?? "Not recorded"}</code></dd>
+              <dt>Acquisition</dt><dd>{label(data.phase6.data?.candidate?.artifact?.integrity_state)}</dd>
+              <dt>ONNX parity</dt><dd>Max logit difference {decimal(data.phase6.data?.candidate?.parity?.max_logit_difference)} vs tolerance {decimal(data.phase6.data?.candidate?.parity?.declared_tolerance)} on {integer(data.phase6.data?.candidate?.parity?.samples)} samples.</dd>
+              <dt>Promotion</dt><dd>{label(data.phase6.data?.candidate?.promotion)}</dd>
+            </dl>
+          </article>
+          <article className={styles.evidenceCard}>
+            <div className={styles.cardTop}><div><span className={styles.cardLabel}>Lesion safety-net</span><h3>Review escalation coverage</h3></div><StatusPill status={data.phase6.data?.lesion_safety_net?.measurement_state?.includes("MEASURED") ? "warn" : "neutral"}>{label(data.phase6.data?.lesion_safety_net?.measurement_state)}</StatusPill></div>
+            <div className={styles.metricStrip}>
+              <div><span>FN cases selected</span><strong>{integer(data.phase6.data?.lesion_safety_net?.scope?.baseline_fn_cases_selected)}</strong></div>
+              <div><span>FN with signal</span><strong>{integer(data.phase6.data?.lesion_safety_net?.baseline_fn?.signal_cases)}</strong></div>
+              <div><span>Coverage</span><strong>{percent(data.phase6.data?.lesion_safety_net?.baseline_fn?.review_escalation_coverage)}</strong></div>
+            </div>
+            <p className={styles.evidenceText}>This is REVIEW ESCALATION COVERAGE, not disease recovery. Extra review escalations on nonreferable cases: {data.phase6.data?.lesion_safety_net?.nonreferable?.extra_review_escalations_per_100 == null ? "Not recorded" : `${data.phase6.data.lesion_safety_net.nonreferable.extra_review_escalations_per_100.toFixed(1)} per 100`}.</p>
+          </article>
+        </div>
+        <div className={styles.resourceGrid} aria-label="Phase 6 runtime evidence">
+          <div className={styles.resourceRow}><span>One-worker model load</span><strong>{label(data.phase6.data?.runtime?.model_benchmark?.status)}</strong></div>
+          <div className={styles.resourceRow}><span>Load points 1 / 5 / 10 / 25</span><strong>{data.phase6.data?.runtime?.load_points ? `${label(data.phase6.data.runtime.load_points["1"])} / ${label(data.phase6.data.runtime.load_points["5"])} / ${label(data.phase6.data.runtime.load_points["10"])} / ${label(data.phase6.data.runtime.load_points["25"])}` : "Not recorded"}</strong></div>
+          <div className={styles.resourceRow}><span>Resident worker</span><strong>{label(data.phase6.data?.runtime?.resident_worker)}</strong></div>
+          <div className={styles.resourceRow}><span>Crash matrix</span><strong>{label(data.phase6.data?.runtime?.crash_matrix)}</strong></div>
+        </div>
+      </section>
+
       <section aria-labelledby="identity-title">
-        <SectionHeading eyebrow="02 / Model identity" title="Declared capability and limitation" detail="Registry metadata is displayed as authored; a model cannot self-declare clinical validation." />
+        <SectionHeading eyebrow="03 / Model identity" title="Declared capability and limitation" detail="Registry metadata is displayed as authored; a model cannot self-declare clinical validation." />
         <div className={styles.modelGrid} id="identity-title">
           {models.map((model) => {
             const entry = registryByModel.get(model.model_id);
@@ -414,7 +519,7 @@ export default function ValidationCenterClient() {
       </section>
 
       <section aria-labelledby="failure-title">
-        <SectionHeading eyebrow="03 / Failure evidence" title="DR false-negative / false-positive evidence" detail="Run-level counts stay separate from registry summaries. Empty or unavailable evidence is not treated as a zero." />
+        <SectionHeading eyebrow="04 / Failure evidence" title="DR false-negative / false-positive evidence" detail="Run-level counts stay separate from registry summaries. Empty or unavailable evidence is not treated as a zero." />
         <div className={styles.evidenceGrid} id="failure-title">
           <article className={styles.evidenceCard}>
             <div className={styles.cardTop}><div><span className={styles.cardLabel}>Fundus DR grader</span><h3>Missed and overcalled outcomes</h3></div><StatusPill status={drRuns.length ? "warn" : "neutral"}>{drRuns.length ? `${drRuns.length} run(s)` : "No persisted runs"}</StatusPill></div>
@@ -446,7 +551,7 @@ export default function ValidationCenterClient() {
       </section>
 
       <section aria-labelledby="oct-title">
-        <SectionHeading eyebrow="04 / Modality split" title="OCT split evidence" detail="Comparability and independent cohorts remain visibly distinct; overlap and patient-separation statements are preserved." />
+        <SectionHeading eyebrow="05 / Modality split" title="OCT split evidence" detail="Comparability and independent cohorts remain visibly distinct; overlap and patient-separation statements are preserved." />
         <article className={styles.evidenceCard} id="oct-title">
           <div className={styles.cardTop}><div><span className={styles.cardLabel}>OCT retinal classifier</span><h3>Dataset and split ledger</h3></div><StatusPill status={octRuns.length ? "warn" : "neutral"}>{octRuns.length ? `${octRuns.length} recorded run(s)` : "Registry evidence"}</StatusPill></div>
           <p className={styles.evidenceText}>{octEntry?.metrics_summary ?? "The OCT validation registry is unavailable."}</p>
@@ -471,7 +576,7 @@ export default function ValidationCenterClient() {
       </section>
 
       <section aria-labelledby="trace-title">
-        <SectionHeading eyebrow="05 / Traceability" title="Evidence chain and review state" detail="Opaque run IDs, artifact hashes, source documents, and audit integrity are shown without resource content." />
+        <SectionHeading eyebrow="06 / Traceability" title="Evidence chain and review state" detail="Opaque run IDs, artifact hashes, source documents, and audit integrity are shown without resource content." />
         <div className={styles.traceGrid} id="trace-title">
           <article className={styles.traceCard}>
             <div className={styles.cardTop}><div><span className={styles.cardLabel}>Validation registry</span><h3>Declared evidence references</h3></div><StatusPill status={data.registry.data ? "ok" : "neutral"}>{data.registry.data?.registry_version ?? sourceLabel(data.registry)}</StatusPill></div>

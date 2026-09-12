@@ -1,0 +1,382 @@
+{
+  "generated_at": "2026-09-12T21:31:57.547Z",
+  "status": "RESEARCH_BENCHMARK_ONLY",
+  "platform": {
+    "os": "win32",
+    "arch": "x64",
+    "logical_cpus": 12
+  },
+  "runs_per_phase": 1,
+  "timeout_ms": 180000,
+  "sampling_interval_ms": 500,
+  "models": [
+    {
+      "model_id": "fundus-lesions-clementp-unet-seresnext50",
+      "status": "MEASURED",
+      "artifact_path": "scratch\\models\\fundus-lesions-clementp-a2cfcb594e48\\model.safetensors",
+      "artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+      "runs_per_phase": 1,
+      "cold": {
+        "wall_time": {
+          "samples": 1,
+          "p50_ms": 7708.2,
+          "p95_ms": 7708.2,
+          "min_ms": 7708.2,
+          "max_ms": 7708.2
+        },
+        "resources": {
+          "observed": true,
+          "peak_rss_bytes": 1338834944,
+          "peak_private_bytes": 1914322944,
+          "peak_thread_count": 44,
+          "cpu_time_seconds_max": 16.641,
+          "sampling_interval_ms": 500,
+          "rss_semantics": "windows_working_set"
+        }
+      },
+      "warm": {
+        "wall_time": {
+          "samples": 1,
+          "p50_ms": 7908.9,
+          "p95_ms": 7908.9,
+          "min_ms": 7908.9,
+          "max_ms": 7908.9
+        },
+        "resources": {
+          "observed": true,
+          "peak_rss_bytes": 1100505088,
+          "peak_private_bytes": 1609424896,
+          "peak_thread_count": 46,
+          "cpu_time_seconds_max": 16.672,
+          "sampling_interval_ms": 500,
+          "rss_semantics": "windows_working_set"
+        }
+      },
+      "runs": [
+        {
+          "phase": "cold_subprocess",
+          "run": 1,
+          "status": "completed",
+          "exit_code": 0,
+          "signal": null,
+          "elapsed_ms": 7708.2,
+          "output_model_id": "fundus-lesions-clementp-unet-seresnext50",
+          "error": null,
+          "resources": {
+            "observed": true,
+            "rss_semantics": "windows_working_set",
+            "peak_rss_bytes": 1338834944,
+            "peak_private_bytes": 1914322944,
+            "cpu_time_seconds": 16.641,
+            "peak_thread_count": 44,
+            "configured_threads": 4,
+            "sampling_interval_ms": 500,
+            "sampling_scope": "probe_process_tree"
+          }
+        },
+        {
+          "phase": "warm_subprocess",
+          "run": 1,
+          "status": "completed",
+          "exit_code": 0,
+          "signal": null,
+          "elapsed_ms": 7908.9,
+          "output_model_id": "fundus-lesions-clementp-unet-seresnext50",
+          "error": null,
+          "resources": {
+            "observed": true,
+            "rss_semantics": "windows_working_set",
+            "peak_rss_bytes": 1100505088,
+            "peak_private_bytes": 1609424896,
+            "cpu_time_seconds": 16.672,
+            "peak_thread_count": 46,
+            "configured_threads": 4,
+            "sampling_interval_ms": 500,
+            "sampling_scope": "probe_process_tree"
+          }
+        }
+      ],
+      "notes": [
+        "Fresh isolated probe process for every sample.",
+        "Warm means process/filesystem warm-up, not a resident model.",
+        "Resource metrics are observational for the probe process tree; no GPU or unrelated-process total is claimed."
+      ]
+    },
+    {
+      "model_id": "fundus-dr-grading-effb0",
+      "status": "MEASURED",
+      "artifact_path": "scratch\\models\\fundus-dr-grading-effb0-a1\\model.safetensors",
+      "artifact_sha256": "0d9a18b0cb6c90d1f30bf2e66153b368bd7ff0bcb45b6690e8d5ce14fa19f69b",
+      "runs_per_phase": 1,
+      "cold": {
+        "wall_time": {
+          "samples": 1,
+          "p50_ms": 4975.3,
+          "p95_ms": 4975.3,
+          "min_ms": 4975.3,
+          "max_ms": 4975.3
+        },
+        "resources": {
+          "observed": true,
+          "peak_rss_bytes": 439078912,
+          "peak_private_bytes": 815095808,
+          "peak_thread_count": 44,
+          "cpu_time_seconds_max": 6.047,
+          "sampling_interval_ms": 500,
+          "rss_semantics": "windows_working_set"
+        }
+      },
+      "warm": {
+        "wall_time": {
+          "samples": 1,
+          "p50_ms": 4763.5,
+          "p95_ms": 4763.5,
+          "min_ms": 4763.5,
+          "max_ms": 4763.5
+        },
+        "resources": {
+          "observed": true,
+          "peak_rss_bytes": 494878720,
+          "peak_private_bytes": 872452096,
+          "peak_thread_count": 44,
+          "cpu_time_seconds_max": 6.094,
+          "sampling_interval_ms": 500,
+          "rss_semantics": "windows_working_set"
+        }
+      },
+      "runs": [
+        {
+          "phase": "cold_subprocess",
+          "run": 1,
+          "status": "completed",
+          "exit_code": 0,
+          "signal": null,
+          "elapsed_ms": 4975.3,
+          "output_model_id": "fundus-dr-grading-effb0",
+          "error": null,
+          "resources": {
+            "observed": true,
+            "rss_semantics": "windows_working_set",
+            "peak_rss_bytes": 439078912,
+            "peak_private_bytes": 815095808,
+            "cpu_time_seconds": 6.047,
+            "peak_thread_count": 44,
+            "configured_threads": 4,
+            "sampling_interval_ms": 500,
+            "sampling_scope": "probe_process_tree"
+          }
+        },
+        {
+          "phase": "warm_subprocess",
+          "run": 1,
+          "status": "completed",
+          "exit_code": 0,
+          "signal": null,
+          "elapsed_ms": 4763.5,
+          "output_model_id": "fundus-dr-grading-effb0",
+          "error": null,
+          "resources": {
+            "observed": true,
+            "rss_semantics": "windows_working_set",
+            "peak_rss_bytes": 494878720,
+            "peak_private_bytes": 872452096,
+            "cpu_time_seconds": 6.094,
+            "peak_thread_count": 44,
+            "configured_threads": 4,
+            "sampling_interval_ms": 500,
+            "sampling_scope": "probe_process_tree"
+          }
+        }
+      ],
+      "notes": [
+        "Fresh isolated probe process for every sample.",
+        "Warm means process/filesystem warm-up, not a resident model.",
+        "Resource metrics are observational for the probe process tree; no GPU or unrelated-process total is claimed."
+      ]
+    },
+    {
+      "model_id": "oct-retinal-weights-fp32",
+      "status": "MEASURED",
+      "artifact_path": "scratch\\models\\oct-retinal-weights-a1\\human_eye_fp32.onnx",
+      "artifact_sha256": "22b1fffb5a0ab88284d4c5817c581bedb1b54c09011d87c3f6472cb2c36b2b1f",
+      "runs_per_phase": 1,
+      "cold": {
+        "wall_time": {
+          "samples": 1,
+          "p50_ms": 3295.8,
+          "p95_ms": 3295.8,
+          "min_ms": 3295.8,
+          "max_ms": 3295.8
+        },
+        "resources": {
+          "observed": true,
+          "peak_rss_bytes": 1070977024,
+          "peak_private_bytes": 1414946816,
+          "peak_thread_count": 31,
+          "cpu_time_seconds_max": 2.938,
+          "sampling_interval_ms": 500,
+          "rss_semantics": "windows_working_set"
+        }
+      },
+      "warm": {
+        "wall_time": {
+          "samples": 1,
+          "p50_ms": 3224.9,
+          "p95_ms": 3224.9,
+          "min_ms": 3224.9,
+          "max_ms": 3224.9
+        },
+        "resources": {
+          "observed": true,
+          "peak_rss_bytes": 1065844736,
+          "peak_private_bytes": 1404858368,
+          "peak_thread_count": 31,
+          "cpu_time_seconds_max": 2.922,
+          "sampling_interval_ms": 500,
+          "rss_semantics": "windows_working_set"
+        }
+      },
+      "runs": [
+        {
+          "phase": "cold_subprocess",
+          "run": 1,
+          "status": "completed",
+          "exit_code": 0,
+          "signal": null,
+          "elapsed_ms": 3295.8,
+          "output_model_id": "oct-retinal-weights-fp32",
+          "error": null,
+          "resources": {
+            "observed": true,
+            "rss_semantics": "windows_working_set",
+            "peak_rss_bytes": 1070977024,
+            "peak_private_bytes": 1414946816,
+            "cpu_time_seconds": 2.938,
+            "peak_thread_count": 31,
+            "configured_threads": null,
+            "sampling_interval_ms": 500,
+            "sampling_scope": "probe_process_tree"
+          }
+        },
+        {
+          "phase": "warm_subprocess",
+          "run": 1,
+          "status": "completed",
+          "exit_code": 0,
+          "signal": null,
+          "elapsed_ms": 3224.9,
+          "output_model_id": "oct-retinal-weights-fp32",
+          "error": null,
+          "resources": {
+            "observed": true,
+            "rss_semantics": "windows_working_set",
+            "peak_rss_bytes": 1065844736,
+            "peak_private_bytes": 1404858368,
+            "cpu_time_seconds": 2.922,
+            "peak_thread_count": 31,
+            "configured_threads": null,
+            "sampling_interval_ms": 500,
+            "sampling_scope": "probe_process_tree"
+          }
+        }
+      ],
+      "notes": [
+        "Fresh isolated probe process for every sample.",
+        "Warm means process/filesystem warm-up, not a resident model.",
+        "Resource metrics are observational for the probe process tree; no GPU or unrelated-process total is claimed."
+      ]
+    },
+    {
+      "model_id": "segformer-optic-disc-cup-refuge",
+      "status": "MEASURED",
+      "artifact_path": "scratch\\models\\segformer-optic-disc-cup-refuge\\model.safetensors",
+      "artifact_sha256": "22e45131b64eb07a5d29a2e5388a7709d10696b13f48d2d0cdcf56cafa1f9ea5",
+      "runs_per_phase": 1,
+      "cold": {
+        "wall_time": {
+          "samples": 1,
+          "p50_ms": 11011.3,
+          "p95_ms": 11011.3,
+          "min_ms": 11011.3,
+          "max_ms": 11011.3
+        },
+        "resources": {
+          "observed": true,
+          "peak_rss_bytes": 1045401600,
+          "peak_private_bytes": 1496104960,
+          "peak_thread_count": 25,
+          "cpu_time_seconds_max": 10.172,
+          "sampling_interval_ms": 500,
+          "rss_semantics": "windows_working_set"
+        }
+      },
+      "warm": {
+        "wall_time": {
+          "samples": 1,
+          "p50_ms": 10717.2,
+          "p95_ms": 10717.2,
+          "min_ms": 10717.2,
+          "max_ms": 10717.2
+        },
+        "resources": {
+          "observed": true,
+          "peak_rss_bytes": 1045315584,
+          "peak_private_bytes": 1500913664,
+          "peak_thread_count": 25,
+          "cpu_time_seconds_max": 10.453,
+          "sampling_interval_ms": 500,
+          "rss_semantics": "windows_working_set"
+        }
+      },
+      "runs": [
+        {
+          "phase": "cold_subprocess",
+          "run": 1,
+          "status": "completed",
+          "exit_code": 0,
+          "signal": null,
+          "elapsed_ms": 11011.3,
+          "output_model_id": "segformer-optic-disc-cup-refuge",
+          "error": null,
+          "resources": {
+            "observed": true,
+            "rss_semantics": "windows_working_set",
+            "peak_rss_bytes": 1045401600,
+            "peak_private_bytes": 1496104960,
+            "cpu_time_seconds": 10.172,
+            "peak_thread_count": 25,
+            "configured_threads": null,
+            "sampling_interval_ms": 500,
+            "sampling_scope": "probe_process_tree"
+          }
+        },
+        {
+          "phase": "warm_subprocess",
+          "run": 1,
+          "status": "completed",
+          "exit_code": 0,
+          "signal": null,
+          "elapsed_ms": 10717.2,
+          "output_model_id": "segformer-optic-disc-cup-refuge",
+          "error": null,
+          "resources": {
+            "observed": true,
+            "rss_semantics": "windows_working_set",
+            "peak_rss_bytes": 1045315584,
+            "peak_private_bytes": 1500913664,
+            "cpu_time_seconds": 10.453,
+            "peak_thread_count": 25,
+            "configured_threads": null,
+            "sampling_interval_ms": 500,
+            "sampling_scope": "probe_process_tree"
+          }
+        }
+      ],
+      "notes": [
+        "Fresh isolated probe process for every sample.",
+        "Warm means process/filesystem warm-up, not a resident model.",
+        "Resource metrics are observational for the probe process tree; no GPU or unrelated-process total is claimed."
+      ]
+    }
+  ]
+}

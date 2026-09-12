@@ -1,0 +1,13 @@
+{
+  "schema_version": "visionscan-phase6-limitations-v1",
+  "primary_outcome": "DR CANDIDATE EVALUATED — IMPROVEMENT NOT ESTABLISHED",
+  "candidate_stop_rule": "ONNX_LOGIT_PARITY_FAILED",
+  "no_cherry_picking": true,
+  "phi_included": false,
+  "limitations": [
+    "RetGuard was authenticated and graph-loaded, but was not benchmark-ready under the frozen protocol.",
+    "The bundle contains no raw patient identifiers, source image bytes, or per-case identifiers.",
+    "Lesion escalation is a separate aggregate technical-research study; it is not substituted for the blocked DR candidate head-to-head and does not establish disease recovery.",
+    "Research evidence is not clinical validation and cannot establish diagnosis, normality, or treatment safety."
+  ]
+}
