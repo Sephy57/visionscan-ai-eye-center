@@ -1,0 +1,2175 @@
+{
+  "format": "visionscan-dr-failure-registry-v1",
+  "observed_at": "2026-09-08",
+  "model_id": "fundus-dr-grading-effb0",
+  "task": "referable DR (grade >=2)",
+  "source": "docs/evaluations/deepdr-external-20260908-raw.json / regular-fundus-validation",
+  "note": "Hashed case/patient/eye keys only; no raw source identifiers are written.",
+  "false_negatives": [
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "0edee24c04326c52b4d5bf04",
+      "patient_key": "5bf18b13269cdb02cfddbd7d",
+      "eye_key": "ad877f7d56175242933a24ba",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.8554036021232605
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "d6069b4681b21e37c8a9f994",
+      "patient_key": "cf6829ed037d0743d759410e",
+      "eye_key": "047f5cc885e6d3d1e1a15749",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.42187783122062683
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "65748ed8e86a1f104b1615dc",
+      "patient_key": "952185533511445a1262fb0f",
+      "eye_key": "4daddcebdd3f7988e75b9258",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.21704402565956116
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "1af170abdbc2588475cd8cd3",
+      "patient_key": "b60b379502bfcd155b62c672",
+      "eye_key": "cc06118db77fed2a4b978000",
+      "ground_truth_grade": 3,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.22734466195106506
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "44f19d8eb3a6a09f0265aa6b",
+      "patient_key": "9285278c0199a1450ea29cf6",
+      "eye_key": "85fd18edf299215520636ae6",
+      "ground_truth_grade": 4,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.8769853115081787
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "66c3d334f0562c2aa73add8f",
+      "patient_key": "f1123f797eef1476f0d7dd48",
+      "eye_key": "0a729c7a79911a4e1074f3b6",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.1541995108127594
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "cb99261c4fee54904c6c94fc",
+      "patient_key": "053169bdd9c8563d35bca5e2",
+      "eye_key": "d8e0f67e2e9b360e127f2c0e",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.5129576921463013
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "90de97665918c70621114792",
+      "patient_key": "7319d59f3162fc894dfbe56a",
+      "eye_key": "f5633e0d435d916173acfcac",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": -0.031185245141386986
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "4ed1eb34c81f7799b72d6dd7",
+      "patient_key": "1623b5104a59c03e4c183f5f",
+      "eye_key": "63cc35ab59eb55881e4d9da7",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.4922117292881012
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "4be9876b33e35efb60407304",
+      "patient_key": "8321a6242aab3c8a0e473ade",
+      "eye_key": "26d30f84fff48595232c2be5",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.9963128566741943
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "a57803b3e9e42e3cdf1f2507",
+      "patient_key": "1623b5104a59c03e4c183f5f",
+      "eye_key": "f3a0b67e1bfc85db0e7ca49b",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.5029115080833435
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "d546bc86bd3471456c209990",
+      "patient_key": "cf6829ed037d0743d759410e",
+      "eye_key": "8d8603fadfc29ea7482188e6",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.9193395376205444
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "44b16be772e5181002d49e0c",
+      "patient_key": "20b6c9bff23698dca5dba436",
+      "eye_key": "cae8b925ed907590ed2a73a4",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.07662823051214218
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "c4895b12d7ed5053cb221cc4",
+      "patient_key": "80540fa1341f050d0e69c826",
+      "eye_key": "696938c4a7fccba5cad4381a",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.334017276763916
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "fb6977bdfc591dff49310fb6",
+      "patient_key": "16cbe28bdb7e1969ccfb8f50",
+      "eye_key": "05d100fbfa265554555abf11",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.7819036245346069
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "ac1e5e26a63f6ff838bb9237",
+      "patient_key": "392de220ba1937b7ef8a8d38",
+      "eye_key": "6fb59b6ddba82dcc99b0d4b2",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.0389580726623535
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "9fc007c3a8ac8d609e49d294",
+      "patient_key": "1b8bc36a06f9f72cc3ee9b63",
+      "eye_key": "36ce9cdd8958c26a81014716",
+      "ground_truth_grade": 4,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.8913788795471191
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "69805fd62007f10f4c8905d3",
+      "patient_key": "f1123f797eef1476f0d7dd48",
+      "eye_key": "d7864e88239e43d1cacf5a0f",
+      "ground_truth_grade": 4,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.06389894336462021
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "2f3ffa9c1bf46b5ae6b9e587",
+      "patient_key": "689b21ec8861996e9136927e",
+      "eye_key": "368de88cf77483820717b8ea",
+      "ground_truth_grade": 4,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.35700151324272156
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "a65ff3e1466e653b5c0f05fb",
+      "patient_key": "293e80d18e7806ba6a8227c7",
+      "eye_key": "98ba0dc00ec14453dc864a02",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.4153140783309937
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "2cb5d2020e4bafe848f04d34",
+      "patient_key": "8f3a7df89bc9e6dc4a476a46",
+      "eye_key": "87d1eef900b9e5aafd74869b",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": -0.01861546002328396
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "c4756cf3d900a2938df14f03",
+      "patient_key": "a5ef44bbbd49079900b13cd2",
+      "eye_key": "4272f8049411e87a41215797",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.7191009521484375
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "2e20cb7e7c8021dcd6c0b0a2",
+      "patient_key": "7e6138f1fc36471c61f18979",
+      "eye_key": "10b173ab5923fd4ca2076b0e",
+      "ground_truth_grade": 3,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.20721688866615295
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "c670d92ca0d71639b3c212c3",
+      "patient_key": "a5ef44bbbd49079900b13cd2",
+      "eye_key": "5fed49f7e4ea0bb3b1dacf65",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.9434984922409058
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "d2a76c1abc550c43f5150d8d",
+      "patient_key": "16cbe28bdb7e1969ccfb8f50",
+      "eye_key": "2bf3204f097740f76834e671",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.0852656364440918
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "e3cb1d99cccab66d7400d89d",
+      "patient_key": "8f3a7df89bc9e6dc4a476a46",
+      "eye_key": "7678cfa48fbfdd67d3c2f3a9",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.804100513458252
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "f74ca1eac0ef072b8afb5448",
+      "patient_key": "bc749ad2e821c3841cdc90c3",
+      "eye_key": "8e0a14c292d035a689830296",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.0058958530426025
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "8874ddb60d4959d9f71319c4",
+      "patient_key": "20b6c9bff23698dca5dba436",
+      "eye_key": "b0298ce8b7fea228e2c4c95d",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.05193796381354332
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "d6a137fe5afa125daa673843",
+      "patient_key": "0e85d397072388afe521fc51",
+      "eye_key": "81e2e4475da533bbcd95ac00",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.1785664558410645
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "13d16f00a24404f48b6ba88c",
+      "patient_key": "8321a6242aab3c8a0e473ade",
+      "eye_key": "68526ea421822ea584f63fa7",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.2386353015899658
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "82e2ea4e5dc9c007553be4f4",
+      "patient_key": "e2bcda39284cc5b0fbcea4a2",
+      "eye_key": "56cbadf705f4953d8319f571",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.8318188190460205
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "79fc635645d6f546b6ebe57a",
+      "patient_key": "c87bb85bc1b37710289b5c44",
+      "eye_key": "62f1f269d4da98e21b8b684b",
+      "ground_truth_grade": 3,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.1361699402332306
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "f82b2d54c4384b6e3238870b",
+      "patient_key": "b16b05dd4fa94c479613a312",
+      "eye_key": "4be3e04ca81544f0494ad12d",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.440786361694336
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "56b1cc4ffd92f1354b6af4c4",
+      "patient_key": "0f1b2002ddddbb7a2f3974df",
+      "eye_key": "4b112bb51c9413274717b89f",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.1823294162750244
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "618add2d48e8d1b0ae4d6d58",
+      "patient_key": "2dbf3ff8c04287c2cd34c209",
+      "eye_key": "c8b8c1f3e2b0efc355788468",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.3578741550445557
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "06c8f3691165a2bdac570aae",
+      "patient_key": "951c4ed14a6ec6babbd10fe8",
+      "eye_key": "daeee9966f3320c56c3c1b96",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.890556275844574
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "cc4d5fecdffea8c8d7ebbb4d",
+      "patient_key": "9a2024c31637bb717523294b",
+      "eye_key": "59c75f2e42301d514afc3f3c",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.0299317836761475
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "2b940bdb375b1ecee0abe0d1",
+      "patient_key": "5f9ee3949853b5356da23915",
+      "eye_key": "d10175ef4f7f429b8549a8a9",
+      "ground_truth_grade": 4,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.5278200507164001
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "3697985cb3157c39c02a8175",
+      "patient_key": "9e88f4de82fdfd53556df8a2",
+      "eye_key": "27594a5159e1104615da8153",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.4776591360569
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "fa01941125afcfdf57355c22",
+      "patient_key": "7e6138f1fc36471c61f18979",
+      "eye_key": "17e227a99bff45b3ed892218",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.471854329109192
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "325c011b102b38c2049a36b0",
+      "patient_key": "c87bb85bc1b37710289b5c44",
+      "eye_key": "ac3116982e6369a7a6318e52",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.44298985600471497
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "4b4a06156382a226720ca6a2",
+      "patient_key": "2169926481c87da22be605a7",
+      "eye_key": "115a09998e86cecb8ddff216",
+      "ground_truth_grade": 3,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.1254047453403473
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "2c4e4b85637d0e236f054390",
+      "patient_key": "a0c953954b5eaf7ae1f3cfbe",
+      "eye_key": "d1df36f047ba167bd6ef26df",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": -0.0856185331940651
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "8c5eca3ea9f2b176607d1d51",
+      "patient_key": "2169926481c87da22be605a7",
+      "eye_key": "029cf263c029450806feaf19",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.7812784910202026
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "8cccbc1c6f7047a3a3a69bc6",
+      "patient_key": "e66996a1c5b075082c1b8f95",
+      "eye_key": "951076883e2f250fc2fd5d28",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.0050703287124634
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "6ff257bcae8aa26172f8275e",
+      "patient_key": "bc749ad2e821c3841cdc90c3",
+      "eye_key": "b97ef9bfb9bf9001bc564330",
+      "ground_truth_grade": 4,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.16393104195594788
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "550318b30bd5daed29f0de7a",
+      "patient_key": "8f3a7df89bc9e6dc4a476a46",
+      "eye_key": "f2965d342c03517eac4e1c88",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.7002294659614563
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "dee7705c705d8dab0af08c1c",
+      "patient_key": "689b21ec8861996e9136927e",
+      "eye_key": "2a2faa9f55dab22640a3c2c2",
+      "ground_truth_grade": 4,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.031047726050019264
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "e03a6f3c5e96b07a7318c653",
+      "patient_key": "952185533511445a1262fb0f",
+      "eye_key": "f77e1b0a63c198b1ba364273",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.1871555745601654
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "5aea50b348088961fd27871e",
+      "patient_key": "3b58b02bbc5a845ed32c16ef",
+      "eye_key": "e0e82503521d1aa00e2e2476",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.4416325092315674
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "e3fbce6a530f7deae90e34b9",
+      "patient_key": "9a8c8af75c23465214ed8a5a",
+      "eye_key": "4bb855bf296ed3efeda5ac68",
+      "ground_truth_grade": 4,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.8107432126998901
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "87c677245e481952b60d1e5f",
+      "patient_key": "f4f3e75f73d31f5ddb298045",
+      "eye_key": "e0f9549b12cada1876556bf3",
+      "ground_truth_grade": 3,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.4804878532886505
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "0ad23b04ef6081a7e193f417",
+      "patient_key": "16b48d3dc67d789844ea58fe",
+      "eye_key": "e65fd7aec8f9ee72b1b49bb1",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.4474756717681885
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "63bae50ce8a6bfe1050d1fa0",
+      "patient_key": "0f1b2002ddddbb7a2f3974df",
+      "eye_key": "97146c13b93298fc900fc03d",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.3480709791183472
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "8f3dc02ffae47bbcfc2b02d8",
+      "patient_key": "9a2024c31637bb717523294b",
+      "eye_key": "d4aec3d8b7c8904a41397ccd",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.7761150598526001
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "0267d918ff4b6fb2e9f4959b",
+      "patient_key": "392de220ba1937b7ef8a8d38",
+      "eye_key": "ffff31742e551b980ba848d3",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.7240198850631714
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "1111d52fd6866126f02070dd",
+      "patient_key": "8f3a7df89bc9e6dc4a476a46",
+      "eye_key": "f51bbb4fa47f78f522d110ce",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.2437995970249176
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "f1cdf8673a70bc70bdcbb418",
+      "patient_key": "0f1b2002ddddbb7a2f3974df",
+      "eye_key": "63bac2a3012ac934ee32202c",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.4370165765285492
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "1aefa1bcbfe956a54eeaf19a",
+      "patient_key": "2dbf3ff8c04287c2cd34c209",
+      "eye_key": "446bc4183fb5a34e48580204",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.7529847621917725
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "fb5a82d5f81b2901f77e2044",
+      "patient_key": "a0c953954b5eaf7ae1f3cfbe",
+      "eye_key": "3eea6df44b1e67480ee5d644",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.02545222081243992
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "d6387a8d5176f2d3099f2192",
+      "patient_key": "9a8c8af75c23465214ed8a5a",
+      "eye_key": "76bec2d3c8550c808974ce21",
+      "ground_truth_grade": 3,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.12901028990745544
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "d80caf99a17b7af063401bc9",
+      "patient_key": "80540fa1341f050d0e69c826",
+      "eye_key": "fc00dd3550cf8df8eac2204a",
+      "ground_truth_grade": 3,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.30179688334465027
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "60d9e116158953b6323305fb",
+      "patient_key": "4aa8aa29757b428427763567",
+      "eye_key": "83bf4addd0fa3b9fd34424dc",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": -0.11443660408258438
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "c37236f97ac4ebc08e19991e",
+      "patient_key": "c87bb85bc1b37710289b5c44",
+      "eye_key": "727f44c2481ee826b10be4c3",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.2878049612045288
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "3d24f33baf2dbf28530962f2",
+      "patient_key": "951c4ed14a6ec6babbd10fe8",
+      "eye_key": "83afdbff12387db5d73ac22e",
+      "ground_truth_grade": 3,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.4729788601398468
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "bae54b4a748929ddebc88a14",
+      "patient_key": "f4f3e75f73d31f5ddb298045",
+      "eye_key": "f7fe38212d9e035133bd372d",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.1793303489685059
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "dea7e099f541e5b186777370",
+      "patient_key": "9a8c8af75c23465214ed8a5a",
+      "eye_key": "9c7fa2d348619503b9a6c759",
+      "ground_truth_grade": 3,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": -0.09420225769281387
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "eb83678e06ed6b6c8cf369fa",
+      "patient_key": "5f9ee3949853b5356da23915",
+      "eye_key": "499c2027be1e430cbe46a529",
+      "ground_truth_grade": 4,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.4622918367385864
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "14ff78ab2e52c27b8b8e1a18",
+      "patient_key": "e2bcda39284cc5b0fbcea4a2",
+      "eye_key": "27a5121dc2c297262c1c4f81",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.5625473856925964
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "795a07c1c1b0140fbd17457a",
+      "patient_key": "9e88f4de82fdfd53556df8a2",
+      "eye_key": "1b6938aa87c0651c30654cde",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.3576267957687378
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "59872fd138a9ec63cad62b9b",
+      "patient_key": "16b48d3dc67d789844ea58fe",
+      "eye_key": "12ac7bab045008891de20500",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.16476455330848694
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "8c1108550f13f46b669ff4d6",
+      "patient_key": "a5ef44bbbd49079900b13cd2",
+      "eye_key": "ca5fd6ad3f993deae6cef8ee",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.7768338918685913
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "c5ac232f68f5dbe9c2c74c7d",
+      "patient_key": "9285278c0199a1450ea29cf6",
+      "eye_key": "d8f105c428899544094094fe",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.1171760559082031
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "bc2a1b72b9fd8b39f5ae2eb9",
+      "patient_key": "20b6c9bff23698dca5dba436",
+      "eye_key": "5a77d4915b18a9891d1aa03c",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.7849262952804565
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "f0002240895932f9689f9bb3",
+      "patient_key": "951c4ed14a6ec6babbd10fe8",
+      "eye_key": "2efd7ac7d923de7a04554f37",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.003383755683899
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "f5b6970f8345f775376cfde2",
+      "patient_key": "3b58b02bbc5a845ed32c16ef",
+      "eye_key": "4d8e3f32c80080e63647e137",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.03182386979460716
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "616e69fcfc72aa9e698ae96a",
+      "patient_key": "bf10599ca6abd3a5b005aee7",
+      "eye_key": "bb9cc2b201742aeff7ad3dd5",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.7534168362617493
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "8a9cabd504e93ff534b4b283",
+      "patient_key": "faf161e3ee5c7a0a619d10ac",
+      "eye_key": "2b3ffd217ee0446717907586",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.43702054023742676
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "64556b41ed1b1c88e7da3395",
+      "patient_key": "bc749ad2e821c3841cdc90c3",
+      "eye_key": "a18e83ea05dc9b2aaed4fc4e",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": -0.0559980608522892
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "10b75394ac35044948a838f8",
+      "patient_key": "c87bb85bc1b37710289b5c44",
+      "eye_key": "d4239a01b0f36bb5d8ff1d12",
+      "ground_truth_grade": 3,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.29417917132377625
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "ca885925827a273adcf9ae61",
+      "patient_key": "5bf18b13269cdb02cfddbd7d",
+      "eye_key": "09e5fe9b35e09703ee1c34eb",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.4400947093963623
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "085474b94718b38308e5edca",
+      "patient_key": "20b6c9bff23698dca5dba436",
+      "eye_key": "7fb1d9ba3f742266922f6f2b",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.28296586871147156
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "5e5e869ae5420c539fedca13",
+      "patient_key": "b60b379502bfcd155b62c672",
+      "eye_key": "3b29e62f337ac1911983bd89",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.5367736220359802
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "cbcaa4361023eb8b9a2412fa",
+      "patient_key": "80540fa1341f050d0e69c826",
+      "eye_key": "111edc2e3e4e0c7a8a080ff3",
+      "ground_truth_grade": 3,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.1376810371875763
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "51c5fdac7ac3f3595dd08055",
+      "patient_key": "4aa8aa29757b428427763567",
+      "eye_key": "3a193ca1403ee7202803fff5",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.3004188537597656
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "64a88855e615f796a07e2b12",
+      "patient_key": "f1123f797eef1476f0d7dd48",
+      "eye_key": "5272fd4238c83e2ea0c29e09",
+      "ground_truth_grade": 4,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.465242475271225
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "ff5e2d2cdc449dc35036a88a",
+      "patient_key": "d3ea5f3001d2e8eb42a1f31a",
+      "eye_key": "f24b668ffcca48bb8a4fbad0",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.6719732284545898
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "426e86d474a6fe72d500aba6",
+      "patient_key": "053169bdd9c8563d35bca5e2",
+      "eye_key": "75f805bc702afc8c97b3dc1c",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.36214861273765564
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "9a53eeaad5736371a6e84595",
+      "patient_key": "03964631eb49057cd5e998f4",
+      "eye_key": "0b31869e7074e2f94f65db88",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.3514950275421143
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "22cb2a1c81b9d76c19e2a7c9",
+      "patient_key": "bc749ad2e821c3841cdc90c3",
+      "eye_key": "97da384ece8b2e79f4944064",
+      "ground_truth_grade": 4,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.0333924293518066
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "8221c234567ea98ddecbb047",
+      "patient_key": "3b58b02bbc5a845ed32c16ef",
+      "eye_key": "c9acdf8c97b9317c74c70f29",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.5170217752456665
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "cf8bf7dba2b27567e8901533",
+      "patient_key": "3d02a1d931825c521662a6a4",
+      "eye_key": "203178b961016a4650d69bbd",
+      "ground_truth_grade": 4,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.9176528453826904
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "33102e6c9f2b368913c675f9",
+      "patient_key": "bf10599ca6abd3a5b005aee7",
+      "eye_key": "f6b5597008a7890cc9212be0",
+      "ground_truth_grade": 3,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": -0.14426091313362122
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "7f9e7d26675126d8f20c4cf4",
+      "patient_key": "b5477acac67205fe5a54cb7a",
+      "eye_key": "f4d61d57a3c64910c5a93ac9",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.03892340883612633
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "1cd1c4d60da27482140fbcd9",
+      "patient_key": "faf161e3ee5c7a0a619d10ac",
+      "eye_key": "66c44127a60fb1608bed20d8",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 0.9499762058258057
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "2b78387d9461d8d9ead8fd42",
+      "patient_key": "faf161e3ee5c7a0a619d10ac",
+      "eye_key": "c3b9da1bf9a2cb2c6a0db4f8",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.2574447691440582
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "68f555cdb5a71a5f673f8cc8",
+      "patient_key": "7319d59f3162fc894dfbe56a",
+      "eye_key": "5f6bcb4e2e58b1ac7757006f",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.238205909729004
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "1e4f130a02ad5dba9ad37dd8",
+      "patient_key": "f4f3e75f73d31f5ddb298045",
+      "eye_key": "c704f1c0469f8709ef8a7641",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.1838666200637817
+      },
+      "image_quality": "recorded_quality_0",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "64ac486538fea04f697b663f",
+      "patient_key": "293e80d18e7806ba6a8227c7",
+      "eye_key": "b1f245e4cd6a91685065dbbb",
+      "ground_truth_grade": 2,
+      "predicted_grade": 0,
+      "raw_model_output": {
+        "dr_logit": 0.47439494729042053
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "da49e9a4e221b3a34d0b9bd4",
+      "patient_key": "8321a6242aab3c8a0e473ade",
+      "eye_key": "7104d52e01b2e059a67b18b3",
+      "ground_truth_grade": 2,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.4070403575897217
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "dbf183e5e7571f92f047da23",
+      "patient_key": "1b8bc36a06f9f72cc3ee9b63",
+      "eye_key": "f247bb23726e8835bc39d099",
+      "ground_truth_grade": 3,
+      "predicted_grade": 1,
+      "raw_model_output": {
+        "dr_logit": 1.12278413772583
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "UNDERCALL_GE_2_GRADES",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_UNDERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_negative"
+    }
+  ],
+  "false_positives": [
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "e97f1db958742ccce6fa9d1b",
+      "patient_key": "2f02e0cb31bff4c07a61f52f",
+      "eye_key": "9ef7a96a9bbc3a362958839c",
+      "ground_truth_grade": 1,
+      "predicted_grade": 2,
+      "raw_model_output": {
+        "dr_logit": 2.0100784301757812
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "OVERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_OVERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_positive"
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus-validation",
+      "task": "referable DR (ground-truth grade >=2)",
+      "case_key": "0e1c23f764c202b809ec4127",
+      "patient_key": "3e37a312d8633e7016d8ca2f",
+      "eye_key": "1a4ec84912b87d254e2e132b",
+      "ground_truth_grade": 1,
+      "predicted_grade": 2,
+      "raw_model_output": {
+        "dr_logit": 1.5399008989334106
+      },
+      "image_quality": "recorded_quality_1",
+      "device": null,
+      "severity": "OVERCALL_1_GRADE",
+      "domain_notes": [
+        "Device is not recorded in the evaluation export.",
+        "Model output is a regression logit rounded/clamped to grade 0-4."
+      ],
+      "possible_failure_category": "GRADE_OVERCALL_OR_THRESHOLD_TRANSFER",
+      "failure_type": "false_positive"
+    }
+  ]
+}

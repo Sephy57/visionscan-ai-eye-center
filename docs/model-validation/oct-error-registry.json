@@ -1,0 +1,468 @@
+{
+  "format": "visionscan-oct-error-registry-v1",
+  "observed_at": "2026-09-08",
+  "model_id": "oct-retinal-weights-fp32",
+  "errors": [
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "bfbecee71ddd961c81727a9a",
+      "ground_truth_class": "CNV",
+      "predicted_class": "DME",
+      "raw_model_output": {
+        "logits": [
+          0.2265625,
+          0.74658203125,
+          0.023773193359375,
+          0.002872467041015625
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "f8c24ea270597cc2a9745366",
+      "ground_truth_class": "DME",
+      "predicted_class": "NORMAL",
+      "raw_model_output": {
+        "logits": [
+          0.01197052001953125,
+          0.3076171875,
+          0.0171661376953125,
+          0.6630859375
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "5621602245cce34d28ceb8d1",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.54833984375,
+          0.01309967041015625,
+          0.422607421875,
+          0.015655517578125
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "51e3238953a234175a76b63c",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.7470703125,
+          0.0076904296875,
+          0.2386474609375,
+          0.00670623779296875
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "838515be519733b17ccbf0a8",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.59130859375,
+          0.01053619384765625,
+          0.387939453125,
+          0.010406494140625
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "c59d6bcf6de621cbbb13fa45",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.65576171875,
+          0.0117645263671875,
+          0.3203125,
+          0.0120086669921875
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "f66a4fd7c972a96ea9f2b6ac",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.59228515625,
+          0.010223388671875,
+          0.385986328125,
+          0.01134490966796875
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "16942ae2d3531310a6cbe6ef",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.62255859375,
+          0.00933074951171875,
+          0.35400390625,
+          0.0138092041015625
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "143c108a29cfc475ab1ffa49",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.60986328125,
+          0.013580322265625,
+          0.364013671875,
+          0.0126800537109375
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "cec6ca9506bae0325e5c4ae9",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.64208984375,
+          0.0136871337890625,
+          0.323486328125,
+          0.0204620361328125
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "ab8dba516af508765f217d32",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.63427734375,
+          0.01316070556640625,
+          0.338623046875,
+          0.01418304443359375
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "eb4752c09813848711882642",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.68603515625,
+          0.05029296875,
+          0.25146484375,
+          0.0122222900390625
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "5621602245cce34d28ceb8d1",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.54833984375,
+          0.01309967041015625,
+          0.422607421875,
+          0.015655517578125
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "3ae0c735327b377bdfb0018d",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "NORMAL",
+      "raw_model_output": {
+        "logits": [
+          0.0167083740234375,
+          0.0265960693359375,
+          0.250244140625,
+          0.70654296875
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "eb99d1e3690d5189a464f59f",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.64208984375,
+          0.00888824462890625,
+          0.322021484375,
+          0.0272216796875
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "3864ee1107cc6235ec605d9e",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.94580078125,
+          0.01000213623046875,
+          0.026702880859375,
+          0.01763916015625
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "f232237433b58ac558bb23ab",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.61572265625,
+          0.034820556640625,
+          0.337646484375,
+          0.0118560791015625
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "e404e27108f9eceaa6a1880b",
+      "ground_truth_class": "DRUSEN",
+      "predicted_class": "CNV",
+      "raw_model_output": {
+        "logits": [
+          0.642578125,
+          0.0128936767578125,
+          0.32958984375,
+          0.0151519775390625
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "55bf041aa2101c67805fc07c",
+      "ground_truth_class": "NORMAL",
+      "predicted_class": "DRUSEN",
+      "raw_model_output": {
+        "logits": [
+          0.0165252685546875,
+          0.0097198486328125,
+          0.74951171875,
+          0.224365234375
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "bb7962996a1258568549baf2",
+      "ground_truth_class": "NORMAL",
+      "predicted_class": "DRUSEN",
+      "raw_model_output": {
+        "logits": [
+          0.01070404052734375,
+          0.029693603515625,
+          0.634765625,
+          0.32470703125
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "a78a0ae00313f1efa852c0b5",
+      "ground_truth_class": "NORMAL",
+      "predicted_class": "DME",
+      "raw_model_output": {
+        "logits": [
+          0.004901885986328125,
+          0.80859375,
+          0.01081085205078125,
+          0.1759033203125
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "57ee5060542041d897f111da",
+      "ground_truth_class": "NORMAL",
+      "predicted_class": "DRUSEN",
+      "raw_model_output": {
+        "logits": [
+          0.024078369140625,
+          0.07196044921875,
+          0.5849609375,
+          0.319091796875
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    },
+    {
+      "dataset": "Kermany test mirror",
+      "case_key": "ad5eb3f219e8e450abc501ce",
+      "ground_truth_class": "NORMAL",
+      "predicted_class": "DRUSEN",
+      "raw_model_output": {
+        "logits": [
+          0.004322052001953125,
+          0.00955963134765625,
+          0.85302734375,
+          0.1331787109375
+        ]
+      },
+      "image_quality": "NOT_RECORDED",
+      "device": null,
+      "domain_notes": [
+        "Patient ID is not present in the mirror export.",
+        "This is overlap-disclosed comparability evidence, not independent validation."
+      ]
+    }
+  ],
+  "note": "Hashed case keys only; Kermany mirror does not provide patient IDs."
+}

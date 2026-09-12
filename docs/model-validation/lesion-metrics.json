@@ -1,0 +1,234 @@
+{
+  "observed_at": "2026-09-08",
+  "model": {
+    "model_id": "fundus-lesions-clementp-unet-seresnext50",
+    "model_name": "ClementP fundus lesion segmentation U-Net SE-ResNeXt50 32x4d",
+    "version": "a2cfcb594e483",
+    "artifact": {
+      "file": "model.safetensors",
+      "sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+      "format": "safetensors"
+    },
+    "input": {
+      "modalities": [
+        "FUNDUS"
+      ],
+      "dimensions": "3x1024x1024",
+      "preprocessing": "clementp-source-pinned-1024-v1: RGB decode; non-black fundus-field crop at 5%-of-max threshold; bicubic longest-side to 1024; centered zero-pad to 1024 square; 0..1 scale; ImageNet mean [0.485,0.456,0.406] std [0.229,0.224,0.225]. Implemented by scripts/inference/fundus_lesion_probe.py crop_and_pad.",
+      "input_schema": "IMAGE_ONLY"
+    },
+    "output_schema": "fundus-lesion-segmentation-contract/2-original-image-geometry",
+    "supported_anatomy": [
+      "retina"
+    ],
+    "supported_findings": [
+      "cotton_wool_spot",
+      "hard_exudate",
+      "retinal_hemorrhage",
+      "microaneurysm_like_lesion"
+    ],
+    "source": "https://huggingface.co/ClementP/fundus-lesions-segmentation-unet_seresnext50_32x4d revision a2cfcb594e483d8baa17f24e1152009641cb9847",
+    "license": "MIT (model code/checkpoint tag as published; training-data terms unresolved - see candidate dossier)",
+    "training_dataset": {
+      "name": "DDR + FGADR + IDRiD + MESSIDOR + RETLES (as reported on the model card)",
+      "version": "as-reported-by-publisher",
+      "provenance": "https://huggingface.co/ClementP/fundus-lesions-segmentation-unet_seresnext50_32x4d",
+      "population": "not documented by publisher; must not be assumed"
+    },
+    "validation_dataset": null,
+    "calibration": null,
+    "limitations": [
+      "RESEARCH status; no clinical or independent validation at install time",
+      "Connected components are unfiltered argmax regions, not validated lesions",
+      "Argmax masks are not calibrated probabilities; raw_score is always null",
+      "Device compatibility is unvalidated for every device (DOMAIN_VALIDATION_UNKNOWN)",
+      "No auditable mask artifact is persisted; only regions, areas, and provenance are stored"
+    ],
+    "intended_use": "Offline technical research only: lesion-like region localization on fundus photographs as decision-support observations requiring ophthalmic review. Never a diagnosis, never a normality claim.",
+    "forbidden_interpretation": "Not a diagnosis, validated lesion overlay, or absence-of-disease claim.",
+    "validation_status": "RESEARCH_ONLY"
+  },
+  "dataset": {
+    "name": "IDRiD Segmentation Task 2 (lesion) TEST split",
+    "license": "CC-BY-4.0 (shipped LICENSE in archive)",
+    "provenance": "archive.org item idrid, A. Segmentation.zip, md5 804ca21196beecf7f3a433dc59d37256",
+    "overlap_disclosure": "IDRiD is named in the publisher-reported training sets of the evaluated checkpoint; these metrics are overlap-disclosed comparability evidence, NOT independent validation.",
+    "patient_separation": "PATIENT_SEPARATION_UNVERIFIABLE: image-level export has no patient/eye IDs.",
+    "n_images": 27,
+    "classes": {
+      "MA": "microaneurysm_like_lesion",
+      "HE": "retinal_hemorrhage",
+      "EX": "hard_exudate",
+      "SE->CWT": "cotton_wool_spot"
+    }
+  },
+  "classes": [
+    {
+      "label": "MA",
+      "pixels": {
+        "tp": 10987,
+        "fp": 15878,
+        "fn": 16457
+      },
+      "dice": 0.4046,
+      "iou": 0.2536,
+      "pixel_sensitivity": 0.40034251566826995,
+      "pixel_precision": 0.4089707798250512,
+      "detection": {
+        "tp": 27,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "sensitivity": 1
+      },
+      "aggregate_false_positive_pixels_per_image": 588.07,
+      "region_fp_burden": null,
+      "region_fp_burden_reason": "NOT_MEASURABLE: export has no per-negative-image ground-truth mask/region table and det_tn is zero."
+    },
+    {
+      "label": "HE",
+      "pixels": {
+        "tp": 194380,
+        "fp": 89809,
+        "fn": 106080
+      },
+      "dice": 0.6649,
+      "iou": 0.4981,
+      "pixel_sensitivity": 0.6469413565865673,
+      "pixel_precision": 0.6839814348901612,
+      "detection": {
+        "tp": 26,
+        "fp": 0,
+        "fn": 1,
+        "tn": 0,
+        "sensitivity": 0.9629629629629629
+      },
+      "aggregate_false_positive_pixels_per_image": 3326.26,
+      "region_fp_burden": null,
+      "region_fp_burden_reason": "NOT_MEASURABLE: export has no per-negative-image ground-truth mask/region table and det_tn is zero."
+    },
+    {
+      "label": "EX",
+      "pixels": {
+        "tp": 233081,
+        "fp": 74021,
+        "fn": 69928
+      },
+      "dice": 0.7641,
+      "iou": 0.6182,
+      "pixel_sensitivity": 0.7692213762627512,
+      "pixel_precision": 0.7589693326647172,
+      "detection": {
+        "tp": 27,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "sensitivity": 1
+      },
+      "aggregate_false_positive_pixels_per_image": 2741.52,
+      "region_fp_burden": null,
+      "region_fp_burden_reason": "NOT_MEASURABLE: export has no per-negative-image ground-truth mask/region table and det_tn is zero."
+    },
+    {
+      "label": "SE",
+      "pixels": {
+        "tp": 32614,
+        "fp": 9231,
+        "fn": 17213
+      },
+      "dice": 0.7115,
+      "iou": 0.5522,
+      "pixel_sensitivity": 0.6545447247476268,
+      "pixel_precision": 0.7794001672840244,
+      "detection": {
+        "tp": 10,
+        "fp": 0,
+        "fn": 4,
+        "tn": 0,
+        "sensitivity": 0.7142857142857143
+      },
+      "aggregate_false_positive_pixels_per_image": 341.89,
+      "region_fp_burden": null,
+      "region_fp_burden_reason": "NOT_MEASURABLE: export has no per-negative-image ground-truth mask/region table and det_tn is zero."
+    }
+  ],
+  "false_positive_burden": {
+    "mean_regions_per_negative_image": null,
+    "median_regions_per_negative_image": null,
+    "p90_regions_per_negative_image": null,
+    "p95_regions_per_negative_image": null,
+    "max_regions_per_negative_image": null,
+    "status": "NOT_MEASURABLE",
+    "reason": "No negative-image region ground truth or per-image class-level FP region table is present. Zero det_fp in this export is not a zero-FP claim."
+  },
+  "false_negative_analysis": "Per-lesion FN categories are not recoverable from the aggregate export; pixel FN and detection FN are reported per class above.",
+  "engineering_failure_analysis": {
+    "schema_version": "1.0.0",
+    "created_at": "2026-09-07",
+    "model_id": "fundus-lesions-clementp-unet-seresnext50",
+    "model_version": "a2cfcb594e483",
+    "artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+    "evaluation_status": "NOT_RUN",
+    "accuracy_status": "NOT_ESTABLISHED",
+    "calibration_status": "NOT_CALIBRATED",
+    "validation_dataset": null,
+    "patient_separated": null,
+    "metrics": {
+      "sensitivity": null,
+      "specificity": null,
+      "dice": null,
+      "iou": null,
+      "auroc": null,
+      "auprc": null,
+      "ppv": null,
+      "npv": null,
+      "ece": null,
+      "brier": null,
+      "false_positives": null,
+      "false_negatives": null
+    },
+    "blocking_reasons": [
+      "No legally cleared patient-keyed independent validation cohort is present.",
+      "Current dedicated runtime lacks torchseg, timm, and einops.",
+      "No pre-registered threshold/component rule exists.",
+      "Training-data downstream rights remain unresolved.",
+      "The user-reported abnormal failure image is not present in this workspace."
+    ],
+    "observed_engineering_cases": [
+      {
+        "case_id": "existing-example-fundus-historical-probe",
+        "phi": false,
+        "status": "POSSIBLE_FALSE_POSITIVE_CANDIDATE",
+        "observation": "Historical offline argmax produced a 16-pixel microaneurysm-like component.",
+        "classification": "MODEL_OR_THRESHOLD_OR_PREPROCESSING_UNRESOLVED",
+        "limitations": [
+          "No reference annotation is available.",
+          "The historical box was model-raster normalized and is not valid for an original-image overlay.",
+          "The current isolated runtime cannot reproduce the run."
+        ]
+      },
+      {
+        "case_id": "user-reported-obvious-abnormality-miss",
+        "phi": null,
+        "status": "UNVERIFIED_REPORTED_FALSE_NEGATIVE_CANDIDATE",
+        "observation": "The user reported a visibly abnormal fundus result that had been presented with misleading negative wording.",
+        "classification": "COVERAGE_GAP_OR_MODEL_FAILURE_UNRESOLVED",
+        "limitations": [
+          "The source image is not available in the repository or current attachment set.",
+          "No pathology label, reference standard, or applicable detector run can be verified.",
+          "No disease or lesion is inferred from the report alone."
+        ]
+      }
+    ],
+    "required_future_failure_categories": [
+      "unsupported_pathology",
+      "model_failure",
+      "threshold",
+      "preprocessing",
+      "quality_gate",
+      "ood_gate",
+      "postprocessing",
+      "localization_bug"
+    ]
+  }
+}

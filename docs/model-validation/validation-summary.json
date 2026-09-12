@@ -1,0 +1,1146 @@
+{
+  "format": "visionscan-model-validation-phase3-v1",
+  "observed_at": "2026-09-08",
+  "note": "PHI-minimized research evidence. Hashed case keys are not patient identifiers and are not a clinical-validation certificate.",
+  "models": [
+    {
+      "observed_at": "2026-09-08",
+      "model": {
+        "model_id": "fundus-dr-grading-effb0",
+        "model_name": "ClementP fundus DR grading EfficientNet-B0 (regression head)",
+        "version": "aa5741419b90",
+        "artifact": {
+          "file": "model.safetensors",
+          "sha256": "0d9a18b0cb6c90d1f30bf2e66153b368bd7ff0bcb45b6690e8d5ce14fa19f69b",
+          "format": "safetensors"
+        },
+        "input": {
+          "modalities": [
+            "FUNDUS"
+          ],
+          "dimensions": "3x512x512",
+          "preprocessing": "clementp-dr-source-pinned-512-v1: cv2 BGR decode; channel-0 threshold-10 autocrop (degenerate returns whole image); INTER_LINEAR longest-side to 512; centered zero-pad to 512 square; 0..1 scale; ImageNet mean [0.485,0.456,0.406] std [0.229,0.224,0.225] in channel order. Implemented by scripts/inference/dr_grade_probe.py. Residual caveat: publisher used opencv 4.9, runtime uses 5.0 (possible last-bit resize rounding differences).",
+          "input_schema": "IMAGE_ONLY"
+        },
+        "output_schema": "fundus-dr-grade-contract/1-single-logit",
+        "supported_anatomy": [
+          "retina"
+        ],
+        "supported_findings": [
+          "dr_grade_estimate"
+        ],
+        "source": "https://huggingface.co/ClementP/FundusDRGrading-efficientnet_b0 revision aa5741419b902b6f4d6607e2819a0458682e3a49; training code https://github.com/ClementPla/FundusDRGrading (MIT)",
+        "license": "MIT (checkpoint tag as published; training-data terms per upstream dataset licenses apply to any data reuse)",
+        "training_dataset": {
+          "name": "EyePACS + APTOS + DDR + IDRiD (per publisher collection page; exact manifests unavailable)",
+          "version": "as-reported-by-publisher",
+          "provenance": "https://huggingface.co/collections/ClementP/fundus-grading",
+          "population": "not documented by publisher; must not be assumed"
+        },
+        "validation_dataset": null,
+        "calibration": null,
+        "limitations": [
+          "RESEARCH status; no clinical validation and no independent external validation completed at install time",
+          "Single regression logit rounded to an integer grade; grade boundaries are uncalibrated",
+          "No calibrated confidence exists for any grade; raw logit is a ranking score only",
+          "Device compatibility is unvalidated for every device; domain validation is UNKNOWN for every study",
+          "Publisher training data (EyePACS/APTOS/DDR/IDRiD per collection) overlaps common benchmarks; validate only on non-overlapping cohorts"
+        ],
+        "intended_use": "Offline technical research only: image-level diabetic-retinopathy grade estimation as decision-support observation requiring ophthalmic review. Never a diagnosis, never a normality claim, never a probability.",
+        "forbidden_interpretation": "Not a diagnosis, referral decision, probability, or normality claim.",
+        "validation_status": "RESEARCH_ONLY"
+      },
+      "datasets": [
+        {
+          "name": "DeepDRiD regular fundus",
+          "split": "regular-fundus-training",
+          "n": 1189,
+          "patients": 299,
+          "patient_separation": "PATIENT_SEPARATED_CONFIRMED within export",
+          "independence": "development/training-distribution evidence; not external validation"
+        },
+        {
+          "name": "DeepDRiD regular fundus",
+          "split": "regular-fundus-validation",
+          "n": 400,
+          "patients": 100,
+          "patient_separation": "PATIENT_SEPARATED_CONFIRMED within export",
+          "independence": "held-out publisher split; not prospective clinical validation"
+        },
+        {
+          "name": "APTOS 2019 capped",
+          "split": "capped",
+          "n": 350,
+          "patients": null,
+          "patient_separation": "PATIENT_SEPARATION_UNVERIFIABLE",
+          "independence": "overlap-disclosed: APTOS is in publisher-reported DR training pool; comparability only"
+        }
+      ],
+      "training": {
+        "split": "regular-fundus-training",
+        "n": 1189,
+        "patient_count": 299,
+        "grade_distribution": {
+          "0": 532,
+          "1": 139,
+          "2": 232,
+          "3": 214,
+          "4": 72
+        },
+        "predicted_grade_distribution": {
+          "0": 749,
+          "1": 232,
+          "2": 176,
+          "3": 30,
+          "4": 2
+        },
+        "multiclass": {
+          "n": 1189,
+          "accuracy": 0.5046257359125316,
+          "balanced_accuracy": 0.2868215727660906,
+          "macro_f1": 0.2643753449415646,
+          "confusion_true_x_pred": {
+            "0": {
+              "0": 505,
+              "1": 21,
+              "2": 6,
+              "3": 0,
+              "4": 0
+            },
+            "1": {
+              "0": 109,
+              "1": 24,
+              "2": 6,
+              "3": 0,
+              "4": 0
+            },
+            "2": {
+              "0": 80,
+              "1": 90,
+              "2": 54,
+              "3": 8,
+              "4": 0
+            },
+            "3": {
+              "0": 42,
+              "1": 65,
+              "2": 88,
+              "3": 17,
+              "4": 2
+            },
+            "4": {
+              "0": 13,
+              "1": 32,
+              "2": 22,
+              "3": 5,
+              "4": 0
+            }
+          },
+          "per_class": {
+            "0": {
+              "support": 532,
+              "confusion": {
+                "tp": 505,
+                "fp": 244,
+                "tn": 413,
+                "fn": 27
+              },
+              "sensitivity": 0.9492481203007519,
+              "sensitivity_95ci": [
+                0.9272,
+                0.9649
+              ],
+              "specificity": 0.6286149162861492,
+              "specificity_95ci": [
+                0.591,
+                0.6647
+              ],
+              "ppv": 0.6742323097463284,
+              "npv": 0.9386363636363636,
+              "f1": 0.7884465261514442
+            },
+            "1": {
+              "support": 139,
+              "confusion": {
+                "tp": 24,
+                "fp": 208,
+                "tn": 842,
+                "fn": 115
+              },
+              "sensitivity": 0.17266187050359713,
+              "sensitivity_95ci": [
+                0.1189,
+                0.2441
+              ],
+              "specificity": 0.8019047619047619,
+              "specificity_95ci": [
+                0.7767,
+                0.8249
+              ],
+              "ppv": 0.10344827586206896,
+              "npv": 0.8798328108672936,
+              "f1": 0.1293800539083558
+            },
+            "2": {
+              "support": 232,
+              "confusion": {
+                "tp": 54,
+                "fp": 122,
+                "tn": 835,
+                "fn": 178
+              },
+              "sensitivity": 0.23275862068965517,
+              "sensitivity_95ci": [
+                0.183,
+                0.2912
+              ],
+              "specificity": 0.8725182863113897,
+              "specificity_95ci": [
+                0.8499,
+                0.8922
+              ],
+              "ppv": 0.3068181818181818,
+              "npv": 0.824284304047384,
+              "f1": 0.2647058823529412
+            },
+            "3": {
+              "support": 214,
+              "confusion": {
+                "tp": 17,
+                "fp": 13,
+                "tn": 962,
+                "fn": 197
+              },
+              "sensitivity": 0.0794392523364486,
+              "sensitivity_95ci": [
+                0.0502,
+                0.1235
+              ],
+              "specificity": 0.9866666666666667,
+              "specificity_95ci": [
+                0.9773,
+                0.9922
+              ],
+              "ppv": 0.5666666666666667,
+              "npv": 0.8300258843830889,
+              "f1": 0.13934426229508196
+            },
+            "4": {
+              "support": 72,
+              "confusion": {
+                "tp": 0,
+                "fp": 2,
+                "tn": 1115,
+                "fn": 72
+              },
+              "sensitivity": 0,
+              "sensitivity_95ci": [
+                0,
+                0.0507
+              ],
+              "specificity": 0.9982094897045658,
+              "specificity_95ci": [
+                0.9935,
+                0.9995
+              ],
+              "ppv": 0,
+              "npv": 0.9393428812131424,
+              "f1": 0
+            }
+          },
+          "quadratic_weighted_kappa": 0.4772
+        },
+        "referable": {
+          "n": 1189,
+          "confusion": {
+            "tp": 196,
+            "fp": 12,
+            "tn": 659,
+            "fn": 322
+          },
+          "sensitivity": 0.3783783783783784,
+          "sensitivity_95ci": [
+            0.3377,
+            0.4209
+          ],
+          "specificity": 0.9821162444113264,
+          "specificity_95ci": [
+            0.969,
+            0.9897
+          ],
+          "ppv": 0.9423076923076923,
+          "ppv_95ci": [
+            0.9019,
+            0.9667
+          ],
+          "npv": 0.6717635066258919,
+          "npv_95ci": [
+            0.6418,
+            0.7004
+          ],
+          "f1": 0.5399449035812672,
+          "fpr": 0.01788375558867362,
+          "fnr": 0.6216216216216216,
+          "auroc": 0.877,
+          "auprc": 0.869
+        },
+        "any_dr": {
+          "n": 1189,
+          "confusion": {
+            "tp": 413,
+            "fp": 27,
+            "tn": 505,
+            "fn": 244
+          },
+          "sensitivity": 0.6286149162861492,
+          "sensitivity_95ci": [
+            0.591,
+            0.6647
+          ],
+          "specificity": 0.9492481203007519,
+          "specificity_95ci": [
+            0.9272,
+            0.9649
+          ],
+          "ppv": 0.9386363636363636,
+          "ppv_95ci": [
+            0.9122,
+            0.9575
+          ],
+          "npv": 0.6742323097463284,
+          "npv_95ci": [
+            0.6399,
+            0.7068
+          ],
+          "f1": 0.7529626253418414,
+          "fpr": 0.05075187969924812,
+          "fnr": 0.3713850837138508,
+          "auroc": 0.8153,
+          "auprc": 0.8768
+        },
+        "patient_split": "PATIENT_SEPARATED_CONFIRMED within this export: 299 training patients, 100 validation patients, 0 overlap.",
+        "device": "NOT_RECORDED",
+        "calibration": "CALIBRATION_NOT_ESTABLISHED: dr_logit is a regression score, not a probability; no ECE/Brier claim is derived from it."
+      },
+      "validation": {
+        "split": "regular-fundus-validation",
+        "n": 400,
+        "patient_count": 100,
+        "grade_distribution": {
+          "0": 174,
+          "1": 46,
+          "2": 92,
+          "3": 68,
+          "4": 20
+        },
+        "predicted_grade_distribution": {
+          "0": 243,
+          "1": 76,
+          "2": 76,
+          "3": 5,
+          "4": 0
+        },
+        "multiclass": {
+          "n": 400,
+          "accuracy": 0.5025,
+          "balanced_accuracy": 0.28416086074609753,
+          "macro_f1": 0.26203700605009556,
+          "confusion_true_x_pred": {
+            "0": {
+              "0": 162,
+              "1": 12,
+              "2": 0,
+              "3": 0,
+              "4": 0
+            },
+            "1": {
+              "0": 39,
+              "1": 5,
+              "2": 2,
+              "3": 0,
+              "4": 0
+            },
+            "2": {
+              "0": 25,
+              "1": 34,
+              "2": 31,
+              "3": 2,
+              "4": 0
+            },
+            "3": {
+              "0": 12,
+              "1": 18,
+              "2": 35,
+              "3": 3,
+              "4": 0
+            },
+            "4": {
+              "0": 5,
+              "1": 7,
+              "2": 8,
+              "3": 0,
+              "4": 0
+            }
+          },
+          "per_class": {
+            "0": {
+              "support": 174,
+              "confusion": {
+                "tp": 162,
+                "fp": 81,
+                "tn": 145,
+                "fn": 12
+              },
+              "sensitivity": 0.9310344827586207,
+              "sensitivity_95ci": [
+                0.8833,
+                0.9601
+              ],
+              "specificity": 0.6415929203539823,
+              "specificity_95ci": [
+                0.5772,
+                0.7013
+              ],
+              "ppv": 0.6666666666666666,
+              "npv": 0.9235668789808917,
+              "f1": 0.7769784172661871
+            },
+            "1": {
+              "support": 46,
+              "confusion": {
+                "tp": 5,
+                "fp": 71,
+                "tn": 283,
+                "fn": 41
+              },
+              "sensitivity": 0.10869565217391304,
+              "sensitivity_95ci": [
+                0.0473,
+                0.2304
+              ],
+              "specificity": 0.7994350282485876,
+              "specificity_95ci": [
+                0.7546,
+                0.8378
+              ],
+              "ppv": 0.06578947368421052,
+              "npv": 0.8734567901234568,
+              "f1": 0.08196721311475409
+            },
+            "2": {
+              "support": 92,
+              "confusion": {
+                "tp": 31,
+                "fp": 45,
+                "tn": 263,
+                "fn": 61
+              },
+              "sensitivity": 0.33695652173913043,
+              "sensitivity_95ci": [
+                0.2486,
+                0.4383
+              ],
+              "specificity": 0.8538961038961039,
+              "specificity_95ci": [
+                0.8101,
+                0.889
+              ],
+              "ppv": 0.40789473684210525,
+              "npv": 0.8117283950617284,
+              "f1": 0.36904761904761907
+            },
+            "3": {
+              "support": 68,
+              "confusion": {
+                "tp": 3,
+                "fp": 2,
+                "tn": 330,
+                "fn": 65
+              },
+              "sensitivity": 0.04411764705882353,
+              "sensitivity_95ci": [
+                0.0151,
+                0.1219
+              ],
+              "specificity": 0.9939759036144579,
+              "specificity_95ci": [
+                0.9783,
+                0.9983
+              ],
+              "ppv": 0.6,
+              "npv": 0.8354430379746836,
+              "f1": 0.0821917808219178
+            },
+            "4": {
+              "support": 20,
+              "confusion": {
+                "tp": 0,
+                "fp": 0,
+                "tn": 380,
+                "fn": 20
+              },
+              "sensitivity": 0,
+              "sensitivity_95ci": [
+                0,
+                0.1611
+              ],
+              "specificity": 1,
+              "specificity_95ci": [
+                0.99,
+                1
+              ],
+              "ppv": null,
+              "npv": 0.95,
+              "f1": 0
+            }
+          },
+          "quadratic_weighted_kappa": 0.495
+        },
+        "referable": {
+          "n": 400,
+          "confusion": {
+            "tp": 79,
+            "fp": 2,
+            "tn": 218,
+            "fn": 101
+          },
+          "sensitivity": 0.4388888888888889,
+          "sensitivity_95ci": [
+            0.3684,
+            0.5119
+          ],
+          "specificity": 0.990909090909091,
+          "specificity_95ci": [
+            0.9675,
+            0.9975
+          ],
+          "ppv": 0.9753086419753086,
+          "ppv_95ci": [
+            0.9144,
+            0.9932
+          ],
+          "npv": 0.6833855799373041,
+          "npv_95ci": [
+            0.6304,
+            0.732
+          ],
+          "f1": 0.6053639846743295,
+          "fpr": 0.00909090909090909,
+          "fnr": 0.5611111111111111,
+          "auroc": 0.8845,
+          "auprc": 0.8967
+        },
+        "any_dr": {
+          "n": 400,
+          "confusion": {
+            "tp": 145,
+            "fp": 12,
+            "tn": 162,
+            "fn": 81
+          },
+          "sensitivity": 0.6415929203539823,
+          "sensitivity_95ci": [
+            0.5772,
+            0.7013
+          ],
+          "specificity": 0.9310344827586207,
+          "specificity_95ci": [
+            0.8833,
+            0.9601
+          ],
+          "ppv": 0.9235668789808917,
+          "ppv_95ci": [
+            0.8712,
+            0.9557
+          ],
+          "npv": 0.6666666666666666,
+          "npv_95ci": [
+            0.6052,
+            0.7229
+          ],
+          "f1": 0.7571801566579635,
+          "fpr": 0.06896551724137931,
+          "fnr": 0.3584070796460177,
+          "auroc": 0.8197,
+          "auprc": 0.8939
+        },
+        "patient_split": "PATIENT_SEPARATED_CONFIRMED within this export: 299 training patients, 100 validation patients, 0 overlap.",
+        "device": "NOT_RECORDED",
+        "calibration": "CALIBRATION_NOT_ESTABLISHED: dr_logit is a regression score, not a probability; no ECE/Brier claim is derived from it."
+      },
+      "aptos_recorded_metrics": {
+        "QWK": 0.5236,
+        "acc": 0.76,
+        "referable_sens": "26/75 = 0.347",
+        "referable_spec": "271/275 = 0.985",
+        "anyDR_sens": "78/100 = 0.780",
+        "anyDR_spec": "244/250 = 0.976"
+      },
+      "errors": {
+        "referable_false_negatives": 101,
+        "referable_false_positives": 2
+      }
+    },
+    {
+      "observed_at": "2026-09-08",
+      "model": {
+        "model_id": "fundus-lesions-clementp-unet-seresnext50",
+        "model_name": "ClementP fundus lesion segmentation U-Net SE-ResNeXt50 32x4d",
+        "version": "a2cfcb594e483",
+        "artifact": {
+          "file": "model.safetensors",
+          "sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+          "format": "safetensors"
+        },
+        "input": {
+          "modalities": [
+            "FUNDUS"
+          ],
+          "dimensions": "3x1024x1024",
+          "preprocessing": "clementp-source-pinned-1024-v1: RGB decode; non-black fundus-field crop at 5%-of-max threshold; bicubic longest-side to 1024; centered zero-pad to 1024 square; 0..1 scale; ImageNet mean [0.485,0.456,0.406] std [0.229,0.224,0.225]. Implemented by scripts/inference/fundus_lesion_probe.py crop_and_pad.",
+          "input_schema": "IMAGE_ONLY"
+        },
+        "output_schema": "fundus-lesion-segmentation-contract/2-original-image-geometry",
+        "supported_anatomy": [
+          "retina"
+        ],
+        "supported_findings": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "retinal_hemorrhage",
+          "microaneurysm_like_lesion"
+        ],
+        "source": "https://huggingface.co/ClementP/fundus-lesions-segmentation-unet_seresnext50_32x4d revision a2cfcb594e483d8baa17f24e1152009641cb9847",
+        "license": "MIT (model code/checkpoint tag as published; training-data terms unresolved - see candidate dossier)",
+        "training_dataset": {
+          "name": "DDR + FGADR + IDRiD + MESSIDOR + RETLES (as reported on the model card)",
+          "version": "as-reported-by-publisher",
+          "provenance": "https://huggingface.co/ClementP/fundus-lesions-segmentation-unet_seresnext50_32x4d",
+          "population": "not documented by publisher; must not be assumed"
+        },
+        "validation_dataset": null,
+        "calibration": null,
+        "limitations": [
+          "RESEARCH status; no clinical or independent validation at install time",
+          "Connected components are unfiltered argmax regions, not validated lesions",
+          "Argmax masks are not calibrated probabilities; raw_score is always null",
+          "Device compatibility is unvalidated for every device (DOMAIN_VALIDATION_UNKNOWN)",
+          "No auditable mask artifact is persisted; only regions, areas, and provenance are stored"
+        ],
+        "intended_use": "Offline technical research only: lesion-like region localization on fundus photographs as decision-support observations requiring ophthalmic review. Never a diagnosis, never a normality claim.",
+        "forbidden_interpretation": "Not a diagnosis, validated lesion overlay, or absence-of-disease claim.",
+        "validation_status": "RESEARCH_ONLY"
+      },
+      "dataset": {
+        "name": "IDRiD Segmentation Task 2 (lesion) TEST split",
+        "license": "CC-BY-4.0 (shipped LICENSE in archive)",
+        "provenance": "archive.org item idrid, A. Segmentation.zip, md5 804ca21196beecf7f3a433dc59d37256",
+        "overlap_disclosure": "IDRiD is named in the publisher-reported training sets of the evaluated checkpoint; these metrics are overlap-disclosed comparability evidence, NOT independent validation.",
+        "patient_separation": "PATIENT_SEPARATION_UNVERIFIABLE: image-level export has no patient/eye IDs.",
+        "n_images": 27,
+        "classes": {
+          "MA": "microaneurysm_like_lesion",
+          "HE": "retinal_hemorrhage",
+          "EX": "hard_exudate",
+          "SE->CWT": "cotton_wool_spot"
+        }
+      },
+      "classes": [
+        {
+          "label": "MA",
+          "pixels": {
+            "tp": 10987,
+            "fp": 15878,
+            "fn": 16457
+          },
+          "dice": 0.4046,
+          "iou": 0.2536,
+          "pixel_sensitivity": 0.40034251566826995,
+          "pixel_precision": 0.4089707798250512,
+          "detection": {
+            "tp": 27,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "sensitivity": 1
+          },
+          "aggregate_false_positive_pixels_per_image": 588.07,
+          "region_fp_burden": null,
+          "region_fp_burden_reason": "NOT_MEASURABLE: export has no per-negative-image ground-truth mask/region table and det_tn is zero."
+        },
+        {
+          "label": "HE",
+          "pixels": {
+            "tp": 194380,
+            "fp": 89809,
+            "fn": 106080
+          },
+          "dice": 0.6649,
+          "iou": 0.4981,
+          "pixel_sensitivity": 0.6469413565865673,
+          "pixel_precision": 0.6839814348901612,
+          "detection": {
+            "tp": 26,
+            "fp": 0,
+            "fn": 1,
+            "tn": 0,
+            "sensitivity": 0.9629629629629629
+          },
+          "aggregate_false_positive_pixels_per_image": 3326.26,
+          "region_fp_burden": null,
+          "region_fp_burden_reason": "NOT_MEASURABLE: export has no per-negative-image ground-truth mask/region table and det_tn is zero."
+        },
+        {
+          "label": "EX",
+          "pixels": {
+            "tp": 233081,
+            "fp": 74021,
+            "fn": 69928
+          },
+          "dice": 0.7641,
+          "iou": 0.6182,
+          "pixel_sensitivity": 0.7692213762627512,
+          "pixel_precision": 0.7589693326647172,
+          "detection": {
+            "tp": 27,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "sensitivity": 1
+          },
+          "aggregate_false_positive_pixels_per_image": 2741.52,
+          "region_fp_burden": null,
+          "region_fp_burden_reason": "NOT_MEASURABLE: export has no per-negative-image ground-truth mask/region table and det_tn is zero."
+        },
+        {
+          "label": "SE",
+          "pixels": {
+            "tp": 32614,
+            "fp": 9231,
+            "fn": 17213
+          },
+          "dice": 0.7115,
+          "iou": 0.5522,
+          "pixel_sensitivity": 0.6545447247476268,
+          "pixel_precision": 0.7794001672840244,
+          "detection": {
+            "tp": 10,
+            "fp": 0,
+            "fn": 4,
+            "tn": 0,
+            "sensitivity": 0.7142857142857143
+          },
+          "aggregate_false_positive_pixels_per_image": 341.89,
+          "region_fp_burden": null,
+          "region_fp_burden_reason": "NOT_MEASURABLE: export has no per-negative-image ground-truth mask/region table and det_tn is zero."
+        }
+      ],
+      "false_positive_burden": {
+        "mean_regions_per_negative_image": null,
+        "median_regions_per_negative_image": null,
+        "p90_regions_per_negative_image": null,
+        "p95_regions_per_negative_image": null,
+        "max_regions_per_negative_image": null,
+        "status": "NOT_MEASURABLE",
+        "reason": "No negative-image region ground truth or per-image class-level FP region table is present. Zero det_fp in this export is not a zero-FP claim."
+      },
+      "false_negative_analysis": "Per-lesion FN categories are not recoverable from the aggregate export; pixel FN and detection FN are reported per class above.",
+      "engineering_failure_analysis": {
+        "schema_version": "1.0.0",
+        "created_at": "2026-09-07",
+        "model_id": "fundus-lesions-clementp-unet-seresnext50",
+        "model_version": "a2cfcb594e483",
+        "artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+        "evaluation_status": "NOT_RUN",
+        "accuracy_status": "NOT_ESTABLISHED",
+        "calibration_status": "NOT_CALIBRATED",
+        "validation_dataset": null,
+        "patient_separated": null,
+        "metrics": {
+          "sensitivity": null,
+          "specificity": null,
+          "dice": null,
+          "iou": null,
+          "auroc": null,
+          "auprc": null,
+          "ppv": null,
+          "npv": null,
+          "ece": null,
+          "brier": null,
+          "false_positives": null,
+          "false_negatives": null
+        },
+        "blocking_reasons": [
+          "No legally cleared patient-keyed independent validation cohort is present.",
+          "Current dedicated runtime lacks torchseg, timm, and einops.",
+          "No pre-registered threshold/component rule exists.",
+          "Training-data downstream rights remain unresolved.",
+          "The user-reported abnormal failure image is not present in this workspace."
+        ],
+        "observed_engineering_cases": [
+          {
+            "case_id": "existing-example-fundus-historical-probe",
+            "phi": false,
+            "status": "POSSIBLE_FALSE_POSITIVE_CANDIDATE",
+            "observation": "Historical offline argmax produced a 16-pixel microaneurysm-like component.",
+            "classification": "MODEL_OR_THRESHOLD_OR_PREPROCESSING_UNRESOLVED",
+            "limitations": [
+              "No reference annotation is available.",
+              "The historical box was model-raster normalized and is not valid for an original-image overlay.",
+              "The current isolated runtime cannot reproduce the run."
+            ]
+          },
+          {
+            "case_id": "user-reported-obvious-abnormality-miss",
+            "phi": null,
+            "status": "UNVERIFIED_REPORTED_FALSE_NEGATIVE_CANDIDATE",
+            "observation": "The user reported a visibly abnormal fundus result that had been presented with misleading negative wording.",
+            "classification": "COVERAGE_GAP_OR_MODEL_FAILURE_UNRESOLVED",
+            "limitations": [
+              "The source image is not available in the repository or current attachment set.",
+              "No pathology label, reference standard, or applicable detector run can be verified.",
+              "No disease or lesion is inferred from the report alone."
+            ]
+          }
+        ],
+        "required_future_failure_categories": [
+          "unsupported_pathology",
+          "model_failure",
+          "threshold",
+          "preprocessing",
+          "quality_gate",
+          "ood_gate",
+          "postprocessing",
+          "localization_bug"
+        ]
+      }
+    },
+    {
+      "observed_at": "2026-09-08",
+      "model": {
+        "model_id": "oct-retinal-weights-fp32",
+        "model_name": "OCT retinal classifier (EfficientNetV2L+MHA backbone, ONNX)",
+        "version": "hf-main-2026",
+        "artifact": {
+          "file": "human_eye_fp32.onnx",
+          "sha256": "22b1fffb5a0ab88284d4c5817c581bedb1b54c09011d87c3f6472cb2c36b2b1f",
+          "format": "onnx"
+        },
+        "input": {
+          "modalities": [
+            "OCT"
+          ],
+          "dimensions": "1x224x224x3",
+          "preprocessing": "oct-edge-source-pinned-224-v1: cv2 BGR decode; BGR->RGB; INTER_LINEAR resize to 224x224; /255; ImageNet mean [0.485,0.456,0.406] std [0.229,0.224,0.225]; NHWC float32 batch of 1. Implemented by scripts/inference/oct_retinal_probe.py. Class order [CNV,DME,DRUSEN,NORMAL] from publisher edge snippet.",
+          "input_schema": "IMAGE_ONLY"
+        },
+        "output_schema": "oct-retinal-class-contract/1-argmax-logits",
+        "supported_anatomy": [
+          "retina",
+          "macula"
+        ],
+        "supported_findings": [
+          "oct_retinal_class_estimate"
+        ],
+        "source": "https://huggingface.co/animeshakr/oct-retinal-weights (edge ONNX artifact; Keras master avoided); training code https://github.com/Animesh-Kr/Human-Eye-Disease-Prediction (MIT)",
+        "license": "MIT (checkpoint tag as published)",
+        "training_dataset": {
+          "name": "Kermany et al. Cell 2018 OCT set (per publisher; exact manifests unavailable)",
+          "version": "as-reported-by-publisher",
+          "provenance": "https://huggingface.co/animeshakr/oct-retinal-weights",
+          "population": "UCSD/Shiley + China; not independently re-verified"
+        },
+        "validation_dataset": null,
+        "calibration": null,
+        "limitations": [
+          "RESEARCH status; no clinical validation; single external test distribution measured (overlap-disclosed)",
+          "Backbone argmax only; the author's XGBoost hybrid head is not executed",
+          "No calibrated confidence exists for any class; logits are ranking scores only",
+          "Single-scanner training distribution; cross-scanner behavior unvalidated",
+          "Device compatibility is unvalidated for every device; domain validation is UNKNOWN for every study"
+        ],
+        "intended_use": "Offline technical research only: SD-OCT B-scan classification into CNV/DME/DRUSEN/NORMAL as decision-support observation requiring ophthalmic review. Never a diagnosis, never a normality claim, never a probability.",
+        "forbidden_interpretation": "NORMAL is an internal classifier class, never a healthy-eye or disease-absent conclusion.",
+        "validation_status": "RESEARCH_ONLY"
+      },
+      "classes": [
+        "CNV",
+        "DME",
+        "DRUSEN",
+        "NORMAL"
+      ],
+      "internal_or_overlap_disclosed": {
+        "dataset": {
+          "name": "Kermany Cell 2018 OCT test (HF mirror zacharielegault/Kermany2017-OCT, CC-BY-4.0)",
+          "license": "CC-BY-4.0",
+          "provenance": "parquet data/test-00000-of-00001.parquet, 1000 rows, labels 0:CNV/1:DME/2:DRUSEN/3:NORMAL (250 each)",
+          "patient_separation": "PATIENT_SEPARATION_NOT_VERIFIABLE: mirror carries no patient IDs; known train/test patient-leak debate undisclosed by mirror.",
+          "overlap_disclosure": "Kermany is the publisher-reported training distribution of the evaluated checkpoint; these metrics are overlap-disclosed comparability evidence, NOT independent validation.",
+          "n": 1000
+        },
+        "metrics": {
+          "n": 1000,
+          "accuracy": 0.977,
+          "balanced_accuracy": 0.977,
+          "macro_f1": 0.9769538644447532,
+          "confusion_true_x_pred": {
+            "CNV": {
+              "CNV": 249,
+              "DME": 1,
+              "DRUSEN": 0,
+              "NORMAL": 0
+            },
+            "DME": {
+              "CNV": 0,
+              "DME": 249,
+              "DRUSEN": 0,
+              "NORMAL": 1
+            },
+            "DRUSEN": {
+              "CNV": 15,
+              "DME": 0,
+              "DRUSEN": 234,
+              "NORMAL": 1
+            },
+            "NORMAL": {
+              "CNV": 0,
+              "DME": 1,
+              "DRUSEN": 4,
+              "NORMAL": 245
+            }
+          },
+          "per_class": {
+            "CNV": {
+              "support": 250,
+              "confusion": {
+                "tp": 249,
+                "fp": 15,
+                "tn": 735,
+                "fn": 1
+              },
+              "sensitivity": 0.996,
+              "sensitivity_95ci": [
+                0.9777,
+                0.9993
+              ],
+              "specificity": 0.98,
+              "specificity_95ci": [
+                0.9673,
+                0.9878
+              ],
+              "ppv": 0.9431818181818182,
+              "npv": 0.998641304347826,
+              "f1": 0.9688715953307393
+            },
+            "DME": {
+              "support": 250,
+              "confusion": {
+                "tp": 249,
+                "fp": 2,
+                "tn": 748,
+                "fn": 1
+              },
+              "sensitivity": 0.996,
+              "sensitivity_95ci": [
+                0.9777,
+                0.9993
+              ],
+              "specificity": 0.9973333333333333,
+              "specificity_95ci": [
+                0.9903,
+                0.9993
+              ],
+              "ppv": 0.9920318725099602,
+              "npv": 0.9986648865153538,
+              "f1": 0.9940119760479041
+            },
+            "DRUSEN": {
+              "support": 250,
+              "confusion": {
+                "tp": 234,
+                "fp": 4,
+                "tn": 746,
+                "fn": 16
+              },
+              "sensitivity": 0.936,
+              "sensitivity_95ci": [
+                0.8986,
+                0.9602
+              ],
+              "specificity": 0.9946666666666667,
+              "specificity_95ci": [
+                0.9864,
+                0.9979
+              ],
+              "ppv": 0.9831932773109243,
+              "npv": 0.979002624671916,
+              "f1": 0.9590163934426229
+            },
+            "NORMAL": {
+              "support": 250,
+              "confusion": {
+                "tp": 245,
+                "fp": 2,
+                "tn": 748,
+                "fn": 5
+              },
+              "sensitivity": 0.98,
+              "sensitivity_95ci": [
+                0.954,
+                0.9914
+              ],
+              "specificity": 0.9973333333333333,
+              "specificity_95ci": [
+                0.9903,
+                0.9993
+              ],
+              "ppv": 0.9919028340080972,
+              "npv": 0.9933598937583001,
+              "f1": 0.9859154929577465
+            }
+          }
+        },
+        "calibration": {
+          "metric": "mean |softmax-confidence - correctness| = 0.55, Brier 0.41 (raw); 0.56/0.43 with artifact T=1.0504",
+          "decision": "NOT_CALIBRATED (measured rationale; temperature does not repair backbone-logit overconfidence)"
+        }
+      },
+      "independent_external": {
+        "dataset": {
+          "name": "Duke Srinivasan BOE 2014 (people.duke.edu, research-only license)",
+          "license": "Duke research/educational only, no commercialization/redistribution, cite Srinivasan et al. BOE 2014",
+          "provenance": "2014_BOE_Srinivasan.zip, 45 subjects x TIFF B-scans, 3231 scans; subject folder = ID surrogate",
+          "patient_separation": "VERIFIED subject folders (AMD1-15/DME1-15/NORMAL1-15); scan-level + subject-majority metrics.",
+          "overlap_disclosure": "No overlap with Kermany training distribution (different device/population). Independent second distribution.",
+          "n_scans": 3231,
+          "subjects": 45,
+          "device": "Spectralis SD-OCT (recorded cohort description)"
+        },
+        "approximate_mapping": "Duke dry-AMD is reported as DRUSEN-proxy; no CNV reference class exists. CNV is retained as an out-of-label prediction class so those predictions remain visible and count as errors.",
+        "metrics": {
+          "n": 3231,
+          "accuracy": 0.843701640359022,
+          "balanced_accuracy": 0.8383616231294299,
+          "macro_f1": 0.6399169451415261,
+          "confusion_true_x_pred": {
+            "NORMAL": {
+              "NORMAL": 1148,
+              "DME": 234,
+              "DRUSEN-proxy": 25,
+              "CNV": 0
+            },
+            "DME": {
+              "NORMAL": 36,
+              "DME": 1018,
+              "DRUSEN-proxy": 47,
+              "CNV": 0
+            },
+            "DRUSEN-proxy": {
+              "NORMAL": 3,
+              "DME": 48,
+              "DRUSEN-proxy": 560,
+              "CNV": 112
+            },
+            "CNV": {
+              "NORMAL": 0,
+              "DME": 0,
+              "DRUSEN-proxy": 0,
+              "CNV": 0
+            }
+          },
+          "per_class": {
+            "NORMAL": {
+              "support": 1407,
+              "confusion": {
+                "tp": 1148,
+                "fp": 39,
+                "tn": 1785,
+                "fn": 259
+              },
+              "sensitivity": 0.8159203980099502,
+              "sensitivity_95ci": [
+                0.7948,
+                0.8353
+              ],
+              "specificity": 0.9786184210526315,
+              "specificity_95ci": [
+                0.9709,
+                0.9843
+              ],
+              "ppv": 0.9671440606571188,
+              "npv": 0.8732876712328768,
+              "f1": 0.8851195065535852
+            },
+            "DME": {
+              "support": 1101,
+              "confusion": {
+                "tp": 1018,
+                "fp": 282,
+                "tn": 1848,
+                "fn": 83
+              },
+              "sensitivity": 0.924613987284287,
+              "sensitivity_95ci": [
+                0.9075,
+                0.9388
+              ],
+              "specificity": 0.8676056338028169,
+              "specificity_95ci": [
+                0.8525,
+                0.8813
+              ],
+              "ppv": 0.7830769230769231,
+              "npv": 0.9570170895908856,
+              "f1": 0.8479800083298625
+            },
+            "DRUSEN-proxy": {
+              "support": 723,
+              "confusion": {
+                "tp": 560,
+                "fp": 72,
+                "tn": 2436,
+                "fn": 163
+              },
+              "sensitivity": 0.7745504840940526,
+              "sensitivity_95ci": [
+                0.7427,
+                0.8035
+              ],
+              "specificity": 0.9712918660287081,
+              "specificity_95ci": [
+                0.964,
+                0.9771
+              ],
+              "ppv": 0.8860759493670886,
+              "npv": 0.9372835706040785,
+              "f1": 0.8265682656826568
+            },
+            "CNV": {
+              "support": 0,
+              "confusion": {
+                "tp": 0,
+                "fp": 112,
+                "tn": 3119,
+                "fn": 0
+              },
+              "sensitivity": null,
+              "sensitivity_95ci": null,
+              "specificity": 0.9653358093469514,
+              "specificity_95ci": [
+                0.9585,
+                0.9711
+              ],
+              "ppv": 0,
+              "npv": 1,
+              "f1": 0
+            }
+          }
+        },
+        "subject_majority_accuracy": "42/45 = 0.933",
+        "domain_shift": "Scan acc 0.844 vs 0.977 Kermany; NORMAL->DME overcalls (234) and dry-AMD->CNV (112) dominate errors. Reported as DOMAIN_SHIFT, not hidden."
+      },
+      "calibration_status": "CALIBRATION_NOT_ESTABLISHED: raw softmax confidence was measured descriptively in the Kermany export, but the backbone argmax path is not calibrated and temperature was not adopted.",
+      "normal_safety": "The NORMAL class is displayed only as a research classifier class; it never means NORMAL EYE, NO RETINAL DISEASE, or DISEASE ABSENT."
+    }
+  ]
+}
