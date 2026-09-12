@@ -6,7 +6,7 @@ const BASE = process.env.BASE_URL || "http://localhost:3000";
 const CHROME = process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const USERNAME = process.env.SMOKE_ADMIN_USERNAME || "smoke-admin";
 const PASSWORD = process.env.SMOKE_ADMIN_PASSWORD || "SmokeTest#Local1234";
-const ROUTES = ["/dashboard", "/patients", "/analyze", "/history", "/result", "/report", "/validation", "/clinician"];
+const ROUTES = ["/dashboard", "/patients", "/analyze", "/history", "/result", "/report", "/validation", "/validation-center", "/clinician"];
 
 function fail(message) {
   throw new Error(`Keyboard browser QA failed: ${message}`);
@@ -27,6 +27,10 @@ async function main() {
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await context.newPage();
     await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => {
+      const submit = document.querySelector("button[type='submit']");
+      return Boolean(submit && Object.keys(submit).some((key) => key.startsWith("__reactProps$")));
+    }, undefined, { timeout: 10_000 });
     await page.getByLabel("Username").fill(USERNAME);
     await page.getByLabel("Password").fill(PASSWORD);
     await page.getByLabel("Password").press("Enter");
@@ -51,9 +55,17 @@ async function main() {
 
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto(`${BASE}/dashboard`, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => document.querySelector("button[aria-label='Open navigation menu']")?.getAttribute("aria-expanded") === "false", undefined, { timeout: 10_000 });
+    await page.waitForFunction(() => {
+      const menu = document.querySelector("button[aria-label='Open navigation menu']");
+      return Boolean(menu && Object.keys(menu).some((key) => key.startsWith("__reactProps$")));
+    }, undefined, { timeout: 10_000 });
+    await page.waitForTimeout(100);
     const menu = page.getByRole("button", { name: "Open navigation menu" });
+    await menu.waitFor({ state: "visible" });
     await menu.focus();
-    await page.keyboard.press("Enter");
+    await menu.press("Enter");
+    await page.waitForFunction(() => document.querySelector("button[aria-label='Open navigation menu']")?.getAttribute("aria-expanded") === "true", undefined, { timeout: 10_000 });
     const dialog = page.getByRole("dialog", { name: "Navigation menu" });
     await dialog.waitFor({ state: "visible" });
     if ((await page.evaluate(() => document.activeElement?.getAttribute("aria-label"))) !== "Close menu") fail("drawer did not focus Close menu");

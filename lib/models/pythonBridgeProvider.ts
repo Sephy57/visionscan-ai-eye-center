@@ -45,6 +45,7 @@ import type { ModelRecord, ModelGateResult } from "./registry";
 import type { IntegrityResult } from "./integrity";
 import type { EyeModelProvider, ModelAnalysisContext, ModelAnalysisOutput, ModelCapabilities } from "./provider";
 import { CANDIDATE_MODEL_DOSSIER_MAP, type CandidateModelDossier } from "./candidateDossiers";
+import { trackChildProcess } from "../jobs/processControl";
 
 export class PythonEnvironmentNotReadyError extends Error {
   constructor(missing: string[]) {
@@ -110,6 +111,7 @@ function runCheckWith(command: string): Promise<{ code: number | null; stdout: s
     let stderr = "";
     let settled = false;
     const proc = spawn(command, [CHECK_SCRIPT], { timeout: CHECK_TIMEOUT_MS });
+    trackChildProcess(proc);
     proc.stdout.on("data", (d) => { stdout += d.toString(); });
     proc.stderr.on("data", (d) => { stderr += d.toString(); });
     proc.on("error", (err) => {

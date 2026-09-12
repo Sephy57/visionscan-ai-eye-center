@@ -29,6 +29,7 @@ import { createHash } from "crypto";
 import { PROJECT_ROOT } from "../config";
 import type { RawModelOutput } from "./outputContract";
 import { validateRawModelOutput } from "./outputContract";
+import { trackChildProcess } from "../jobs/processControl";
 
 export const SEGFORMER_MODEL_DIR = path.join(PROJECT_ROOT, "scratch", "models", "segformer-optic-disc-cup-refuge");
 export const SEGFORMER_ARTIFACT_SHA256 = "22e45131b64eb07a5d29a2e5388a7709d10696b13f48d2d0cdcf56cafa1f9ea5";
@@ -95,6 +96,7 @@ function runPython(args: string[]): Promise<{ code: number | null; stdout: strin
     const candidates = fs.existsSync(VENV_PYTHON) ? [VENV_PYTHON] : ["python3", "python"];
     const command = candidates[0];
     const proc = spawn(command, args, { timeout: INFERENCE_TIMEOUT_MS });
+    trackChildProcess(proc);
     proc.stdout.on("data", (d) => { stdout += d.toString(); });
     proc.stderr.on("data", (d) => { stderr += d.toString(); });
     proc.on("error", (err) => { if (!settled) { settled = true; resolve({ spawnError: err }); } });

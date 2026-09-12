@@ -51,6 +51,7 @@ import type { RawModelOutput } from "./outputContract";
 import type { Finding } from "../analysis/schema";
 import { assetHash } from "../assets/assetRouter";
 import { getInferenceCache, inferenceCacheKey, setInferenceCache } from "./inferenceCache";
+import { trackChildProcess } from "../jobs/processControl";
 
 const PROBE_SCRIPT = path.join(PROJECT_ROOT, "scripts", "inference", "fundus_lesion_probe.py");
 const CHECK_SCRIPT = path.join(PROJECT_ROOT, "scripts", "inference", "check_environment.py");
@@ -107,7 +108,9 @@ function spawnBounded(
       resolve({ spawnError: err instanceof Error ? err : new Error(String(err)) });
       return;
     }
+    const releaseTrackedProcess = trackChildProcess(proc);
     if (!proc.stdout || !proc.stderr) {
+      releaseTrackedProcess();
       resolve({ spawnError: new Error("Child-process stdio streams are unavailable.") });
       return;
     }

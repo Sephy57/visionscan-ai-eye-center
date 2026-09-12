@@ -10,14 +10,19 @@ process.env.VISIONSCAN_WORKER_PROCESS = "true";
 process.env.VISIONSCAN_EXTERNAL_WORKER = "true";
 
 const { runWorkerOnce } = await import("../lib/jobs/queue");
+const { terminateAllTrackedProcessTrees } = await import("../lib/jobs/processControl");
 
 const workerId = process.env.VISIONSCAN_WORKER_ID?.trim() || `external-worker-${process.pid}`;
 const once = /^(?:1|true|yes)$/i.test(process.env.VISIONSCAN_WORKER_ONCE ?? "");
 const pollMsRaw = Number(process.env.VISIONSCAN_WORKER_POLL_MS ?? "1000");
 const pollMs = Number.isFinite(pollMsRaw) ? Math.max(250, Math.min(60_000, Math.floor(pollMsRaw))) : 1000;
 let stopping = false;
+let shutdown: Promise<unknown> | null = null;
 
-const stop = () => { stopping = true; };
+const stop = () => {
+  stopping = true;
+  shutdown ??= terminateAllTrackedProcessTrees();
+};
 process.on("SIGINT", stop);
 process.on("SIGTERM", stop);
 
@@ -37,3 +42,5 @@ do {
   if (once || stopping) break;
   await delay(pollMs);
 } while (!stopping);
+
+if (shutdown) await shutdown;

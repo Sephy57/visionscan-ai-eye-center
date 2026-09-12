@@ -27,6 +27,7 @@ const NAV: Array<{ section?: string; href?: string; label?: string; icon?: IconN
   { href: "/models", label: "Models", icon: "devices" },
   { href: "/evaluations", label: "Evaluations", icon: "status" },
   { href: "/validation", label: "Validation", icon: "status" },
+  { href: "/validation-center", label: "Validation Center", icon: "status" },
   { href: "/devices", label: "Devices", icon: "devices" },
   { href: "/admin", label: "System Status", icon: "status" },
   { href: "/settings", label: "Settings", icon: "settings" },

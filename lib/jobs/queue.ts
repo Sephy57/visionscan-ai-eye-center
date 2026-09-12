@@ -16,6 +16,11 @@ import { newId } from "../storage/files";
 import { audit } from "../audit";
 import { JobCancelledError, makeJobProgress, type JobProgress, type ProgressUpdate } from "./control";
 import { checkProcessingConsent, PROCESSING_CONSENT_PURPOSES } from "../consent/policy";
+import { DEMO_MODE } from "../config";
+import { createJobDeadline, resolveOverallJobDeadlineMs, withOverallJobDeadline, JobDeadlineExceededError } from "./jobDeadline";
+import { withProcessTreeScope, terminateTrackedProcessTrees } from "./processControl";
+import { reserveJobResources, JOB_RESOURCE_REQUESTS } from "./resourceAdmission";
+import type { ModelJobReservation } from "../runtime";
 
 /**
  * Durable lifecycle states. `stale` and `retryable` are intentionally
@@ -31,6 +36,7 @@ export const DEFAULT_JOB_HEARTBEAT_MS = 30 * 1000;
 export const DEFAULT_JOB_HEARTBEAT_GRACE_MS = DEFAULT_JOB_HEARTBEAT_MS * 2;
 export const DEFAULT_JOB_RETRY_BACKOFF_MS = 1000;
 export const MAX_JOB_ATTEMPTS = 3;
+export const DEFAULT_OVERALL_JOB_DEADLINE_MS = resolveOverallJobDeadlineMs();
 
 export interface JobRecoveryOptions {
   /** Reference time used by deterministic tests and maintenance jobs. */
@@ -86,6 +92,14 @@ export interface AnalysisJob {
   heartbeat_at?: string;
   lease_expires_at?: string;
   worker_id?: string;
+  /** Overall execution budget starts at claim and is never extended by lease heartbeats. */
+  deadline_ms?: number;
+  deadline_at?: string;
+  resource_request?: { memory_bytes: number; threads: number };
+  resource_reservation_state?: "admitted" | "released" | "bypassed_demo" | "rejected";
+  resource_rejection_reason?: string;
+  termination_requested_at?: string;
+  termination_outcome?: string;
   /** Latest explicit retry idempotency key, plus a bounded replay ledger. */
   idempotency_key?: string;
   retry_idempotency_keys?: string[];
@@ -130,6 +144,7 @@ const configuredLeaseMs = boundedPositive(process.env.VISIONSCAN_JOB_LEASE_MS, D
 const configuredHeartbeatMs = boundedPositive(process.env.VISIONSCAN_JOB_HEARTBEAT_MS, Math.min(DEFAULT_JOB_HEARTBEAT_MS, Math.floor(configuredLeaseMs / 3)), 250);
 const configuredHeartbeatGraceMs = boundedPositive(process.env.VISIONSCAN_JOB_HEARTBEAT_GRACE_MS, configuredHeartbeatMs * 2, 0);
 const configuredRetryBackoffMs = boundedPositive(process.env.VISIONSCAN_JOB_RETRY_BACKOFF_MS, DEFAULT_JOB_RETRY_BACKOFF_MS, 0);
+const configuredOverallDeadlineMs = resolveOverallJobDeadlineMs();
 
 const terminalStatuses = new Set<JobStatus>(["completed", "failed", "cancelled"]);
 const workerInstanceId = process.env.VISIONSCAN_WORKER_ID?.trim() || `worker-${process.pid}-${Math.random().toString(36).slice(2, 10)}`;
@@ -229,6 +244,11 @@ function persistJob(tx: DbTransaction, id: string, job: AnalysisJob): void {
 
 function isCancelled(job: AnalysisJob): boolean {
   return Boolean(job.cancellation_requested || job.cancellation_requested_at);
+}
+
+function leaseExpiryAt(nowMs: number, leaseMs: number, deadlineAt?: string): string {
+  const deadlineMs = deadlineAt ? asTimestamp(deadlineAt, Number.POSITIVE_INFINITY) : Number.POSITIVE_INFINITY;
+  return new Date(Math.min(nowMs + leaseMs, deadlineMs)).toISOString();
 }
 
 // Cooperative cancellation: extraction checks its flag between pages.
@@ -366,6 +386,12 @@ export async function cancelJob(jobId: string, requestedBy: string): Promise<Ana
     await audit({ actor: requestedBy, action: "job.cancel", studyId: updated.study_id, resource: "document", resourceId: updated.document_id, outcome: "ok", detail: `${jobId} cancelled by ${requestedBy}` });
     return updated;
   }
+  // Cancellation is durable first; then best-effort tree termination stops a
+  // currently running local Python worker without touching another job's
+  // process tree.
+  if (updated.status === "running") {
+    void terminateTrackedProcessTrees(jobId).catch(() => undefined);
+  }
   await audit({ actor: requestedBy, action: "job.cancel", studyId: job.study_id, resource: "document", resourceId: job.document_id, outcome: "ok", detail: `${jobId} cancelled by ${requestedBy}` });
   return updated;
 }
@@ -460,6 +486,10 @@ export async function claimJob(
     }
     const attemptId = newId("attempt");
     const attempts = current.attempts + 1;
+    const deadlineMs = current.deadline_ms && Number.isSafeInteger(current.deadline_ms) && current.deadline_ms > 0
+      ? current.deadline_ms
+      : configuredOverallDeadlineMs;
+    const deadlineAt = new Date(nowMs + deadlineMs).toISOString();
     const running = durableJob(current, {
       version: (current.version ?? 0) + 1,
       claim_version: (current.claim_version ?? current.version ?? 0) + 1,
@@ -473,8 +503,18 @@ export async function claimJob(
       active_attempt_id: attemptId,
       claimed_at: nowIso,
       heartbeat_at: nowIso,
-      lease_expires_at: new Date(nowMs + leaseMs).toISOString(),
+      lease_expires_at: leaseExpiryAt(nowMs, leaseMs, deadlineAt),
       worker_id: workerId,
+      deadline_ms: deadlineMs,
+      deadline_at: deadlineAt,
+      resource_request: {
+        memory_bytes: JOB_RESOURCE_REQUESTS[current.kind].memoryBytes,
+        threads: JOB_RESOURCE_REQUESTS[current.kind].threads,
+      },
+      resource_reservation_state: undefined,
+      resource_rejection_reason: undefined,
+      termination_requested_at: undefined,
+      termination_outcome: undefined,
       retry_after_at: undefined,
       last_recovery_reason: undefined,
       progress: makeJobProgress({ stage: "preparing", percent: 2, message: "Worker claimed the job" }),
@@ -506,7 +546,7 @@ export async function heartbeatJob(
       version: (current.version ?? 0) + 1,
       claim_version: (current.claim_version ?? current.version ?? 0) + 1,
       heartbeat_at: nowIso,
-      lease_expires_at: new Date(nowMs + leaseMs).toISOString(),
+      lease_expires_at: leaseExpiryAt(nowMs, leaseMs, current.deadline_at),
     });
     persistJob(tx, jobId, next);
     return next;
@@ -733,6 +773,25 @@ function startLeaseHeartbeat(jobId: string, attemptId: string, workerId: string)
   };
 }
 
+async function updateRunningJobMetadata(
+  jobId: string,
+  attemptId: string,
+  workerId: string,
+  metadata: Partial<Pick<AnalysisJob, "resource_reservation_state" | "resource_rejection_reason" | "termination_requested_at" | "termination_outcome">>,
+): Promise<void> {
+  await dbTransaction((tx) => {
+    const raw = tx.get<AnalysisJob>("jobs", jobId);
+    const current = raw ? normalizeJob(raw) : null;
+    if (!current || current.status !== "running" || current.active_attempt_id !== attemptId || current.worker_id !== workerId) return;
+    const next = durableJob(current, {
+      ...metadata,
+      version: (current.version ?? 0) + 1,
+      claim_version: (current.claim_version ?? current.version ?? 0) + 1,
+    });
+    persistJob(tx, jobId, next);
+  });
+}
+
 /** Schedule a bounded retry without keeping the process alive solely for a
  * maintenance timer. The durable retry_after_at remains authoritative if the
  * process exits before this callback fires. */
@@ -768,6 +827,7 @@ export async function finalizeJobSuccess(jobId: string, attemptId: string, worke
       heartbeat_at: undefined,
       lease_expires_at: undefined,
       worker_id: undefined,
+      resource_reservation_state: current.resource_reservation_state === "admitted" ? "released" : current.resource_reservation_state,
       progress: makeJobProgress({ stage: "completed", percent: 100, completed_units: 1, total_units: 1, message: "Job completed" }),
     });
     persistJob(tx, jobId, next);
@@ -792,6 +852,7 @@ export async function finalizeJobCancelled(jobId: string, attemptId: string, wor
       heartbeat_at: undefined,
       lease_expires_at: undefined,
       worker_id: undefined,
+      resource_reservation_state: current.resource_reservation_state === "admitted" ? "released" : current.resource_reservation_state,
       progress: stateProgress("cancelled", current, "Cancelled without publishing a result"),
     });
     persistJob(tx, jobId, next);
@@ -815,6 +876,7 @@ export async function finalizeJobFailure(jobId: string, attemptId: string, worke
       heartbeat_at: undefined,
       lease_expires_at: undefined,
       worker_id: undefined,
+      resource_reservation_state: current.resource_reservation_state === "admitted" ? "released" : current.resource_reservation_state,
       progress: stateProgress("failed", current, "Job failed; no result was published"),
     });
     persistJob(tx, jobId, next);
@@ -831,6 +893,8 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
   const job = claim.job;
   const attemptId = claim.attemptId;
   const workerId = job.worker_id ?? requestedWorkerId;
+  let reservation: ModelJobReservation | null = null;
+  let stopHeartbeat: (() => void) | null = null;
   let consent;
   try {
     consent = await checkProcessingConsent(job.study_id, consentPurposeForJob(job.kind));
@@ -869,7 +933,26 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
     }
     return;
   }
-  const stopHeartbeat = startLeaseHeartbeat(jobId, attemptId, workerId);
+  const admission = reserveJobResources(job.kind, { demoMode: DEMO_MODE });
+  await updateRunningJobMetadata(jobId, attemptId, workerId, {
+    resource_reservation_state: admission.bypassedDemoMode ? "bypassed_demo" : admission.admitted ? "admitted" : "rejected",
+    resource_rejection_reason: admission.reason ?? undefined,
+  });
+  if (!admission.admitted) {
+    const failed = await finalizeJobFailure(jobId, attemptId, workerId, `RESOURCE_GOVERNOR_REJECTED:${admission.reason ?? "unknown"}`);
+    if (failed) {
+      await audit({
+        actor: "system",
+        action: "job.fail",
+        studyId: job.study_id,
+        outcome: "rejected",
+        detail: `${jobId}: resource governor rejected the bounded request`,
+      });
+    }
+    return;
+  }
+  reservation = admission.reservation;
+  stopHeartbeat = startLeaseHeartbeat(jobId, attemptId, workerId);
 
   const updateProgress = async (update: ProgressUpdate): Promise<void> => {
     await dbTransaction((tx) => {
@@ -884,7 +967,7 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
         claim_version: (current.claim_version ?? current.version ?? 0) + 1,
         progress: next,
         heartbeat_at: at,
-        lease_expires_at: new Date(Date.now() + configuredLeaseMs).toISOString(),
+        lease_expires_at: leaseExpiryAt(Date.now(), configuredLeaseMs, current.deadline_at),
       });
       persistJob(tx, jobId, refreshed);
     });
@@ -897,26 +980,41 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
   };
 
   try {
-    if (job.kind === "extraction") {
-      const { extractDocument } = await import("../documents/extraction/service");
-      const outcome = await extractDocument(job.document_id!, "job_worker", {
-        shouldCancel: () => isJobCancellationRequested(jobId),
-        onProgress: updateProgress,
-      });
-      if (!outcome.ok && outcome.error_code === "CANCELLED") {
-        await finalizeCancelled();
-        return;
+    await withProcessTreeScope(jobId, () => withOverallJobDeadline(async (deadline) => {
+      deadline.throwIfExpired();
+      const shouldCancel = async () => deadline.signal.aborted || await isJobCancellationRequested(jobId);
+      if (job.kind === "extraction") {
+        const { extractDocument } = await import("../documents/extraction/service");
+        const outcome = await extractDocument(job.document_id!, "job_worker", {
+          shouldCancel,
+          onProgress: updateProgress,
+        });
+        if (!outcome.ok && outcome.error_code === "CANCELLED") {
+          await finalizeCancelled();
+          return;
+        }
+        if (!outcome.ok) throw new Error(outcome.error_code ?? "EXTRACTION_FAILED");
+      } else {
+        // Lazy import avoids a circular dependency (service -> queue is fine;
+        // keeping the import here keeps the queue generic).
+        const { analyzeStudy } = await import("../studies/service");
+        await analyzeStudy(job.study_id, {
+          shouldCancel,
+          onProgress: updateProgress,
+        });
       }
-      if (!outcome.ok) throw new Error(outcome.error_code ?? "EXTRACTION_FAILED");
-    } else {
-      // Lazy import avoids a circular dependency (service -> queue is fine;
-      // keeping the import here keeps the queue generic).
-      const { analyzeStudy } = await import("../studies/service");
-      await analyzeStudy(job.study_id, {
-        shouldCancel: () => isJobCancellationRequested(jobId),
-        onProgress: updateProgress,
-      });
-    }
+      deadline.throwIfExpired();
+    }, {
+      startedAt: job.claimed_at ?? job.started_at,
+      timeoutMs: job.deadline_ms,
+      onExpired: async () => {
+        const outcomes = await terminateTrackedProcessTrees(jobId);
+        await updateRunningJobMetadata(jobId, attemptId, workerId, {
+          termination_requested_at: new Date().toISOString(),
+          termination_outcome: outcomes.map((outcome) => outcome.outcome).join(",") || "no-active-child",
+        });
+      },
+    }));
     const currentRaw = await dbGet<AnalysisJob>("jobs", jobId);
     const current = currentRaw ? normalizeJob(currentRaw) : null;
     if (!current || current.status !== "running" || current.active_attempt_id !== attemptId || current.worker_id !== workerId) return;
@@ -933,11 +1031,14 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
       await finalizeCancelled();
       return;
     }
+    const error = err instanceof JobDeadlineExceededError
+      ? `JOB_DEADLINE_EXCEEDED:${err.deadlineAt}`
+      : String(err instanceof Error ? err.message : err);
     const failed = await finalizeJobFailure(
       jobId,
       attemptId,
       workerId,
-      String(err instanceof Error ? err.message : err),
+      error,
     );
     if (!failed) return;
     cancelFlags.delete(jobId);
@@ -945,7 +1046,11 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
     // FAILURE HANDLING contract: no result is generated; the UI shows
     // ANALYSIS FAILED with Retry / Request New Scan.
   } finally {
-    stopHeartbeat();
+    stopHeartbeat?.();
+    if (reservation) {
+      const { getHostModelJobResourceGovernor } = await import("../runtime");
+      getHostModelJobResourceGovernor().release(reservation);
+    }
   }
 }
 

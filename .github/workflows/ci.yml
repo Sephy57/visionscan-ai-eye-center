@@ -56,6 +56,11 @@ jobs:
         # and worker failure semantics. Research weights stay out of hosted CI.
         run: npm exec vitest run tests/phase4-nextgen-local-intelligence.test.ts --pool=forks --maxWorkers=1 --minWorkers=1
 
+      - name: Phase 5 false-negative reduction acceptance
+        # Synthetic, de-identified, model-free acceptance plus competition,
+        # resource, deadline, process, lease, and security contracts.
+        run: npm run validation:phase5
+
       - name: Audit local model manifests
         run: npm run model:audit
 
@@ -109,6 +114,9 @@ jobs:
 
       - name: Phase 4 local intelligence safety acceptance
         run: npm exec vitest run tests/phase4-nextgen-local-intelligence.test.ts --pool=forks --maxWorkers=1 --minWorkers=1
+
+      - name: Phase 5 false-negative reduction acceptance
+        run: npm run validation:phase5
 
       - name: Audit local model manifests
         run: npm run model:audit

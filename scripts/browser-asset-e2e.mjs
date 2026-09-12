@@ -83,6 +83,10 @@ async function main() {
   let studyId;
   try {
     await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => {
+      const submit = document.querySelector("button[type='submit']");
+      return Boolean(submit && Object.keys(submit).some((key) => key.startsWith("__reactProps$")));
+    }, undefined, { timeout: 10_000 });
     await page.getByLabel("Username").fill(USERNAME);
     await page.getByLabel("Password").fill(PASSWORD);
     await page.getByRole("button", { name: "Sign in" }).click({ noWaitAfter: true });
@@ -153,7 +157,14 @@ async function main() {
     console.log(`[ok ] mixed PDF routing pages=${pages.length} OCT_ROIs=${regions.length}`);
 
     await page.goto(`${BASE}/report?study=${encodeURIComponent(studyId)}`, { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(300);
+    // The report is a client-rendered, authenticated view whose data arrives
+    // after the initial document. Wait for the actual routing evidence rather
+    // than sampling the loading shell at a fixed delay.
+    await page.waitForFunction(
+      () => /Uploaded assets|Document doc_/i.test(document.body.innerText),
+      undefined,
+      { timeout: 15_000 },
+    );
     const body = await page.locator("body").innerText();
     check(/Uploaded assets|Document doc_/i.test(body), "report omitted PDF routing");
     check(/RESEARCH MODEL ANALYSIS|RESEARCH/i.test(body), "report omitted research provenance");

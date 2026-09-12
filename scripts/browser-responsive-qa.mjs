@@ -7,7 +7,7 @@ const CHROME = process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Ap
 const USERNAME = process.env.SMOKE_ADMIN_USERNAME || "smoke-admin";
 const PASSWORD = process.env.SMOKE_ADMIN_PASSWORD || "SmokeTest#Local1234";
 const VIEWPORTS = [320, 375, 414, 768, 1024, 1280, 1440, 1920];
-const ROUTES = ["/login", "/dashboard", "/patients", "/analyze", "/history", "/result", "/report", "/clinician", "/settings", "/admin"];
+const ROUTES = ["/login", "/dashboard", "/patients", "/analyze", "/history", "/result", "/report", "/clinician", "/settings", "/admin", "/validation-center"];
 
 function fail(message) {
   throw new Error(`Responsive browser QA failed: ${message}`);
@@ -19,6 +19,10 @@ async function main() {
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await context.newPage();
     await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => {
+      const submit = document.querySelector("button[type='submit']");
+      return Boolean(submit && Object.keys(submit).some((key) => key.startsWith("__reactProps$")));
+    }, undefined, { timeout: 10_000 });
     await page.getByLabel("Username").fill(USERNAME);
     await page.getByLabel("Password").fill(PASSWORD);
     // Next client routing does not always create a traditional browser

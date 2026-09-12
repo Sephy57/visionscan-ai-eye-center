@@ -102,6 +102,7 @@ async function main() {
       ["/dashboard", /^Good (morning|afternoon|evening)\.?$/],
       ["/patients", "Patients"],
       ["/analyze", /Optional Patient Context|Upload records and scan/],
+      ["/validation-center", "Validation Center"],
       ["/result", "Result"],
       ["/report", "Report"],
     ];
