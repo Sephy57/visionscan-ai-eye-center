@@ -100,6 +100,9 @@ export default function AnalyzePage() {
   const [manufacturer, setManufacturer] = useState("");
   const [deviceModel, setDeviceModel] = useState("");
   const [scanDateTime, setScanDateTime] = useState("");
+  const [imageAnalysisConsent, setImageAnalysisConsent] = useState(false);
+  const [clinicalResearchConsent, setClinicalResearchConsent] = useState(false);
+  const [documentExtractionConsent, setDocumentExtractionConsent] = useState(false);
   const [state, setState] = useState<"idle" | "uploading" | "validating">("idle");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -215,6 +218,21 @@ export default function AnalyzePage() {
     }
   }
 
+  async function grantProcessingConsent(studyId: string, purpose: "IMAGE_MODEL_ANALYSIS" | "CLINICAL_RESEARCH_ANALYSIS" | "DOCUMENT_EXTRACTION") {
+    const response = await authFetch(`/api/studies/${encodeURIComponent(studyId)}/consent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ purpose, consentType: "explicit", subjectRef: patientRef || undefined }),
+    });
+    const payload = await response.json().catch(() => ({} as Record<string, unknown>));
+    if (!response.ok) {
+      const code = String(payload.error ?? "CONSENT_RECORD_FAILED");
+      throw new Error(code === "CONSENT_SUBJECT_MISMATCH"
+        ? "Consent could not be bound to this study identifier. Check the pseudonymous reference and try again."
+        : `Could not record ${purpose === "IMAGE_MODEL_ANALYSIS" ? "image analysis" : purpose === "CLINICAL_RESEARCH_ANALYSIS" ? "specialist research" : "document extraction"} consent (${code}).`);
+    }
+  }
+
   function toggleSymptom(type: string) {
     setDrafts((d) => d.some((x) => x.type === type) ? d.filter((x) => x.type !== type) : [...d, newDraft(type)]);
   }
@@ -242,6 +260,18 @@ export default function AnalyzePage() {
 
   async function submit() {
     if (!file) { setError("Please choose an image file (JPEG, PNG, WEBP)."); return; }
+    if (!imageAnalysisConsent) {
+      setError("Explicit IMAGE_MODEL_ANALYSIS consent is required before local processing can start.");
+      return;
+    }
+    if (!clinicalResearchConsent) {
+      setError("Explicit CLINICAL_RESEARCH_ANALYSIS consent is required before specialist evidence synthesis can start.");
+      return;
+    }
+    if (pdfFile && !documentExtractionConsent) {
+      setError("Explicit DOCUMENT_EXTRACTION consent is required when a PDF is attached.");
+      return;
+    }
     setState("uploading");
     setProgress(8);
     setError(null);
@@ -271,6 +301,13 @@ export default function AnalyzePage() {
         for (const [k, v] of Object.entries(csrfHeader())) xhr.setRequestHeader(k, v);
         xhr.send(fd);
       });
+
+      // Record purpose-specific consent after the study is server-bound, so
+      // the API can verify the canonical subject identity before any durable
+      // processing job is enqueued.
+      await grantProcessingConsent(studyId, "IMAGE_MODEL_ANALYSIS");
+      await grantProcessingConsent(studyId, "CLINICAL_RESEARCH_ANALYSIS");
+      if (pdfFile) await grantProcessingConsent(studyId, "DOCUMENT_EXTRACTION");
 
       if (drafts.length > 0) {
         setState("validating");
@@ -314,9 +351,21 @@ export default function AnalyzePage() {
   ];
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto" }}>
+    <div className="analyze-page">
+      <div className="analyze-header">
+        <div>
+          <div className="eyebrow">New analysis / Intake</div>
+          <h1>Prepare a research analysis<span className="title-period">.</span></h1>
+          <p className="analyze-lede">Upload an ophthalmic image, add optional context, and keep the review boundary visible at every step.</p>
+        </div>
+        <div className="analysis-header-status">
+          <Badge tone="demo">Research only</Badge>
+          <span><span className="dot dot-off" aria-hidden="true" /> Clinician review required</span>
+        </div>
+      </div>
+
       {/* Horizontal workflow indicator */}
-      <div className="stepper" aria-label="Workflow progress">
+      <div className="stepper analyze-stepper" aria-label="Workflow progress">
         <span className="sr-only">Step {step} of 3: {step === 1 ? "Patient context" : "Scan upload"}</span>
         <div className={`step ${step >= 1 ? (step > 1 ? "done" : "current") : ""}`} aria-current={step === 1 ? "step" : undefined}>
           <span className="step-dot">{step > 1 ? "✓" : "1"}</span>
@@ -334,9 +383,11 @@ export default function AnalyzePage() {
         </div>
       </div>
 
+      <div className="analyze-layout">
+        <div className="analyze-form">
       {step === 1 && (
-        <div>
-          <h1>Optional Patient Context</h1>
+        <section className="analyze-step-panel">
+          <h2 className="analyze-step-title">Optional Patient Context</h2>
           <p className="muted small" style={{ marginTop: 0 }}>
             Add or correct structured symptoms if you already have them. This step is optional: uploaded records are
             analyzed automatically and their symptoms are extracted for clinician review.
@@ -455,12 +506,12 @@ export default function AnalyzePage() {
             <button className="btn" onClick={() => setStep(2)}>Continue to Scan Upload →</button>
             <button className="btn ghost" onClick={() => { setDrafts([]); setStep(2); }}>Skip optional context</button>
           </div>
-        </div>
+        </section>
       )}
 
       {step === 2 && (
-        <div>
-          <h1>Upload records and scan</h1>
+        <section className="analyze-step-panel">
+          <h2 className="analyze-step-title">Upload records and scan</h2>
           <p className="muted small" style={{ marginTop: 0 }}>Upload an ophthalmic image and, optionally, a clinical record. Record extraction starts automatically after upload.</p>
 
           <div className="card" style={{ marginBottom: 14, padding: "12px 16px" }}>
@@ -492,7 +543,7 @@ export default function AnalyzePage() {
 
           {!file ? (
             <div
-              className={`dropzone${drag ? " active" : ""}`}
+              className={`dropzone upload-dropzone${drag ? " active" : ""}`}
               role="group"
               aria-label="Scan upload drop area"
               aria-describedby="scan-upload-formats"
@@ -509,13 +560,13 @@ export default function AnalyzePage() {
               </p>
             </div>
           ) : (
-            <div className="card">
+            <div className="card scan-preview-card">
               <div className="card-title"><h3>Scan preview</h3><button className="btn ghost sm" onClick={() => pick(null)}>Remove</button></div>
-              <div className="stack-mobile" style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 16, alignItems: "start" }}>
+              <div className="stack-mobile scan-preview-grid" style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 16, alignItems: "start" }}>
                 {previewUrl
                   ?
-                  <img src={previewUrl} alt="Selected scan preview" style={{ width: 150, height: 112, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)", background: "#000" }} />
-                  : <div style={{ width: 150, height: 112, borderRadius: 8, background: "#000", display: "flex", alignItems: "center", justifyContent: "center", color: "#8b95a1" }} className="tiny">DICOM detected</div>}
+                  <img className="scan-preview-image" src={previewUrl} alt="Selected scan preview" style={{ width: 150, height: 112, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)", background: "#000" }} />
+                  : <div className="scan-preview-placeholder" style={{ width: 150, height: 112, borderRadius: 8, background: "#000", display: "flex", alignItems: "center", justifyContent: "center", color: "#8b95a1" }}><span className="tiny">DICOM detected</span></div>}
                 <div className="kv" style={{ gridTemplateColumns: "90px 1fr" }}>
                   <dt>Filename</dt><dd className="small" style={{ wordBreak: "break-all" }}>{file.name}</dd>
                   <dt>Resolution</dt><dd className="small">{previewDims ? `${previewDims.w}×${previewDims.h}` : "—"}</dd>
@@ -541,7 +592,7 @@ export default function AnalyzePage() {
           />
 
           {/* S1: optional PDF test-result attachment (ingestion + security validation only). */}
-          <div className="card" style={{ marginTop: 14 }}>
+          <div className="card document-card" style={{ marginTop: 14 }}>
             <div className="card-title">
               <h3 style={{ fontSize: "0.88rem" }}>PDF test result (optional)</h3>
               {pdfFile && <button className="btn ghost sm" onClick={() => pickPdf(null)} disabled={state !== "idle"}>Remove</button>}
@@ -578,7 +629,7 @@ export default function AnalyzePage() {
           </div>
 
           {file && (
-            <div className="card" style={{ marginTop: 14 }}>
+            <div className="card scan-details-card" style={{ marginTop: 14 }}>
               <div className="grid grid-2">
                 <div className="field" style={{ margin: 0 }}>
                   <label htmlFor="scanType">Scan type</label>
@@ -615,6 +666,48 @@ export default function AnalyzePage() {
             </div>
           )}
 
+          <div className="card consent-card" style={{ marginTop: 14, padding: "14px 16px" }}>
+            <div className="stat-label" style={{ marginBottom: 8 }}>Purpose-specific consent</div>
+            <label className="consent-choice">
+              <input
+                type="checkbox"
+                checked={imageAnalysisConsent}
+                onChange={(e) => setImageAnalysisConsent(e.target.checked)}
+                disabled={state !== "idle"}
+              />
+              <span>
+                <strong>Authorize IMAGE_MODEL_ANALYSIS for this study</strong>
+                <span className="tiny muted">Required to run the local research model. This is explicit consent for this study only; results remain unvalidated and require clinician review.</span>
+              </span>
+            </label>
+            <label className="consent-choice" style={{ marginTop: 10 }}>
+              <input
+                type="checkbox"
+                checked={clinicalResearchConsent}
+                onChange={(e) => setClinicalResearchConsent(e.target.checked)}
+                disabled={state !== "idle"}
+              />
+              <span>
+                <strong>Authorize CLINICAL_RESEARCH_ANALYSIS for specialist review</strong>
+                <span className="tiny muted">Required for multi-specialist evidence synthesis and condition-gating surfaces. It produces research hand-offs only; it never confirms a diagnosis.</span>
+              </span>
+            </label>
+            {pdfFile && (
+              <label className="consent-choice" style={{ marginTop: 10 }}>
+                <input
+                  type="checkbox"
+                  checked={documentExtractionConsent}
+                  onChange={(e) => setDocumentExtractionConsent(e.target.checked)}
+                  disabled={state !== "idle"}
+                />
+                <span>
+                  <strong>Authorize DOCUMENT_EXTRACTION for the attached PDF</strong>
+                  <span className="tiny muted">Required to extract candidate facts. Extracted text remains unreviewed until a clinician verifies it.</span>
+                </span>
+              </label>
+            )}
+          </div>
+
           {error && <div className="alert danger" style={{ marginTop: 12 }}><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body"><strong>Upload failed</strong>{error}</div></div>}
 
           {(state === "uploading" || state === "validating") && (
@@ -624,15 +717,43 @@ export default function AnalyzePage() {
             </div>
           )}
 
-          <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 18, flexWrap: "wrap" }}>
+          <div className="analyze-actions" style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 18, flexWrap: "wrap" }}>
             <button className="btn" onClick={submit} disabled={!file || state !== "idle"}>
               {state === "idle" ? "Continue to Analysis →" : state === "uploading" ? "Uploading…" : "Validating…"}
             </button>
             <button className="btn ghost" onClick={() => setStep(1)} disabled={state !== "idle"}>← Back to Patient Context</button>
             <span className="tiny muted">Original preserved unchanged (SHA-256) on D:.</span>
           </div>
-        </div>
+        </section>
       )}
+
+        </div>
+
+        <aside className="analyze-rail" aria-label="Analysis guardrails and intake status">
+          <div className="card rail-card">
+            <div className="rail-kicker"><Icon name="status" size={15} /> Guardrails</div>
+            <h2>Built for a careful handoff</h2>
+            <p className="small muted">Quality and provenance stay visible through intake. Automated results still require review by a qualified eye-care professional.</p>
+            <ul className="rail-list">
+              <li><span>01</span><span>Server re-checks the image before analysis.</span></li>
+              <li><span>02</span><span>Original files are preserved unchanged.</span></li>
+              <li><span>03</span><span>Optional context remains separate from image evidence.</span></li>
+            </ul>
+          </div>
+
+          <div className="card rail-card rail-readout">
+            <div className="rail-kicker"><Icon name="reports" size={15} /> Intake readout</div>
+            <div className="readout-row"><span>Scan</span><strong>{file ? "Selected" : "Not selected"}</strong></div>
+            <div className="readout-row"><span>Image hash</span><strong>{fileHash ? "Ready" : file ? "Computing…" : "—"}</strong></div>
+            <div className="readout-row"><span>Symptoms</span><strong>{drafts.length > 0 ? `${drafts.length} selected` : "Optional"}</strong></div>
+            <div className="readout-row"><span>PDF record</span><strong>{pdfFile ? "Attached" : "Optional"}</strong></div>
+            <div className="rail-state" aria-live="polite">
+              <span className={`rail-state-dot ${state}`} aria-hidden="true" />
+              {state === "idle" ? "Ready when you are" : state === "uploading" ? "Uploading scan" : "Validating inputs"}
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import sharp from "sharp";
 import { NextRequest } from "next/server";
 import { createStudy, analyzeStudy, deleteStudy, setStudySymptoms } from "@/lib/studies/service";
 import { createSession, SESSION_COOKIE, CSRF_COOKIE } from "@/lib/auth/sessions";
+import { recordConsent } from "@/lib/consent/consent";
 import { canDisplayDiagnosis } from "@/lib/models/diagnosisGate";
 import { pickDemoScenario } from "@/lib/analysis/findings";
 import { PROJECT_ROOT } from "@/lib/config";
@@ -85,6 +86,16 @@ async function sessionCookies(role: "ADMIN" | "CLINICIAN" | "TECHNICIAN", tag: s
   return { [SESSION_COOKIE]: token, [CSRF_COOKIE]: csrf };
 }
 
+async function grantImageAnalysisConsent(studyId: string): Promise<void> {
+  await recordConsent({
+    studyId,
+    purpose: "IMAGE_MODEL_ANALYSIS",
+    consentType: "explicit",
+    status: "GRANTED",
+    actor: "test",
+  });
+}
+
 /* ------------------------------------------------------------------------ */
 /* Scenario 1 - client-supplied diagnosis_gate spoofing                     */
 /* ------------------------------------------------------------------------ */
@@ -109,6 +120,7 @@ describe("S13 scenario 1 - spoofed client-supplied diagnosis_gate is never trust
     createdStudyIds.push(study.study_id);
 
     const cookies = await sessionCookies("CLINICIAN", "spoof1");
+    await grantImageAnalysisConsent(study.study_id);
     const res = await ROUTE.POST(
       reqFor("http://localhost:3000/api/analyze", cookies, "POST", {
         study_id: study.study_id,
@@ -241,6 +253,7 @@ describe("S13 scenario 4 - a red-flag symptom still forces emergency triage end-
     createdStudyIds.push(study.study_id);
 
     const cookies = await sessionCookies("CLINICIAN", "redflag4");
+    await grantImageAnalysisConsent(study.study_id);
     const symptomsRes = await SYMPTOMS_ROUTE.POST(
       reqFor(`http://localhost:3000/api/studies/${study.study_id}/symptoms`, cookies, "POST", {
         symptoms: [symptom()],

@@ -256,7 +256,7 @@ describe("assessConditions - trust thresholds", () => {
     expect(["POSSIBLE_CONDITION", "INSUFFICIENT_EVIDENCE", "UNABLE_TO_ASSESS"]).toContain(odIop.state);
   });
 
-  it("a HUMAN_VERIFIED IOP result plus a same-eye supportive symptom can reach SUPPORTED_CONDITION", async () => {
+  it("a HUMAN_VERIFIED IOP result plus an unverified patient-reported symptom remains a possible condition only", async () => {
     const { studyId, documentId } = await studyWithPdf("IOP OD 24 mmHg documented");
     await generateResultsForDocument(documentId, "s5synth");
     const [result] = await listTestResultsForDocument(documentId);
@@ -268,7 +268,9 @@ describe("assessConditions - trust thresholds", () => {
     const ws = await buildEvidenceWorkspace(studyId);
     if ("not_found" in ws) throw new Error("study not found");
     const odIop = ws.possible_conditions.find((c) => c.condition_id === "iop_evidence_pattern" && c.laterality === "OD")!;
-    expect(odIop.state).toBe("SUPPORTED_CONDITION");
+    expect(odIop.state).toBe("POSSIBLE_CONDITION");
+    expect(odIop.independent_source_count).toBe(1);
+    expect(odIop.note).toMatch(/unverified|single source/i);
   });
 });
 

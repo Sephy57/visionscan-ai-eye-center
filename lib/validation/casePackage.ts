@@ -38,6 +38,14 @@ export interface ValidationCase {
   expected_modalities?: string[];
   expected_page_types?: string[];
   expected_models?: Array<{ model_id: string; model_version?: string }>;
+  /** Phase 2 contract fields. These are bounded descriptors only; no PHI or raw bytes. */
+  inputs?: { modality: string; asset_kinds: string[]; laterality?: ValidationLaterality };
+  expected_routing?: string[];
+  expected_specialists?: string[];
+  expected_possible_conditions?: string[];
+  forbidden_claims?: string[];
+  expected_medication_behavior?: string;
+  expected_provenance?: string[];
   expected_evidence_categories?: string[];
   expected_urgency?: "NONE" | "ROUTINE" | "SOON" | "URGENT" | "EMERGENT" | "UNKNOWN";
   known_limitations?: string[];
@@ -128,6 +136,9 @@ function safeDescription(value: unknown): boolean {
   // A bounded fixture caption, not an open clinical-note field. Reject obvious direct identifiers.
   return typeof value === "string" && value.length > 0 && value.length <= 280 && !/[\r\n]/.test(value) && !/\b(?:patient|mrn|medical record|dob)\b|@|\+?\d[\d() -]{7,}\b/i.test(value);
 }
+function safeBoundedList(value: unknown, pattern: RegExp, max: number): boolean {
+  return Array.isArray(value) && value.length <= max && value.every((item) => typeof item === "string" && item.length > 0 && item.length <= 160 && pattern.test(item));
+}
 function pathValue(record: Record<string, JsonScalar>, path: string): JsonScalar | undefined {
   let value: unknown = record;
   for (const segment of path.split(".")) { if (!isPlainRecord(value) || !(segment in value)) return undefined; value = value[segment]; }
@@ -146,12 +157,15 @@ function validateMetadata(entry: Record<string, unknown>, prefix: string, errors
   if (entry.expected_laterality !== undefined && (typeof entry.expected_laterality !== "string" || !LATERALITIES.has(entry.expected_laterality as ValidationLaterality))) errors.push(`${prefix}.expected_laterality is invalid`);
   if (entry.expected_modalities !== undefined && !labels(entry.expected_modalities)) errors.push(`${prefix}.expected_modalities must be non-empty controlled labels`);
   if (entry.expected_page_types !== undefined && !labels(entry.expected_page_types)) errors.push(`${prefix}.expected_page_types must be non-empty controlled labels`);
-  if (entry.expected_evidence_categories !== undefined && !ids(entry.expected_evidence_categories)) errors.push(`${prefix}.expected_evidence_categories must be safe ids`);
+  // Evidence categories are controlled vocabulary labels and may preserve the
+  // source system's uppercase convention (for example, IOP). They remain
+  // bounded identifier-like values; free-form prose is still rejected.
+  if (entry.expected_evidence_categories !== undefined && !safeBoundedList(entry.expected_evidence_categories, /^[A-Za-z][A-Za-z0-9._-]{2,127}$/, 64)) errors.push(`${prefix}.expected_evidence_categories must be safe ids`);
   if (entry.known_limitations !== undefined && !ids(entry.known_limitations)) errors.push(`${prefix}.known_limitations must be safe ids, not free text`);
   if (entry.expected_urgency !== undefined && (typeof entry.expected_urgency !== "string" || !URGENCY.has(entry.expected_urgency))) errors.push(`${prefix}.expected_urgency is invalid`);
   if (entry.ground_truth_scope !== undefined && (typeof entry.ground_truth_scope !== "string" || !SCOPES.has(entry.ground_truth_scope as GroundTruthScope))) errors.push(`${prefix}.ground_truth_scope is invalid`);
   if (entry.expected_models !== undefined) {
-    if (!Array.isArray(entry.expected_models) || entry.expected_models.length === 0) errors.push(`${prefix}.expected_models must be non-empty`);
+    if (!Array.isArray(entry.expected_models)) errors.push(`${prefix}.expected_models must be an array (empty explicitly means no model)`);
     else entry.expected_models.forEach((model, index) => {
       if (!isPlainRecord(model)) { errors.push(`${prefix}.expected_models[${index}] must be an object`); return; }
       for (const key of Object.keys(model)) if (key !== "model_id" && key !== "model_version") errors.push(`${prefix}.expected_models[${index}] unknown field: ${key}`);
@@ -159,6 +173,22 @@ function validateMetadata(entry: Record<string, unknown>, prefix: string, errors
       if (model.model_version !== undefined && (typeof model.model_version !== "string" || !ID.test(model.model_version))) errors.push(`${prefix}.expected_models[${index}].model_version must be a safe id`);
     });
   }
+  if (entry.inputs !== undefined) {
+    if (!isPlainRecord(entry.inputs)) errors.push(`${prefix}.inputs must be a bounded descriptor object`);
+    else {
+      const inputs = entry.inputs;
+      for (const key of Object.keys(inputs)) if (!["modality", "asset_kinds", "laterality"].includes(key)) errors.push(`${prefix}.inputs unknown field: ${key}`);
+      if (typeof inputs.modality !== "string" || !SAFE_LABEL.test(inputs.modality)) errors.push(`${prefix}.inputs.modality must be a controlled label`);
+      if (!labels(inputs.asset_kinds)) errors.push(`${prefix}.inputs.asset_kinds must be non-empty controlled labels`);
+      if (inputs.laterality !== undefined && (typeof inputs.laterality !== "string" || !LATERALITIES.has(inputs.laterality as ValidationLaterality))) errors.push(`${prefix}.inputs.laterality is invalid`);
+    }
+  }
+  if (entry.expected_routing !== undefined && !safeBoundedList(entry.expected_routing, SAFE_LABEL, 32)) errors.push(`${prefix}.expected_routing must be controlled labels`);
+  if (entry.expected_specialists !== undefined && !safeBoundedList(entry.expected_specialists, SAFE_LABEL, 16)) errors.push(`${prefix}.expected_specialists must be controlled labels`);
+  if (entry.expected_possible_conditions !== undefined && !safeBoundedList(entry.expected_possible_conditions, ID, 64)) errors.push(`${prefix}.expected_possible_conditions must be safe ids`);
+  if (entry.forbidden_claims !== undefined && !safeBoundedList(entry.forbidden_claims, /^[A-Za-z0-9 _-]+$/, 32)) errors.push(`${prefix}.forbidden_claims must be bounded literals`);
+  if (entry.expected_medication_behavior !== undefined && (typeof entry.expected_medication_behavior !== "string" || !SAFE_LABEL.test(entry.expected_medication_behavior))) errors.push(`${prefix}.expected_medication_behavior must be a controlled label`);
+  if (entry.expected_provenance !== undefined && !safeBoundedList(entry.expected_provenance, SAFE_LABEL, 32)) errors.push(`${prefix}.expected_provenance must be controlled labels`);
 }
 
 function validateContractAssertion(assertion: Record<string, unknown>, prefix: string, errors: string[]): void {
@@ -188,7 +218,7 @@ export function validateValidationCaseManifest(input: unknown): ManifestValidati
   if (Array.isArray(input.cases)) input.cases.forEach((entry, caseIndex) => {
     const prefix = `cases[${caseIndex}]`;
     if (!isPlainRecord(entry)) { errors.push(`${prefix} must be a plain object`); return; }
-    const allowedCase = new Set(["case_id", "fixture_ref", "assets", "case_version", "description", "synthetic_patient_id", "synthetic_encounter_id", "expected_laterality", "expected_modalities", "expected_page_types", "expected_models", "expected_evidence_categories", "expected_urgency", "known_limitations", "ground_truth_scope", "assertions"]);
+    const allowedCase = new Set(["case_id", "fixture_ref", "assets", "case_version", "description", "synthetic_patient_id", "synthetic_encounter_id", "expected_laterality", "expected_modalities", "expected_page_types", "expected_models", "inputs", "expected_routing", "expected_specialists", "expected_possible_conditions", "forbidden_claims", "expected_medication_behavior", "expected_provenance", "expected_evidence_categories", "expected_urgency", "known_limitations", "ground_truth_scope", "assertions"]);
     for (const key of Object.keys(entry)) if (!allowedCase.has(key)) errors.push(`${prefix} unknown field: ${key}`);
     if (typeof entry.case_id !== "string" || !SYNTHETIC_CASE_ID.test(entry.case_id)) errors.push(`${prefix}.case_id must be synthetic-*`); else if (caseIds.has(entry.case_id)) errors.push(`duplicate case_id: ${entry.case_id}`); else caseIds.add(entry.case_id);
     if (typeof entry.fixture_ref !== "string" || !SYNTHETIC_FIXTURE.test(entry.fixture_ref)) errors.push(`${prefix}.fixture_ref must be synthetic-*`);

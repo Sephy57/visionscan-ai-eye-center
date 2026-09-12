@@ -99,7 +99,7 @@ async function main() {
     // synthetic session. No study id is supplied, so result/report pages only
     // render their empty-state contract and cannot execute inference.
     const routes = [
-      ["/dashboard", /^Good (morning|afternoon|evening)$/],
+      ["/dashboard", /^Good (morning|afternoon|evening)\.?$/],
       ["/patients", "Patients"],
       ["/analyze", /Optional Patient Context|Upload records and scan/],
       ["/result", "Result"],

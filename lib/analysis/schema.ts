@@ -106,6 +106,43 @@ export interface ModelExecutionLedgerEntry {
   dependency_group_id: string;
 }
 
+export type ClaimLedgerReleaseStatus = "RESEARCH_REVIEW_ONLY" | "CLINICIAN_REVIEW_REQUIRED" | "BLOCKED_NO_EVIDENCE";
+export type ClaimCertainty = "UNKNOWN" | "LOW" | "MODERATE" | "HIGH" | "RESEARCH_SCORE_ONLY" | "RULE_DERIVED";
+
+export interface ClaimLedgerEntry {
+  claim_id: string;
+  claim_type: "OBSERVATION" | "TRIAGE_RECOMMENDATION";
+  text: string;
+  release_status: ClaimLedgerReleaseStatus;
+  evidence_refs: string[];
+  laterality: "OD" | "OS" | "OU" | "unknown";
+  provenance: {
+    study_id: string;
+    finding_id: string | null;
+    source_asset_id: string | null;
+    source_page: number | null;
+    model_id: string | null;
+    model_version: string | null;
+    model_status: string;
+  };
+  blocked_reasons: string[];
+  clinician_review_required: true;
+  /** Phase 2 traceability expansion. Optional for legacy persisted ledgers. */
+  certainty?: ClaimCertainty;
+  source_ids?: string[];
+  model_execution_ids?: string[];
+  rule_ids?: string[];
+  knowledge_source_ids?: string[];
+}
+
+export interface ClaimLedger {
+  schema_version: string;
+  entries: ClaimLedgerEntry[];
+  publication_status: "RESEARCH_REVIEW_ONLY" | "BLOCKED";
+  publication_blocked: boolean;
+  note: string;
+}
+
 export interface AnalysisResult {
   schema_version: string;
   study: StudyInfo;
@@ -125,6 +162,8 @@ export interface AnalysisResult {
   };
   /** Complete, server-derived model/input ledger for current analyses. */
   model_execution_ledger?: ModelExecutionLedgerEntry[];
+  /** Per-claim evidence/provenance ledger; no claim may publish without refs. */
+  claim_ledger?: ClaimLedger;
   quality: QualityInfo;
   segmentation: {
     implemented: boolean;
@@ -366,6 +405,39 @@ export function validateAnalysisResult(r: unknown): { valid: boolean; errors: Va
       need(row.output_contract_version === null || typeof row.output_contract_version === "string", `model_execution_ledger[${i}].output_contract_version`, "must be string or null");
       need(typeof row.validation_status === "string", `model_execution_ledger[${i}].validation_status`, "required");
       need(typeof row.dependency_group_id === "string" && row.dependency_group_id.length > 0, `model_execution_ledger[${i}].dependency_group_id`, "required");
+    }
+  }
+  if (o.claim_ledger !== undefined) {
+    const statuses = new Set(["RESEARCH_REVIEW_ONLY", "CLINICIAN_REVIEW_REQUIRED", "BLOCKED_NO_EVIDENCE"]);
+    need(typeof o.claim_ledger.schema_version === "string" && o.claim_ledger.schema_version.length > 0, "claim_ledger.schema_version", "required");
+    need(Array.isArray(o.claim_ledger.entries), "claim_ledger.entries", "must be array");
+    need(typeof o.claim_ledger.note === "string" && o.claim_ledger.note.length > 0, "claim_ledger.note", "required");
+    need(o.claim_ledger.publication_status === "RESEARCH_REVIEW_ONLY" || o.claim_ledger.publication_status === "BLOCKED", "claim_ledger.publication_status", "invalid status");
+    need(typeof o.claim_ledger.publication_blocked === "boolean", "claim_ledger.publication_blocked", "must be boolean");
+    for (const [i, entry] of (o.claim_ledger.entries ?? []).entries()) {
+      need(!!entry && typeof entry === "object", `claim_ledger.entries[${i}]`, "must be object");
+      if (!entry || typeof entry !== "object") continue;
+      need(typeof entry.claim_id === "string" && entry.claim_id.length > 0, `claim_ledger.entries[${i}].claim_id`, "required");
+      need(entry.claim_type === "OBSERVATION" || entry.claim_type === "TRIAGE_RECOMMENDATION", `claim_ledger.entries[${i}].claim_type`, "invalid type");
+      need(typeof entry.text === "string" && entry.text.length > 0, `claim_ledger.entries[${i}].text`, "required");
+      need(statuses.has(entry.release_status), `claim_ledger.entries[${i}].release_status`, "invalid status");
+      need(Array.isArray(entry.evidence_refs), `claim_ledger.entries[${i}].evidence_refs`, "must be array");
+      need((entry.evidence_refs ?? []).every((ref) => typeof ref === "string" && ref.length > 0), `claim_ledger.entries[${i}].evidence_refs`, "must contain non-empty references");
+      need(["OD", "OS", "OU", "unknown"].includes(entry.laterality), `claim_ledger.entries[${i}].laterality`, "invalid laterality");
+      need(!!entry.provenance && typeof entry.provenance.study_id === "string" && typeof entry.provenance.model_status === "string", `claim_ledger.entries[${i}].provenance`, "study/model provenance required");
+      need(Array.isArray(entry.blocked_reasons), `claim_ledger.entries[${i}].blocked_reasons`, "must be array");
+      need(entry.clinician_review_required === true, `claim_ledger.entries[${i}].clinician_review_required`, "must be true");
+      const phase2Ledger = /^claim-ledger-1\.[1-9]\d*\./.test(o.claim_ledger.schema_version);
+      if (phase2Ledger) {
+        need(typeof entry.certainty === "string" && ["UNKNOWN", "LOW", "MODERATE", "HIGH", "RESEARCH_SCORE_ONLY", "RULE_DERIVED"].includes(entry.certainty), `claim_ledger.entries[${i}].certainty`, "Phase 2 certainty is required and must be categorical");
+        for (const field of ["source_ids", "model_execution_ids", "rule_ids", "knowledge_source_ids"] as const) {
+          need(Array.isArray(entry[field]), `claim_ledger.entries[${i}].${field}`, "Phase 2 traceability list is required");
+          need((entry[field] ?? []).every((ref) => typeof ref === "string" && ref.length > 0), `claim_ledger.entries[${i}].${field}`, "traceability references must be non-empty strings");
+        }
+      }
+    }
+    if (o.claim_ledger.publication_blocked) {
+      need(o.claim_ledger.publication_status === "BLOCKED", "claim_ledger.publication_status", "blocked ledger must carry BLOCKED publication status");
     }
   }
 

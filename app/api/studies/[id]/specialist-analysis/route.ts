@@ -7,6 +7,7 @@ import type { AnalysisResult } from "@/lib/analysis/schema";
 import { dbGet } from "@/lib/storage/db";
 import { getReasoningRecordForAnalysis, persistReasoningRecord } from "@/lib/reports/reasoningRecord";
 import type { ClinicalReport } from "@/lib/reports/generator";
+import { checkProcessingConsent, consentRequiredPayload, PROCESSING_CONSENT_PURPOSES } from "@/lib/consent/policy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +28,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const scoped = await requireStudyScope(req, params.id);
   if (scoped.response) return scoped.response;
   if (!scoped.resource) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const consent = await checkProcessingConsent(params.id, PROCESSING_CONSENT_PURPOSES.clinicalResearchAnalysis);
+  if (!consent.ok) return NextResponse.json(consentRequiredPayload(consent), { status: 403 });
 
   const analysisRecord = await dbGet<{ result: AnalysisResult }>("analyses", `anl_${params.id}`);
   if (analysisRecord?.result) {

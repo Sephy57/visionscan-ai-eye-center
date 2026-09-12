@@ -37,6 +37,19 @@ export type SpecialistFailureState =
   | "DEVICE_UNSUPPORTED"
   | "NO_VALIDATED_MODEL_AVAILABLE";
 
+/** Phase 2 execution vocabulary. `NOT_EXECUTED` is an explicit safe state,
+ * never a silent empty result. */
+export type SpecialistExecutionState = "EXECUTED" | "NOT_EXECUTED" | "BLOCKED" | "FAILED";
+export type SpecialistUrgency = "NONE" | "ROUTINE" | "PROMPT" | "URGENT" | "EMERGENT" | "UNKNOWN";
+
+export interface SpecialistModelUse {
+  model_id: string;
+  model_version: string;
+  task: string;
+  status: string;
+  artifact_sha256: string | null;
+}
+
 export const SPECIALIST_FAILURE_COPY: Record<SpecialistFailureState, string> = {
   MODEL_UNAVAILABLE: "The model could not be reached or executed.",
   MODEL_TIMEOUT: "The model did not complete within the allotted time.",
@@ -80,6 +93,16 @@ export interface SpecialistAnalysisResult {
     generated_at: string;
     router_decision_summary: string;
   };
+  /** Phase 2 explicit specialist-review contract. Optional for legacy rows. */
+  execution_state?: SpecialistExecutionState;
+  models_used?: SpecialistModelUse[];
+  evidence_reviewed?: string[];
+  evidence_for?: string[];
+  evidence_against?: string[];
+  contradictions?: string[];
+  missing_evidence?: string[];
+  urgency?: SpecialistUrgency;
+  review_required?: true;
 }
 
 /**

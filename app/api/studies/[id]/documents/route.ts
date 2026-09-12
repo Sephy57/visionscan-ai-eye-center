@@ -6,6 +6,7 @@ import { MAX_DOCUMENT_BYTES } from "@/lib/documents/constants";
 import { audit } from "@/lib/audit";
 import { requireStudyScope } from "@/lib/auth/scope";
 import { enqueueExtraction } from "@/lib/jobs/queue";
+import { checkProcessingConsent, consentRequiredPayload, PROCESSING_CONSENT_PURPOSES } from "@/lib/consent/policy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,6 +32,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const scoped = await requireStudyScope(req, params.id);
   if (scoped.response) return scoped.response;
   if (!scoped.resource) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const consent = await checkProcessingConsent(params.id, PROCESSING_CONSENT_PURPOSES.documentExtraction);
+  if (!consent.ok) return NextResponse.json(consentRequiredPayload(consent), { status: 403 });
   const username = req.cookies.get("vsa_session") ? await getUsername(req) : "unknown";
 
   try {

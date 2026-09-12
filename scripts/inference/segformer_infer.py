@@ -22,6 +22,10 @@ import json
 import sys
 import time
 
+MODEL_ID = "segformer-optic-disc-cup-refuge"
+MODEL_VERSION = "1"
+ARTIFACT_SHA256 = "22e45131b64eb07a5d29a2e5388a7709d10696b13f48d2d0cdcf56cafa1f9ea5"
+
 
 def main() -> int:
     if len(sys.argv) != 3:
@@ -112,6 +116,10 @@ def main() -> int:
 
     result = {
         "inference_status": "completed",
+        "model_id": MODEL_ID,
+        "model_version": MODEL_VERSION,
+        "artifact_sha256": ARTIFACT_SHA256,
+        "preprocessing_version": "segformer-pamixsun-image-processor-v1",
         "modality": "FUNDUS",
         "laterality": "unknown",
         "findings": findings,

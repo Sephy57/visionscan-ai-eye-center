@@ -3,6 +3,7 @@ import { analyzeStudy } from "@/lib/studies/service";
 import { enqueueAnalysis } from "@/lib/jobs/queue";
 import { requireRole } from "@/lib/auth/rbac";
 import { requireStudyScope } from "@/lib/auth/scope";
+import { checkProcessingConsent, consentRequiredPayload, PROCESSING_CONSENT_PURPOSES } from "@/lib/consent/policy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +26,8 @@ export async function POST(req: NextRequest) {
     const scoped = await requireStudyScope(req, study_id);
     if (scoped.response) return scoped.response;
     if (!scoped.resource) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const consent = await checkProcessingConsent(study_id, PROCESSING_CONSENT_PURPOSES.imageModelAnalysis);
+    if (!consent.ok) return NextResponse.json(consentRequiredPayload(consent), { status: 403 });
     if (body?.async === true) {
       const job = await enqueueAnalysis(study_id);
       return NextResponse.json({ study_id, job_id: job.job_id, status: job.status });
@@ -45,6 +48,10 @@ export async function POST(req: NextRequest) {
       asset_routing: analysis.asset_routing,
     });
   } catch (err) {
-    return NextResponse.json({ error: String(err instanceof Error ? err.message : err) }, { status: 400 });
+    // Do not expose exception messages, filesystem paths, model details, or
+    // persistence internals to a caller. The persisted research result and
+    // server-side diagnostics remain the source of truth for investigation.
+    void err;
+    return NextResponse.json({ error: "ANALYSIS_FAILED", message: "Analysis could not be completed." }, { status: 500 });
   }
 }

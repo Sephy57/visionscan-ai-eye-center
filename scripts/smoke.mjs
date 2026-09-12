@@ -81,6 +81,15 @@ async function upload(file, scanType = "fundus", eye = "OD") {
   return { status: res.status, json: await res.json() };
 }
 
+async function grantConsent(studyId, purpose) {
+  const res = await af(`${BASE}/api/studies/${encodeURIComponent(studyId)}/consent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ purpose, consentType: "explicit" }),
+  });
+  if (!res.ok) throw new Error(`Could not grant ${purpose} consent for ${studyId}: ${res.status} ${await res.text()}`);
+}
+
 async function main() {
   const results = [];
   const check = (name, ok, detail = "") => {
@@ -105,6 +114,7 @@ async function main() {
   const up = await upload(clean);
   check("upload clean", up.status === 201, JSON.stringify(up.json));
   const studyId = up.json.study_id;
+  await grantConsent(studyId, "IMAGE_MODEL_ANALYSIS");
 
   // 1b. Structured symptom intake (context only; one red-flag symptom)
   const symRes = await af(`${BASE}/api/studies/${studyId}/symptoms`, {
@@ -160,6 +170,7 @@ async function main() {
 
   // 3. Quality gate rejects dark image (no findings)
   const upDark = await upload(dark);
+  await grantConsent(upDark.json.study_id, "IMAGE_MODEL_ANALYSIS");
   const anDark = await af(`${BASE}/api/analyze`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

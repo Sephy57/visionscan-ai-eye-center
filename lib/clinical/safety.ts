@@ -150,6 +150,28 @@ export function runSafetyChecks(result: AnalysisResult): { ok: boolean; checks: 
     detail: "The AI-generated result must not contain any clinician-authorship field; that is only added by the review workflow.",
   });
 
+  // 15b. Every current presentation-facing claim must have a durable evidence
+  // reference. A blocked ledger is never publishable, even if a caller tries
+  // to bypass the report generator.
+  if (result.claim_ledger) {
+    const phase2Ledger = /^claim-ledger-1\.[1-9]\d*\./.test(result.claim_ledger.schema_version);
+    checks.push({
+      rule: "claim_ledger_evidence_gate",
+      passed: result.claim_ledger.publication_blocked === false &&
+        result.claim_ledger.publication_status === "RESEARCH_REVIEW_ONLY" &&
+        result.claim_ledger.entries.every((entry) => entry.evidence_refs.length > 0) &&
+        (!phase2Ledger || result.claim_ledger.entries.every((entry) =>
+          typeof entry.certainty === "string" &&
+          Array.isArray(entry.source_ids) &&
+          Array.isArray(entry.model_execution_ids) &&
+          Array.isArray(entry.rule_ids) &&
+          Array.isArray(entry.knowledge_source_ids))),
+      detail: phase2Ledger
+        ? "Every claim must retain evidence, categorical certainty, source/model/rule/knowledge traceability before publication."
+        : "Every claim must retain evidence references before publication.",
+    });
+  }
+
   // ---- Phase 3 additions ----
 
   // 16. Symptom -> finding / symptom -> diagnosis hallucination blocking.

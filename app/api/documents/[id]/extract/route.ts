@@ -5,6 +5,7 @@ import { enqueueExtraction, AnalysisJob } from "@/lib/jobs/queue";
 import { dbAll } from "@/lib/storage/db";
 import { audit } from "@/lib/audit";
 import { requireDocumentScope } from "@/lib/auth/scope";
+import { checkProcessingConsent, consentRequiredPayload, PROCESSING_CONSENT_PURPOSES } from "@/lib/consent/policy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,6 +34,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!doc || doc.status === "DELETED" || doc.status === "REJECTED") {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
+  const consent = await checkProcessingConsent(doc.study_id, PROCESSING_CONSENT_PURPOSES.documentExtraction);
+  if (!consent.ok) return NextResponse.json(consentRequiredPayload(consent), { status: 403 });
   if (doc.status === "PROCESSING") {
     return NextResponse.json({ error: "ALREADY_PROCESSING" }, { status: 409 });
   }

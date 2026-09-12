@@ -33,6 +33,7 @@ function failureResult(
   capability_id: string | null,
   failure_state: SpecialistFailureState,
 ): SpecialistAnalysisResult {
+  const noCompatibleImageModel = failure_state === "NO_VALIDATED_MODEL_AVAILABLE";
   return {
     specialty_id: decision.specialty_id,
     capability_id,
@@ -49,6 +50,18 @@ function failureResult(
     failure_state,
     disagreements: [],
     provenance: { generated_at: new Date().toISOString(), router_decision_summary: decision.status_summary },
+    execution_state: failure_state === "NO_VALIDATED_MODEL_AVAILABLE" ? "NOT_EXECUTED" : "FAILED",
+    models_used: [],
+    evidence_reviewed: [],
+    evidence_for: [],
+    evidence_against: [],
+    contradictions: [],
+    missing_evidence: [
+      ...(noCompatibleImageModel ? ["NO COMPATIBLE IMAGE MODEL"] : []),
+      "Clinician examination and specialty-specific confirmation remain missing.",
+    ],
+    urgency: "UNKNOWN",
+    review_required: true,
   };
 }
 
@@ -134,6 +147,15 @@ async function wrapResearchAnalysisResult(
       failure_state: failureMap[research.state] ?? "MODEL_UNAVAILABLE",
       disagreements: [],
       provenance: { generated_at: research.generated_at, router_decision_summary: research.state },
+      execution_state: "FAILED",
+      models_used: [],
+      evidence_reviewed: [],
+      evidence_for: [],
+      evidence_against: [],
+      contradictions: [],
+      missing_evidence: ["A compatible specialty model did not complete.", "Clinician review remains required."],
+      urgency: research.state === "OUT_OF_DISTRIBUTION" ? "PROMPT" : "UNKNOWN",
+      review_required: true,
     };
   }
 
@@ -170,5 +192,32 @@ async function wrapResearchAnalysisResult(
     failure_state: null,
     disagreements: [],
     provenance: { generated_at: research.generated_at, router_decision_summary: "COMPLETED" },
+    execution_state: "EXECUTED",
+    models_used: [{
+      model_id: executableModelIdForResearch(research),
+      model_version: executableModelVersionForResearch(research),
+      task: "optic disc/cup anatomy segmentation",
+      status: "RESEARCH",
+      artifact_sha256: null,
+    }],
+    evidence_reviewed: workspaceEvidenceIds.length > 0 ? workspaceEvidenceIds : findingEvidence.map((e) => e.id),
+    evidence_for: (research.evidence_workspace?.evidence ?? findingEvidence)
+      .filter((e) => e.source_type === "AI_FINDING" && e.presence === "PRESENT")
+      .map((e) => e.id),
+    evidence_against: (research.evidence_workspace?.evidence ?? findingEvidence)
+      .filter((e) => e.presence === "ABSENT" || e.conflict_ids.length > 0)
+      .map((e) => e.id),
+    contradictions: research.evidence_workspace?.conflicts.map((c) => c.id) ?? [],
+    missing_evidence: ["Clinician optic-nerve examination and validated disease confirmation."],
+    urgency: "UNKNOWN",
+    review_required: true,
   };
+}
+
+function executableModelIdForResearch(research: Awaited<ReturnType<typeof runResearchAnalysis>>): string {
+  return research.findings[0]?.model_id ?? "segformer-optic-disc-cup-refuge";
+}
+
+function executableModelVersionForResearch(research: Awaited<ReturnType<typeof runResearchAnalysis>>): string {
+  return research.findings[0]?.model_version ?? "1";
 }

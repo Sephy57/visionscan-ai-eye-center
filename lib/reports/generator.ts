@@ -60,6 +60,7 @@ export interface ClinicalReport {
   document_routing?: AnalysisResult["document_routing"];
   model_execution: AnalysisResult["model_execution"];
   model_execution_ledger?: AnalysisResult["model_execution_ledger"];
+  claim_ledger?: AnalysisResult["claim_ledger"];
   oct_region_results?: AnalysisResult["oct_region_results"];
   oct_aggregation?: AnalysisResult["oct_aggregation"];
   image_quality: AnalysisResult["quality"];
@@ -391,6 +392,7 @@ export async function generateReport(
     document_routing: analysis.document_routing,
     model_execution: analysis.model_execution,
     model_execution_ledger: analysis.model_execution_ledger,
+    claim_ledger: analysis.claim_ledger,
     oct_region_results: analysis.oct_region_results,
     oct_aggregation: analysis.oct_aggregation,
     image_quality: analysis.quality,

@@ -8,6 +8,7 @@ import { pickDemoScenario, buildDemoFindings } from "./findings";
 import { runEnsemble, estimateUncertainty } from "./ensemble";
 import { runTriage, TriageOutcome } from "../clinical/triage";
 import { validateAnalysisResult, AnalysisResult, Finding, SCHEMA_VERSION, PIPELINE_VERSION, ModelExecutionLedgerEntry, ModelExecutionStatus } from "./schema";
+import { buildClaimLedger } from "../clinical/claimLedger";
 import { modelProvenance, RULESET_VERSION, COMPONENTS, getModel, gateModelUse, deviceCompatible, supportsModality } from "../models/registry";
 import { ensureRegistryHydrated } from "../models/registryPersistence";
 import { assessOod, OOD_MESSAGE } from "./ood";
@@ -1061,6 +1062,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       blocked_claims: [],
     },
   };
+
+  analysis.claim_ledger = buildClaimLedger(analysis);
 
   // ---- Stage 7: safety validator ----
   const validation = validateAnalysisResult(analysis);

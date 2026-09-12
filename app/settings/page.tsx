@@ -19,7 +19,8 @@ const CAPABILITIES: Array<[string, "IMPLEMENTED" | "DEMO" | "RESEARCH" | "NOT IM
   ["Dataset management & multi-grader labeling", "RESEARCH", "Patient-level split enforcement; locked test sets read-only"],
   ["Performance evaluation tooling", "RESEARCH", "Sens/spec/PPV/NPV/AUROC/AUPRC/calibration — research-only"],
   ["Authentication / RBAC / encryption-at-rest", "IMPLEMENTED", "Authentication/RBAC is implemented; encryption at rest is still not implemented"],
-  ["Consent capture / retention schedules", "NOT IMPLEMENTED", "Planned"],
+  ["Purpose-specific consent capture", "IMPLEMENTED", "Required before image-model analysis; bound to the study"],
+  ["Retention scheduling", "NOT IMPLEMENTED", "No automated expiry scheduler; manual governance is required"],
 ];
 
 export default function SettingsPage() {
@@ -29,7 +30,7 @@ export default function SettingsPage() {
 
       <div className="card" style={{ marginTop: 16 }}>
         <h3 style={{ marginTop: 0 }}>Where your data lives</h3>
-        <p className="small">Everything this application creates stays local on drive <code>D:\AI EYE ANALYSIS PLATFORM\data\</code>:</p>
+        <p className="small">Application data is configured to stay local on drive <code>D:\AI EYE ANALYSIS PLATFORM\data\</code>; build caches and source-controlled code remain outside this data root:</p>
         <dl className="kv">
           <dt>Original scans</dt><dd><code>data\uploads\&lt;study_id&gt;\</code> — byte-for-byte, SHA-256 recorded</dd>
           <dt>Analyses</dt><dd><code>data\processed\</code></dd>

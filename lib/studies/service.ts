@@ -303,6 +303,16 @@ export async function analyzeStudy(
     document_routing: documentRouting,
   });
 
+  // Safety validation is the publication precondition. Run it before the
+  // analysis record, processed JSON, reasoning snapshot, or report can be
+  // written so a failed result cannot leave a partially published clinical
+  // artifact behind.
+  const safety = runSafetyChecks(analysis);
+  if (!safety.ok) {
+    await audit({ actor: "system", action: "analyze", studyId, outcome: "rejected", detail: "safety checks failed before publication" });
+    throw new Error("Safety checks failed: " + JSON.stringify(safety.checks.filter((c) => !c.passed)));
+  }
+
   // This is the publication boundary: cancellation is checked after the
   // longest stage and before any analysis/report record is written.
   await jobCheckpoint(control, { stage: "persisting_analysis", percent: 78, message: "Persisting validated analysis" });
@@ -371,12 +381,6 @@ export async function analyzeStudy(
     supersedes_report_id: supersedesReportId,
   });
 
-  const safety = runSafetyChecks(analysis);
-  if (!safety.ok) {
-    await audit({ actor: "system", action: "analyze", studyId, outcome: "rejected", detail: "safety checks failed" });
-    throw new Error("Safety checks failed: " + JSON.stringify(safety.checks.filter((c) => !c.passed)));
-  }
-
   record.status = analysis.quality.acceptable ? "analyzed" : "rejected";
   record.latest_report_id = report.report_id;
   await dbPut("studies", studyId, record);
@@ -402,6 +406,20 @@ export async function getStudyBundle(studyId: string): Promise<{
   const analysisRecord = await dbGet<AnalysisRecord>("analyses", `anl_${studyId}`);
   const reportId = study?.latest_report_id ?? `rep_${studyId}`;
   const report = await dbGet<ClinicalReport>("reports", reportId);
+  if (analysisRecord?.result) {
+    const safety = runSafetyChecks(analysisRecord.result);
+    if (!safety.ok) {
+      await audit({ actor: "system", action: "study.present", studyId, outcome: "rejected", detail: "stored analysis failed safety validation on read" });
+      return { study, analysis: null, report: null };
+    }
+  }
+  if (report?.version_freeze) {
+    const integrity = verifyReportVersionFreeze(report);
+    if (!integrity.ok) {
+      await audit({ actor: "system", action: "study.present", studyId, outcome: "rejected", detail: `report integrity failed on read: ${integrity.reason}` });
+      return { study, analysis: null, report: null };
+    }
+  }
   // Unwrap: expose the structured AnalysisResult directly (never the storage
   // record). The immutable reasoning snapshot is retained in the report store
   // and is available to the specialist/evidence review paths, but is omitted

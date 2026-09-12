@@ -5,6 +5,7 @@ import sharp from "sharp";
 import { NextRequest } from "next/server";
 import { createStudy, analyzeStudy, deleteStudy, submitReview } from "@/lib/studies/service";
 import { createSession, SESSION_COOKIE, CSRF_COOKIE } from "@/lib/auth/sessions";
+import { recordConsent } from "@/lib/consent/consent";
 import { PROJECT_ROOT } from "@/lib/config";
 import type { DeviceMetadata } from "@/lib/devices/adapter";
 
@@ -68,6 +69,16 @@ function reqFor(url: string, cookies: Record<string, string> = {}, method = "GET
 async function sessionCookies(role: "ADMIN" | "CLINICIAN" | "TECHNICIAN" | "REVIEWER", tag: string) {
   const { token, csrf } = await createSession({ user_id: `sf_${tag}`, username: `sf_${tag}`, role });
   return { [SESSION_COOKIE]: token, [CSRF_COOKIE]: csrf };
+}
+
+async function grantImageAnalysisConsent(studyId: string): Promise<void> {
+  await recordConsent({
+    studyId,
+    purpose: "IMAGE_MODEL_ANALYSIS",
+    consentType: "explicit",
+    status: "GRANTED",
+    actor: "test",
+  });
 }
 
 /* ------------------------------------------------------------------------ */
@@ -163,6 +174,7 @@ describe("S-FINAL scenario 2 - client-supplied validation/confidence/treatment/m
     createdStudyIds.push(study.study_id);
 
     const cookies = await sessionCookies("CLINICIAN", "payload2");
+    await grantImageAnalysisConsent(study.study_id);
     const res = await ANALYZE_ROUTE.POST(
       reqFor("http://localhost:3000/api/analyze", cookies, "POST", {
         study_id: study.study_id,
@@ -358,6 +370,7 @@ describe("S-FINAL scenario 4 - demo/synthetic results are always labeled through
     const study = await createStudy("sf-demo-api.png", "image/png", bytes, DECLARED);
     createdStudyIds.push(study.study_id);
     const cookies = await sessionCookies("CLINICIAN", "demo4");
+    await grantImageAnalysisConsent(study.study_id);
     const res = await ANALYZE_ROUTE.POST(
       reqFor("http://localhost:3000/api/analyze", cookies, "POST", { study_id: study.study_id })
     );

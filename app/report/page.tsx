@@ -15,6 +15,7 @@ interface Report {
   document_routing?: Array<{ document_id: string; document_modality: string; pages: Array<{ page: number; content_type: string; modality: string; laterality: string; classifier_method: string; verification_state: string; source_page_hash?: string }>; measurements: Array<{ key: string; value_raw: string; value_normalized: number | null; unit: string | null; laterality: string; page: number; verification_status: string }>; image_regions: Array<{ region_id: string; page: number; content_type: string; laterality: string; bbox: { x: number; y: number; w: number; h: number }; roi_hash: string; source_page_hash: string; verification_status: string }> }>;
   model_execution?: { models_attempted: string[]; models_executed: string[]; models_failed: string[]; models_skipped: Array<{ model_id: string; reason: string }>; artifact_hashes: Record<string, string | null>; artifact_verification?: Record<string, string>; model_versions: Record<string, string>; runtime_status: string };
   model_execution_ledger?: Array<{ model_id: string; model_version: string; task: string; artifact_hash: string | null; input_asset_id: string; input_roi_id: string | null; laterality: string; eligibility: string; execution_status: string; skip_reason: string | null; quality_status: string; domain_status: string; runtime_ms: number; output_contract_version: string | null; validation_status: string; dependency_group_id: string }>;
+  claim_ledger?: { schema_version: string; entries: Array<{ claim_id: string; claim_type: string; text: string; release_status: string; evidence_refs: string[]; laterality: string; certainty?: string; source_ids?: string[]; model_execution_ids?: string[]; rule_ids?: string[]; knowledge_source_ids?: string[]; provenance: { model_id: string | null; model_version: string | null; model_status: string }; blocked_reasons: string[]; clinician_review_required: true }>; publication_status: string; publication_blocked: boolean; note: string };
   oct_region_results?: Array<{ asset_id: string; document_id: string; page: number; laterality: string; source_page_hash: string; roi_hash: string; content_type: string; status: string; note?: string }>;
   oct_aggregation?: string;
   study: { modality: string; eye: string; source: string; captured_at?: string | null; metadata_provenance: string };
@@ -100,7 +101,7 @@ function ReportInner() {
       .catch(() => { /* evidence is additive; report remains usable */ });
   }, [study]);
 
-  if (err) return <div className="alert danger"><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body"><strong>Report unavailable</strong>{err}</div></div>;
+  if (err) return <div className="alert danger" role="alert"><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body"><strong>Report unavailable</strong>{err}</div></div>;
   if (!report) return <div style={{ display: "flex", justifyContent: "center", padding: 60 }}><div className="spinner" /></div>;
 
   const qp = presentQuality({ quality_status: report.image_quality.status, detected_artifacts: report.image_quality.artifacts });
@@ -117,7 +118,7 @@ function ReportInner() {
     <div style={{ maxWidth: 860, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }} className="no-print">
         <div>
-          <div className="tiny" style={{ color: "var(--text-3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Clinical screening report</div>
+          <div className="tiny" style={{ color: "var(--text-3)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Research analysis report</div>
           <h1 style={{ marginBottom: 0 }}>Report</h1>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -226,6 +227,16 @@ function ReportInner() {
           <p className="tiny muted">Server-derived rows retain asset/ROI lineage, gate state, runtime, and dependency groups. This is an execution record, not a clinical conclusion.</p>
           <div className="table-wrap" tabIndex={0}><table className="table"><thead><tr><th>Task / model</th><th>Asset / ROI</th><th>Eye</th><th>Eligibility</th><th>Status</th><th>Quality / domain</th><th>Runtime</th></tr></thead><tbody>
             {report.model_execution_ledger.map((row, i) => <tr key={`${row.model_id}-${row.input_asset_id}-${i}`}><td><strong>{row.task.replaceAll("_", " ")}</strong><div className="tiny muted">{row.model_id} v{row.model_version}</div></td><td className="tiny">{row.input_asset_id.slice(0, 16)}…{row.input_roi_id ? <div>ROI {row.input_roi_id.slice(0, 12)}…</div> : null}</td><td>{row.laterality}</td><td>{row.eligibility}</td><td>{row.execution_status}{row.skip_reason ? <div className="tiny muted">{row.skip_reason}</div> : null}</td><td className="tiny">{row.quality_status} / {row.domain_status}</td><td>{row.runtime_ms} ms</td></tr>)}
+          </tbody></table></div>
+        </div>
+      )}
+
+      {report.claim_ledger && (
+        <div className="card">
+          <div className="card-title"><h2 style={{ marginTop: 0 }}>Claim ledger</h2><Badge tone={report.claim_ledger.publication_blocked ? "bad" : "info"}>{report.claim_ledger.publication_status}</Badge></div>
+          <p className="tiny muted">Each presentation-facing observation or triage recommendation retains evidence references, laterality, model provenance, and an explicit clinician-review state. This ledger never upgrades research output to a diagnosis.</p>
+          <div className="table-wrap" tabIndex={0}><table className="table"><thead><tr><th>Claim</th><th>Scope</th><th>Certainty</th><th>Release state</th><th>Evidence / traceability</th><th>Provenance</th></tr></thead><tbody>
+            {report.claim_ledger.entries.map((entry) => <tr key={entry.claim_id}><td><strong>{entry.claim_type.replaceAll("_", " ")}</strong><div className="tiny muted">{entry.text}</div></td><td>{entry.laterality}</td><td>{entry.certainty ?? "LEGACY / UNSET"}</td><td>{entry.release_status}{entry.blocked_reasons.length > 0 ? <div className="tiny muted">{entry.blocked_reasons.join(", ")}</div> : null}</td><td className="tiny"><div>Evidence: {entry.evidence_refs.join(", ") || "none"}</div><div>Sources: {entry.source_ids?.join(", ") || "none"}</div><div>Models: {entry.model_execution_ids?.join(", ") || "none"}</div><div>Rules: {entry.rule_ids?.join(", ") || "none"}</div><div>Knowledge: {entry.knowledge_source_ids?.join(", ") || "none"}</div></td><td className="tiny">{entry.provenance.model_id ?? entry.provenance.model_status}{entry.provenance.model_version ? ` v${entry.provenance.model_version}` : ""}</td></tr>)}
           </tbody></table></div>
         </div>
       )}

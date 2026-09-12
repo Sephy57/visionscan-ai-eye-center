@@ -13,10 +13,11 @@ import { AuthedRequest, requireSession } from "./rbac";
  * helpers after their role check and before reading bytes or clinical data.
  *
  * Existing local-development records created before scoped ownership was
- * introduced may have no patient, tenant, or owner metadata.  Those records
- * remain readable to an already role-authorized user for development
- * compatibility.  Any patient-bound or tenant-bound record is fail-closed:
- * it requires an owner match, an active access grant, or ADMIN access.
+ * introduced may have no patient, tenant, or owner metadata.  That legacy
+ * compatibility path is restricted to isolated tests or an explicit,
+ * non-production opt-in. Any patient-bound or tenant-bound record is
+ * fail-closed: it requires an owner match, an active access grant, or ADMIN
+ * access.
  */
 
 export interface ScopedPrincipal extends AuthedRequest {
@@ -71,6 +72,11 @@ function normalizeTenant(value: string | null | undefined): string | null {
 
 function isActiveGrant(grant: PatientAccessGrant): boolean {
   return !grant.revoked_at;
+}
+
+function allowLegacyUnscoped(): boolean {
+  if (process.env.VISIONSCAN_TEST_ISOLATED === "1") return true;
+  return process.env.VISIONSCAN_ALLOW_LEGACY_UNSCOPED === "true" && process.env.NODE_ENV !== "production";
 }
 
 /**
@@ -215,11 +221,11 @@ export async function hasPatientScope(user: ScopedPrincipal, resource: PatientSc
   }
 
   // Records with no patient/tenant/owner are pre-scope local development
-  // records.  Keep this narrow compatibility path so existing synthetic
-  // tests and local development fixtures remain usable; all patient-bound
-  // records above are denied by default.
+  // records. Keep this narrow compatibility path only for isolated tests or
+  // an explicit non-production opt-in; all patient-bound records above are
+  // denied by default.
   const isLegacyUnscoped = !tenantId && !ownerUserId && !ownerUsername && !resourceRef && !patient?.patient_id;
-  return isLegacyUnscoped;
+  return isLegacyUnscoped && allowLegacyUnscoped();
 }
 
 export interface ScopeResult<T> {

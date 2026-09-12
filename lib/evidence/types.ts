@@ -164,6 +164,21 @@ export type ConditionAssessmentState =
   | "CONFLICTING_EVIDENCE"
   | "UNABLE_TO_ASSESS";
 
+/**
+ * Phase 2 review vocabulary.  This is intentionally separate from the
+ * legacy `state` field above: persisted clients still consume the original
+ * five-state enum, while new report/UI consumers can use the more explicit
+ * evidence language without turning a pattern into a diagnosis.
+ */
+export type ConditionEvidenceState =
+  | "STRONGLY_SUPPORTED_BY_AVAILABLE_EVIDENCE"
+  | "SUPPORTED_BY_AVAILABLE_EVIDENCE"
+  | "POSSIBLE"
+  | "WEAKLY_SUPPORTED"
+  | "INSUFFICIENT_EVIDENCE"
+  | "CONFLICTING_EVIDENCE"
+  | "CONTRADICTED";
+
 export interface ConditionAssessment {
   condition_id: string;
   canonical_name: string;
@@ -185,6 +200,8 @@ export interface ConditionAssessment {
   note: string;
   /** Structured differential fields; optional for legacy persisted workspaces. */
   assessment_state?: string;
+  /** Phase 2 evidence-state alias; never a clinical diagnosis. */
+  condition_state?: ConditionEvidenceState;
   independent_source_count?: number;
   dependency_groups?: string[];
   model_support?: string[];

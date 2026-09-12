@@ -1,5 +1,6 @@
 import { SYMPTOM_MAP, SymptomTypeDef, DurationBand, Onset, Laterality, Progression, Frequency } from "../../clinical/symptoms";
 import type { PageExtractionMethod } from "./types";
+import { classifyDocumentTextSafety, isInstructionLikeDocumentText, type DocumentTextSafety } from "./promptSafety";
 
 /**
  * Automatic clinical extraction (eye-center workspace).
@@ -230,6 +231,8 @@ export interface RecordExtraction {
   chief_complaint?: ExtractedChiefComplaint;
   entities: ExtractedClinicalEntity[];
   counts: { pages_scanned: number; sentences_scanned: number };
+  /** Untrusted-document prompt-injection classification; never a clinical fact. */
+  document_text_safety?: DocumentTextSafety & { ignored_sentence_count: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -475,7 +478,7 @@ function extractLaterality(sentence: string): Laterality | undefined {
 /** Resolve eye tokens to the matched phrase, never to the whole sentence.
  * If both eyes occur in the same local clause, return unknown rather than
  * silently assigning the first eye to every symptom. */
-function extractLateralityForSpan(sentence: string, matchIndex: number, matchLength: number): Laterality | undefined {
+function extractLateralityForSpan(sentence: string, matchIndex: number, matchLength: number, explicitUnknown = false): Laterality | undefined {
   const phrase = sentence.slice(matchIndex, matchIndex + matchLength);
   if (/\b(bilateral|both eyes|both OU|OU\b|both eye)/i.test(phrase)) return "both";
   const separatorsBefore = [sentence.lastIndexOf(".", matchIndex), sentence.lastIndexOf(";", matchIndex), sentence.lastIndexOf("\n", matchIndex), ...[...sentence.slice(0, matchIndex).matchAll(/\b(?:and|or|but|with)\b/gi)].map((m) => m.index ?? -1)];
@@ -484,7 +487,7 @@ function extractLateralityForSpan(sentence: string, matchIndex: number, matchLen
   const rightBound = rightCandidates.length ? Math.min(...rightCandidates) : sentence.length;
   const clause = sentence.slice(leftBound, rightBound);
   const eyeMatches = [...clause.matchAll(/\b(OD|OS|OU|right(?:\s+eye)?|left(?:\s+eye)?|both\s+eyes?)\b/gi)].map((m) => ({ token: m[1].toUpperCase(), index: (m.index ?? 0) + leftBound }));
-  if (!eyeMatches.length) return undefined;
+  if (!eyeMatches.length) return explicitUnknown ? "unknown" : undefined;
   const nearby = eyeMatches.filter((e) => Math.abs(e.index - matchIndex) <= 60);
   const candidates = nearby.length ? nearby : eyeMatches;
   const ranked = candidates
@@ -587,7 +590,7 @@ function nextItemId(): string {
  */
 export function extractClinicalFromPages(
   pages: Array<{ page: number; text: string; method?: PageExtractionMethod; confidence?: number }>,
-  context: { document_id: string; study_id: string; patient_ref?: string }
+  context: { document_id: string; study_id: string; patient_ref?: string; laterality_policy?: "OMIT_UNSTATED" | "EXPLICIT_UNKNOWN" }
 ): RecordExtraction {
   const base: RecordExtraction = {
     document_id: context.document_id,
@@ -609,7 +612,15 @@ export function extractClinicalFromPages(
     follow_up_candidates: [],
     entities: [],
     counts: { pages_scanned: 0, sentences_scanned: 0 },
+    document_text_safety: {
+      classification: "NO_INSTRUCTION_SIGNAL",
+      matched_patterns: [],
+      safe_for_structured_extraction: true,
+      note: "No document text was classified yet.",
+      ignored_sentence_count: 0,
+    },
   };
+  const lateralityFor = (sentence: string, matchIndex: number, matchLength: number) => extractLateralityForSpan(sentence, matchIndex, matchLength, context.laterality_policy === "EXPLICIT_UNKNOWN");
 
   try {
     const withText = pages.filter((p) => typeof p.text === "string" && p.text.trim().length > 0);
@@ -620,9 +631,18 @@ export function extractClinicalFromPages(
     }
     const sentences = splitSentences(withText);
     base.counts.sentences_scanned = sentences.length;
+    const documentSafety = classifyDocumentTextSafety(withText.map((p) => p.text).join("\n"));
+    base.document_text_safety = { ...documentSafety, ignored_sentence_count: 0 };
     if (pages.some((p) => p.method === "ocr_failed" || p.method === "empty")) base.status = "PARTIAL";
 
     for (const sentence of sentences) {
+      // PDF/OCR content is data, never an instruction channel. Skip only the
+      // instruction-like sentence so surrounding clinical sentences can still
+      // be retained with their original page provenance.
+      if (isInstructionLikeDocumentText(sentence.text)) {
+        base.document_text_safety.ignored_sentence_count += 1;
+        continue;
+      }
       // --- explicitly labelled chief complaint --------------------------
       // Keep this as its own field. It is context, not a symptom assertion,
       // and it is never promoted into the image-analysis input.
@@ -658,14 +678,14 @@ export function extractClinicalFromPages(
             if (!duplicate) {
               base.family_history_candidates.push({
                 item_id: nextItemId(), kind: "FAMILY_HISTORY", value_raw: clip(value), raw_text: clip(sentence.text),
-                page_index: sentence.page, page: sentence.page, laterality: extractLateralityForSpan(sentence.text, familyIndex, family[1].length),
+                page_index: sentence.page, page: sentence.page, laterality: lateralityFor(sentence.text, familyIndex, family[1].length),
                 date_raw: SOURCE_DATE_PATTERN.exec(sentence.text)?.[1], assertion: familyAssertion,
                 source_section: sentence.source_section, extraction_method: sentence.extraction_method,
                 source: "DOCUMENT_EXTRACTED", verification: "UNREVIEWED",
               });
             }
           } else if (base.explicit_negations.length < MAX_ITEMS_PER_CATEGORY && /\b(?:negative|no|none|without|denies)\b/i.test(value)) {
-            base.explicit_negations.push({ item_id: nextItemId(), kind: "HISTORY", type: value.replace(/^(?:negative\s+for|no|none)\s*/i, "").trim() || undefined, raw_text: clip(sentence.text), page_index: sentence.page, page: sentence.page, laterality: extractLateralityForSpan(sentence.text, familyIndex, family[1].length), source_section: "FAMILY_HISTORY", extraction_method: sentence.extraction_method, assertion: "ABSENT", verification: "UNREVIEWED" });
+            base.explicit_negations.push({ item_id: nextItemId(), kind: "HISTORY", type: value.replace(/^(?:negative\s+for|no|none)\s*/i, "").trim() || undefined, raw_text: clip(sentence.text), page_index: sentence.page, page: sentence.page, laterality: lateralityFor(sentence.text, familyIndex, family[1].length), source_section: "FAMILY_HISTORY", extraction_method: sentence.extraction_method, assertion: "ABSENT", verification: "UNREVIEWED" });
           }
         }
       }
@@ -677,7 +697,7 @@ export function extractClinicalFromPages(
           if (!duplicate) {
             base.exam_findings.push({
               item_id: nextItemId(), kind: "EXAM_FINDING", value_raw: clip(value), raw_text: clip(sentence.text),
-              page_index: sentence.page, page: sentence.page, laterality: extractLateralityForSpan(sentence.text, exam.index ?? 0, exam[1].length),
+              page_index: sentence.page, page: sentence.page, laterality: lateralityFor(sentence.text, exam.index ?? 0, exam[1].length),
               date_raw: SOURCE_DATE_PATTERN.exec(sentence.text)?.[1], assertion: inferAssertion(sentence.text, exam.index ?? 0, exam[1].length),
               source_section: sentence.source_section, extraction_method: sentence.extraction_method,
               source: "DOCUMENT_EXTRACTED", verification: "UNREVIEWED",
@@ -698,14 +718,14 @@ export function extractClinicalFromPages(
             if (!duplicate && !isNegated(sentence.text, match.index ?? 0)) {
               base.ocular_history_candidates.push({
                 item_id: nextItemId(), kind, value_raw: clip(value), raw_text: clip(sentence.text),
-                page_index: sentence.page, page: sentence.page, laterality: extractLateralityForSpan(sentence.text, match.index ?? 0, match[1].length),
+                page_index: sentence.page, page: sentence.page, laterality: lateralityFor(sentence.text, match.index ?? 0, match[1].length),
                 date_raw: SOURCE_DATE_PATTERN.exec(sentence.text)?.[1], assertion: inferAssertion(sentence.text, match.index ?? 0, match[1].length),
                 source_section: sentence.source_section, extraction_method: sentence.extraction_method,
                 source: "DOCUMENT_EXTRACTED", verification: "UNREVIEWED",
               });
             }
             else if (!duplicate && base.explicit_negations.length < MAX_ITEMS_PER_CATEGORY) {
-              base.explicit_negations.push({ item_id: nextItemId(), kind: "HISTORY", raw_text: clip(sentence.text), page_index: sentence.page, page: sentence.page, laterality: extractLateralityForSpan(sentence.text, match.index ?? 0, match[1].length), source_section: sentence.source_section, extraction_method: sentence.extraction_method, assertion: "ABSENT", verification: "UNREVIEWED" });
+              base.explicit_negations.push({ item_id: nextItemId(), kind: "HISTORY", raw_text: clip(sentence.text), page_index: sentence.page, page: sentence.page, laterality: lateralityFor(sentence.text, match.index ?? 0, match[1].length), source_section: sentence.source_section, extraction_method: sentence.extraction_method, assertion: "ABSENT", verification: "UNREVIEWED" });
             }
           }
         }
@@ -724,7 +744,7 @@ export function extractClinicalFromPages(
         const duplicate = candidate.target.some((h) => h.value_raw.toLowerCase() === value.toLowerCase() && h.page_index === sentence.page);
         if (!duplicate) candidate.target.push({
           item_id: nextItemId(), kind: candidate.kind, value_raw: clip(value), raw_text: clip(sentence.text),
-          page_index: sentence.page, page: sentence.page, laterality: extractLateralityForSpan(sentence.text, m.index ?? 0, m[1].length),
+          page_index: sentence.page, page: sentence.page, laterality: lateralityFor(sentence.text, m.index ?? 0, m[1].length),
           assertion: "PRESENT", source_section: candidate.kind === "PLAN" ? "PLAN" : "FOLLOW_UP", extraction_method: sentence.extraction_method,
           source: "DOCUMENT_EXTRACTED", verification: "UNREVIEWED",
         });
@@ -760,7 +780,7 @@ export function extractClinicalFromPages(
                 raw_text: clip(sentence.text),
                 page_index: sentence.page,
                 page: sentence.page,
-                laterality: extractLateralityForSpan(sentence.text, diagnosisIndex, diagnosis[1].length),
+                laterality: lateralityFor(sentence.text, diagnosisIndex, diagnosis[1].length),
                 certainty: uncertain ? "UNCERTAIN" : "EXPLICIT",
                 assertion: negated ? "ABSENT" : uncertain ? "UNCERTAIN" : "PRESENT",
                 negated,
@@ -796,7 +816,7 @@ export function extractClinicalFromPages(
               raw_text: clip(sentence.text),
               page_index: sentence.page,
               page: sentence.page,
-              laterality: extractLateralityForSpan(sentence.text, idx, match.raw.length),
+              laterality: lateralityFor(sentence.text, idx, match.raw.length),
               source_section: sentence.source_section,
               extraction_method: sentence.extraction_method,
               assertion: "ABSENT",
@@ -813,7 +833,7 @@ export function extractClinicalFromPages(
           raw_text: clip(sentence.text),
           page_index: sentence.page,
           page: sentence.page,
-          laterality: extractLateralityForSpan(sentence.text, idx, match.raw.length),
+          laterality: lateralityFor(sentence.text, idx, match.raw.length),
           onset: extractOnset(sentence.text),
           duration: extractDuration(sentence.text),
           severity: extractSeverity(sentence.text),
@@ -855,7 +875,7 @@ export function extractClinicalFromPages(
               raw_text: clip(sentence.text),
               page_index: sentence.page,
               page: sentence.page,
-              laterality: extractLateralityForSpan(sentence.text, matchedParts[0].index, matchedParts[0].raw.length),
+              laterality: lateralityFor(sentence.text, matchedParts[0].index, matchedParts[0].raw.length),
               source_section: sentence.source_section,
               extraction_method: sentence.extraction_method,
               assertion: "ABSENT",
@@ -871,7 +891,7 @@ export function extractClinicalFromPages(
           raw_text: clip(sentence.text),
           page_index: sentence.page,
           page: sentence.page,
-          laterality: extractLateralityForSpan(sentence.text, firstPart.index, firstPart.raw.length),
+          laterality: lateralityFor(sentence.text, firstPart.index, firstPart.raw.length),
           onset: extractOnset(sentence.text),
           duration: extractDuration(sentence.text),
           severity: extractSeverity(sentence.text),

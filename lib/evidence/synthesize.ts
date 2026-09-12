@@ -111,8 +111,8 @@ function assessOne(def: EvidenceConditionDef, trusted: EvidenceItem[], lateralit
       red_flag_candidates: redFlags,
       note: "Supporting and contradicting evidence both present; the system does not resolve this automatically.",
       assessment_state: "CONFLICTING_EVIDENCE",
-      independent_source_count: new Set(positive.map((i) => i.dependency_group_id ?? `${i.source_type}:${i.source_id}`)).size,
-      dependency_groups: [...new Set(positive.map((i) => i.dependency_group_id ?? `${i.source_type}:${i.source_id}`))],
+      independent_source_count: new Set(positive.filter((i) => TRUSTED_FOR_SUPPORT.has(i.trust_level)).map((i) => i.dependency_group_id ?? `${i.source_type}:${i.source_id}`)).size,
+      dependency_groups: [...new Set(positive.filter((i) => TRUSTED_FOR_SUPPORT.has(i.trust_level)).map((i) => i.dependency_group_id ?? `${i.source_type}:${i.source_id}`))],
       model_support: positive.filter((i) => i.source_type === "AI_FINDING").map((i) => i.id),
       objective_test_support: positive.filter((i) => i.source_type === "TEST_RESULT").map((i) => i.id),
       document_support: positive.filter((i) => i.source_type.includes("DOCUMENT") || i.provenance.document_id).map((i) => i.id),
@@ -142,7 +142,11 @@ function assessOne(def: EvidenceConditionDef, trusted: EvidenceItem[], lateralit
   const trustedPositive = positive.filter((i) => TRUSTED_FOR_SUPPORT.has(i.trust_level));
   // Dependency groups prevent two models reading the same immutable image
   // from being counted as two independent clinical sources.
-  const dependencyGroups = [...new Set(positive.map((i) => i.dependency_group_id ?? `${i.source_type}:${i.source_id}`))];
+  // Only trusted evidence can establish independent support. Unverified
+  // symptoms, OCR, and research AI output remain visible as context but must
+  // not inflate the threshold or dependency-group count used for a supported
+  // condition state.
+  const dependencyGroups = [...new Set(trustedPositive.map((i) => i.dependency_group_id ?? `${i.source_type}:${i.source_id}`))];
   const independentSources = dependencyGroups.length;
   const supported = trustedPositive.length > 0 && independentSources >= def.evidence_thresholds.min_independent_supportive_for_supported;
   const modelSupport = positive.filter((i) => i.source_type === "AI_FINDING").map((i) => i.id);
@@ -210,6 +214,14 @@ export function assessConditions(items: EvidenceItem[], defs: EvidenceConditionD
   ]);
   out.forEach((assessment) => {
     assessment.rank = rankById.get(`${assessment.condition_id}:${assessment.laterality}`);
+    const phase2State = assessment.state === "CONFLICTING_EVIDENCE"
+      ? "CONFLICTING_EVIDENCE"
+      : assessment.state === "SUPPORTED_CONDITION"
+        ? "SUPPORTED_BY_AVAILABLE_EVIDENCE"
+        : assessment.state === "POSSIBLE_CONDITION"
+          ? (assessment.independent_source_count && assessment.independent_source_count > 0 ? "POSSIBLE" : "WEAKLY_SUPPORTED")
+          : "INSUFFICIENT_EVIDENCE";
+    assessment.condition_state = phase2State;
     // Existing consumers intentionally use Object.keys() as a strict legacy
     // schema guard. Keep those 12 keys enumerable, while projecting the
     // richer clinician-review metadata through JSON serialization and direct

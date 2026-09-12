@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/rbac";
 import { runResearchAnalysis } from "@/lib/evidence/researchAnalysis";
 import { requireStudyScope } from "@/lib/auth/scope";
+import { checkProcessingConsent, consentRequiredPayload, PROCESSING_CONSENT_PURPOSES } from "@/lib/consent/policy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +28,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const scoped = await requireStudyScope(req, params.id);
   if (scoped.response) return scoped.response;
   if (!scoped.resource) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const consent = await checkProcessingConsent(params.id, PROCESSING_CONSENT_PURPOSES.clinicalResearchAnalysis);
+  if (!consent.ok) return NextResponse.json(consentRequiredPayload(consent), { status: 403 });
 
   const result = await runResearchAnalysis(params.id);
   if (result.state === "NOT_A_STUDY") {

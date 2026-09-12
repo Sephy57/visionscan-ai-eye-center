@@ -72,6 +72,7 @@ export function reportAiPayload(report: {
   document_routing?: AnalysisResult["document_routing"];
   model_execution: AnalysisResult["model_execution"];
   model_execution_ledger?: AnalysisResult["model_execution_ledger"];
+  claim_ledger?: AnalysisResult["claim_ledger"];
   oct_region_results?: AnalysisResult["oct_region_results"];
   oct_aggregation?: AnalysisResult["oct_aggregation"];
   image_quality: AnalysisResult["quality"];
@@ -105,6 +106,7 @@ export function reportAiPayload(report: {
     document_routing: report.document_routing,
     model_execution: report.model_execution,
     model_execution_ledger: report.model_execution_ledger,
+    claim_ledger: report.claim_ledger,
     oct_region_results: report.oct_region_results,
     oct_aggregation: report.oct_aggregation,
     image_quality: report.image_quality,

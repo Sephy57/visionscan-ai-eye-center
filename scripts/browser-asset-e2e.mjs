@@ -13,6 +13,14 @@ function check(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+async function grantConsent(request, studyId, purpose, csrf) {
+  const response = await request.post(`${BASE}/api/studies/${encodeURIComponent(studyId)}/consent`, {
+    headers: { "x-csrf-token": csrf },
+    data: { purpose, consentType: "explicit" },
+  });
+  check(response.ok(), `${purpose} consent failed (${response.status()})`);
+}
+
 async function makeFundus() {
   // Deterministic metadata-free fundus-like raster: a dark circular field,
   // red/orange textured retina, and a bright optic-disc-like region.  This
@@ -94,6 +102,7 @@ async function main() {
     studyId = uploadJson.study_id;
     check(typeof studyId === "string", "fundus upload returned no study id");
     console.log(`[ok ] metadata-free fundus upload ${studyId}`);
+    await grantConsent(request, studyId, "IMAGE_MODEL_ANALYSIS", csrf);
 
     const analysis = await request.post(`${BASE}/api/analyze`, { headers: { "x-csrf-token": csrf }, data: { study_id: studyId }, timeout: 120_000 });
     check(analysis.ok(), `fundus analysis failed (${analysis.status()})`);
@@ -103,6 +112,7 @@ async function main() {
     console.log(`[ok ] fundus research analysis ${analysisJson.analysis_mode} models=${(analysisJson.model_execution.models_executed ?? []).join(",")}`);
 
     const pdf = await makeMixedPdf(await makeOct());
+    await grantConsent(request, studyId, "DOCUMENT_EXTRACTION", csrf);
     const documentUpload = await request.post(`${BASE}/api/studies/${encodeURIComponent(studyId)}/documents`, {
       headers: { "x-csrf-token": csrf },
       multipart: { file: { name: "mixed-oct-lab.pdf", mimeType: "application/pdf", buffer: pdf } },

@@ -11,15 +11,16 @@ import { audit } from "../audit";
  * this is enforced by construction (there is no code path that defaults to
  * GRANTED).
  *
- * This module is currently additive/observational: it is NOT wired as a
- * hard gate in front of analysis (see docs/CONSENT_DATA_GOVERNANCE.md for
- * why - deliberately deferred so this phase does not silently change the
- * existing, already-reviewed clinical safety pipeline). A deployment that
- * needs consent to hard-block analysis should call requireGrantedConsent()
- * at its chosen policy point.
+ * Processing boundaries call requireGrantedConsent() through
+ * lib/consent/policy.ts. Direct library fixtures may still call deterministic
+ * functions without a study-level consent record, but HTTP and durable-job
+ * entry points must not process a study until their purpose is GRANTED.
  */
 
-export type ConsentPurpose = "screening_analysis" | "research_use" | "data_retention" | "treatment_information";
+export type ConsentPurpose =
+  | "screening_analysis" | "research_use" | "data_retention" | "treatment_information"
+  | "CLINICAL_RESEARCH_ANALYSIS" | "DOCUMENT_EXTRACTION" | "IMAGE_MODEL_ANALYSIS"
+  | "RESEARCH_DATASET_USE" | "EXPORT" | "MODEL_VALIDATION";
 export type ConsentType = "explicit" | "implied" | "broad" | "specific";
 export type ConsentStatus = "PENDING" | "GRANTED" | "WITHDRAWN" | "EXPIRED";
 
@@ -49,6 +50,30 @@ export async function recordConsent(params: {
   actor: string;
   expiresAt?: string | null;
 }): Promise<ConsentRecord> {
+  const study = await dbGet<{
+    study_id: string;
+    patient_id?: string | null;
+    patient_ref?: string | null;
+  }>("studies", params.studyId);
+  if (study) {
+    const canonicalSubjectRefs = [study.patient_id, study.patient_ref]
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .map((value) => value.trim().toLowerCase());
+    const suppliedSubjectRef = params.subjectRef?.trim().toLowerCase() || null;
+    if (suppliedSubjectRef && (!canonicalSubjectRefs.length || !canonicalSubjectRefs.includes(suppliedSubjectRef))) {
+      throw new Error("CONSENT_SUBJECT_MISMATCH");
+    }
+    // Never persist a caller-selected subject reference when the study has a
+    // canonical patient link. Prefer the stable patient id, then patient_ref.
+    params = {
+      ...params,
+      subjectRef: study.patient_id?.trim() || study.patient_ref?.trim() || null,
+    };
+  } else if (params.subjectRef?.trim()) {
+    // A subject reference without a study link cannot be verified and must
+    // not be accepted as if it were authoritative patient identity.
+    throw new Error("CONSENT_SUBJECT_UNBOUND");
+  }
   const rec: ConsentRecord = {
     consentId: newId("consent"),
     studyId: params.studyId,
@@ -101,7 +126,8 @@ export async function listConsentForStudy(studyId: string): Promise<ConsentRecor
   return all.filter((c) => c.studyId === studyId).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 }
 
-/** Optional hard gate a deployment can call at its chosen policy point. Not wired into the pipeline by default. */
+/** Low-level hard gate. Processing routes and durable workers call this via
+ * lib/consent/policy.ts with a purpose-specific boundary. */
 export async function requireGrantedConsent(studyId: string, purpose: ConsentPurpose): Promise<{ ok: boolean; status: ConsentStatus | "UNKNOWN" }> {
   const status = await getConsentStatus(studyId, purpose);
   return { ok: status === "GRANTED", status };

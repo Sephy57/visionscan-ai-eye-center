@@ -59,6 +59,8 @@ export interface StructuredEvidenceOptions {
   encounter?: PatientEncounter | null;
   /** Skip specialist orchestration (e.g. for a pure history/symptom-only synthesis, or to avoid a real inference call in a fast test). */
   includeSpecialists?: boolean;
+  /** Opt into the exact nine Phase 2 specialty lanes; legacy callers retain four packages by default. */
+  allSpecialties?: boolean;
 }
 
 const SAFETY_BANNER =
@@ -129,7 +131,12 @@ export async function buildStructuredClinicalEvidence(
   attachConflictIds(evidence, conflicts);
   const possibleConditions = assessConditions(evidence);
   const analysisRecord = await dbGet<{ result?: import("../analysis/schema").AnalysisResult }>("analyses", `anl_${studyId}`);
-  const specialistPackages = buildSpecialistEvidencePackages({ analysis: analysisRecord?.result ?? null, evidence, possible_conditions: possibleConditions });
+  const specialistPackages = buildSpecialistEvidencePackages({
+    analysis: analysisRecord?.result ?? null,
+    evidence,
+    possible_conditions: possibleConditions,
+    allSpecialties: options.allSpecialties === true,
+  });
 
   const specialistBundles: SpecialistEvidenceBundle[] = [];
   let specialistConsensus: SpecialistConsensus;

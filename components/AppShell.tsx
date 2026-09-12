@@ -57,9 +57,9 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function ThemeToggle() {
-  const [theme, setTheme] = useState<string>("light");
+  const [theme, setTheme] = useState<string>("dark");
   useEffect(() => {
-    setTheme(document.documentElement.dataset.theme ?? "light");
+    setTheme(document.documentElement.dataset.theme ?? "dark");
   }, []);
   function toggle() {
     const t = theme === "dark" ? "light" : "dark";
@@ -148,7 +148,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <span className="banner-icon" aria-hidden="true">⚠</span>
         <span className="banner-text">
           <strong>RESEARCH ENVIRONMENT</strong>
-          <span>Not validated for clinical use · Not a medical device · Demo/synthetic analysis</span>
+          <span>Not validated for clinical use · Not a medical device · Local research analysis; demo/synthetic fallback only</span>
         </span>
       </div>
 

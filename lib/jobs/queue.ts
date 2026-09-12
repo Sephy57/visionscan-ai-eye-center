@@ -4,16 +4,18 @@
  *   UPLOAD -> QUEUE STUDY -> WORKER -> MODEL INFERENCE -> VALIDATION
  *     -> STORE RESULT -> UI POLLING
  *
- * The worker currently runs in-process (adequate for this local single-user
- * research deployment). The job interface is intentionally shaped so a real
- * separate worker process (e.g. reading from a persistent queue) can replace
- * `runWorkerLoop` without touching callers or the UI.
+ * The default remains an in-process local worker for backwards compatibility.
+ * `VISIONSCAN_EXTERNAL_WORKER=true` disables web-process dispatch; a separate
+ * `npm run worker` process can then claim the same SQLite queue. The worker
+ * reuses this module's lease, heartbeat, fencing, retry, cancellation, and
+ * service execution path rather than creating a second implementation.
  */
 
 import { dbPut, dbGet, dbPage, dbTransaction, type DbPageResult, type DbTransaction } from "../storage/db";
 import { newId } from "../storage/files";
 import { audit } from "../audit";
 import { JobCancelledError, makeJobProgress, type JobProgress, type ProgressUpdate } from "./control";
+import { checkProcessingConsent, PROCESSING_CONSENT_PURPOSES } from "../consent/policy";
 
 /**
  * Durable lifecycle states. `stale` and `retryable` are intentionally
@@ -131,6 +133,19 @@ const configuredRetryBackoffMs = boundedPositive(process.env.VISIONSCAN_JOB_RETR
 
 const terminalStatuses = new Set<JobStatus>(["completed", "failed", "cancelled"]);
 const workerInstanceId = process.env.VISIONSCAN_WORKER_ID?.trim() || `worker-${process.pid}-${Math.random().toString(36).slice(2, 10)}`;
+const externalWorkerMode = /^(?:1|true|yes)$/i.test(process.env.VISIONSCAN_EXTERNAL_WORKER ?? "");
+const workerProcessMode = /^(?:1|true|yes)$/i.test(process.env.VISIONSCAN_WORKER_PROCESS ?? "");
+
+/** True when the web process intentionally leaves durable work for npm run worker. */
+export function isExternalWorkerMode(): boolean {
+  return externalWorkerMode && !workerProcessMode;
+}
+
+function consentPurposeForJob(kind: JobKind) {
+  return kind === "extraction"
+    ? PROCESSING_CONSENT_PURPOSES.documentExtraction
+    : PROCESSING_CONSENT_PURPOSES.imageModelAnalysis;
+}
 
 function asTimestamp(value: Date | string | number | undefined, fallback = Date.now()): number {
   if (value instanceof Date) return value.getTime();
@@ -255,22 +270,32 @@ function queuedJob(studyId: string, kind: JobKind, documentId?: string): Analysi
 }
 
 export async function enqueueAnalysis(studyId: string): Promise<AnalysisJob> {
+  const consent = await checkProcessingConsent(studyId, consentPurposeForJob("analysis"));
+  if (!consent.ok) {
+    await audit({ actor: "system", action: "job.enqueue", studyId, outcome: "rejected", detail: `CONSENT_REQUIRED:${consentPurposeForJob("analysis")}:${consent.status}` });
+    throw new Error(`CONSENT_REQUIRED:${consentPurposeForJob("analysis")}:${consent.status}`);
+  }
   await ensureStartupRecovery();
   const job = queuedJob(studyId, "analysis");
   await dbPut("jobs", job.job_id, job);
   await audit({ actor: "system", action: "job.enqueue", studyId, outcome: "ok", detail: job.job_id });
   // Fire-and-forget worker execution; UI polls job status.
-  void processJob(job.job_id).catch(() => undefined);
+  dispatchJob(job.job_id);
   return job;
 }
 
 /** Enqueue document text/OCR extraction as an async job (S2). */
 export async function enqueueExtraction(documentId: string, studyId: string): Promise<AnalysisJob> {
+  const consent = await checkProcessingConsent(studyId, consentPurposeForJob("extraction"));
+  if (!consent.ok) {
+    await audit({ actor: "system", action: "job.enqueue", studyId, resource: "document", resourceId: documentId, outcome: "rejected", detail: `CONSENT_REQUIRED:${consentPurposeForJob("extraction")}:${consent.status}` });
+    throw new Error(`CONSENT_REQUIRED:${consentPurposeForJob("extraction")}:${consent.status}`);
+  }
   await ensureStartupRecovery();
   const job = queuedJob(studyId, "extraction", documentId);
   await dbPut("jobs", job.job_id, job);
   await audit({ actor: "system", action: "job.enqueue", studyId, resource: "document", resourceId: documentId, outcome: "ok", detail: `extraction ${job.job_id}` });
-  void processJob(job.job_id).catch(() => undefined);
+  dispatchJob(job.job_id);
   return job;
 }
 
@@ -395,7 +420,7 @@ export async function retryJob(jobId: string, requestedBy: string, idempotencyKe
   const retryJobRecord = outcome.job;
   cancelFlags.delete(jobId);
   await audit({ actor: requestedBy, action: "job.retry", studyId: retryJobRecord.study_id, outcome: "ok", detail: `${jobId} attempt ${retryJobRecord.attempts + 1}` });
-  void processJob(jobId).catch(() => undefined);
+  dispatchJob(jobId);
   return retryJobRecord;
 }
 
@@ -634,7 +659,7 @@ export async function recoverStaleJobs(options: JobRecoveryOptions = {}): Promis
     }
   });
   if (options.startWorkers !== false) {
-    for (const jobId of marked.queued) void processJob(jobId).catch(() => undefined);
+    for (const jobId of marked.queued) dispatchJob(jobId);
     for (const pending of delayed) scheduleProcess(pending.jobId, pending.delayMs);
   }
   return marked;
@@ -712,8 +737,14 @@ function startLeaseHeartbeat(jobId: string, attemptId: string, workerId: string)
  * maintenance timer. The durable retry_after_at remains authoritative if the
  * process exits before this callback fires. */
 function scheduleProcess(jobId: string, delayMs: number): void {
+  if (isExternalWorkerMode()) return;
   const timer = setTimeout(() => void processJob(jobId).catch(() => undefined), Math.max(0, delayMs));
   timer.unref?.();
+}
+
+function dispatchJob(jobId: string): void {
+  if (isExternalWorkerMode()) return;
+  void processJob(jobId).catch(() => undefined);
 }
 
 /**
@@ -791,15 +822,53 @@ export async function finalizeJobFailure(jobId: string, attemptId: string, worke
   });
 }
 
-/** In-process worker. Replace with an external worker process for production scale. */
-async function processJob(jobId: string): Promise<void> {
-  const claimedJob = await claimJob(jobId, workerInstanceId);
+/** Execute one queued job. Exported for the separate local worker process. */
+export async function processJob(jobId: string, requestedWorkerId = workerInstanceId): Promise<void> {
+  const claimedJob = await claimJob(jobId, requestedWorkerId);
   if (!claimedJob || !claimedJob.active_attempt_id) return;
   const claim = { job: claimedJob, attemptId: claimedJob.active_attempt_id };
   if (!claim.job || !claim.attemptId) return;
   const job = claim.job;
   const attemptId = claim.attemptId;
-  const workerId = job.worker_id ?? workerInstanceId;
+  const workerId = job.worker_id ?? requestedWorkerId;
+  let consent;
+  try {
+    consent = await checkProcessingConsent(job.study_id, consentPurposeForJob(job.kind));
+  } catch (error) {
+    const failed = await finalizeJobFailure(jobId, attemptId, workerId, `CONSENT_CHECK_FAILED:${String(error instanceof Error ? error.message : error)}`);
+    if (failed) {
+      await audit({
+        actor: "system",
+        action: "job.fail",
+        studyId: job.study_id,
+        resource: job.kind === "extraction" ? "document" : undefined,
+        resourceId: job.document_id,
+        outcome: "error",
+        detail: `${jobId}: consent check failed before processing`,
+      });
+    }
+    return;
+  }
+  if (!consent.ok) {
+    const failed = await finalizeJobFailure(
+      jobId,
+      attemptId,
+      workerId,
+      `CONSENT_REQUIRED:${consentPurposeForJob(job.kind)}:${consent.status}`,
+    );
+    if (failed) {
+      await audit({
+        actor: "system",
+        action: "job.fail",
+        studyId: job.study_id,
+        resource: job.kind === "extraction" ? "document" : undefined,
+        resourceId: job.document_id,
+        outcome: "rejected",
+        detail: `${jobId}: consent ${consentPurposeForJob(job.kind)} ${consent.status}`,
+      });
+    }
+    return;
+  }
   const stopHeartbeat = startLeaseHeartbeat(jobId, attemptId, workerId);
 
   const updateProgress = async (update: ProgressUpdate): Promise<void> => {
@@ -878,4 +947,26 @@ async function processJob(jobId: string): Promise<void> {
   } finally {
     stopHeartbeat();
   }
+}
+
+/**
+ * One bounded external-worker poll. Candidate selection is only a hint; the
+ * existing transactional `claimJob` remains the authority, so concurrent
+ * workers cannot double-own a row. The initial deployment intentionally
+ * processes one job per pass to keep local model subprocess memory bounded.
+ */
+export async function runWorkerOnce(options: { workerId?: string; maxJobs?: number } = {}): Promise<{
+  polled: number;
+  job_ids: string[];
+  recovery: JobRecoveryResult;
+}> {
+  const workerId = options.workerId?.trim() || workerInstanceId;
+  const maxJobs = Math.max(1, Math.min(1, Math.floor(options.maxJobs ?? 1)));
+  const recovery = await recoverJobsOnStartup({ workerId, startWorkers: false });
+  const page = await listJobsPage({ limit: 32 });
+  const candidates = page.items
+    .filter((job) => job.status === "queued" || job.status === "retryable")
+    .slice(0, maxJobs);
+  for (const job of candidates) await processJob(job.job_id, workerId);
+  return { polled: candidates.length, job_ids: candidates.map((job) => job.job_id), recovery };
 }

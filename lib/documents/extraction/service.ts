@@ -310,7 +310,7 @@ export async function extractDocument(documentId: string, actor: string, opts: E
     try {
       const recordExtraction = extractClinicalFromPages(
         artifact.pages.map((p) => ({ page: p.page, text: p.text ?? "", method: p.method, confidence: p.confidence })),
-        { document_id: documentId, study_id: doc.study_id, patient_ref: doc.patient_ref }
+        { document_id: documentId, study_id: doc.study_id, patient_ref: doc.patient_ref, laterality_policy: "EXPLICIT_UNKNOWN" }
       );
       await saveRecordExtraction(recordExtraction);
     } catch {
