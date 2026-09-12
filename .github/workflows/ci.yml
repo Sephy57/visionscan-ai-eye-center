@@ -50,6 +50,12 @@ jobs:
       - name: Synthetic validation case contract
         run: npm run validation:cases
 
+      - name: Phase 4 local intelligence safety acceptance
+        # Deterministic, model-free coverage for anatomy integrity, OCT
+        # aggregation, cross-model contradiction handling, OOD admission,
+        # and worker failure semantics. Research weights stay out of hosted CI.
+        run: npm exec vitest run tests/phase4-nextgen-local-intelligence.test.ts --pool=forks --maxWorkers=1 --minWorkers=1
+
       - name: Audit local model manifests
         run: npm run model:audit
 
@@ -100,6 +106,9 @@ jobs:
 
       - name: Backup plan (read-only)
         run: npm run backup:data -- --dry-run
+
+      - name: Phase 4 local intelligence safety acceptance
+        run: npm exec vitest run tests/phase4-nextgen-local-intelligence.test.ts --pool=forks --maxWorkers=1 --minWorkers=1
 
       - name: Audit local model manifests
         run: npm run model:audit

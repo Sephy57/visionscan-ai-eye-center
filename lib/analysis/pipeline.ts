@@ -9,7 +9,7 @@ import { runEnsemble, estimateUncertainty } from "./ensemble";
 import { runTriage, TriageOutcome } from "../clinical/triage";
 import { validateAnalysisResult, AnalysisResult, Finding, SCHEMA_VERSION, PIPELINE_VERSION, ModelExecutionLedgerEntry, ModelExecutionStatus } from "./schema";
 import { buildClaimLedger } from "../clinical/claimLedger";
-import { modelProvenance, RULESET_VERSION, COMPONENTS, getModel, gateModelUse, deviceCompatible, supportsModality } from "../models/registry";
+import { modelProvenance, RULESET_VERSION, COMPONENTS, getModel, gateModelUse, gateModelUseForResearchStudy, deviceCompatible, supportsModality } from "../models/registry";
 import { ensureRegistryHydrated } from "../models/registryPersistence";
 import { assessOod, OOD_MESSAGE } from "./ood";
 import { mayEmitFinding } from "./taxonomy";
@@ -26,6 +26,9 @@ import { unavailableOctAssessmentResult, resultFromResearchOct } from "../models
 import type { FundusLesionResearchRun } from "../models/fundusLesionLocalProvider";
 import type { DrGradeResearchRun } from "../models/drGradeLocalProvider";
 import type { OctResearchRun } from "../models/octLocalProvider";
+import { aggregateOctScans, type OctAggregationInput } from "../models/octAggregation";
+import { fuseResearchSignals } from "./researchFusion";
+import type { OctRetinalClass } from "../models/octContract";
 import { routeUploadedAsset, AssetRoutingResult } from "../assets/assetRouter";
 import { OUTPUT_CONTRACT_VERSION } from "../models/outputContract";
 
@@ -208,7 +211,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   // the same point modality already is - device is informational-only for
   // DEMO, which is unaffected by this check (see gateModelUse's doc comment).
   const modelGate = modelRecord
-    ? (modelRecord.status === "DEMO" ? gateModelUse(modelRecord, deviceInfo) : gateModelUse(modelRecord))
+    ? (modelRecord.status === "DEMO" ? gateModelUse(modelRecord, deviceInfo) : gateModelUseForResearchStudy(modelRecord, deviceInfo))
     : null;
   const ood = assessOod({
     modality: study.modality,
@@ -277,10 +280,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   let fundusAbnormality = unavailableFundusAbnormalityResult(quality, ood, study.modality);
   let researchRun: FundusLesionResearchRun | null = null;
   let researchAttemptNote: string | null = null;
-  const lesionGate = lesionRecord ? gateModelUse(lesionRecord) : null;
+  const lesionGate = lesionRecord ? gateModelUseForResearchStudy(lesionRecord, deviceInfo) : null;
   if (
     qualityAcceptable &&
     canonicalModality(study.modality) === "FUNDUS" &&
+    !ood.detected &&
     lesionPackagePresent &&
     lesionRecord &&
     lesionGate?.allowed &&
@@ -332,6 +336,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       researchAttemptNote = `Research lesion detector could not run: ${String(err instanceof Error ? err.message : err).slice(0, 200)}`;
       markModel(lesionRecord, "failed", researchAttemptNote);
     }
+  } else if (canonicalModality(study.modality) === "FUNDUS" && qualityAcceptable && lesionRecord && ood.detected) {
+    researchAttemptNote = `Research lesion detector gated off by OOD check: ${ood.reasons.join(" ").slice(0, 200)}`;
+    markModel(lesionRecord, "skipped", researchAttemptNote);
   } else if (canonicalModality(study.modality) === "FUNDUS" && qualityAcceptable && lesionRecord && !lesionGate?.allowed) {
     researchAttemptNote = `Research lesion detector gated off: ${(lesionGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
     markModel(lesionRecord, "skipped", researchAttemptNote);
@@ -350,10 +357,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   let drAssessment = unavailableDrAssessmentResult(quality, ood, study.modality);
   let drRun: DrGradeResearchRun | null = null;
   let drAttemptNote: string | null = null;
-  const drGate = drRecord ? gateModelUse(drRecord) : null;
+  const drGate = drRecord ? gateModelUseForResearchStudy(drRecord, deviceInfo) : null;
   const researchScopeOk =
     qualityAcceptable &&
     canonicalModality(study.modality) === "FUNDUS" &&
+    !ood.detected &&
     drPackagePresent &&
     drRecord &&
     drGate?.allowed &&
@@ -397,6 +405,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       drAttemptNote = `Research DR grader could not run: ${String(err instanceof Error ? err.message : err).slice(0, 200)}`;
       markModel(drRecord, "failed", drAttemptNote);
     }
+  } else if (canonicalModality(study.modality) === "FUNDUS" && qualityAcceptable && drRecord && ood.detected) {
+    drAttemptNote = `Research DR grader gated off by OOD check: ${ood.reasons.join(" ").slice(0, 200)}`;
+    markModel(drRecord, "skipped", drAttemptNote);
   } else if (canonicalModality(study.modality) === "FUNDUS" && qualityAcceptable && drRecord && !drGate?.allowed) {
     drAttemptNote = `Research DR grader gated off: ${(drGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
     markModel(drRecord, "skipped", drAttemptNote);
@@ -412,13 +423,14 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   let octAssessment = unavailableOctAssessmentResult(quality, ood, study.modality);
   let octRun: OctResearchRun | null = null;
   let octAttemptNote: string | null = null;
-  const octGate = octRecord ? gateModelUse(octRecord) : null;
+  const octGate = octRecord ? gateModelUseForResearchStudy(octRecord, deviceInfo) : null;
   const octRegionResults: NonNullable<AnalysisResult["oct_region_results"]> = [];
   const octRegionFindings: Finding[] = [];
   const octRegionRuns: OctResearchRun[] = [];
   const octScopeOk =
     qualityAcceptable &&
     canonicalModality(study.modality) === "OCT" &&
+    !ood.detected &&
     octPackagePresent &&
     octRecord &&
     octGate?.allowed &&
@@ -462,6 +474,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       octAttemptNote = `Research OCT classifier could not run: ${String(err instanceof Error ? err.message : err).slice(0, 200)}`;
       markModel(octRecord, "failed", octAttemptNote);
     }
+  } else if (canonicalModality(study.modality) === "OCT" && qualityAcceptable && octRecord && ood.detected) {
+    octAttemptNote = `Research OCT classifier gated off by OOD check: ${ood.reasons.join(" ").slice(0, 200)}`;
+    markModel(octRecord, "skipped", octAttemptNote);
   } else if (canonicalModality(study.modality) === "OCT" && qualityAcceptable && octRecord && !octGate?.allowed) {
     octAttemptNote = `Research OCT classifier gated off: ${(octGate?.reasons ?? ["unknown reason"]).join(" ").slice(0, 200)}`;
     markModel(octRecord, "skipped", octAttemptNote);
@@ -551,6 +566,37 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     }
   }
 
+  // ---- Stage 1f: linked OCT scan aggregation (categorical only) ----
+  // Keep the primary OCT study and PDF-derived B-scan ROIs as separately
+  // auditable scan records. The aggregator excludes failed/skipped scans and
+  // refuses to mix laterality or choose a winner when usable classes disagree.
+  const isOctResearchClass = (value: string | null | undefined): value is OctRetinalClass =>
+    value === "CNV" || value === "DME" || value === "DRUSEN" || value === "NORMAL";
+  const octAggregationInputs: OctAggregationInput[] = [];
+  if (canonicalModality(study.modality) === "OCT") {
+    const nativeStatus: OctAggregationInput["status"] = octRun?.oct && octRun.raw.inference_status === "completed"
+      ? "EXECUTED"
+      : octAttemptNote ? "FAILED" : "SKIPPED";
+    octAggregationInputs.push({
+      scan_id: `study:${study.studyId}`,
+      status: nativeStatus,
+      predicted_class: isOctResearchClass(octRun?.oct?.predicted_class) ? octRun!.oct!.predicted_class : null,
+      laterality: study.eye,
+    });
+  }
+  for (const region of octRegionResults) {
+    const predictedClass = region.assessment?.predicted_class;
+    octAggregationInputs.push({
+      scan_id: `roi:${region.asset_id}`,
+      status: region.status,
+      predicted_class: isOctResearchClass(predictedClass) ? predictedClass : null,
+      laterality: region.laterality,
+    });
+  }
+  const octScanAggregation = octAggregationInputs.length > 0
+    ? aggregateOctScans(octAggregationInputs)
+    : undefined;
+
   // ---- Stage 2: anatomical segmentation (placeholder) ----
   // Emits no structures or measurements. Recorded for provenance.
 
@@ -572,7 +618,16 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     list.flatMap((f) => {
       const gate = mayEmitFinding(f.type, canonicalModality(modality), "RESEARCH");
       if (!gate.ok) return []; // refuse to emit a finding the taxonomy forbids
-      return [{ ...f, taxonomy_level: "observation" as const, model_status: "RESEARCH" as const, source_modality: f.source_modality ?? modality }];
+      return [{
+        ...f,
+        taxonomy_level: "observation" as const,
+        model_status: "RESEARCH" as const,
+        source_modality: f.source_modality ?? modality,
+        // Bind primary findings to the server-selected immutable asset. ROI
+        // findings already carry their own asset/page identity and are not
+        // overwritten here.
+        source_asset_id: f.source_asset_id ?? study.files[0]?.id ?? routedAsset.source_hash,
+      }];
     });
   if (usedLesionResearch && researchRun && lesionRecord && lesionGate) {
     activeModelRecord = lesionRecord;
@@ -781,7 +836,12 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   // carries the mandatory insufficient-quality message.
 
   // ---- Stage 4: ensemble / consistency ----
-  const ensemble = runEnsemble(findings);
+  const activeDetectorIds = [...new Set(
+    findings
+      .filter((finding) => finding.synthetic === false && finding.model_status === "RESEARCH")
+      .map((finding) => finding.model_id),
+  )];
+  const ensemble = runEnsemble(findings, activeDetectorIds);
   findings = ensemble.cappedFindings;
 
   // ---- Stage 5: uncertainty ----
@@ -822,41 +882,26 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   );
 
   // ---- Stage 5e: multi-model research agreement (no score averaging) ----
-  // Compares the lesion detector (regions present?) with the DR grader
-  // (referable grade?) when BOTH completed. Corroboration strengthens
+  // Compare categorical research signals only. Corroboration strengthens
   // evidence visibility; disagreement stays visible with no automatic
   // winner; consistent negatives are still not normality.
   const lesionPositive = usedLesionResearch && !!researchRun ? researchRun.findings.length > 0 : false;
   const drReferable = usedDrResearch && !!drRun?.grade ? drRun.grade.referable_dr : null;
   const drGradeValue = usedDrResearch && !!drRun?.grade ? drRun.grade.predicted_grade : null;
-  let multiModelAgreement: "CORROBORATED_RESEARCH_EVIDENCE" | "MODEL_DISAGREEMENT" | "CONSISTENT_RESEARCH_NEGATIVE" | "SINGLE_RESEARCH_MODEL" | "NO_RESEARCH_MODEL_OUTPUT";
-  const multiModelNotes: string[] = [];
-  if (usedLesionResearch && usedDrResearch) {
-    if (drReferable && lesionPositive) {
-      multiModelAgreement = "CORROBORATED_RESEARCH_EVIDENCE";
-      multiModelNotes.push(
-        `CORROBORATED_RESEARCH_EVIDENCE (not a confirmed diagnosis): the DR grader estimated grade ${drGradeValue}/4 (referable threshold met) and the lesion detector localized ${researchRun!.findings.length} lesion-like region(s). Two uncalibrated research outputs agree; ophthalmic review is still required.`
-      );
-    } else if (drReferable !== lesionPositive) {
-      multiModelAgreement = "MODEL_DISAGREEMENT";
-      multiModelNotes.push(
-        `MODEL_DISAGREEMENT (no automatic winner): DR grader ${drReferable ? `estimated grade ${drGradeValue}/4 (referable)` : "did not reach the referable threshold"} while the lesion detector ${lesionPositive ? `localized ${researchRun!.findings.length} region(s)` : "found no target regions"}. Both outputs are uncalibrated research evidence; a clinician must reconcile them.`
-      );
-    } else {
-      multiModelAgreement = "CONSISTENT_RESEARCH_NEGATIVE";
-      multiModelNotes.push(
-        "CONSISTENT_RESEARCH_NEGATIVE: DR grader below the referable threshold and no target lesion regions. Other ocular abnormalities may still be present; this is not a normal-fundus result."
-      );
-    }
-  } else if (usedResearch) {
-    multiModelAgreement = "SINGLE_RESEARCH_MODEL";
-    const onlyModel = usedLesionResearch ? "lesion detector" : usedDrResearch ? "DR grader" : "OCT classifier";
-    multiModelNotes.push(
-      `Only one research model completed (${onlyModel}); no cross-model agreement statement is possible.`
-    );
-  } else {
-    multiModelAgreement = "NO_RESEARCH_MODEL_OUTPUT";
-    multiModelNotes.push("No research imaging model completed for this study.");
+  const fusion = fuseResearchSignals({
+    lesion_completed: usedLesionResearch,
+    lesion_positive: lesionPositive,
+    lesion_count: researchRun?.findings.length ?? 0,
+    dr_completed: usedDrResearch,
+    dr_grade: drGradeValue,
+    dr_referable: drReferable,
+    oct_completed: usedOctResearch,
+    oct_class: octRun?.oct?.predicted_class ?? null,
+  });
+  const multiModelAgreement = fusion.agreement;
+  const multiModelNotes = [...fusion.notes];
+  if (octScanAggregation) {
+    multiModelNotes.push(`OCT_SCAN_AGGREGATION: ${octScanAggregation.note}`);
   }
 
   // ---- Stage 6: clinical rule engine / triage ----
@@ -952,13 +997,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     dr_assessment: drAssessment,
     oct_assessment: octAssessment,
     oct_region_results: octRegionResults.length ? octRegionResults : undefined,
-    oct_aggregation: octRegionResults.length
-      ? (() => {
-          const classes = octRegionResults.map((r) => r.assessment?.predicted_class).filter((x): x is string => !!x);
-          if (classes.length === 0) return "INSUFFICIENT_SCAN_QUALITY" as const;
-          return new Set(classes).size === 1 ? "CONSISTENT_TARGET_CLASS" as const : "MIXED_OCT_CLASS_RESULTS" as const;
-        })()
-      : undefined,
+    oct_aggregation: octScanAggregation?.state,
+    oct_scan_aggregation: octScanAggregation,
     multi_model: {
       performed: usedLesionResearch || usedDrResearch || usedOctResearch,
       agreement: multiModelAgreement,
@@ -977,6 +1017,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
           : []),
       ],
       notes: multiModelNotes,
+      contradiction_flags: fusion.contradiction_flags,
     },
     model_registry: {
       model_id: activeModelRecord?.model_id ?? "none",

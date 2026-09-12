@@ -529,6 +529,36 @@ export function gateModelUse(model: ModelRecord, device?: { manufacturer?: strin
   };
 }
 
+/**
+ * Per-study gate for the current image-only RESEARCH packages. A declared
+ * device allowlist is enforced strictly by gateModelUse(). For a research
+ * package that has no device allowlist at all, the deployment may execute the
+ * image-only experiment under an explicit DOMAIN_VALIDATION_UNKNOWN policy;
+ * the advisory is retained in the gate reasons and the result remains
+ * research-only. This is not a device-compatibility pass and can never
+ * authorize clinical use.
+ */
+export function gateModelUseForResearchStudy(
+  model: ModelRecord,
+  device: { manufacturer?: string; model?: string } | null,
+): ModelGateResult {
+  const strict = gateModelUse(model, device);
+  if (strict.allowed || model.status === "DEMO" || model.devices.length > 0) return strict;
+  if (model.status === "RESEARCH" && model.input_schema === "IMAGE_ONLY") {
+    const contextFree = gateModelUse(model);
+    if (contextFree.allowed) {
+      return {
+        ...contextFree,
+        reasons: [
+          ...contextFree.reasons,
+          "DEVICE_VALIDATION_UNKNOWN: no device allowlist exists; image-only execution is permitted only as explicitly labeled research output, never as a compatibility or clinical pass.",
+        ],
+      };
+    }
+  }
+  return strict;
+}
+
 /** Can this model analyze this modality? Explicit declaration required. */
 export function supportsModality(model: ModelRecord, modality: string): boolean {
   const m = modality.toUpperCase();

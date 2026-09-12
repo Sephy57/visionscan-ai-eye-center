@@ -25,6 +25,7 @@ import { checkModalitySupported } from "./modalities";
 import {
   OCT_MODEL_ID,
   OCT_MODEL_VERSION,
+  OCT_ARTIFACT_SHA256,
   OCT_PREPROCESSING_VERSION,
   validateOctWorkerOutput,
   type OctWorkerOutput,
@@ -143,6 +144,8 @@ export function octOutputToRaw(
     study_id: studyId,
     model_id: output.model_id,
     model_version: output.model_version,
+    artifact_sha256: output.artifact_sha256 || OCT_ARTIFACT_SHA256,
+    preprocessing_version: output.preprocessing_version || OCT_PREPROCESSING_VERSION,
     modality: "OCT",
     laterality,
     inference_status: "completed",
@@ -170,6 +173,9 @@ async function runProbeOnce(imageBytes: Buffer, studyId: string, laterality: "OD
     }
     if (result.truncated) {
       return { raw: { inference_status: "failed", inference_error: "OCT worker output exceeded the bounded stdout limit; output rejected." }, worker: null };
+    }
+    if (result.code !== 0) {
+      return { raw: { inference_status: "failed", inference_error: `OCT worker exited non-zero (${result.code ?? "unknown"}); output rejected.` }, worker: null };
     }
     let parsed: unknown;
     try {
@@ -217,7 +223,7 @@ export async function runOctResearchAnalysis(
   study: NormalizedStudy,
   ctx: ModelAnalysisContext
 ): Promise<OctResearchRun> {
-  const { model, gate } = await gateOrThrow(OCT_MODEL_ID);
+  const { model, gate } = await gateOrThrow(OCT_MODEL_ID, ctx.device);
   const modCheck = checkModalitySupported(model, study.modality);
   const integrity = verifyModelIntegrity(OCT_MODEL_ID);
   if (!modCheck.ok) {

@@ -1,6 +1,6 @@
 {
   "format": "visionscan-fk-orphan-report-v1",
-  "generated_at": "2026-09-11T05:41:48.600Z",
+  "generated_at": "2026-09-12T17:32:17.788Z",
   "database_file": "<configured-database>",
   "relation_count": 11,
   "orphan_count": 5263,

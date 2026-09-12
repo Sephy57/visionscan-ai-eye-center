@@ -28,7 +28,8 @@ import { canonicalModality } from "../models/modalities";
 import { assessOod, OOD_MESSAGE } from "../analysis/ood";
 import { classifyImageSuitability } from "../analysis/imageSuitability";
 import { runSegformerResearchInference, ArtifactNotFoundError, hasSegformerResearchArtifact } from "../models/segformerResearchProvider";
-import { segformerOutputToFindings } from "../models/segformerFindingAdapter";
+import { segformerOutputToFindingsWithValidation } from "../models/segformerFindingAdapter";
+import type { SegformerAnatomyValidation } from "../models/anatomyValidation";
 import { buildEvidenceWorkspace } from "./synthesize";
 import { evidenceFromFindings } from "./adapters";
 import { detectConflicts, attachConflictIds } from "./conflicts";
@@ -43,6 +44,8 @@ export type ResearchAnalysisState =
   | "IMAGE_QUALITY_INSUFFICIENT"
   | "OUT_OF_DISTRIBUTION"
   | "INFERENCE_UNAVAILABLE"
+  | "MODEL_INTEGRITY_FAILURE"
+  | "MODEL_OUTPUT_INVALID"
   | "COMPLETED";
 
 export interface ResearchAnalysisResult {
@@ -55,6 +58,14 @@ export interface ResearchAnalysisResult {
   evidence_workspace: EvidenceWorkspace | null;
   safety_banner: string;
   generated_at: string;
+  /** Local model identity is returned even when output is blocked. */
+  model_provenance: {
+    model_id: string | null;
+    model_version: string | null;
+    artifact_sha256: string | null;
+    preprocessing_version: string | null;
+  };
+  anatomy_validation: SegformerAnatomyValidation | null;
 }
 
 const SAFETY_BANNER =
@@ -93,7 +104,14 @@ export async function runResearchAnalysis(studyId: string): Promise<ResearchAnal
 
 async function runResearchAnalysisUncached(studyId: string): Promise<ResearchAnalysisResult> {
   const now = () => new Date().toISOString();
-  const base = { findings: [] as Finding[], evidence_workspace: null, safety_banner: SAFETY_BANNER, generated_at: now() };
+  const base = {
+    findings: [] as Finding[],
+    evidence_workspace: null,
+    safety_banner: SAFETY_BANNER,
+    generated_at: now(),
+    model_provenance: { model_id: null, model_version: null, artifact_sha256: null, preprocessing_version: null },
+    anatomy_validation: null as SegformerAnatomyValidation | null,
+  };
 
   const study = await dbGet<StudyRecord>("studies", studyId);
   if (!study) return { ...base, state: "NOT_A_STUDY", modality: "unknown" };
@@ -179,17 +197,37 @@ async function runResearchAnalysisUncached(studyId: string): Promise<ResearchAna
   }
 
   if (rawOutput.inference_status !== "completed") {
+    const reason = rawOutput.inference_error ?? "Inference did not complete.";
     return {
       ...base,
-      state: "INFERENCE_UNAVAILABLE",
-      reason: rawOutput.inference_error ?? "Inference did not complete.",
+      state: /integrity|sha-?256|artifact hash|tamper/i.test(reason) ? "MODEL_INTEGRITY_FAILURE" : "INFERENCE_UNAVAILABLE",
+      reason,
       modality: canonical,
       quality_status: quality.quality_status,
       quality,
     };
   }
 
-  const findings = segformerOutputToFindings(rawOutput, canonical);
+  const converted = segformerOutputToFindingsWithValidation(rawOutput, canonical);
+  const modelProvenance = {
+    model_id: rawOutput.model_id ?? "segformer-optic-disc-cup-refuge",
+    model_version: rawOutput.model_version ?? "1",
+    artifact_sha256: rawOutput.artifact_sha256 ?? null,
+    preprocessing_version: rawOutput.preprocessing_version ?? null,
+  };
+  if (converted.anatomy_validation.state !== "VALID") {
+    return {
+      ...base,
+      state: "MODEL_OUTPUT_INVALID",
+      reason: `Research segmentation output failed anatomy consistency checks (${converted.anatomy_validation.state}): ${converted.anatomy_validation.reasons.join(" ")}`,
+      modality: canonical,
+      quality_status: quality.quality_status,
+      quality,
+      model_provenance: modelProvenance,
+      anatomy_validation: converted.anatomy_validation,
+    };
+  }
+  const findings = converted.findings;
 
   const workspace = await buildEvidenceWorkspace(studyId);
   if ("not_found" in workspace) {
@@ -219,5 +257,7 @@ async function runResearchAnalysisUncached(studyId: string): Promise<ResearchAna
     evidence_workspace: mergedWorkspace,
     safety_banner: SAFETY_BANNER,
     generated_at: now(),
+    model_provenance: modelProvenance,
+    anatomy_validation: converted.anatomy_validation,
   };
 }

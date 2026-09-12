@@ -24,6 +24,7 @@ import { checkModalitySupported } from "./modalities";
 import {
   DR_GRADE_MODEL_ID,
   DR_GRADE_MODEL_VERSION,
+  DR_GRADE_ARTIFACT_SHA256,
   DR_GRADE_PREPROCESSING_VERSION,
   validateDrGradeWorkerOutput,
   type DrGradeWorkerOutput,
@@ -137,6 +138,8 @@ export function drOutputToRaw(
     study_id: studyId,
     model_id: output.model_id,
     model_version: output.model_version,
+    artifact_sha256: output.artifact_sha256 || DR_GRADE_ARTIFACT_SHA256,
+    preprocessing_version: output.preprocessing_version || DR_GRADE_PREPROCESSING_VERSION,
     modality: "FUNDUS",
     laterality,
     inference_status: "completed",
@@ -168,6 +171,9 @@ async function runProbeOnce(imageBytes: Buffer, studyId: string, laterality: "OD
     }
     if (result.truncated) {
       return { raw: { inference_status: "failed", inference_error: "DR worker output exceeded the bounded stdout limit; output rejected." }, worker: null };
+    }
+    if (result.code !== 0) {
+      return { raw: { inference_status: "failed", inference_error: `DR worker exited non-zero (${result.code ?? "unknown"}); output rejected.` }, worker: null };
     }
     let parsed: unknown;
     try {
@@ -215,7 +221,7 @@ export async function runDrGradeResearchAnalysis(
   study: NormalizedStudy,
   ctx: ModelAnalysisContext
 ): Promise<DrGradeResearchRun> {
-  const { model, gate } = await gateOrThrow(DR_GRADE_MODEL_ID);
+  const { model, gate } = await gateOrThrow(DR_GRADE_MODEL_ID, ctx.device);
   const modCheck = checkModalitySupported(model, study.modality);
   const integrity = verifyModelIntegrity(DR_GRADE_MODEL_ID);
   if (!modCheck.ok) {

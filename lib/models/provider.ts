@@ -13,7 +13,7 @@
 
 import { NormalizedStudy } from "../devices/adapter";
 import { Finding } from "../analysis/schema";
-import { ModelRecord, getModel, gateModelUse, ModelGateResult } from "./registry";
+import { ModelRecord, getModel, gateModelUse, gateModelUseForResearchStudy, ModelGateResult } from "./registry";
 import { verifyModelIntegrity, IntegrityResult } from "./integrity";
 import { checkModalitySupported } from "./modalities";
 import { FundusLesionLocalProvider } from "./fundusLesionLocalProvider";
@@ -78,7 +78,7 @@ export interface EyeModelProvider {
 export async function gateOrThrow(modelId: string, device?: { manufacturer?: string; model?: string } | null): Promise<{ model: ModelRecord; gate: ModelGateResult }> {
   const model = getModel(modelId);
   if (!model) throw new Error(`Model not registered: ${modelId}`);
-  const gate = gateModelUse(model, device);
+  const gate = device === undefined ? gateModelUse(model) : gateModelUseForResearchStudy(model, device);
   if (!gate.allowed) {
     throw new Error(`Model use rejected by registry gate: ${gate.reasons.join(" ")}`);
   }

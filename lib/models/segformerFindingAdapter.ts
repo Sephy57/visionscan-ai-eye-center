@@ -25,6 +25,7 @@ import type { Finding } from "../analysis/schema";
 import type { RawModelOutput } from "./outputContract";
 import { mayEmitFinding } from "../analysis/taxonomy";
 import { SEGFORMER_RESEARCH_MODEL_ID } from "./segformerResearchProvider";
+import { validateSegformerAnatomyOutput, type SegformerAnatomyValidation } from "./anatomyValidation";
 
 let counter = 0;
 function findingId(): string {
@@ -38,8 +39,29 @@ function findingId(): string {
  * represent "no findings" honestly (see S10's "NO VALIDATED FINDING
  * AVAILABLE" wording requirement, never silently implying normal).
  */
-export function segformerOutputToFindings(output: RawModelOutput, modality: string): Finding[] {
-  if (output.inference_status !== "completed" || !output.findings) return [];
+export interface SegformerFindingAdapterResult {
+  findings: Finding[];
+  anatomy_validation: SegformerAnatomyValidation;
+}
+
+export function segformerOutputToFindingsWithValidation(output: RawModelOutput, modality: string): SegformerFindingAdapterResult {
+  if (output.inference_status !== "completed" || !output.findings) {
+    return {
+      findings: [],
+      anatomy_validation: { state: "INCOMPLETE", reasons: ["Completed SegFormer output did not contain findings."], disc_area_pixels: null, cup_area_pixels: null, cup_to_disc_area_ratio: null },
+    };
+  }
+
+  const anatomyValidation = validateSegformerAnatomyOutput(output.findings);
+  // An anatomically impossible segmentation is a model-output integrity
+  // failure. Do not pass its individual boxes through as if they were useful
+  // observations; the caller surfaces the failure state explicitly.
+  if (anatomyValidation.state !== "VALID") {
+    // The presentation boundary requires one complete disc/cup pair with
+    // enough structured geometry to validate it. Partial anatomy output is
+    // not negative evidence and is withheld just like impossible output.
+    return { findings: [], anatomy_validation: anatomyValidation };
+  }
 
   const findings: Finding[] = [];
   for (const rf of output.findings) {
@@ -71,6 +93,18 @@ export function segformerOutputToFindings(output: RawModelOutput, modality: stri
       confidence_category: "INDETERMINATE",
       confidence_raw: null,
       confidence_calibrated: null, // NOT CALIBRATED - no calibration evidence exists for this candidate
+      structured_measurements: rf.measurement
+        ? [{
+            key: rf.measurement.key,
+            value: rf.measurement.value,
+            unit: rf.measurement.unit,
+            anatomical_region: rf.finding_type.includes("cup") ? "optic_cup" : rf.finding_type.includes("disc") ? "optic_disc" : "unspecified",
+            source_modality: modality,
+            measurement_confidence: null,
+            model_id: output.model_id ?? SEGFORMER_RESEARCH_MODEL_ID,
+            model_version: output.model_version ?? "1",
+          }]
+        : undefined,
       taxonomy_level: "observation",
       region,
       explanation: `Segmentation-derived area (${rf.evidence ?? "extent not recorded"}). RESEARCH_INFERENCE only - not a clinically validated finding.`,
@@ -79,5 +113,9 @@ export function segformerOutputToFindings(output: RawModelOutput, modality: stri
       model_status: "CANDIDATE_ONLY",
     });
   }
-  return findings;
+  return { findings, anatomy_validation: anatomyValidation };
+}
+
+export function segformerOutputToFindings(output: RawModelOutput, modality: string): Finding[] {
+  return segformerOutputToFindingsWithValidation(output, modality).findings;
 }

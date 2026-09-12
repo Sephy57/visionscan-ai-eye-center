@@ -111,6 +111,10 @@ def main() -> int:
             # set to null (the output contract's RawFinding.confidence is a
             # plain optional number, not nullable - see lib/models/outputContract.ts)
             "evidence": f"{px} px / {total_px} px ({100.0 * px / total_px:.2f}%)",
+            # Preserve the measured mask area as structured worker output so
+            # the TypeScript anatomy gate can reject impossible cup>disc
+            # results without scraping human-readable evidence text.
+            "measurement": {"key": "mask_area_pixels", "value": px, "unit": "pixel"},
             "localization": localization,
         })
 

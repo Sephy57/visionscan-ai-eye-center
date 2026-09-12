@@ -27,19 +27,31 @@ const HIGH_RISK_TYPES = new Set([
   "neovascularization_like",
 ]);
 
-export function runEnsemble(findings: Finding[]): EnsembleOutcome {
-  const detectors = Object.values(COMPONENTS).filter((c) => c.role === "detector" && c.implementation !== "placeholder");
+export function runEnsemble(findings: Finding[], activeDetectorIds?: readonly string[]): EnsembleOutcome {
+  const configuredDetectors = Object.values(COMPONENTS).filter((c) => c.role === "detector" && c.implementation !== "placeholder");
+  const runtimeDetectorIds = [...new Set((activeDetectorIds ?? []).filter((id) => typeof id === "string" && id.length > 0))];
+  const detectorIds = runtimeDetectorIds.length > 0 ? runtimeDetectorIds : configuredDetectors.map((detector) => detector.id);
   const checks: Array<{ component_id: string; result: string }> = [];
 
   const capped = findings.map((f) => {
-    if (HIGH_RISK_TYPES.has(f.type) && detectors.length < 2) {
+    // A second model doing a different task (for example, a DR grade beside
+    // a lesion locator) is not independent corroboration of this finding.
+    // Cap each high-risk finding unless the same high-risk finding type is
+    // actually emitted by at least two distinct model ids.
+    const sameTypeModelCount = new Set(
+      findings
+        .filter((candidate) => candidate.type === f.type && HIGH_RISK_TYPES.has(candidate.type))
+        .map((candidate) => candidate.model_id),
+    ).size;
+    if (HIGH_RISK_TYPES.has(f.type) && sameTypeModelCount < 2) {
       // High-risk finding from a single non-ensemble source: cap to moderate.
-      return { ...f, confidence: Math.min(f.confidence, 0.75), confidence_category: capCategory(f.confidence) };
+      const cappedConfidence = Math.min(f.confidence, 0.75);
+      return { ...f, confidence: cappedConfidence, confidence_category: capCategory(cappedConfidence) };
     }
     return f;
   });
 
-  if (detectors.length < 2) {
+  if (detectorIds.length < 2) {
     for (const f of capped) checks.push({ component_id: f.model_id, result: "single detector - no independent corroboration" });
     return {
       performed: true,
@@ -47,7 +59,7 @@ export function runEnsemble(findings: Finding[]): EnsembleOutcome {
       checks,
       note:
         "Ensemble verification requires at least two independent detector models. Only one detector component is " +
-        "currently installed (integration placeholder), so no cross-model agreement could be established. " +
+        "currently available for this result, so no cross-model agreement could be established. " +
         "Confidence is capped accordingly.",
       cappedFindings: capped,
     };
@@ -59,7 +71,7 @@ export function runEnsemble(findings: Finding[]): EnsembleOutcome {
     performed: true,
     agreement: "not_applicable",
     checks,
-    note: "Multi-model ensemble logic is scaffolded but not yet exercised.",
+    note: "Multiple model outputs reached the pipeline. This generic ensemble does not average scores; categorical agreement or contradiction is reported separately in multi_model.",
     cappedFindings: capped,
   };
 }

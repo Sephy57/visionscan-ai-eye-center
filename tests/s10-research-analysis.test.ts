@@ -60,10 +60,18 @@ describe("S10 - modality gate (no artifact required)", () => {
 describe.skipIf(!HAS_ARTIFACT)("S10 - real end-to-end research analysis", () => {
   // REAL SegFormer python-bridge inference: 60s is not enough under
   // full-suite CPU contention (documented flake). Timeout raised, assertions untouched.
-  it("produces real findings with localization, merged into the evidence workspace", { timeout: 240_000 }, async () => {
+  it("admits only anatomically consistent real output; withholds the known impossible sample", { timeout: 240_000 }, async () => {
     const studyId = await fundusStudy();
     const result = await runResearchAnalysis(studyId);
-    expect(result.state).toBe("COMPLETED");
+    expect(["COMPLETED", "MODEL_OUTPUT_INVALID"]).toContain(result.state);
+    if (result.state === "MODEL_OUTPUT_INVALID") {
+      expect(result.findings).toEqual([]);
+      expect(result.evidence_workspace).toBeNull();
+      expect(result.anatomy_validation?.state).toBe("INVALID");
+      expect(result.reason).toMatch(/cup mask area|anatomy consistency/i);
+      expect(result.model_provenance.artifact_sha256).toMatch(/^[a-f0-9]{64}$/);
+      return;
+    }
     expect(result.findings.length).toBeGreaterThan(0);
     for (const f of result.findings) {
       expect(f.synthetic).toBe(false); // real output, not the DEMO generator
@@ -95,6 +103,12 @@ describe.skipIf(!HAS_ARTIFACT)("S10 - real end-to-end research analysis", () => 
   it("the merged evidence workspace never contains a SUPPORTED_CONDITION from this single unverified AI finding alone", { timeout: 240_000 }, async () => {
     const studyId = await fundusStudy();
     const result = await runResearchAnalysis(studyId);
+    if (result.state === "MODEL_OUTPUT_INVALID") {
+      expect(result.findings).toEqual([]);
+      expect(result.evidence_workspace).toBeNull();
+      return;
+    }
+    expect(result.state).toBe("COMPLETED");
     const conditions = result.evidence_workspace!.possible_conditions;
     // A single UNVERIFIED AI_FINDING source, with no corroborating verified
     // evidence, must never alone produce SUPPORTED_CONDITION (S5's trust-gating rule).

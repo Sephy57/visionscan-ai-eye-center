@@ -41,6 +41,7 @@ import { checkModalitySupported } from "./modalities";
 import {
   FUNDUS_LESION_MODEL_ID,
   FUNDUS_LESION_MODEL_VERSION,
+  FUNDUS_LESION_ARTIFACT_SHA256,
   FUNDUS_LESION_PREPROCESSING_VERSION,
   validateFundusLesionSegmentationOutput,
   type FundusLesionSegmentationOutput,
@@ -199,6 +200,8 @@ export function lesionOutputToRaw(
     study_id: studyId,
     model_id: output.model_id,
     model_version: output.model_version,
+    artifact_sha256: output.artifact_sha256 || FUNDUS_LESION_ARTIFACT_SHA256,
+    preprocessing_version: output.preprocessing_version || FUNDUS_LESION_PREPROCESSING_VERSION,
     modality: "FUNDUS",
     laterality,
     inference_status: "completed",
@@ -244,6 +247,9 @@ async function runProbeOnce(
     }
     if (result.truncated) {
       return { inference_status: "failed", inference_error: "Lesion worker output exceeded the bounded stdout limit; output rejected." };
+    }
+    if (result.code !== 0) {
+      return { inference_status: "failed", inference_error: `Lesion worker exited non-zero (${result.code ?? "unknown"}); output rejected.` };
     }
     let parsed: unknown;
     try {
@@ -299,7 +305,7 @@ export async function runFundusLesionResearchAnalysis(
   study: NormalizedStudy,
   ctx: ModelAnalysisContext
 ): Promise<FundusLesionResearchRun> {
-  const { model, gate } = await gateOrThrow(FUNDUS_LESION_MODEL_ID);
+  const { model, gate } = await gateOrThrow(FUNDUS_LESION_MODEL_ID, ctx.device);
   const modCheck = checkModalitySupported(model, study.modality);
   const integrity = verifyModelIntegrity(FUNDUS_LESION_MODEL_ID);
   if (!modCheck.ok) {
@@ -323,10 +329,9 @@ export async function runFundusLesionResearchAnalysis(
       integrity,
     };
   }
-  // Device compatibility is INFORMATIONAL for this IMAGE_ONLY model: its
-  // computation does not branch on device metadata, so an absent device
-  // must not silently become a block (nor a pass). Compatibility stays
-  // unvalidated and is disclosed, never assumed.
+  // Device compatibility remains explicitly UNKNOWN for this IMAGE_ONLY
+  // research model because no allowlist exists. The per-study gate records
+  // that policy; this disclosure is retained in the raw run notes.
   const deviceNote = deviceCompatible(model, ctx.device ?? null);
   const disclosure = `Device compatibility: ${deviceNote.note} Domain validation: DOMAIN_VALIDATION_UNKNOWN.`;
   const imageHash = assetHash(imageBytes);

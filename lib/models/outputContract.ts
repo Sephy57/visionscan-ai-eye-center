@@ -25,6 +25,12 @@ export interface RawFinding {
     coordinates?: { x: number; y: number; w: number; h: number };
     data_ref?: string;
   } | null;
+  /** Structured measurement emitted by a model, never synthesized by the adapter. */
+  measurement?: {
+    key: string;
+    value: number;
+    unit: string;
+  };
   evidence?: string;
 }
 
@@ -41,6 +47,9 @@ export interface RawModelOutput {
   confidence?: number | null;                 // raw aggregate score or null
   calibrated_confidence?: number | null;      // requires calibration evidence
   uncertainty?: number | null;
+  /** Optional integrity/provenance fields emitted by a local worker. */
+  artifact_sha256?: string;
+  preprocessing_version?: string;
   ood_status?: "in_distribution" | "out_of_distribution" | "unknown";
   quality_status?: "pass" | "borderline" | "fail" | "unknown";
   inference_status: "completed" | "failed";   // the only mandatory field
@@ -86,6 +95,10 @@ export function validateRawModelOutput(raw: unknown): ContractValidationResult {
   if (o.findings) {
     if (!Array.isArray(o.findings)) errors.push({ path: "findings", message: "must be an array" });
     o.findings?.forEach((f, i) => {
+      if (!f || typeof f !== "object") {
+        errors.push({ path: `findings[${i}]`, message: "must be an object" });
+        return;
+      }
       if (typeof f.finding_type !== "string" || f.finding_type.length === 0) {
         errors.push({ path: `findings[${i}].finding_type`, message: "required" });
       }
@@ -95,6 +108,21 @@ export function validateRawModelOutput(raw: unknown): ContractValidationResult {
       if (f.calibrated_confidence !== undefined && f.calibrated_confidence !== null &&
           (typeof f.calibrated_confidence !== "number" || f.calibrated_confidence < 0 || f.calibrated_confidence > 1)) {
         errors.push({ path: `findings[${i}].calibrated_confidence`, message: "must be null or 0..1" });
+      }
+      if (f.measurement !== undefined) {
+        if (!f.measurement || typeof f.measurement !== "object") {
+          errors.push({ path: `findings[${i}].measurement`, message: "must be an object" });
+        } else {
+          if (typeof f.measurement.key !== "string" || f.measurement.key.trim().length === 0) {
+            errors.push({ path: `findings[${i}].measurement.key`, message: "must be a non-empty string" });
+          }
+          if (typeof f.measurement.value !== "number" || !Number.isFinite(f.measurement.value) || f.measurement.value < 0) {
+            errors.push({ path: `findings[${i}].measurement.value`, message: "must be a finite non-negative number" });
+          }
+          if (typeof f.measurement.unit !== "string" || f.measurement.unit.trim().length === 0) {
+            errors.push({ path: `findings[${i}].measurement.unit`, message: "must be a non-empty string" });
+          }
+        }
       }
       if (f.localization?.kind === "bounding_box" && !f.localization.coordinates && !f.localization.data_ref) {
         errors.push({ path: `findings[${i}].localization`, message: "bounding_box requires coordinates or data_ref" });
@@ -119,6 +147,13 @@ export function validateRawModelOutput(raw: unknown): ContractValidationResult {
         }
       }
     });
+  }
+
+  if (o.artifact_sha256 !== undefined && (typeof o.artifact_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(o.artifact_sha256))) {
+    errors.push({ path: "artifact_sha256", message: "must be 64 lowercase hexadecimal characters when provided" });
+  }
+  if (o.preprocessing_version !== undefined && (typeof o.preprocessing_version !== "string" || o.preprocessing_version.trim().length === 0)) {
+    errors.push({ path: "preprocessing_version", message: "must be a non-empty string when provided" });
   }
 
   // Calibration honesty: calibrated values require explicit calibration metadata

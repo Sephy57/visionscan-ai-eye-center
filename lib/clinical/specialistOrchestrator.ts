@@ -132,6 +132,8 @@ async function wrapResearchAnalysisResult(
     IMAGE_QUALITY_INSUFFICIENT: "QUALITY_FAILED",
     OUT_OF_DISTRIBUTION: "OOD_REJECTED",
     INFERENCE_UNAVAILABLE: "MODEL_UNAVAILABLE",
+    MODEL_INTEGRITY_FAILURE: "MODEL_INTEGRITY_FAILURE",
+    MODEL_OUTPUT_INVALID: "MODEL_OUTPUT_INVALID",
     NOT_A_STUDY: "MODEL_INPUT_UNSUPPORTED",
   };
 
@@ -198,7 +200,7 @@ async function wrapResearchAnalysisResult(
       model_version: executableModelVersionForResearch(research),
       task: "optic disc/cup anatomy segmentation",
       status: "RESEARCH",
-      artifact_sha256: null,
+      artifact_sha256: research.model_provenance.artifact_sha256,
     }],
     evidence_reviewed: workspaceEvidenceIds.length > 0 ? workspaceEvidenceIds : findingEvidence.map((e) => e.id),
     evidence_for: (research.evidence_workspace?.evidence ?? findingEvidence)
@@ -215,9 +217,9 @@ async function wrapResearchAnalysisResult(
 }
 
 function executableModelIdForResearch(research: Awaited<ReturnType<typeof runResearchAnalysis>>): string {
-  return research.findings[0]?.model_id ?? "segformer-optic-disc-cup-refuge";
+  return research.model_provenance.model_id ?? research.findings[0]?.model_id ?? "segformer-optic-disc-cup-refuge";
 }
 
 function executableModelVersionForResearch(research: Awaited<ReturnType<typeof runResearchAnalysis>>): string {
-  return research.findings[0]?.model_version ?? "1";
+  return research.model_provenance.model_version ?? research.findings[0]?.model_version ?? "1";
 }

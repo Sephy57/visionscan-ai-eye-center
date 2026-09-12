@@ -199,13 +199,16 @@ export interface AnalysisResult {
     source_page_hash: string; roi_hash: string; content_type: "OCT_BSCAN";
     status: "EXECUTED" | "FAILED" | "SKIPPED"; assessment?: import("../models/octAssessment").OctAssessmentResult; note?: string;
   }>;
-  oct_aggregation?: "CONSISTENT_TARGET_CLASS" | "MIXED_OCT_CLASS_RESULTS" | "INSUFFICIENT_SCAN_QUALITY" | "NOT_COMPARABLE";
+  oct_aggregation?: "CONSISTENT_TARGET_CLASS" | "CONSISTENT_NO_TARGET_CLASS" | "MIXED_OCT_CLASS_RESULTS" | "INSUFFICIENT_SCAN_QUALITY" | "NOT_COMPARABLE";
+  /** Scan-level OCT aggregation keeps excluded scans and disagreement explicit. */
+  oct_scan_aggregation?: import("../models/octAggregation").OctAggregationResult;
   /** Cross-model research agreement. Scores are never averaged; disagreement has no automatic winner. */
   multi_model?: {
     performed: boolean;
     agreement: "CORROBORATED_RESEARCH_EVIDENCE" | "MODEL_DISAGREEMENT" | "CONSISTENT_RESEARCH_NEGATIVE" | "SINGLE_RESEARCH_MODEL" | "NO_RESEARCH_MODEL_OUTPUT";
     models: Array<{ model_id: string; model_version: string; model_status: string; output_summary: string }>;
     notes: string[];
+    contradiction_flags?: string[];
   };
   model_registry?: {
     model_id: string;
@@ -563,6 +566,23 @@ export function validateAnalysisResult(r: unknown): { valid: boolean; errors: Va
       errors.push({ path: "oct_assessment", message: "unavailable/blocked OCT state cannot carry a class" });
     }
   }
+  if (o.oct_scan_aggregation) {
+    const aggregation = o.oct_scan_aggregation;
+    const validStates = ["CONSISTENT_TARGET_CLASS", "CONSISTENT_NO_TARGET_CLASS", "MIXED_OCT_CLASS_RESULTS", "INSUFFICIENT_SCAN_QUALITY", "NOT_COMPARABLE"];
+    const validClasses = ["CNV", "DME", "DRUSEN", "NORMAL"];
+    need(validStates.includes(aggregation.state), "oct_scan_aggregation.state", "invalid aggregation state");
+    need(Array.isArray(aggregation.considered_scan_ids) && aggregation.considered_scan_ids.every((id) => typeof id === "string" && id.length > 0), "oct_scan_aggregation.considered_scan_ids", "must be scan-id strings");
+    need(Array.isArray(aggregation.excluded_scan_ids) && aggregation.excluded_scan_ids.every((id) => typeof id === "string" && id.length > 0), "oct_scan_aggregation.excluded_scan_ids", "must be scan-id strings");
+    need(!!aggregation.class_counts && typeof aggregation.class_counts === "object", "oct_scan_aggregation.class_counts", "must be an object");
+    for (const [className, count] of Object.entries(aggregation.class_counts ?? {})) {
+      need(validClasses.includes(className), `oct_scan_aggregation.class_counts.${className}`, "invalid OCT class");
+      need(Number.isInteger(count) && count >= 0, `oct_scan_aggregation.class_counts.${className}`, "must be a non-negative integer");
+    }
+    need(aggregation.selected_class === null || validClasses.includes(aggregation.selected_class), "oct_scan_aggregation.selected_class", "invalid selected class");
+    need(aggregation.requires_clinician_review === true, "oct_scan_aggregation.requires_clinician_review", "must be true");
+    need(typeof aggregation.note === "string" && aggregation.note.length > 0, "oct_scan_aggregation.note", "required");
+    if (o.oct_aggregation !== undefined) need(o.oct_aggregation === aggregation.state, "oct_aggregation", "must match oct_scan_aggregation.state");
+  }
 
   if (o.multi_model) {
     const mm = o.multi_model;
@@ -570,6 +590,9 @@ export function validateAnalysisResult(r: unknown): { valid: boolean; errors: Va
     need(validAgreements.includes(mm.agreement), "multi_model.agreement", "invalid agreement state");
     need(Array.isArray(mm.models), "multi_model.models", "must be array");
     need(Array.isArray(mm.notes) && mm.notes.length > 0 && mm.notes.every((n) => typeof n === "string" && n.length > 0), "multi_model.notes", "at least one explicit agreement note is required");
+    if (mm.contradiction_flags !== undefined) {
+      need(Array.isArray(mm.contradiction_flags) && mm.contradiction_flags.every((flag) => typeof flag === "string" && flag.length > 0), "multi_model.contradiction_flags", "must be non-empty strings");
+    }
     for (const [i, m] of (mm.models ?? []).entries()) {
       if (!m.model_id || !m.model_version || !m.output_summary) {
         errors.push({ path: `multi_model.models[${i}]`, message: "model provenance (id/version/output summary) required" });
