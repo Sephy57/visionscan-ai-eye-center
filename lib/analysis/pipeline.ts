@@ -219,7 +219,12 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     model: modelRecord,
     device: deviceInfo,
     metadataProvided: study.metadata.providedBy !== "none",
-    deviceUnknownIsDomainUnknown: modelRecord?.status !== "DEMO",
+    // The DEMO path has no acquisition-device claim to validate, and all
+    // current local image-only research providers disclose missing device
+    // compatibility as DOMAIN_VALIDATION_UNKNOWN. Do not turn absent device
+    // metadata into OOD; modality, quality, and image-characteristic gates
+    // still apply below.
+    deviceUnknownIsDomainUnknown: true,
   });
 
   const modelsAttempted = new Set<string>();
