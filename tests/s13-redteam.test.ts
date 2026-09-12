@@ -148,15 +148,16 @@ describe("S13 scenario 1 - spoofed client-supplied diagnosis_gate is never trust
 });
 
 /* ------------------------------------------------------------------------ */
-/* Scenario 2 - zero findings + INFERENCE_UNAVAILABLE/unregistered model    */
+/* Scenario 2 - zero findings + MODEL_UNAVAILABLE/unregistered model       */
 /* ------------------------------------------------------------------------ */
 
 describe("S13 scenario 2 - zero findings is never silently presented as 'normal'", () => {
   it("a real zero-finding analysis still carries an honest, unvalidated overall_result - never a bare clean-bill-of-health claim", async () => {
     // RESEARCH path (equipped machines): the green-disc fixture deterministically
-    // yields zero real findings; DEMO path (fresh checkouts): the no_finding
-    // demo-scenario fixture yields zero synthetic findings. Either way the
-    // zero branch must never read as normal/healthy and the gate stays closed.
+    // yields zero real findings; DEMO path (fresh checkouts): no research
+    // artifact is installed, so the model-free run reports MODEL_UNAVAILABLE.
+    // Either way the branch must never read as normal/healthy and the gate stays
+    // closed.
     const bytes = RESEARCH_LIVE ? await makeGreenDiscImage() : await noFindingImage();
     const study = await createStudy("s13-nofinding.png", "image/png", bytes, DECLARED);
     createdStudyIds.push(study.study_id);
@@ -168,7 +169,7 @@ describe("S13 scenario 2 - zero findings is never silently presented as 'normal'
       expect(analysis.model_registry?.model_status).toBe("RESEARCH");
       expect(report.overall_result).toBe("NO TARGET ABNORMALITY IDENTIFIED BY THE AVAILABLE MODEL — OTHER ABNORMALITIES MAY STILL BE PRESENT");
     } else {
-      expect(report.overall_result).toBe("INPUT OUT OF DISTRIBUTION — AUTOMATED FUNDUS INTERPRETATION INCONCLUSIVE");
+      expect(report.overall_result).toBe("GENERAL FUNDUS ABNORMALITY MODEL UNAVAILABLE — CLINICAL INTERPRETATION NOT AVAILABLE");
     }
     expect(report.overall_result).not.toMatch(/\bNORMAL\b/i);
     expect(report.overall_result).not.toMatch(/\bHEALTHY\b/i);
