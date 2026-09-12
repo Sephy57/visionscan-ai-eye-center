@@ -1,0 +1,5 @@
+# Evidence files are hashed byte-for-byte. Keep their serialized form stable
+# across Windows checkouts so hashes.json remains verifiable after clone.
+/docs/generated/model-competition/** text eol=lf
+/docs/generated/phase6-*.json text eol=lf
+/docs/model-manifests/retguard-dr-v1.0.0-*.json text eol=lf
