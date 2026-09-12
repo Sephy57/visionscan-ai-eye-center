@@ -37,7 +37,7 @@ The current release-data gate therefore remains `BLOCKERS_REMAIN` with `active_d
 
 ## Forensic search evidence
 
-The current active closure dry run scanned 69,352 files. It observed 91,745 exact digest matches, but all 91,745 were rejected for scope or provenance. This is not contradictory: the same bytes can occur in fixtures, backups, derivatives, or unrelated scopes without proving ownership of a required source.
+The current active closure dry run scanned 69,353 files. It observed 91,745 exact digest matches, but all 91,745 were rejected for scope or provenance. This is not contradictory: the same bytes can occur in fixtures, backups, derivatives, or unrelated scopes without proving ownership of a required source.
 
 Trusted roots considered by the planner were `uploads`, `documents`, `processed`, `reports`, `quarantine`, and verified isolated restores. No candidate satisfied the full identity tuple. The generated ledger and dry-run plan are:
 
@@ -56,7 +56,7 @@ The legacy closure dry run found 5,263 detached/orphan references:
 | Detached legacy job | 1 |
 | Total | 5,263 |
 
-The current release-data check also reports 100 legacy unresolved source conditions: 55 missing required artifacts and 45 missing report exports. These references are preserved legacy governance state, not evidence that the current release dataset is clean. No legacy row was silently deleted, reparented, or promoted.
+The current release-data check reports 107 legacy unresolved source conditions: 59 missing required artifacts and 48 missing report exports. These references are preserved legacy governance state, not evidence that the current release dataset is clean. No legacy row was silently deleted, reparented, or promoted.
 
 ## Integrity and tenant boundaries
 
