@@ -1,0 +1,40 @@
+{
+  "schema_version": "visionscan-scientific-validation-stage1-dataset-manifest-v1",
+  "manifest_state": "NOT_ACQUIRED",
+  "created_at": "2026-09-13T22:45:48.4309042Z",
+  "program": "SCIENTIFIC_VALIDATION_STAGE_1",
+  "dataset_id": "brset-v1.0.2",
+  "dataset_version": "1.0.2",
+  "source": "https://physionet.org/content/brazilian-ophthalmological/1.0.2/",
+  "download_source": "https://physionet.org/content/brazilian-ophthalmological/1.0.2/",
+  "planned_external_root": "D:/VISIONSCAN-VALIDATION-DATA/brset-v1.0.2",
+  "rights_state": "CONDITIONALLY_DEFENSIBLE_RESEARCH_ONLY_CREDENTIAL_REQUIRED",
+  "access_state": "CREDENTIAL_REQUIRED_NOT_AVAILABLE",
+  "expected_release_contents": {
+    "images": "fundus_photos",
+    "labels": "labels.csv",
+    "documented_image_count": 16266,
+    "documented_patient_count": 8524,
+    "patient_key": "patient_id",
+    "eye_key": "exam_eye",
+    "image_key": "image_id"
+  },
+  "files": [],
+  "file_count": 0,
+  "dataset_file_count": null,
+  "dataset_image_count": null,
+  "dataset_patient_count": null,
+  "dataset_sha256": null,
+  "hash": {
+    "algorithm": "SHA-256",
+    "scope": "canonical JSON with the hash property omitted; this hashes the blocked manifest record, not unavailable dataset bytes",
+    "value": "1ab490cf28b3a30f00052ee183252a46955d99ace9fdff0cafa4936cc9204667"
+  },
+  "notes": [
+    "This is a safe, immutable pre-acquisition record. It is not evidence that BRSET files were obtained.",
+    "No raw image, label row, patient identifier, eye identifier, or derived per-case output is present.",
+    "No inference, exclusion, quality gate, OOD gate, or endpoint calculation was run.",
+    "The documented release counts are retained as source metadata only and are not used as local denominators."
+  ],
+  "phi_included": false
+}

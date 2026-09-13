@@ -1,0 +1,127 @@
+{
+  "schema_version": "visionscan-scientific-validation-stage1-independent-audit-v1",
+  "observed_at": "2026-09-13T23:05:59.1222764Z",
+  "auditor": {
+    "nickname": "Carver",
+    "agent_id": "01a09cff-b7ef-7591-ad2f-6565ea9479af",
+    "role": "fresh independent read-only scientific-method auditor",
+    "files_changed": false,
+    "inference_or_data_acquisition_performed": false
+  },
+  "audited_repository_head": "165c731122de6af6c77af4ff55cd47a506a2ad92",
+  "scope": "Stage 1 scientific-method boundaries and stop-before-inference governance only; no clinical approval or performance assessment",
+  "result": "PASS_SCIENTIFIC_METHOD_BOUNDARIES",
+  "questions": [
+    {
+      "id": "Q1",
+      "boundary": "Candidate selection occurred before any outcome was observed.",
+      "result": "PASS",
+      "evidence": "The dossier records outcome-independent selection and no downloaded raw candidate data."
+    },
+    {
+      "id": "Q2",
+      "boundary": "Candidate externality and model-training overlap were addressed.",
+      "result": "PASS",
+      "evidence": "BRSET remains conditional/not acquired because exact training manifests are unavailable and residual overlap cannot be excluded; other candidates record explicit overlap rejection where applicable."
+    },
+    {
+      "id": "Q3",
+      "boundary": "Rights and access terms were treated as a gate.",
+      "result": "PASS",
+      "evidence": "BRSET credentialing, training, DUA, no-sharing, and research-only terms are documented; access was not present and no restricted files were used."
+    },
+    {
+      "id": "Q4",
+      "boundary": "Dataset provenance and exact release identity were required.",
+      "result": "PASS",
+      "evidence": "The blocked manifest names BRSET v1.0.2 and records that dataset bytes and file hashes are unavailable until authorized acquisition."
+    },
+    {
+      "id": "Q5",
+      "boundary": "Patient, eye, and laterality grouping were predeclared.",
+      "result": "PASS",
+      "evidence": "The protocol preserves patient_id and exam_eye, does not merge eyes, and requires patient-clustered accounting."
+    },
+    {
+      "id": "Q6",
+      "boundary": "The planned endpoint and compatible labels were predeclared.",
+      "result": "PASS",
+      "evidence": "The protocol binds the primary review-escalation endpoint to compatible BRSET ICDR labels and records incompatible candidates as rejected."
+    },
+    {
+      "id": "Q7",
+      "boundary": "Eligibility, exclusion, quality, and missing-data rules were fixed before inference.",
+      "result": "PASS",
+      "evidence": "The frozen protocol contains the predeclared decode, quality, OOD, grouping, missing-ground-truth, and stop rules."
+    },
+    {
+      "id": "Q8",
+      "boundary": "Quality and OOD handling cannot silently create favorable denominators.",
+      "result": "PASS",
+      "evidence": "Quality/OOD outcomes are planned as explicit coverage fields; no cases were executed and no denominator was invented."
+    },
+    {
+      "id": "Q9",
+      "boundary": "Model identities, preprocessing, thresholds, and lesion rule were frozen.",
+      "result": "PASS",
+      "evidence": "Protocol identities and SHA-256 artifacts match the installed research-only manifests, including LESION_ESCALATION_RULE_PHASE7_V1 and region_count >= 3."
+    },
+    {
+      "id": "Q10",
+      "boundary": "The run stopped before raw validation inference.",
+      "result": "PASS",
+      "evidence": "Results record no acquired data, zero raw validation images read, zero model invocations, and no inference authorization."
+    },
+    {
+      "id": "Q11",
+      "boundary": "Unavailable denominators and metrics remain unavailable.",
+      "result": "PASS",
+      "evidence": "Results use null for unavailable coverage, endpoint estimates, misses, intervals, and subgroup quantities rather than negative or zero performance claims."
+    },
+    {
+      "id": "Q12",
+      "boundary": "The error registry does not convert an empty run into zero errors.",
+      "result": "PASS",
+      "evidence": "The registry is empty only because no cases were acquired and explicitly states that this does not mean zero model errors or misses."
+    },
+    {
+      "id": "Q13",
+      "boundary": "There was no test-set shopping or post-result tuning.",
+      "result": "PASS",
+      "evidence": "No candidate outcome was observed, no inference occurred, and the report records no weight, preprocessing, threshold, rule, filter, or calibration changes."
+    },
+    {
+      "id": "Q14",
+      "boundary": "Committed artifacts are aggregate-only and contain no PHI or raw validation bytes.",
+      "result": "PASS",
+      "evidence": "The reviewed Stage 1 JSON artifacts contain no case data, image bytes, PHI, or private-key material."
+    },
+    {
+      "id": "Q15",
+      "boundary": "Scientific validation is separated from engineering readiness and clinical claims.",
+      "result": "PASS",
+      "evidence": "The report separately classifies controlled-local-research engineering readiness and states that external validation, clinical validation, device status, and autonomous diagnosis are not established."
+    }
+  ],
+  "evidence_reviewed": [
+    "docs/VISIONSCAN_SCIENTIFIC_VALIDATION_STAGE1_REPORT.md",
+    "docs/generated/scientific-validation-stage1-dataset-dossiers.json",
+    "docs/generated/dataset-manifest.json",
+    "docs/generated/scientific-validation-stage1-protocol.json",
+    "docs/generated/scientific-validation-stage1-results.json",
+    "docs/generated/scientific-validation-stage1-error-registry.json",
+    "docs/generated/final-independent-engineering-audit.json",
+    "data/models/fundus-dr-grading-effb0/manifest.json",
+    "data/models/fundus-lesions-clementp-unet-seresnext50/manifest.json",
+    "docs/DR_GRADE_MODEL_INTEGRATION.md",
+    "docs/FUNDUS_LESION_MODEL_INTEGRATION.md"
+  ],
+  "limitations": [
+    "No external performance estimate exists because no candidate data were acquired or executed.",
+    "Publisher-reported model-training source lists are not exact image-level training manifests, so residual overlap is not mathematically excluded.",
+    "The audit is a methods/governance review and is not clinical validation, regulatory approval, or model-performance sign-off.",
+    "The broad raw_images_in_repository wording noted during review was clarified in the final dossier as raw_validation_images_in_repository, with non-Stage-1 engineering and historical files separately scoped."
+  ],
+  "approved_scope": "PASS_SCIENTIFIC_METHOD_BOUNDARIES only; Stage 1 remains EXTERNAL_REVIEW_ESCALATION_VALIDATION_NOT_ESTABLISHED",
+  "phi_included": false
+}

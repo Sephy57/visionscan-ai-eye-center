@@ -1,0 +1,189 @@
+{
+  "schema_version": "visionscan-scientific-validation-stage1-protocol-v1",
+  "protocol_id": "VISIONSCAN_SCIENTIFIC_VALIDATION_STAGE1_BRSET_V1",
+  "protocol_status": "FROZEN_BEFORE_INFERENCE_NOT_ACQUIRED",
+  "created_at": "2026-09-13T22:45:48.4309042Z",
+  "program": "SCIENTIFIC_VALIDATION_STAGE_1",
+  "claim_scope": "Independent external retrospective research evidence only; no clinical validation, device approval, diagnosis, or autonomous-use claim",
+  "dataset": {
+    "candidate_id": "brset-v1.0.2",
+    "identity": "A Brazilian Multilabel Ophthalmological Dataset (BRSET)",
+    "version": "1.0.2",
+    "source": "https://physionet.org/content/brazilian-ophthalmological/1.0.2/",
+    "access_state": "CREDENTIAL_REQUIRED_NOT_AVAILABLE",
+    "manifest_path": "docs/generated/dataset-manifest.json",
+    "manifest_hash": "1ab490cf28b3a30f00052ee183252a46955d99ace9fdff0cafa4936cc9204667",
+    "inference_authorized": false
+  },
+  "eligibility_rules": [
+    "Use only the exact acquired release named by the manifest; do not mix versions or mirrors.",
+    "Input must be a regular non-reparse-point color fundus image within the model byte and pixel limits.",
+    "Image bytes must decode successfully and retain their input SHA-256.",
+    "A primary-endpoint case must have compatible BRSET DR_ICDR ground truth and a valid patient_id for cluster accounting.",
+    "Preserve exam_eye exactly as supplied; do not infer laterality.",
+    "A case may be executed only after modality, quality, OOD, provenance, and model-identity gates pass.",
+    "All non-executed cases remain in the coverage denominator accounting with an explicit reason."
+  ],
+  "predeclared_exclusion_rules": [
+    "UNSUPPORTED_IMAGE: non-fundus or unsupported file type",
+    "DECODE_FAILURE: image cannot be decoded or fails channel/shape limits",
+    "MISSING_REQUIRED_ARTIFACT: image or required ground truth is absent",
+    "QUALITY_BLOCKED: existing quality gate rejects the image; the gate is not relaxed",
+    "OOD_BLOCKED: existing domain gate rejects the image; the gate is not changed",
+    "MODEL_FAILURE: inference fails; it is never recorded as a negative result",
+    "LABEL_AMBIGUITY: source label mapping is not defensible",
+    "PATIENT_GROUPING_UNUSABLE: patient_id is absent or inconsistent for a required cluster analysis"
+  ],
+  "ground_truth_mapping": {
+    "source_field": "DR_ICDR",
+    "allowed_values": [0, 1, 2, 3, 4],
+    "mapping": {
+      "0": "NO_DR_REFERENCE",
+      "1": "MILD_NPDR_REFERENCE",
+      "2": "MODERATE_NPDR_REFERENCE",
+      "3": "SEVERE_NPDR_REFERENCE",
+      "4": "PROLIFERATIVE_OR_POST_LASER_REFERENCE"
+    },
+    "referable_reference_definition": "DR_ICDR >= 2; research reference condition only, not a diagnosis or referral decision",
+    "grade_3_reference": "DR_ICDR == 3",
+    "grade_4_reference": "DR_ICDR == 4",
+    "other_labels": "Do not substitute binary pathology fields for DR_ICDR or silently merge SDRG with ICDR."
+  },
+  "quality_rules": {
+    "gate": "Use the existing application quality gate unchanged",
+    "source_quality_fields": ["focus", "illumination", "image_field", "artifacts"],
+    "relaxation": "FORBIDDEN",
+    "accounting": "QUALITY_BLOCKED cases remain visible and are not recoded as negatives"
+  },
+  "ood_rules": {
+    "gate": "Use the existing application OOD/domain gate unchanged",
+    "camera_metadata": "Report as a subgroup when available; do not turn an unvalidated camera into an in-domain claim",
+    "relaxation": "FORBIDDEN",
+    "accounting": "OOD_BLOCKED cases remain visible in coverage accounting"
+  },
+  "missing_data_rules": [
+    "Never infer patient, eye, laterality, camera, site, age, sex, race, or ethnicity from pixels.",
+    "Missing patient_id blocks patient-clustered claims and is not imputed.",
+    "Missing exam_eye is retained as laterality unknown and is not filled from filename ordering.",
+    "Missing DR_ICDR blocks the corresponding ground-truth endpoint and remains counted as missing ground truth.",
+    "Unavailable quality/OOD metadata is reported as unknown, not as pass."
+  ],
+  "frozen_lesion_rule": {
+    "ruleset_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+    "definition": "lesion region_count >= 3",
+    "model_output": "Candidate lesion regions from the installed research lesion model only",
+    "threshold_or_region_tuning": "FORBIDDEN_AFTER_EXTERNAL_DATA_ACCESS",
+    "interpretation": "Review-escalation signal only; not clinical sensitivity, disease recovery, or diagnostic accuracy"
+  },
+  "frozen_models": [
+    {
+      "model_id": "fundus-lesions-clementp-unet-seresnext50",
+      "version": "a2cfcb594e483",
+      "artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+      "preprocessing_version": "clementp-source-pinned-1024-v1",
+      "runtime": "dedicated isolated Python runtime; CPU bounded threads",
+      "status": "RESEARCH_ONLY"
+    },
+    {
+      "model_id": "fundus-dr-grading-effb0",
+      "version": "aa5741419b90",
+      "artifact_sha256": "0d9a18b0cb6c90d1f30bf2e66153b368bd7ff0bcb45b6690e8d5ce14fa19f69b",
+      "preprocessing_version": "clementp-dr-source-pinned-512-v1",
+      "runtime": "dedicated isolated Python runtime; CPU bounded threads",
+      "status": "RESEARCH_ONLY"
+    }
+  ],
+  "primary_endpoint": {
+    "name": "REVIEW_ESCALATION_COVERAGE",
+    "unit": "eligible executed images, with patient-cluster sensitivity analysis",
+    "definition": "Among executed cases with DR_ICDR >= 2, count cases for which LESION_ESCALATION_RULE_PHASE7_V1 is true.",
+    "numerator": "referable/high-grade reference AND frozen lesion rule escalates",
+    "denominator": "referable/high-grade reference AND executed",
+    "miss_definition": "referable/high-grade reference AND frozen lesion rule does not escalate",
+    "language_boundary": "Do not label this sensitivity, specificity, diagnosis, or disease recovery."
+  },
+  "secondary_endpoints": [
+    {
+      "name": "REVIEW_ESCALATION_BURDEN",
+      "definition": "Among executed DR_ICDR < 2 cases, count cases for which the frozen lesion rule escalates.",
+      "reporting": "escalated lower-risk cases per 100 eligible lower-risk executed cases"
+    },
+    {
+      "name": "DR_RESEARCH_MODEL_PERFORMANCE",
+      "definition": "Evaluate the unchanged DR research output against DR_ICDR only if execution and labels are valid.",
+      "metrics": ["coverage", "accuracy", "balanced_accuracy", "macro_f1", "qwk", "referable_sensitivity", "referable_specificity", "ppv", "npv", "auroc", "auprc", "grade_confusion_matrix", "grade_specific_recall"]
+    },
+    {
+      "name": "GRADE_3_AND_GRADE_4_REVIEW_ESCALATION",
+      "definition": "Report support, DR research output, lesion escalation, un-escalated count, and reason separately for ICDR 3 and ICDR 4."
+    }
+  ],
+  "coverage_accounting": {
+    "required_fields": ["dataset_total", "eligible", "predeclared_exclusions", "decode_failure", "quality_blocked", "ood_blocked", "model_failure", "executed", "missing_ground_truth"],
+    "no_silent_exclusions": true,
+    "unavailable_denominator_policy": "Use null with NOT_MEASURED status when the dataset is not acquired; never use zero to mean unavailable."
+  },
+  "patient_eye_grouping": {
+    "patient_key": "patient_id",
+    "eye_key": "exam_eye",
+    "policy": "Do not merge eyes; report patient-clustered intervals where a patient contributes more than one eye/image.",
+    "cluster_method": "patient-cluster bootstrap or cluster-robust proportion interval, predeclared before inference",
+    "laterality_policy": "OD/OS values are preserved; unknown remains unknown"
+  },
+  "subgroups": {
+    "predeclared": ["camera", "quality", "DR_ICDR severity", "site if explicitly supplied", "laterality if supplied"],
+    "demographic": "Age/sex may be described only from trusted source metadata and only with governance approval; race/ethnicity are not inferred.",
+    "minimum_reporting": "N, execution coverage, review-escalation coverage, review burden, and insufficient-sample flags",
+    "tiny_groups": "INSUFFICIENT_SUBGROUP_SAMPLE; no fairness or device-validation claim"
+  },
+  "statistics": {
+    "proportions": "Wilson intervals",
+    "patient_dependence": "cluster bootstrap where justified",
+    "continuous_model_scores": "AUROC/AUPRC only as research ranking metrics; raw score is not a calibrated probability",
+    "exploratory_label": "PREDECLARED versus EXPLORATORY",
+    "p_value_policy": "No p-value fishing; no multiplicity-driven selective reporting",
+    "calibration": "No calibration on the external evaluation set; any calibration requires a separate calibration cohort"
+  },
+  "reproducibility": {
+    "selector": "Sort valid input SHA-256 values lexicographically and select the first min(100, all eligible) cases; selection is fixed before inference.",
+    "rerun": "Repeat the same deterministic subset with the same artifact, preprocessing, runtime, and protocol hashes.",
+    "mismatch_definition": "Any changed execution status, grade, lesion region count, escalation state, or failure code is a mismatch.",
+    "status_before_data": "NOT_RUN"
+  },
+  "result_storage": {
+    "aggregate_result_path": "docs/generated/scientific-validation-stage1-results.json",
+    "error_registry_path": "docs/generated/scientific-validation-stage1-error-registry.json",
+    "case_output_root": "D:/VISIONSCAN-VALIDATION-DATA/brset-v1.0.2/outputs/",
+    "raw_data_in_git": false,
+    "committed_case_outputs": false
+  },
+  "stopping_rules": [
+    "STOP before inference if rights are not defensible for the requested research scope.",
+    "STOP before inference if the exact dataset release cannot be obtained and hashed.",
+    "STOP before inference if training overlap cannot be excluded enough for the claim.",
+    "STOP before inference if patient/eye grouping is unusable for the claimed endpoint.",
+    "STOP before inference if ground-truth semantics do not match the endpoint.",
+    "STOP before inference if manifest or protocol integrity fails.",
+    "If stopped, classify EXTERNAL REVIEW ESCALATION VALIDATION NOT ESTABLISHED and GENERALIZATION NOT MEASURABLE."
+  ],
+  "forbidden_changes": [
+    "No model-weight changes",
+    "No DR baseline changes",
+    "No lesion-rule changes",
+    "No external-threshold, region-count, area, class-filter, or camera-specific tuning",
+    "No dropping quality/OOD/model failures after seeing outcomes",
+    "No calling unavailable output negative",
+    "No clinical diagnostic language"
+  ],
+  "preinference_decision": {
+    "status": "STOPPED_NOT_ACQUIRED",
+    "reason": "BRSET access requires credentialing, CITI training, and a signed DUA; no authorized access or files were present.",
+    "inference_run": false
+  },
+  "hash": {
+    "algorithm": "SHA-256",
+    "scope": "canonical JSON with the hash property omitted",
+    "value": "7a8be3b7f766cb38c5b41128b5f2fec86631f8b602ddad268ad65955c335faa0"
+  },
+  "phi_included": false
+}

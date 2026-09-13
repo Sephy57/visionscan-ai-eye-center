@@ -1,0 +1,29 @@
+{
+  "schema_version": "visionscan-scientific-validation-stage1-error-registry-v1",
+  "observed_at": "2026-09-13T22:45:48.4309042Z",
+  "status": "NOT_RUN_NO_DATA_ACQUIRED",
+  "dataset_id": "brset-v1.0.2",
+  "protocol_hash": "7a8be3b7f766cb38c5b41128b5f2fec86631f8b602ddad268ad65955c335faa0",
+  "case_id_scheme": "If data are acquired, use opaque HMAC or salted SHA-256 case references stored only in the external research root; never commit raw identifiers.",
+  "allowed_failure_categories": [
+    "QUALITY_BLOCKED",
+    "OOD_BLOCKED",
+    "DR_UNDERCALL",
+    "LESION_NO_ESCALATION",
+    "MODEL_FAILURE",
+    "PREPROCESSING_FAILURE",
+    "LABEL_AMBIGUITY",
+    "UNSUPPORTED_IMAGE",
+    "UNKNOWN"
+  ],
+  "errors": [],
+  "counts": {
+    "all_errors": null,
+    "high_risk_non_escalated": null,
+    "grade_3_unescalated": null,
+    "grade_4_unescalated": null
+  },
+  "interpretation": "The empty array means no registry entries were created because no cases were acquired; it does not mean zero model errors or zero missed escalations.",
+  "raw_image_bytes_in_artifact": false,
+  "phi_included": false
+}

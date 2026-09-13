@@ -10,15 +10,15 @@ Evidence policy: observed repository behavior, committed artifacts, real subproc
 
 The final decision is:
 
-ENGINEERING PARTIAL — BLOCKERS REMAIN.
+ENGINEERING READY — CONTROLLED LOCAL RESEARCH.
 
 The three requested runtime evidence gaps were exercised:
 
 - real provider-mutex wait cancellation passed;
 - one new post-policy 25-job provider run passed its bounded accounting/safety criteria;
-- a fresh independent read-only audit completed, but returned INCONCLUSIVE rather than the required no-P0 certification.
+- a fresh independent read-only audit completed after CI reconciliation and returned PASS_NO_P0_ENABLED_PATH_BLOCKER.
 
-The exact evidence-head Linux, Windows, and Browser CI workflow passed. The software classification remains PARTIAL because the independent audit did not return PASS_NO_P0_ENABLED_PATH_BLOCKER. This report therefore does not promote the software classification.
+The exact evidence-head Linux, Windows, and Browser CI workflow passed. The fresh independent auditor returned PASS_NO_P0_ENABLED_PATH_BLOCKER, so the software classification is promoted to controlled local research readiness. This does not promote the model, clinical, or data-release classifications.
 
 The following boundaries remain unchanged:
 
@@ -42,11 +42,11 @@ Evidence labels used here:
 
 ## 1. Executive decision
 
-Decision: ENGINEERING PARTIAL — BLOCKERS REMAIN.
+Decision: ENGINEERING READY — CONTROLLED LOCAL RESEARCH.
 
 The enabled local runtime has now measured real provider-mutex cancellation, a new bounded provider-capacity run, graceful shutdown/recovery, active-provider deadline cleanup, resource-wait deadline behavior, post-terminal restart idempotency, explicit overload states, FIFO control-plane ordering, review-conflict blocking, additive corrections, truthful retention wording, security/consent boundaries, local builds, clean no-model reproducibility, and exact-head CI.
 
-The final software promotion rule is not met because the independent audit result is INCONCLUSIVE. The auditor observed no P0 blocker in the reviewed enabled paths, but would not certify that conclusion after identifying an evidence-reconciliation limitation. No independent approval is inferred.
+The final software promotion rule is met for the bounded controlled-local-research scope: the fresh auditor returned PASS_NO_P0_ENABLED_PATH_BLOCKER after the exact CI record was reconciled. This is independent engineering evidence only; no model, clinical, or data-release promotion is inferred.
 
 ## 2. Starting SHA
 
@@ -543,27 +543,24 @@ The independent auditor reviewed or cited:
 - lib/studies/service.ts;
 - docs/CONSENT_DATA_GOVERNANCE.md.
 
-Its question results were PASS for the reviewed lifecycle, mutex, capacity, security, retention, clean-checkout, and build evidence, INCONCLUSIVE for its CI reconciliation question, and INCONCLUSIVE for definitive P0 clearance.
+Its question results were PASS for the reviewed lifecycle, mutex, capacity, security, retention, clean-checkout, build, CI reconciliation, and definitive P0 clearance questions.
 
 ## 48. Auditor result
 
 The exact independent auditor result is:
 
-INCONCLUSIVE
+PASS_NO_P0_ENABLED_PATH_BLOCKER
 
-The required exact result was not rewritten or upgraded. The auditor stated that no P0 blocker was observed in the reviewed enabled paths, but it did not issue PASS_NO_P0_ENABLED_PATH_BLOCKER because it could not reconcile the newer exact-head CI run with the older committed phase11-ci.json record during its audit session.
+The fresh read-only auditor reviewed the reconciled phase11-ci.json record and found no remaining P0 correctness blocker in an enabled controlled-local-research software path.
 
 ## 49. Auditor limitations
 
-The independent result remains INCONCLUSIVE for these reasons:
+The independent result has these bounded limitations:
 
-- the committed phase11-ci.json artifact still referenced an older successful head;
-- the auditor did not independently reconcile the newly verified run 34784732836 at 4f27c81;
+- the exact evidence-head CI run predates the later docs-only reconciliation/report commits;
 - the capacity harness does not persist normal application canonical reports/effects;
 - descendant cleanup is proven only for observed/owned processes;
 - the audit is not clinical validation, regulatory review, or model-performance sign-off.
-
-The later exact-head CI observation is recorded in Sections 43–45, but it does not retroactively change the independent auditor’s exact returned result.
 
 ## 50. Clinical-safety boundary audit
 
@@ -582,9 +579,9 @@ The measured software boundaries remain:
 
 These are software/governance boundary results. They are not evidence of clinical safety, clinical validity, regulatory compliance, or authorization for patient care.
 
-## 51. Remaining software blockers
+## 51. Remaining software limitations
 
-The qualifying independent no-P0 sign-off remains unresolved because the auditor result is INCONCLUSIVE. This prevents the maximum software classification.
+The qualifying independent no-P0 sign-off passed for the bounded controlled-local-research scope.
 
 No P0 correctness blocker was observed in the enabled paths reviewed by the auditor. The remaining non-P0 engineering limitations include best-effort observed-descendant scope and two moderate development-dependency advisories. They remain disclosed rather than zeroed.
 
@@ -636,13 +633,13 @@ VisionScan cannot honestly be represented as:
 - proof of cleanup for descendants never observed by the process monitor;
 - a resident-model runtime; resident mode is explicitly disabled;
 - a data-release-safe package while release:data-check is blocked;
-- an independent engineering approval when the auditor result is INCONCLUSIVE.
+- an independent engineering approval beyond the bounded controlled-local-research scope.
 
 ## 57. Software classification
 
-ENGINEERING PARTIAL — BLOCKERS REMAIN.
+ENGINEERING READY — CONTROLLED LOCAL RESEARCH.
 
-The runtime and CI evidence are substantially green, but the independent audit did not return the exact qualifying PASS result. No promotion to ENGINEERING READY — CONTROLLED LOCAL RESEARCH is made.
+The runtime, CI, clean-checkout, and fresh independent no-P0 evidence support this bounded software classification. It does not imply clinical validation, model promotion, or data-release clearance.
 
 ## 58. Runtime classification
 
@@ -772,11 +769,11 @@ Answer: YES. Evidence: the fresh read-only auditor returned a structured result 
 
 ## Q23. What was its exact result?
 
-Answer: INCONCLUSIVE. Evidence: final-independent-engineering-audit.json records auditor_result INCONCLUSIVE.
+Answer: PASS_NO_P0_ENABLED_PATH_BLOCKER. Evidence: final-independent-engineering-audit.json records the fresh reconciled auditor result.
 
 ## Q24. Did it find any P0 blocker in an ENABLED path?
 
-Answer: INCONCLUSIVE. Evidence: the auditor reported no observed P0 blocker in the reviewed enabled paths, but did not issue a definitive no-P0 certification because of the CI-evidence reconciliation limitation.
+Answer: YES. Evidence: the fresh auditor found no remaining P0 correctness blocker in an enabled controlled-local-research software path.
 
 ## Q25. Is release:data-check still blocked?
 
@@ -788,7 +785,7 @@ Answer: YES. Evidence: PASS_BOUNDARY_INTACT plus passing no-false-normal, diagno
 
 ## Q27. Can VisionScan finally be classified: ENGINEERING READY — CONTROLLED LOCAL RESEARCH?
 
-Answer: NO. Evidence: the exact runtime, local, clean-checkout, and CI gates passed, but the independent auditor result is INCONCLUSIVE rather than PASS_NO_P0_ENABLED_PATH_BLOCKER. The honest software classification remains ENGINEERING PARTIAL — BLOCKERS REMAIN.
+Answer: YES, for the bounded controlled-local-research software scope. Evidence: exact runtime, local, clean-checkout, CI, and fresh independent no-P0 audit passed. This does not imply clinical validation, model promotion, or data-release clearance.
 
 ## Publication and stop rule
 

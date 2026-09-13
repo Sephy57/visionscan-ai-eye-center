@@ -1,0 +1,138 @@
+{
+  "schema_version": "visionscan-scientific-validation-stage1-results-v1",
+  "observed_at": "2026-09-13T22:45:48.4309042Z",
+  "program": "SCIENTIFIC_VALIDATION_STAGE_1",
+  "status": "NOT_MEASURABLE",
+  "classification": "EXTERNAL_REVIEW_ESCALATION_VALIDATION_NOT_ESTABLISHED",
+  "generalization": "GENERALIZATION_NOT_MEASURABLE",
+  "dataset": {
+    "dataset_id": "brset-v1.0.2",
+    "version": "1.0.2",
+    "manifest_path": "docs/generated/dataset-manifest.json",
+    "manifest_hash": "1ab490cf28b3a30f00052ee183252a46955d99ace9fdff0cafa4936cc9204667",
+    "manifest_state": "NOT_ACQUIRED",
+    "protocol_path": "docs/generated/scientific-validation-stage1-protocol.json",
+    "protocol_hash": "7a8be3b7f766cb38c5b41128b5f2fec86631f8b602ddad268ad65955c335faa0",
+    "protocol_status": "FROZEN_BEFORE_INFERENCE_NOT_ACQUIRED"
+  },
+  "inference": {
+    "performed": false,
+    "reason": "No authorized credentialed dataset access or local source files were available.",
+    "raw_images_read": 0,
+    "model_invocations": 0,
+    "model_failures": null,
+    "reproducibility_rerun": "NOT_RUN"
+  },
+  "coverage": {
+    "status": "NOT_MEASURED_NO_DATA_ACQUIRED",
+    "dataset_total": null,
+    "eligible": null,
+    "excluded_by_predeclared_rule": null,
+    "decode_failure": null,
+    "quality_blocked": null,
+    "ood_blocked": null,
+    "execution_failure": null,
+    "executed": 0,
+    "missing_ground_truth": null,
+    "denominator_note": "Null means unavailable because the release was not acquired; zero is used only for observed inference activity."
+  },
+  "primary_endpoint": {
+    "name": "REVIEW_ESCALATION_COVERAGE",
+    "status": "NOT_MEASURED",
+    "escalated_referable_or_high_grade": null,
+    "referable_or_high_grade_executed": null,
+    "estimate": null,
+    "wilson_interval": null,
+    "missed_escalation_count": null,
+    "language_boundary": "No sensitivity, specificity, diagnosis, disease recovery, or clinical referral claim is made."
+  },
+  "secondary_endpoints": {
+    "review_burden": {
+      "status": "NOT_MEASURED",
+      "lower_risk_escalations": null,
+      "lower_risk_executed": null,
+      "per_100": null,
+      "wilson_interval": null
+    },
+    "dr_research_model": {
+      "status": "NOT_MEASURED",
+      "metrics": null,
+      "confusion_matrix": null,
+      "grade_specific_recall": null
+    },
+    "lesion_segmentation": {
+      "status": "NOT_MEASURABLE_WITH_UNACQUIRED_BRSET",
+      "reason": "No BRSET pixel-level lesion reference was documented for the selected candidate and no files were acquired.",
+      "metrics": null
+    }
+  },
+  "severity": {
+    "grade_0": null,
+    "grade_1": null,
+    "grade_2": null,
+    "grade_3": null,
+    "grade_4": null,
+    "grade_3_unescalated": null,
+    "grade_4_unescalated": null,
+    "status": "NOT_MEASURED"
+  },
+  "subgroups": [],
+  "device_analysis": {
+    "status": "NOT_MEASURED",
+    "groups": []
+  },
+  "quality_analysis": {
+    "status": "NOT_MEASURED",
+    "quality_gate_weakening": false
+  },
+  "ood_analysis": {
+    "status": "NOT_MEASURED",
+    "ood_gate_weakening": false
+  },
+  "patient_cluster_analysis": {
+    "status": "NOT_RUN",
+    "patient_key": "patient_id",
+    "eye_key": "exam_eye",
+    "clusters": null
+  },
+  "domain_shift": {
+    "status": "NOT_MEASURED",
+    "dimensions": ["camera", "compression", "resolution", "population", "prevalence", "site", "acquisition_protocol"]
+  },
+  "model_execution_identity": [
+    {
+      "model_id": "fundus-lesions-clementp-unet-seresnext50",
+      "version": "a2cfcb594e483",
+      "artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+      "preprocessing_version": "clementp-source-pinned-1024-v1",
+      "invocations": 0
+    },
+    {
+      "model_id": "fundus-dr-grading-effb0",
+      "version": "aa5741419b90",
+      "artifact_sha256": "0d9a18b0cb6c90d1f30bf2e66153b368bd7ff0bcb45b6690e8d5ce14fa19f69b",
+      "preprocessing_version": "clementp-dr-source-pinned-512-v1",
+      "invocations": 0
+    }
+  ],
+  "clinical_safety": {
+    "validation_status": "RESEARCH_ONLY",
+    "not_clinically_validated": true,
+    "not_a_medical_device": true,
+    "not_for_autonomous_diagnosis": true,
+    "model_failure_is_not_negative": true,
+    "external_validation_does_not_promote_model": true
+  },
+  "data_release": {
+    "historical_application_gate": "DATA RELEASE BLOCKED",
+    "external_validation_does_not_clear_gate": true
+  },
+  "limitations": [
+    "No external images or labels were acquired, so no scientific performance result exists.",
+    "No denominator, subgroup, error, confidence interval, or reproducibility result may be inferred from the empty run.",
+    "BRSET rights are conditionally defensible only within credentialed PhysioNet research terms; access was not present in this run.",
+    "Publisher-reported model training lists do not provide exact image-level manifests; residual overlap remains unproven.",
+    "This blocked result is not a negative model result and is not a clinical conclusion."
+  ],
+  "phi_included": false
+}
