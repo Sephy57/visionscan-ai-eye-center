@@ -7,11 +7,14 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), "visionscan-phase10-fairness-"));
 const outputPath = path.join(root, "docs", "generated", "phase10-load-fairness.json");
+const head = spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8", windowsHide: true });
+const status = spawnSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8", windowsHide: true });
 
 for (const [name, value] of Object.entries({
   PROJECT_ROOT: root,
@@ -87,6 +90,8 @@ try {
   const result = {
     schema_version: "visionscan-phase10-load-fairness-v1",
     observed_at: new Date().toISOString(),
+    implementation_head_at_capture: String(head.stdout ?? "").trim() || null,
+    working_tree_dirty_at_capture: String(status.stdout ?? "").trim().length > 0,
     status: rankOvertakes === 0 ? "PARTIAL_REAL_LOAD_PLUS_FIFO_CONTROL_PLANE" : "FAIL_FIFO_CONTROL_PLANE",
     queue_policy: {
       worker_order: "created_at ASC, id ASC",

@@ -14,7 +14,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -34,6 +34,7 @@ const STAGES = [
   "AFTER_REPORT_COMMIT",
   "BEFORE_JOB_COMPLETE",
 ];
+const EXPECTED_EFFECT_TYPES = ["MODEL_RESULT", "STRUCTURED_EVIDENCE", "REASONING_RECORD", "REPORT", "JOB_COMPLETION"];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -90,7 +91,7 @@ function runVite(args, env, timeoutMs = WORKER_TIMEOUT_MS) {
     child.stderr.on("data", (chunk) => { stderr += String(chunk).slice(-800_000); });
     const timer = setTimeout(() => {
       timedOut = true;
-      killTree(child.pid);
+      void killTree(child.pid);
     }, timeoutMs);
     child.on("error", (error) => {
       clearTimeout(timer);
@@ -111,12 +112,16 @@ function parseLastJson(text) {
 }
 
 function killTree(pid) {
-  if (!pid) return;
+  if (!pid) return Promise.resolve();
   if (process.platform === "win32") {
-    const killer = spawn("taskkill", ["/PID", String(pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" });
-    killer.unref?.();
+    return new Promise((resolve) => {
+      const killer = spawn("taskkill", ["/PID", String(pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" });
+      killer.once("close", resolve);
+      killer.once("error", resolve);
+    });
   } else {
     try { process.kill(pid, "SIGKILL"); } catch { /* already exited */ }
+    return Promise.resolve();
   }
 }
 
@@ -139,17 +144,18 @@ function queryDescendants(pid) {
   });
 }
 
-function stageResult(stage, seed, crash, inspect, dataRoot, descendantsAfterKill) {
+function stageResult(stage, seed, crash, inspect, dataRoot, descendantsBeforeKill, descendantsAfterKill) {
   const observed = crash.stderr.includes("phase10_real_os_crash") || crash.stdout.includes("phase10_real_os_crash");
   const job = inspect?.job ?? null;
   const effectCounts = inspect?.effect_counts ?? {};
   const duplicateFree = Object.values(effectCounts).every((count) => Number(count) <= 1);
+  const expectedEffectsComplete = EXPECTED_EFFECT_TYPES.every((type) => Number(effectCounts[type] ?? 0) === 1);
   const completed = job?.status === "completed";
   const descendantsAbsent = Array.isArray(descendantsAfterKill) && descendantsAfterKill.length === 0;
   return {
     stage,
-    evidence_classification: "REAL_OS_CRASH + REAL_WORKER",
-    status: observed && completed && duplicateFree && inspect?.report_export_present && descendantsAbsent ? "PASS" : "PARTIAL",
+    evidence_classification: "REAL_WORKER_PROCESS_KILL_RESTART",
+    status: observed && completed && expectedEffectsComplete && duplicateFree && inspect?.report_export_present && descendantsAbsent ? "PASS" : "PARTIAL",
     crash_observed: observed,
     initial_worker_exit: { code: crash.code, signal: crash.signal, timed_out: crash.timedOut, duration_ms: crash.duration_ms },
     restart: {
@@ -163,7 +169,9 @@ function stageResult(stage, seed, crash, inspect, dataRoot, descendantsAfterKill
       report_export_present: inspect?.report_export_present ?? false,
     },
     canonical_effects: {
+      expected_effect_types: EXPECTED_EFFECT_TYPES,
       counts: effectCounts,
+      complete: expectedEffectsComplete,
       duplicate_free: duplicateFree,
       job_completion_count: Number(effectCounts.JOB_COMPLETION ?? 0),
     },
@@ -175,6 +183,7 @@ function stageResult(stage, seed, crash, inspect, dataRoot, descendantsAfterKill
     },
     cleanup: {
       parent_taskkill_tree_requested: process.platform === "win32",
+      descendants_before_termination: descendantsBeforeKill,
       descendants_absent_after_termination: descendantsAfterKill === null ? "NOT_MEASURED" : descendantsAbsent,
       remaining_descendant_pids: descendantsAfterKill,
       temporary_workspace: path.basename(dataRoot),
@@ -186,46 +195,60 @@ function stageResult(stage, seed, crash, inspect, dataRoot, descendantsAfterKill
 
 async function runStage(stage) {
   const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), "visionscan-phase10-crash-"));
-  const env = baseEnvironment(dataRoot, {
-    PHASE10_SOURCE_IMAGE: SOURCE_IMAGE,
-    VISIONSCAN_PHASE9_FAULT_INJECTION: stage,
-    VISIONSCAN_PHASE10_REAL_OS_CRASH: "1",
-    VISIONSCAN_WORKER_ID: `phase10-crash-${stage.toLowerCase()}`,
-  });
-  const seed = await runVite([FIXTURE, "seed"], env);
-  const seedPayload = parseLastJson(seed.stdout);
-  if (seed.code !== 0 || !seedPayload?.study_id || !seedPayload?.job_id) {
-    return stageResult(stage, seed, { code: null, signal: null, stdout: "", stderr: "seed failed", timedOut: false, duration_ms: 0 }, null, dataRoot, []);
+  try {
+    const env = baseEnvironment(dataRoot, {
+      PHASE10_SOURCE_IMAGE: SOURCE_IMAGE,
+      VISIONSCAN_PHASE9_FAULT_INJECTION: stage,
+      VISIONSCAN_PHASE10_REAL_OS_CRASH: "1",
+      VISIONSCAN_WORKER_ID: `phase10-crash-${stage.toLowerCase()}`,
+    });
+    const seed = await runVite([FIXTURE, "seed"], env);
+    const seedPayload = parseLastJson(seed.stdout);
+    if (seed.code !== 0 || !seedPayload?.study_id || !seedPayload?.job_id) {
+      return stageResult(stage, seed, { code: null, signal: null, stdout: "", stderr: "seed failed", timedOut: false, duration_ms: 0 }, null, dataRoot, [], []);
+    }
+    const crash = await runVite([path.join(ROOT, "scripts", "worker.ts")], env);
+    const descendantsBeforeKill = await queryDescendants(crash.pid);
+    // Windows does not automatically kill an orphaned child when the parent
+    // receives SIGKILL. Await the explicit tree request before sampling the
+    // post-condition so asynchronous taskkill cannot be mistaken for proof.
+    await killTree(crash.pid);
+    await sleep(750);
+    const descendantsAfterKill = await queryDescendants(crash.pid);
+    await sleep(Math.max(0, RESTART_WAIT_MS - 750));
+    const restartEnv = baseEnvironment(dataRoot, {
+      PHASE10_STUDY_ID: seedPayload.study_id,
+      VISIONSCAN_PHASE9_FAULT_INJECTION: "",
+      VISIONSCAN_PHASE10_REAL_OS_CRASH: "0",
+      VISIONSCAN_WORKER_ID: `phase10-restart-${stage.toLowerCase()}`,
+      VISIONSCAN_WORKER_ONCE: "1",
+    });
+    const restart = await runVite([path.join(ROOT, "scripts", "worker.ts")], restartEnv);
+    await killTree(restart.pid);
+    const inspectResult = await runVite([FIXTURE, "inspect"], { ...restartEnv, VISIONSCAN_WORKER_ONCE: "" }, 120_000);
+    const inspect = parseLastJson(inspectResult.stdout);
+    const result = stageResult(stage, seed, crash, inspect, dataRoot, descendantsBeforeKill, descendantsAfterKill);
+    result.restart.worker_exit = { code: restart.code, signal: restart.signal, timed_out: restart.timedOut, duration_ms: restart.duration_ms };
+    result.inspect_exit = inspectResult.code;
+    result.diagnostics = {
+      crash_stderr_marker: crash.stderr.includes("phase10_real_os_crash"),
+      restart_stderr_tail: String(restart.stderr).slice(-2_000),
+      inspect_stderr_tail: String(inspectResult.stderr).slice(-2_000),
+    };
+    return result;
+  } finally {
+    fs.rmSync(dataRoot, { recursive: true, force: true });
   }
-  const crash = await runVite([path.join(ROOT, "scripts", "worker.ts")], env);
-  // Windows does not automatically kill an orphaned child when the parent
-  // receives SIGKILL. The explicit tree request makes descendant absence an
-  // observed post-condition of every matrix row.
-  killTree(crash.pid);
-  await sleep(750);
-  const descendantsAfterKill = await queryDescendants(crash.pid);
-  await sleep(Math.max(0, RESTART_WAIT_MS - 750));
-  const restartEnv = baseEnvironment(dataRoot, {
-    PHASE10_STUDY_ID: seedPayload.study_id,
-    VISIONSCAN_PHASE9_FAULT_INJECTION: "",
-    VISIONSCAN_PHASE10_REAL_OS_CRASH: "0",
-    VISIONSCAN_WORKER_ID: `phase10-restart-${stage.toLowerCase()}`,
-    VISIONSCAN_WORKER_ONCE: "1",
-  });
-  const restart = await runVite([path.join(ROOT, "scripts", "worker.ts")], restartEnv);
-  killTree(restart.pid);
-  const inspectResult = await runVite([FIXTURE, "inspect"], { ...restartEnv, VISIONSCAN_WORKER_ONCE: "" }, 120_000);
-  const inspect = parseLastJson(inspectResult.stdout);
-  const result = stageResult(stage, seed, crash, inspect, dataRoot, descendantsAfterKill);
-  result.restart.worker_exit = { code: restart.code, signal: restart.signal, timed_out: restart.timedOut, duration_ms: restart.duration_ms };
-  result.inspect_exit = inspectResult.code;
-  result.diagnostics = {
-    crash_stderr_marker: crash.stderr.includes("phase10_real_os_crash"),
-    restart_stderr_tail: String(restart.stderr).slice(-2_000),
-    inspect_stderr_tail: String(inspectResult.stderr).slice(-2_000),
-  };
-  fs.rmSync(dataRoot, { recursive: true, force: true });
-  return result;
+}
+
+function gitHead() {
+  const result = spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8", windowsHide: true });
+  return String(result.stdout ?? "").trim() || null;
+}
+
+function workingTreeDirty() {
+  const result = spawnSync("git", ["status", "--porcelain"], { cwd: ROOT, encoding: "utf8", windowsHide: true });
+  return String(result.stdout ?? "").trim().length > 0;
 }
 
 async function main() {
@@ -239,6 +262,8 @@ async function main() {
     platform: process.platform,
     node_version: process.version,
     worker_script: "scripts/worker.ts",
+    implementation_head_at_capture: gitHead(),
+    working_tree_dirty_at_capture: workingTreeDirty(),
     fault_seams: stagesToRun,
     input_scope: "one synthetic/public example_fundus.jpg per isolated temporary SQLite workspace",
     lease_policy: { lease_ms: LEASE_MS, heartbeat_ms: 250, heartbeat_grace_ms: 500, retry_backoff_ms: 0 },

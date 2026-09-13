@@ -119,7 +119,7 @@ describe("Phase 10 closure acceptance contracts", () => {
     expect(crash().stages.find((s: any) => s.stage === "BEFORE_JOB_COMPLETE")).toMatchObject({ status: "PASS", crash_observed: true });
   });
   it("8. restarts every crash row to completed without duplicate effects", () => {
-    expect(crash().stages.every((s: any) => s.restart.status === "COMPLETED" && s.canonical_effects.duplicate_free)).toBe(true);
+    expect(crash().stages.every((s: any) => s.restart.status === "COMPLETED" && s.canonical_effects.complete === true && s.canonical_effects.duplicate_free)).toBe(true);
   });
   it("9. rejects a conflicting canonical payload", async () => {
     const id = `phase10-effect-${Date.now()}`;

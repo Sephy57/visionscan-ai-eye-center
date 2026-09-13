@@ -20,6 +20,11 @@ function gitHead() {
   return String(result.stdout ?? "").trim() || null;
 }
 
+function workingTreeDirty() {
+  const result = spawnSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8", windowsHide: true });
+  return String(result.stdout ?? "").trim().length > 0;
+}
+
 function processTree(rootPid) {
   if (process.platform !== "win32" || !rootPid) return null;
   const script = "$root=" + String(rootPid) + ";$rows=Get-CimInstance Win32_Process -ErrorAction SilentlyContinue|Select-Object ProcessId,ParentProcessId;" +
@@ -105,7 +110,7 @@ async function main() {
     platform: process.platform,
     node_version: process.version,
     implementation_head_at_capture: gitHead(),
-    working_tree_dirty_at_capture: true,
+    working_tree_dirty_at_capture: workingTreeDirty(),
     build_command: "npm run build",
     next_config: {
       webpackMemoryOptimizations: true,

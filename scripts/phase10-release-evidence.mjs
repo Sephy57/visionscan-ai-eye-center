@@ -11,6 +11,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourcePath = path.join(root, "docs", "generated", "release-data-check.json");
 const outputPath = path.join(root, "docs", "generated", "phase10-release-evidence.json");
 const head = spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8", windowsHide: true });
+const status = spawnSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8", windowsHide: true });
 const source = JSON.parse(fs.readFileSync(sourcePath, "utf8"));
 
 const result = {
@@ -20,7 +21,7 @@ const result = {
   source_artifact: "docs/generated/release-data-check.json",
   source_generated_at: source.generated_at,
   implementation_head_at_capture: String(head.stdout ?? "").trim() || null,
-  working_tree_dirty_at_capture: true,
+  working_tree_dirty_at_capture: String(status.stdout ?? "").trim().length > 0,
   decision: source.active_data_release_safe ? "DATA_RELEASE_ALLOWED" : "DATA_RELEASE_BLOCKED",
   status: source.status,
   active_data_release_safe: source.active_data_release_safe,
