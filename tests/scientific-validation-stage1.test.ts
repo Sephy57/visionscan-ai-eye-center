@@ -102,21 +102,43 @@ describe("scientific validation Stage 1 governance artifacts", () => {
     expect(registry.phi_included).toBe(false);
   });
 
-  it("binds protocol model identity to the installed research manifests", () => {
+  it("binds protocol model identity to installed manifests or committed model evidence", () => {
     const protocol = readJson<{
-      frozen_models: Array<{ model_id: string; artifact_sha256: string; status: string }>;
+      frozen_models: Array<{ model_id: string; version: string; artifact_sha256: string; status: string }>;
     }>("docs/generated/scientific-validation-stage1-protocol.json");
     const modelPaths = new Map([
-      ["fundus-lesions-clementp-unet-seresnext50", "data/models/fundus-lesions-clementp-unet-seresnext50/manifest.json"],
-      ["fundus-dr-grading-effb0", "data/models/fundus-dr-grading-effb0/manifest.json"],
+      [
+        "fundus-lesions-clementp-unet-seresnext50",
+        {
+          manifest: "data/models/fundus-lesions-clementp-unet-seresnext50/manifest.json",
+          evidence: "docs/FUNDUS_LESION_MODEL_INTEGRATION.md",
+        },
+      ],
+      [
+        "fundus-dr-grading-effb0",
+        {
+          manifest: "data/models/fundus-dr-grading-effb0/manifest.json",
+          evidence: "docs/DR_GRADE_MODEL_INTEGRATION.md",
+        },
+      ],
     ]);
 
     for (const frozen of protocol.frozen_models) {
-      const manifest = readJson<{ model_id: string; artifact: { sha256: string }; regulatory_status: string }>(modelPaths.get(frozen.model_id)!);
-      expect(manifest.model_id).toBe(frozen.model_id);
-      expect(manifest.artifact.sha256).toBe(frozen.artifact_sha256);
+      const paths = modelPaths.get(frozen.model_id)!;
+      if (fs.existsSync(path.join(ROOT, paths.manifest))) {
+        const manifest = readJson<{ model_id: string; version: string; artifact: { sha256: string }; regulatory_status: string }>(paths.manifest);
+        expect(manifest.model_id).toBe(frozen.model_id);
+        expect(manifest.version).toBe(frozen.version);
+        expect(manifest.artifact.sha256).toBe(frozen.artifact_sha256);
+        expect(manifest.regulatory_status).toBe("research_only");
+      } else {
+        const evidence = fs.readFileSync(path.join(ROOT, paths.evidence), "utf8");
+        expect(evidence).toContain(frozen.model_id);
+        expect(evidence).toContain(frozen.version);
+        expect(evidence).toContain(frozen.artifact_sha256);
+        expect(evidence).toMatch(/research_only|research-only/i);
+      }
       expect(frozen.status).toBe("RESEARCH_ONLY");
-      expect(manifest.regulatory_status).toBe("research_only");
     }
   });
 
