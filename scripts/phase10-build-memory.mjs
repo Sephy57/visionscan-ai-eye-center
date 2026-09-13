@@ -112,6 +112,7 @@ async function main() {
     implementation_head_at_capture: gitHead(),
     working_tree_dirty_at_capture: workingTreeDirty(),
     build_command: "npm run build",
+    configured_heap_limit_mb: 10240,
     next_config: {
       webpackMemoryOptimizations: true,
       serverSourceMaps: false,
