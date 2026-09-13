@@ -143,10 +143,10 @@ const sections = [
 if (sections.length !== 109) throw new Error(`Phase 9 report requires 109 sections; found ${sections.length}`);
 
 const header = `# VisionScan Phase 9 Controlled Research Release Candidate Report\n\n` +
-  `Generated: ${generatedAt}  \n` +
-  `Repository: VisionScan AI Eye Center  \n` +
-  `Source HEAD at generation: ${head}  \n` +
-  `PHI included: false  \n\n` +
+  `Generated: ${generatedAt}<br>\n` +
+  `Repository: VisionScan AI Eye Center<br>\n` +
+  `Source HEAD at generation: ${head}<br>\n` +
+  `PHI included: false\n\n` +
   `> This report is an evidence ledger, not a clinical validation report. It preserves PARTIAL, BLOCKED, NOT MEASURED, and NOT PROVEN states.\n\n`;
 
 const body = sections.map(([title, text], index) => `## ${index + 1}. ${title}\n\n${text}\n`).join("\n");
