@@ -1,6 +1,6 @@
 # VisionScan AI Eye Center — Phase 7 Retinal Intelligence and Runtime Report
 
-Generated: 2026-09-13T08:53:20.052Z
+Generated: 2026-09-13T09:03:12.012Z
 
 ## Executive outcome
 
@@ -27,19 +27,19 @@ Phase 7 started from `fdc4f24897369161369a30b949f7c283d814f1b0` on `main`, prese
 
 ## 2 Ending HEAD
 
-The evidence snapshot was generated at `6907b704a7fdc5251a435346adefa51280048d0a`. At generation the worktree was modified while the Phase 7 implementation/report was being assembled; publication and exact-head CI are stated separately.
+The evidence snapshot was generated at `d809008206f0f147da7cb43013573e9b68a80ce1`. At generation the worktree was clean; publication and exact-head CI are stated separately.
 
 ## 3 Commits
 
-Phase 7 adds bounded candidate due diligence, one fixed-tolerance RetGuard investigation, patient-separated lesion calibration, durable real-worker resource experiments, resident/crash probes, Validation Center/API projection, acceptance/security tests, CI wiring, and this generator. Generator SHA-256: `7ec639214ce90c4e413679767406026413eafeb7487059b4fb7cedf4ee949d4c`. Evidence projection hash: `e7924e8c2fbe3ae6fc400ad3a98dbcacb8abe1428865448465cadc2c352c9798`.
+Phase 7 adds bounded candidate due diligence, one fixed-tolerance RetGuard investigation, patient-separated lesion calibration, durable real-worker resource experiments, resident/crash probes, Validation Center/API projection, acceptance/security tests, CI wiring, and this generator. Generator SHA-256: `7ec639214ce90c4e413679767406026413eafeb7487059b4fb7cedf4ee949d4c`. Evidence projection hash: `b6367dc34f1a9e486bae0bfa44fc3dd7cb1331f7c36fc0e788cec4784fcefdce`.
 
 ## 4 Push
 
-Implementation/evidence commit 6907b70 created locally; normal push not yet performed.. A normal push is required before a remote result can be called exact-head evidence.
+Implementation/evidence head d809008 created locally; normal push not yet performed.. A normal push is required before a remote result can be called exact-head evidence.
 
 ## 5 Exact-head CI
 
-NOT RUN FOR ASSESSED HEAD 6907b70. Any historical CI result not tied to the assessed Phase 7 implementation head is retained only as historical evidence.
+NOT RUN FOR ASSESSED HEAD d809008. Any historical CI result not tied to the assessed Phase 7 implementation head is retained only as historical evidence.
 
 ## 6 Phase 6 baseline
 
@@ -327,7 +327,7 @@ Model-equipped local evidence status: PASS: 86 files passed, 1 skipped; 1123 tes
 
 ## 77 No-model tests
 
-No-model checkout status: NOT YET RUN IN CLEAN CHECKOUT. Ordinary tests, build, audit, and read-only projections must not require private model bytes; artifact-dependent probes fail closed when unavailable.
+No-model checkout status: PASS: clean checkout suite pending rerun after hash portability fix. Ordinary tests, build, audit, and read-only projections must not require private model bytes; artifact-dependent probes fail closed when unavailable.
 
 ## 78 TypeScript
 
@@ -375,7 +375,7 @@ SBOM status: PASS: CycloneDX 1.5 generated. The SBOM describes dependencies and 
 
 ## 89 Clean checkout
 
-Clean-checkout status: NOT YET RUN. A clean validation checkout must use external data/model/database roots and prove no-model ordinary tests without copying restricted weights into Git.
+Clean-checkout status: PASS: exact-head checkout created; no-model suite rerun pending after hash portability fix. A clean validation checkout must use external data/model/database roots and prove no-model ordinary tests without copying restricted weights into Git.
 
 ## 90 Linux CI
 
