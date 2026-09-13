@@ -1,6 +1,6 @@
 # VisionScan AI Eye Center — Phase 6 DR Candidate and Runtime Validation Report
 
-Generated: 2026-09-13T00:26:33.383Z
+Generated: 2026-09-13T00:32:34.848Z
 
 ## Executive outcome
 
@@ -29,7 +29,7 @@ Phase 6 started from `9eef23e3bd95b2d0fb9c4cd00685b8d71ad9f5b6` on `main`, with 
 
 ## 2 Ending HEAD
 
-The evidence snapshot was generated at `a2a7dc19ce26bdc4569f07b9a3769da8372a2dbf`. Worktree state at generation: modified/uncommitted changes remained while evidence was assembled. A later publication commit must be checked independently.
+The evidence snapshot was generated at `05db6365f82eaab95bec377ef383faa3a17e4038`. Worktree state at generation: clean. A later publication commit must be checked independently.
 
 ## 3 Commits
 
@@ -37,11 +37,11 @@ Phase 6 implementation scope includes durable SQLite leases, host-memory observa
 
 ## 4 Push
 
-PUSHED origin/main at a2a7dc1; git ls-remote matched.
+PUSHED origin/main at 05db636; git ls-remote matched.
 
 ## 5 Exact-head CI
 
-PASS: exact pushed SHA a2a7dc1; CI run 34727722430 passed Linux, Windows, and browser jobs. Historical Phase 5 runs are retained as historical evidence only and are not substituted for a Phase 6 exact-head result.
+PASS: exact pushed SHA 05db636; CI run 34728001926 passed Linux, Windows, and browser jobs. Historical Phase 5 runs are retained as historical evidence only and are not substituted for a Phase 6 exact-head result.
 
 ## 6 Phase 5 baseline
 
@@ -377,15 +377,15 @@ The Phase 6 clean-checkout evidence is PASS: D:/visionscan-phase6-clean-final-20
 
 ## 89 Linux CI
 
-Linux CI is configured for npm ci, SQLite init, typecheck, tests, Phase 4/5/6 acceptance, audits, SBOM, filesystem audit, and build. Exact-head result: PASS (run 34727722430; job verify 103644750078; exact SHA a2a7dc1).
+Linux CI is configured for npm ci, SQLite init, typecheck, tests, Phase 4/5/6 acceptance, audits, SBOM, filesystem audit, and build. Exact-head result: PASS (run 34728001926; job verify 103645511646; exact SHA 05db636).
 
 ## 90 Windows CI
 
-Windows CI is configured for native path/reparse tests, typecheck, tests, Phase 4/5/6 acceptance, audits, SBOM, filesystem audit, and build. Exact-head result: PASS (run 34727722430; job verify-windows 103644750163; exact SHA a2a7dc1).
+Windows CI is configured for native path/reparse tests, typecheck, tests, Phase 4/5/6 acceptance, audits, SBOM, filesystem audit, and build. Exact-head result: PASS (run 34728001926; job verify-windows 103645511561; exact SHA 05db636).
 
 ## 91 Browser CI
 
-Browser CI remains a separate synthetic authenticated smoke job with isolated storage and no private models. Exact-head result: PASS (run 34727722430; job verify-browser 103644750180; synthetic/no-model exact SHA a2a7dc1).
+Browser CI remains a separate synthetic authenticated smoke job with isolated storage and no private models. Exact-head result: PASS (run 34728001926; job verify-browser 103645511669; synthetic/no-model exact SHA 05db636).
 
 ## 92 Independent model audit
 
