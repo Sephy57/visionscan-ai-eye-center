@@ -1,0 +1,127 @@
+{
+  "schema_version": "visionscan-phase7-provider-crash-matrix-v1",
+  "observed_at": "2026-09-13T08:20:45.607Z",
+  "status": "PARTIAL_REAL_PROVIDER_CRASH_MATRIX",
+  "providers": [
+    {
+      "provider": "DR",
+      "status": "OBSERVED_TERMINATION_AND_CLEANUP",
+      "stages": [
+        {
+          "stage": "after_process_spawn",
+          "stage_observation": "FORCED_TERMINATION_WINDOW_ONLY",
+          "termination_requested_after_ms": 50,
+          "process_tree_pid_count_observed": 3,
+          "child_terminated": true,
+          "descendants_absent": true,
+          "result_emitted": false,
+          "false_success": false,
+          "exit_code": null,
+          "stderr_present": false,
+          "termination_code": 0
+        },
+        {
+          "stage": "during_inference",
+          "stage_observation": "FORCED_TERMINATION_WINDOW_ONLY",
+          "termination_requested_after_ms": 1200,
+          "process_tree_pid_count_observed": 3,
+          "child_terminated": true,
+          "descendants_absent": true,
+          "result_emitted": false,
+          "false_success": false,
+          "exit_code": null,
+          "stderr_present": false,
+          "termination_code": 0
+        }
+      ]
+    },
+    {
+      "provider": "LESION",
+      "status": "OBSERVED_TERMINATION_AND_CLEANUP",
+      "stages": [
+        {
+          "stage": "after_process_spawn",
+          "stage_observation": "FORCED_TERMINATION_WINDOW_ONLY",
+          "termination_requested_after_ms": 50,
+          "process_tree_pid_count_observed": 3,
+          "child_terminated": true,
+          "descendants_absent": true,
+          "result_emitted": false,
+          "false_success": false,
+          "exit_code": null,
+          "stderr_present": false,
+          "termination_code": 0
+        },
+        {
+          "stage": "during_inference",
+          "stage_observation": "FORCED_TERMINATION_WINDOW_ONLY",
+          "termination_requested_after_ms": 1200,
+          "process_tree_pid_count_observed": 3,
+          "child_terminated": true,
+          "descendants_absent": true,
+          "result_emitted": false,
+          "false_success": false,
+          "exit_code": null,
+          "stderr_present": false,
+          "termination_code": 0
+        }
+      ]
+    },
+    {
+      "provider": "OCT",
+      "status": "OBSERVED_TERMINATION_AND_CLEANUP",
+      "stages": [
+        {
+          "stage": "after_process_spawn",
+          "stage_observation": "FORCED_TERMINATION_WINDOW_ONLY",
+          "termination_requested_after_ms": 50,
+          "process_tree_pid_count_observed": 3,
+          "child_terminated": true,
+          "descendants_absent": true,
+          "result_emitted": false,
+          "false_success": false,
+          "exit_code": null,
+          "stderr_present": false,
+          "termination_code": 0
+        },
+        {
+          "stage": "during_inference",
+          "stage_observation": "FORCED_TERMINATION_WINDOW_ONLY",
+          "termination_requested_after_ms": 1200,
+          "process_tree_pid_count_observed": 3,
+          "child_terminated": true,
+          "descendants_absent": true,
+          "result_emitted": false,
+          "false_success": false,
+          "exit_code": null,
+          "stderr_present": false,
+          "termination_code": 0
+        }
+      ]
+    }
+  ],
+  "unmeasured_stages": [
+    {
+      "stage": "before_result_persistence",
+      "status": "NOT_MEASURED",
+      "reason": "Direct provider probes do not expose a durable result-persistence hook."
+    },
+    {
+      "stage": "after_result_persistence_before_job_completion",
+      "status": "NOT_MEASURED",
+      "reason": "Requires a forced failure injection in the production queue/persistence boundary; no such injection was added."
+    }
+  ],
+  "recovery_scope": {
+    "lease_recovery": "NOT_MEASURED_IN_THIS_DIRECT_PROBE; covered separately by SQLite stale/fencing evidence",
+    "attempt_state": "NOT_MEASURED",
+    "duplicate_evidence": "NOT_MEASURED",
+    "false_success": "No completed payload was observed in the forced termination windows"
+  },
+  "phi_included": false,
+  "limitations": [
+    "The during_inference stage is a timed forced-termination window; provider-internal phase markers are not emitted, so it does not prove the exact instruction boundary.",
+    "The experiment is bounded to the real local DR, lesion, and OCT subprocesses and does not establish every launcher or OS failure mode.",
+    "No persistence-boundary failure was fabricated from a direct probe; those stages remain NOT_MEASURED."
+  ]
+}

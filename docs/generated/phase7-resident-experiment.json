@@ -1,0 +1,65 @@
+{
+  "schema_version": "visionscan-phase7-resident-experiment-v1",
+  "observed_at": "2026-09-13T08:20:10.675Z",
+  "status": "MEASURED_RESIDENT_20_CASES",
+  "provider": "fundus-lesion-clementp-unet-seresnext50",
+  "artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+  "cases": {
+    "requested": 20,
+    "completed": 20,
+    "serial": true,
+    "output_contract": "fundus-lesion-segmentation-resident-summary/1"
+  },
+  "initial_load_ms": 509.237,
+  "warm_inference_ms": {
+    "count": 20,
+    "p50": 2831.528,
+    "p95": 3575.317,
+    "max": 4185.782
+  },
+  "memory_checkpoints": {
+    "1": {
+      "working_set_bytes": 963915776,
+      "private_bytes": 1203388416,
+      "cpu_seconds": 19.671875,
+      "thread_count": 37
+    },
+    "5": {
+      "working_set_bytes": 1116311552,
+      "private_bytes": 1339813888,
+      "cpu_seconds": 62.5625,
+      "thread_count": 37
+    },
+    "10": {
+      "working_set_bytes": 1032286208,
+      "private_bytes": 1238675456,
+      "cpu_seconds": 117.6875,
+      "thread_count": 34
+    },
+    "20": {
+      "working_set_bytes": 507604992,
+      "private_bytes": 626823168,
+      "cpu_seconds": 224.046875,
+      "thread_count": 31
+    }
+  },
+  "peak_resources": {
+    "working_set_bytes": 1476771840,
+    "private_bytes": 1809657856,
+    "cpu_seconds": 224.046875,
+    "thread_count": 37,
+    "sampling_interval_ms": 250,
+    "semantics": "Windows process-tree observation"
+  },
+  "state_isolation": {
+    "status": "BOUNDED_INPUT_SCOPE_ONLY",
+    "note": "Each item is supplied as an independent manifest path; no prior study or laterality state is stored by this worker. This is not a full production isolation proof."
+  },
+  "resident_decision": "RESIDENT_RESEARCH_SAFE_FOR_BOUNDED_USE",
+  "phi_included": false,
+  "limitations": [
+    "The experiment loads one model once and processes 20 de-identified/public research inputs serially; it is not a production worker or clinical validation.",
+    "Memory samples are best-effort Windows working-set observations and do not enforce an OS limit.",
+    "The bounded state-isolation note does not prove safety across every provider, cache, cancellation, or restart path."
+  ]
+}

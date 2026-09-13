@@ -1,0 +1,90 @@
+{
+  "artifact": {
+    "format": "onnx",
+    "sha256": "f0e19fa86d5a27a05731550d1d6708c01f6f363f45a1fa57849de988f91e775b"
+  },
+  "candidate_id": "retguard-dr-v1.0.0",
+  "comparison": {
+    "absolute_differences": null,
+    "onnx_logits": null,
+    "onnx_probabilities": null,
+    "publisher_framework_logits": null,
+    "reason": "The release does not contain the publisher's framework output or six input tensors; no local-vs-publisher numerical difference can be recomputed."
+  },
+  "final_decision": "CANDIDATE_ONLY / RIGHTS_RESTRICTED / NOT_BENCHMARK_READY",
+  "graph": {
+    "graph_load": "PASSED",
+    "inference": "PASSED_FOR_SYNTHETIC_INPUT_ONLY",
+    "input_name": "input",
+    "input_shape": [
+      "batch_size",
+      "3",
+      "480",
+      "480"
+    ],
+    "outputs": [
+      {
+        "name": "probability",
+        "shape": [
+          1
+        ],
+        "values": [
+          0.6214964389801025
+        ]
+      },
+      {
+        "name": "logit",
+        "shape": [
+          1
+        ],
+        "values": [
+          0.49590474367141724
+        ]
+      }
+    ]
+  },
+  "input": {
+    "dtype": "float32",
+    "kind": "DETERMINISTIC_SYNTHETIC_NOT_PUBLISHER_SAMPLE",
+    "preprocessing": "No image preprocessing was applied; synthetic tensor was supplied directly to the graph.",
+    "sha256": "0a19f1f8d73db150fcefab2401388f71685f92f89a773180eb785a2eaa3d0608",
+    "shape": [
+      1,
+      3,
+      480,
+      480
+    ]
+  },
+  "limitations": [
+    "The synthetic graph run is not publisher parity evidence.",
+    "No output tuning, tolerance change, preprocessing guess, or candidate prediction was used to clear the failed gate.",
+    "A legitimate resolution requires publisher framework outputs and exact six-sample input/preprocessing provenance or a corrected immutable export."
+  ],
+  "local_environment": {
+    "execution_providers": [
+      "AzureExecutionProvider",
+      "CPUExecutionProvider"
+    ],
+    "numpy": "2.5.2",
+    "onnxruntime": "1.23.2",
+    "opset_observation": "graph metadata inspected by ONNX Runtime",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.10",
+    "selected_provider": [
+      "CPUExecutionProvider"
+    ]
+  },
+  "phi_included": false,
+  "publisher_observation": {
+    "declared_logit_tolerance": 0.001,
+    "logit_parity": "FAILED",
+    "max_logit_difference": 0.002526,
+    "max_probability_difference": 0.000626,
+    "probability_parity": "PASSED",
+    "source": "released MODEL_CARD_dr.md; publisher framework logits and sample tensors are not in the acquired archive",
+    "verification_samples": 6
+  },
+  "schema_version": "visionscan-phase7-retguard-parity-investigation-v1",
+  "status": "UNRESOLVED_PARITY_SOURCE_OUTPUTS_UNAVAILABLE",
+  "stop_rule_preserved": true
+}

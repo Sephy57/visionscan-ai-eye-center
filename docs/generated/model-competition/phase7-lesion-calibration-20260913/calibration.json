@@ -1,0 +1,645 @@
+{
+  "schema_version": "visionscan-phase7-lesion-calibration-v1",
+  "observed_at": "2026-09-13T08:10:10.583Z",
+  "measurement_state": "MEASURED_HELD_OUT_RESEARCH",
+  "study_id": "phase7-lesion-calibration-20260913",
+  "dataset": {
+    "source": "DeepDRiD regular-fundus-validation",
+    "selected_cases": 400,
+    "frozen_cases": 400,
+    "patient_count": 100,
+    "calibration_patient_count": 80,
+    "evaluation_patient_count": 20,
+    "patient_separation": "PATIENT_SEPARATED_BY_STABLE_PATIENT_HASH",
+    "split_assignment_sha256": "2a0694734556e5a591efdc3c320eb44053031f83bef144bd3d9accf8b624add0",
+    "split_freeze": "CREATED_BEFORE_RULE_EVALUATION"
+  },
+  "model": {
+    "model_id": "fundus-lesions-clementp-unet-seresnext50",
+    "model_version": "a2cfcb594e483",
+    "artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+    "output_contract": "fundus-lesion-segmentation-batch-summary/1",
+    "execution": "ONE_FINITE_SERIAL_BATCH_WORKER"
+  },
+  "gates": {
+    "quality_and_ood_applied_before_execution": true,
+    "pending_execution_cases": 397,
+    "valid_outputs": 397,
+    "unavailable_reasons": {
+      "ood_blocked": 3
+    }
+  },
+  "rule_definitions": [
+    {
+      "id": "any_signal",
+      "label": "Any non-background region",
+      "empirical_features": [
+        "region_count"
+      ]
+    },
+    {
+      "id": "ma_or_he_or_ex",
+      "label": "MA-like or HE-like or EX-like",
+      "empirical_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "id": "he_or_ex",
+      "label": "HE-like or EX-like",
+      "empirical_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "id": "ex_only",
+      "label": "EX-like only",
+      "empirical_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "id": "ma_and_ex",
+      "label": "MA-like and EX-like",
+      "empirical_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "id": "he_and_ex",
+      "label": "HE-like and EX-like",
+      "empirical_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "id": "regions_ge_2",
+      "label": "At least two regions",
+      "empirical_features": [
+        "region_count"
+      ]
+    },
+    {
+      "id": "regions_ge_3",
+      "label": "At least three regions",
+      "empirical_features": [
+        "region_count"
+      ]
+    },
+    {
+      "id": "regions_ge_5",
+      "label": "At least five regions",
+      "empirical_features": [
+        "region_count"
+      ]
+    },
+    {
+      "id": "he_or_ex_and_regions_ge_2",
+      "label": "HE-like or EX-like and at least two regions",
+      "empirical_features": [
+        "class_presence",
+        "region_count"
+      ]
+    },
+    {
+      "id": "ma_or_he_and_regions_ge_2",
+      "label": "MA-like or HE-like and at least two regions",
+      "empirical_features": [
+        "class_presence",
+        "region_count"
+      ]
+    }
+  ],
+  "selection": {
+    "predeclared_logic": "Select the lowest-burden non-baseline rule on calibration patients with FN review escalation coverage >= 0.90 and lower path burden than any_signal; tie-break by higher coverage then rule ID. Do not inspect evaluation results during selection.",
+    "minimum_fn_coverage": 0.9,
+    "baseline_rule_id": "any_signal",
+    "selected_rule_id": "regions_ge_3",
+    "selection_state": "SELECTED_ON_CALIBRATION_ONLY",
+    "calibration_selected_measurement": {
+      "rule_id": "regions_ge_3",
+      "rule_label": "At least three regions",
+      "fn_input_cases": 87,
+      "fn_available_cases": 86,
+      "fn_unavailable_cases": 1,
+      "fn_signal_cases": 79,
+      "fn_review_escalation_coverage": 0.9080459770114943,
+      "baseline_nonreferable_path_cases": 254,
+      "path_available_cases": 252,
+      "path_unavailable_cases": 2,
+      "path_signal_cases": 146,
+      "review_escalations_per_100_path_cases": 57.48031496062992,
+      "rule_features": [
+        "region_count"
+      ]
+    },
+    "held_out_evaluation_measurement": {
+      "rule_id": "regions_ge_3",
+      "rule_label": "At least three regions",
+      "fn_input_cases": 14,
+      "fn_available_cases": 14,
+      "fn_unavailable_cases": 0,
+      "fn_signal_cases": 14,
+      "fn_review_escalation_coverage": 1,
+      "baseline_nonreferable_path_cases": 65,
+      "path_available_cases": 64,
+      "path_unavailable_cases": 1,
+      "path_signal_cases": 33,
+      "review_escalations_per_100_path_cases": 50.76923076923077,
+      "rule_features": [
+        "region_count"
+      ]
+    }
+  },
+  "calibration_results": [
+    {
+      "rule_id": "any_signal",
+      "rule_label": "Any non-background region",
+      "fn_input_cases": 87,
+      "fn_available_cases": 86,
+      "fn_unavailable_cases": 1,
+      "fn_signal_cases": 85,
+      "fn_review_escalation_coverage": 0.9770114942528736,
+      "baseline_nonreferable_path_cases": 254,
+      "path_available_cases": 252,
+      "path_unavailable_cases": 2,
+      "path_signal_cases": 198,
+      "review_escalations_per_100_path_cases": 77.95275590551181,
+      "rule_features": [
+        "region_count"
+      ]
+    },
+    {
+      "rule_id": "ma_or_he_or_ex",
+      "rule_label": "MA-like or HE-like or EX-like",
+      "fn_input_cases": 87,
+      "fn_available_cases": 86,
+      "fn_unavailable_cases": 1,
+      "fn_signal_cases": 85,
+      "fn_review_escalation_coverage": 0.9770114942528736,
+      "baseline_nonreferable_path_cases": 254,
+      "path_available_cases": 252,
+      "path_unavailable_cases": 2,
+      "path_signal_cases": 196,
+      "review_escalations_per_100_path_cases": 77.16535433070865,
+      "rule_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "rule_id": "he_or_ex",
+      "rule_label": "HE-like or EX-like",
+      "fn_input_cases": 87,
+      "fn_available_cases": 86,
+      "fn_unavailable_cases": 1,
+      "fn_signal_cases": 84,
+      "fn_review_escalation_coverage": 0.9655172413793104,
+      "baseline_nonreferable_path_cases": 254,
+      "path_available_cases": 252,
+      "path_unavailable_cases": 2,
+      "path_signal_cases": 181,
+      "review_escalations_per_100_path_cases": 71.25984251968504,
+      "rule_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "rule_id": "ex_only",
+      "rule_label": "EX-like only",
+      "fn_input_cases": 87,
+      "fn_available_cases": 86,
+      "fn_unavailable_cases": 1,
+      "fn_signal_cases": 69,
+      "fn_review_escalation_coverage": 0.7931034482758621,
+      "baseline_nonreferable_path_cases": 254,
+      "path_available_cases": 252,
+      "path_unavailable_cases": 2,
+      "path_signal_cases": 144,
+      "review_escalations_per_100_path_cases": 56.69291338582677,
+      "rule_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "rule_id": "ma_and_ex",
+      "rule_label": "MA-like and EX-like",
+      "fn_input_cases": 87,
+      "fn_available_cases": 86,
+      "fn_unavailable_cases": 1,
+      "fn_signal_cases": 56,
+      "fn_review_escalation_coverage": 0.6436781609195402,
+      "baseline_nonreferable_path_cases": 254,
+      "path_available_cases": 252,
+      "path_unavailable_cases": 2,
+      "path_signal_cases": 96,
+      "review_escalations_per_100_path_cases": 37.79527559055118,
+      "rule_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "rule_id": "he_and_ex",
+      "rule_label": "HE-like and EX-like",
+      "fn_input_cases": 87,
+      "fn_available_cases": 86,
+      "fn_unavailable_cases": 1,
+      "fn_signal_cases": 64,
+      "fn_review_escalation_coverage": 0.735632183908046,
+      "baseline_nonreferable_path_cases": 254,
+      "path_available_cases": 252,
+      "path_unavailable_cases": 2,
+      "path_signal_cases": 95,
+      "review_escalations_per_100_path_cases": 37.40157480314961,
+      "rule_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "rule_id": "regions_ge_2",
+      "rule_label": "At least two regions",
+      "fn_input_cases": 87,
+      "fn_available_cases": 86,
+      "fn_unavailable_cases": 1,
+      "fn_signal_cases": 83,
+      "fn_review_escalation_coverage": 0.9540229885057471,
+      "baseline_nonreferable_path_cases": 254,
+      "path_available_cases": 252,
+      "path_unavailable_cases": 2,
+      "path_signal_cases": 164,
+      "review_escalations_per_100_path_cases": 64.56692913385827,
+      "rule_features": [
+        "region_count"
+      ]
+    },
+    {
+      "rule_id": "regions_ge_3",
+      "rule_label": "At least three regions",
+      "fn_input_cases": 87,
+      "fn_available_cases": 86,
+      "fn_unavailable_cases": 1,
+      "fn_signal_cases": 79,
+      "fn_review_escalation_coverage": 0.9080459770114943,
+      "baseline_nonreferable_path_cases": 254,
+      "path_available_cases": 252,
+      "path_unavailable_cases": 2,
+      "path_signal_cases": 146,
+      "review_escalations_per_100_path_cases": 57.48031496062992,
+      "rule_features": [
+        "region_count"
+      ]
+    },
+    {
+      "rule_id": "regions_ge_5",
+      "rule_label": "At least five regions",
+      "fn_input_cases": 87,
+      "fn_available_cases": 86,
+      "fn_unavailable_cases": 1,
+      "fn_signal_cases": 77,
+      "fn_review_escalation_coverage": 0.8850574712643678,
+      "baseline_nonreferable_path_cases": 254,
+      "path_available_cases": 252,
+      "path_unavailable_cases": 2,
+      "path_signal_cases": 121,
+      "review_escalations_per_100_path_cases": 47.63779527559055,
+      "rule_features": [
+        "region_count"
+      ]
+    },
+    {
+      "rule_id": "he_or_ex_and_regions_ge_2",
+      "rule_label": "HE-like or EX-like and at least two regions",
+      "fn_input_cases": 87,
+      "fn_available_cases": 86,
+      "fn_unavailable_cases": 1,
+      "fn_signal_cases": 82,
+      "fn_review_escalation_coverage": 0.9425287356321839,
+      "baseline_nonreferable_path_cases": 254,
+      "path_available_cases": 252,
+      "path_unavailable_cases": 2,
+      "path_signal_cases": 157,
+      "review_escalations_per_100_path_cases": 61.811023622047244,
+      "rule_features": [
+        "class_presence",
+        "region_count"
+      ]
+    },
+    {
+      "rule_id": "ma_or_he_and_regions_ge_2",
+      "rule_label": "MA-like or HE-like and at least two regions",
+      "fn_input_cases": 87,
+      "fn_available_cases": 86,
+      "fn_unavailable_cases": 1,
+      "fn_signal_cases": 81,
+      "fn_review_escalation_coverage": 0.9310344827586207,
+      "baseline_nonreferable_path_cases": 254,
+      "path_available_cases": 252,
+      "path_unavailable_cases": 2,
+      "path_signal_cases": 150,
+      "review_escalations_per_100_path_cases": 59.055118110236215,
+      "rule_features": [
+        "class_presence",
+        "region_count"
+      ]
+    }
+  ],
+  "held_out_evaluation_results": [
+    {
+      "rule_id": "any_signal",
+      "rule_label": "Any non-background region",
+      "fn_input_cases": 14,
+      "fn_available_cases": 14,
+      "fn_unavailable_cases": 0,
+      "fn_signal_cases": 14,
+      "fn_review_escalation_coverage": 1,
+      "baseline_nonreferable_path_cases": 65,
+      "path_available_cases": 64,
+      "path_unavailable_cases": 1,
+      "path_signal_cases": 51,
+      "review_escalations_per_100_path_cases": 78.46153846153847,
+      "rule_features": [
+        "region_count"
+      ]
+    },
+    {
+      "rule_id": "ma_or_he_or_ex",
+      "rule_label": "MA-like or HE-like or EX-like",
+      "fn_input_cases": 14,
+      "fn_available_cases": 14,
+      "fn_unavailable_cases": 0,
+      "fn_signal_cases": 14,
+      "fn_review_escalation_coverage": 1,
+      "baseline_nonreferable_path_cases": 65,
+      "path_available_cases": 64,
+      "path_unavailable_cases": 1,
+      "path_signal_cases": 49,
+      "review_escalations_per_100_path_cases": 75.38461538461539,
+      "rule_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "rule_id": "he_or_ex",
+      "rule_label": "HE-like or EX-like",
+      "fn_input_cases": 14,
+      "fn_available_cases": 14,
+      "fn_unavailable_cases": 0,
+      "fn_signal_cases": 14,
+      "fn_review_escalation_coverage": 1,
+      "baseline_nonreferable_path_cases": 65,
+      "path_available_cases": 64,
+      "path_unavailable_cases": 1,
+      "path_signal_cases": 46,
+      "review_escalations_per_100_path_cases": 70.76923076923077,
+      "rule_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "rule_id": "ex_only",
+      "rule_label": "EX-like only",
+      "fn_input_cases": 14,
+      "fn_available_cases": 14,
+      "fn_unavailable_cases": 0,
+      "fn_signal_cases": 12,
+      "fn_review_escalation_coverage": 0.8571428571428571,
+      "baseline_nonreferable_path_cases": 65,
+      "path_available_cases": 64,
+      "path_unavailable_cases": 1,
+      "path_signal_cases": 37,
+      "review_escalations_per_100_path_cases": 56.92307692307692,
+      "rule_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "rule_id": "ma_and_ex",
+      "rule_label": "MA-like and EX-like",
+      "fn_input_cases": 14,
+      "fn_available_cases": 14,
+      "fn_unavailable_cases": 0,
+      "fn_signal_cases": 5,
+      "fn_review_escalation_coverage": 0.35714285714285715,
+      "baseline_nonreferable_path_cases": 65,
+      "path_available_cases": 64,
+      "path_unavailable_cases": 1,
+      "path_signal_cases": 10,
+      "review_escalations_per_100_path_cases": 15.384615384615385,
+      "rule_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "rule_id": "he_and_ex",
+      "rule_label": "HE-like and EX-like",
+      "fn_input_cases": 14,
+      "fn_available_cases": 14,
+      "fn_unavailable_cases": 0,
+      "fn_signal_cases": 9,
+      "fn_review_escalation_coverage": 0.6428571428571429,
+      "baseline_nonreferable_path_cases": 65,
+      "path_available_cases": 64,
+      "path_unavailable_cases": 1,
+      "path_signal_cases": 15,
+      "review_escalations_per_100_path_cases": 23.076923076923077,
+      "rule_features": [
+        "class_presence"
+      ]
+    },
+    {
+      "rule_id": "regions_ge_2",
+      "rule_label": "At least two regions",
+      "fn_input_cases": 14,
+      "fn_available_cases": 14,
+      "fn_unavailable_cases": 0,
+      "fn_signal_cases": 14,
+      "fn_review_escalation_coverage": 1,
+      "baseline_nonreferable_path_cases": 65,
+      "path_available_cases": 64,
+      "path_unavailable_cases": 1,
+      "path_signal_cases": 40,
+      "review_escalations_per_100_path_cases": 61.53846153846154,
+      "rule_features": [
+        "region_count"
+      ]
+    },
+    {
+      "rule_id": "regions_ge_3",
+      "rule_label": "At least three regions",
+      "fn_input_cases": 14,
+      "fn_available_cases": 14,
+      "fn_unavailable_cases": 0,
+      "fn_signal_cases": 14,
+      "fn_review_escalation_coverage": 1,
+      "baseline_nonreferable_path_cases": 65,
+      "path_available_cases": 64,
+      "path_unavailable_cases": 1,
+      "path_signal_cases": 33,
+      "review_escalations_per_100_path_cases": 50.76923076923077,
+      "rule_features": [
+        "region_count"
+      ]
+    },
+    {
+      "rule_id": "regions_ge_5",
+      "rule_label": "At least five regions",
+      "fn_input_cases": 14,
+      "fn_available_cases": 14,
+      "fn_unavailable_cases": 0,
+      "fn_signal_cases": 11,
+      "fn_review_escalation_coverage": 0.7857142857142857,
+      "baseline_nonreferable_path_cases": 65,
+      "path_available_cases": 64,
+      "path_unavailable_cases": 1,
+      "path_signal_cases": 21,
+      "review_escalations_per_100_path_cases": 32.30769230769231,
+      "rule_features": [
+        "region_count"
+      ]
+    },
+    {
+      "rule_id": "he_or_ex_and_regions_ge_2",
+      "rule_label": "HE-like or EX-like and at least two regions",
+      "fn_input_cases": 14,
+      "fn_available_cases": 14,
+      "fn_unavailable_cases": 0,
+      "fn_signal_cases": 14,
+      "fn_review_escalation_coverage": 1,
+      "baseline_nonreferable_path_cases": 65,
+      "path_available_cases": 64,
+      "path_unavailable_cases": 1,
+      "path_signal_cases": 38,
+      "review_escalations_per_100_path_cases": 58.46153846153847,
+      "rule_features": [
+        "class_presence",
+        "region_count"
+      ]
+    },
+    {
+      "rule_id": "ma_or_he_and_regions_ge_2",
+      "rule_label": "MA-like or HE-like and at least two regions",
+      "fn_input_cases": 14,
+      "fn_available_cases": 14,
+      "fn_unavailable_cases": 0,
+      "fn_signal_cases": 12,
+      "fn_review_escalation_coverage": 0.8571428571428571,
+      "baseline_nonreferable_path_cases": 65,
+      "path_available_cases": 64,
+      "path_unavailable_cases": 1,
+      "path_signal_cases": 28,
+      "review_escalations_per_100_path_cases": 43.07692307692308,
+      "rule_features": [
+        "class_presence",
+        "region_count"
+      ]
+    }
+  ],
+  "pareto_frontier": {
+    "calibration": [
+      {
+        "rule_id": "ma_or_he_or_ex",
+        "fn_review_escalation_coverage": 0.9770114942528736,
+        "review_escalations_per_100_path_cases": 77.16535433070865
+      },
+      {
+        "rule_id": "he_or_ex",
+        "fn_review_escalation_coverage": 0.9655172413793104,
+        "review_escalations_per_100_path_cases": 71.25984251968504
+      },
+      {
+        "rule_id": "he_and_ex",
+        "fn_review_escalation_coverage": 0.735632183908046,
+        "review_escalations_per_100_path_cases": 37.40157480314961
+      },
+      {
+        "rule_id": "regions_ge_2",
+        "fn_review_escalation_coverage": 0.9540229885057471,
+        "review_escalations_per_100_path_cases": 64.56692913385827
+      },
+      {
+        "rule_id": "regions_ge_3",
+        "fn_review_escalation_coverage": 0.9080459770114943,
+        "review_escalations_per_100_path_cases": 57.48031496062992
+      },
+      {
+        "rule_id": "regions_ge_5",
+        "fn_review_escalation_coverage": 0.8850574712643678,
+        "review_escalations_per_100_path_cases": 47.63779527559055
+      },
+      {
+        "rule_id": "he_or_ex_and_regions_ge_2",
+        "fn_review_escalation_coverage": 0.9425287356321839,
+        "review_escalations_per_100_path_cases": 61.811023622047244
+      },
+      {
+        "rule_id": "ma_or_he_and_regions_ge_2",
+        "fn_review_escalation_coverage": 0.9310344827586207,
+        "review_escalations_per_100_path_cases": 59.055118110236215
+      }
+    ],
+    "evaluation": [
+      {
+        "rule_id": "ma_and_ex",
+        "fn_review_escalation_coverage": 0.35714285714285715,
+        "review_escalations_per_100_path_cases": 15.384615384615385
+      },
+      {
+        "rule_id": "he_and_ex",
+        "fn_review_escalation_coverage": 0.6428571428571429,
+        "review_escalations_per_100_path_cases": 23.076923076923077
+      },
+      {
+        "rule_id": "regions_ge_3",
+        "fn_review_escalation_coverage": 1,
+        "review_escalations_per_100_path_cases": 50.76923076923077
+      },
+      {
+        "rule_id": "regions_ge_5",
+        "fn_review_escalation_coverage": 0.7857142857142857,
+        "review_escalations_per_100_path_cases": 32.30769230769231
+      },
+      {
+        "rule_id": "ma_or_he_and_regions_ge_2",
+        "fn_review_escalation_coverage": 0.8571428571428571,
+        "review_escalations_per_100_path_cases": 43.07692307692308
+      }
+    ],
+    "interpretation": "Nondominated research rules are shown for transparency; evaluation results did not select the rule."
+  },
+  "question_two_answer": {
+    "answer": "POTENTIALLY_MORE_SELECTIVE_ON_HELD_OUT_RESEARCH_DATA",
+    "selected_rule_id": "regions_ge_3",
+    "held_out": {
+      "rule_id": "regions_ge_3",
+      "rule_label": "At least three regions",
+      "fn_input_cases": 14,
+      "fn_available_cases": 14,
+      "fn_unavailable_cases": 0,
+      "fn_signal_cases": 14,
+      "fn_review_escalation_coverage": 1,
+      "baseline_nonreferable_path_cases": 65,
+      "path_available_cases": 64,
+      "path_unavailable_cases": 1,
+      "path_signal_cases": 33,
+      "review_escalations_per_100_path_cases": 50.76923076923077,
+      "rule_features": [
+        "region_count"
+      ]
+    },
+    "label": "REVIEW ESCALATION COVERAGE",
+    "forbidden_label": "DISEASE RECOVERY"
+  },
+  "source_hashes": {
+    "source_csv_sha256": "54c2f11bf0647fe3cc64496cd83646ea4a4fdf0aab82b1cd4891ad998f220332",
+    "raw_export_sha256": "c040638f5397a86af54599a6c21b3e047d6a68bcbf93a28f186e6feb802a12e5",
+    "failure_registry_sha256": "8b5f258b3f56d437739436e1512b3b72052049c06185d91a90eb7f35a2206597",
+    "calibration_script_sha256": "5b34d6e09dfd97ba2fd81ea50cc3a6a0843bdc69250bc58e23b2f15b8993ee44",
+    "batch_probe_sha256": "784589cb889b0597ae61743974eca97794a068e6ffa81cd81b9532423c3d0cef"
+  },
+  "phi_included": false,
+  "limitations": [
+    "The calibration and evaluation splits are patient-separated by stable patient hash; raw patient identifiers and row-level features are not persisted.",
+    "Rules use only reproducible aggregate connected-component count/class-presence features emitted by the pinned research worker.",
+    "The study measures REVIEW ESCALATION COVERAGE and review burden, not lesion confirmation, DR disease recovery, clinical sensitivity, or referral utility.",
+    "The finite serial worker keeps the model loaded for this run but does not establish resident production-worker safety or sustained capacity."
+  ]
+}

@@ -66,6 +66,11 @@ jobs:
         # immutable candidate bundle, fail-closed gates, and SQLite lease race.
         run: npm run validation:phase6
 
+      - name: Phase 7 retinal intelligence and runtime acceptance
+        # Phase 7 artifacts are aggregate research evidence; real local model
+        # runs remain outside hosted CI and are never inferred here.
+        run: npm run validation:phase7
+
       - name: Audit local model manifests
         run: npm run model:audit
 
@@ -125,6 +130,9 @@ jobs:
 
       - name: Phase 6 candidate and runtime acceptance
         run: npm run validation:phase6
+
+      - name: Phase 7 retinal intelligence and runtime acceptance
+        run: npm run validation:phase7
 
       - name: Audit local model manifests
         run: npm run model:audit

@@ -1,0 +1,72 @@
+{
+  "schema_version": "visionscan-phase7-resource-race-v1",
+  "observed_at": "2026-09-13T08:14:09.934Z",
+  "status": "MEASURED_REAL_WORKER_RACE",
+  "worker_processes_started": 2,
+  "workers": [
+    {
+      "worker_id": "real-worker-a",
+      "admitted": true,
+      "rejection_reason": null,
+      "model_started": true,
+      "model_completed": true,
+      "heartbeat_count": 17,
+      "worker_status": "COMPLETED",
+      "process_exit_code": 0
+    },
+    {
+      "worker_id": "real-worker-b",
+      "admitted": false,
+      "rejection_reason": "reservation_limit_reached",
+      "model_started": false,
+      "model_completed": false,
+      "heartbeat_count": 0,
+      "worker_status": null,
+      "process_exit_code": 0
+    }
+  ],
+  "admission": {
+    "capacity": 1,
+    "admitted_count": 1,
+    "model_launch_count": 1,
+    "no_double_launch": true,
+    "active_leases_after_race": 0,
+    "process_scope": "two independent Node workers; admitted winner launched one real Python lesion batch probe"
+  },
+  "heartbeat": {
+    "real_worker_heartbeat_observed": true,
+    "fencing_probe_changed": true
+  },
+  "stale_recovery": {
+    "old_admitted": true,
+    "newer_admitted": true,
+    "reclaimed": 1,
+    "active_after": 0
+  },
+  "ownership_fencing": {
+    "stale_release_changed": false,
+    "newer_release_changed": true,
+    "old_release_blocked": true,
+    "newer_release_succeeded": true
+  },
+  "host_memory": {
+    "platform": "win32",
+    "totalBytes": 16425873408,
+    "availableBytes": 5637398528,
+    "source": "node_os_freemem",
+    "enforcement": "observation_only"
+  },
+  "config": {
+    "memory_bytes": 2147483648,
+    "threads": 4,
+    "headroom_bytes": 1073741824,
+    "lease_ms": 30000,
+    "max_active_leases": 1
+  },
+  "phi_included": false,
+  "limitations": [
+    "The cross-process race is bounded to two local worker processes and one real lesion probe input.",
+    "The stale/fencing clock probe uses injected test time and a separate isolated SQLite file.",
+    "This does not establish universal OS-level memory enforcement, multi-host locking, or production capacity."
+  ]
+}

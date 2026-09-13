@@ -208,6 +208,17 @@ interface Phase6Response {
   };
 }
 
+interface Phase7Response {
+  schema_version?: string;
+  phi_included?: boolean;
+  notice?: string;
+  classifications?: { software?: string; dr?: string; lesion?: string; performance?: string; data?: string; clinical?: string[] };
+  candidate_search?: { decision?: string; candidates?: Array<{ candidate_id?: string; task?: string; artifact_state?: string; rights_state?: string; decision?: string; blockers?: string[] }> };
+  retguard_parity?: { status?: string; publisher_observation?: { max_logit_difference?: number; max_probability_difference?: number; declared_logit_tolerance?: number; verification_samples?: number; logit_parity?: string }; comparison?: { publisher_framework_logits_available?: boolean; absolute_differences_available?: boolean; reason?: string }; final_decision?: string };
+  lesion_calibration?: { measurement_state?: string; selection?: { selected_rule_id?: string | null; selection_state?: string; calibration_selected_measurement?: { fn_review_escalation_coverage?: number | null; review_escalations_per_100_path_cases?: number | null } | null; held_out_evaluation_measurement?: { fn_review_escalation_coverage?: number | null; review_escalations_per_100_path_cases?: number | null } | null }; question_two_answer?: { answer?: string; label?: string; forbidden_label?: string } };
+  runtime?: { resource_race?: { status?: string; admission?: { admitted_count?: number; model_launch_count?: number; no_double_launch?: boolean }; ownership_fencing?: { old_release_blocked?: boolean } }; real_load?: { status?: string; points?: Array<{ requested?: number; completed_jobs?: number; throughput_jobs_per_second?: number; queue_wait_ms?: { p50?: number | null; p95?: number | null; max?: number | null }; service_latency_ms?: { p50?: number | null; p95?: number | null; max?: number | null } }> }; resident?: { status?: string; resident_decision?: string; initial_load_ms?: number | null; warm_inference_ms?: { p50?: number | null; p95?: number | null } }; crash_matrix?: { status?: string } };
+}
+
 interface Source<T> {
   data: T | null;
   error: string | null;
@@ -223,6 +234,7 @@ interface CenterData {
   admin: Source<AdminResponse>;
   operations: Source<OperationsResponse>;
   phase6: Source<Phase6Response>;
+  phase7: Source<Phase7Response>;
   health: Record<string, Source<HealthResponse>>;
 }
 
@@ -238,6 +250,7 @@ const initialData: CenterData = {
   admin: emptySource(),
   operations: emptySource(),
   phase6: emptySource(),
+  phase7: emptySource(),
   health: {},
 };
 
@@ -320,7 +333,7 @@ export default function ValidationCenterClient() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [dashboard, models, registry, live, ready, metrics, admin, operations, phase6] = await Promise.all([
+    const [dashboard, models, registry, live, ready, metrics, admin, operations, phase6, phase7] = await Promise.all([
       readSource<DashboardResponse>("/api/validation/dashboard"),
       readSource<ModelsResponse>("/api/models"),
       readSource<ValidationRegistryResponse>("/api/models/validation"),
@@ -330,6 +343,7 @@ export default function ValidationCenterClient() {
       readSource<AdminResponse>("/api/admin"),
       readSource<OperationsResponse>("/api/admin/operations"),
       readSource<Phase6Response>("/api/validation/phase6"),
+      readSource<Phase7Response>("/api/validation/phase7"),
     ]);
 
     const modelsForHealth = models.data?.models ?? [];
@@ -338,7 +352,7 @@ export default function ValidationCenterClient() {
       await readSource<HealthResponse>(`/api/models/${encodeURIComponent(model.model_id)}/health`),
     ] as const));
 
-    setData({ dashboard, models, registry, live, ready, metrics, admin, operations, phase6, health: Object.fromEntries(healthEntries) });
+    setData({ dashboard, models, registry, live, ready, metrics, admin, operations, phase6, phase7, health: Object.fromEntries(healthEntries) });
     setRefreshedAt(new Date().toISOString());
     setLoading(false);
   }, []);
@@ -484,8 +498,62 @@ export default function ValidationCenterClient() {
         </div>
       </section>
 
+      <section aria-labelledby="phase7-title">
+        <SectionHeading eyebrow="03 / Phase 7 evidence" title="Candidate search, lesion calibration, and real runtime checks" detail="Phase 7 is an internal research ledger. Candidate rights, held-out selection, worker evidence, and missing measurements remain visibly separate." />
+        <div className={styles.boundary} role="note" id="phase7-title">
+          <span className={styles.boundaryMark} aria-hidden="true">!</span>
+          <div><strong>{data.phase7.data?.classifications?.dr ?? "DR CANDIDATE EVALUATED — IMPROVEMENT NOT ESTABLISHED"}</strong><br />{data.phase7.data?.notice ?? "Phase 7 evidence is unavailable or role-restricted; no model or clinical claim is inferred."}</div>
+        </div>
+        <div className={styles.statusGrid}>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>Second candidate</span><StatusPill status="bad">Blocked</StatusPill></div>
+            <strong className={styles.statusValue}>{label(data.phase7.data?.candidate_search?.decision)}</strong>
+            <span className={styles.cardNote}>{integer(data.phase7.data?.candidate_search?.candidates?.length)} candidates screened; no unknown weights loaded.</span>
+          </article>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>RetGuard parity</span><StatusPill status="bad">Stop preserved</StatusPill></div>
+            <strong className={styles.statusValue}>{label(data.phase7.data?.retguard_parity?.publisher_observation?.logit_parity)}</strong>
+            <span className={styles.cardNote}>Max logit {decimal(data.phase7.data?.retguard_parity?.publisher_observation?.max_logit_difference)} vs {decimal(data.phase7.data?.retguard_parity?.publisher_observation?.declared_logit_tolerance)}.</span>
+          </article>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>Lesion rule</span><StatusPill status={data.phase7.data?.lesion_calibration?.selection?.selected_rule_id ? "warn" : "bad"}>{data.phase7.data?.lesion_calibration?.selection?.selected_rule_id ? "Held-out" : "No rule"}</StatusPill></div>
+            <strong className={styles.statusValue}>{label(data.phase7.data?.lesion_calibration?.selection?.selected_rule_id)}</strong>
+            <span className={styles.cardNote}>{label(data.phase7.data?.lesion_calibration?.selection?.selection_state)}</span>
+          </article>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>Clinical boundary</span><StatusPill status="bad">No claim</StatusPill></div>
+            <strong className={styles.statusValue}>Not validated</strong>
+            <span className={styles.cardNote}>Review escalation coverage is not disease recovery.</span>
+          </article>
+        </div>
+        <div className={styles.evidenceGrid}>
+          <article className={styles.evidenceCard}>
+            <div className={styles.cardTop}><div><span className={styles.cardLabel}>Held-out lesion evaluation</span><h3>Calibration split and burden</h3></div><StatusPill status={data.phase7.data?.lesion_calibration?.selection?.held_out_evaluation_measurement ? "warn" : "neutral"}>{label(data.phase7.data?.lesion_calibration?.measurement_state)}</StatusPill></div>
+            <dl className={styles.definitionList}>
+              <dt>Selected rule</dt><dd>{label(data.phase7.data?.lesion_calibration?.selection?.selected_rule_id)}</dd>
+              <dt>FN coverage</dt><dd>{percent(data.phase7.data?.lesion_calibration?.selection?.held_out_evaluation_measurement?.fn_review_escalation_coverage)}</dd>
+              <dt>Review burden</dt><dd>{data.phase7.data?.lesion_calibration?.selection?.held_out_evaluation_measurement?.review_escalations_per_100_path_cases == null ? "Not recorded" : `${data.phase7.data.lesion_calibration.selection.held_out_evaluation_measurement.review_escalations_per_100_path_cases.toFixed(1)} per 100`}</dd>
+              <dt>Language</dt><dd>REVIEW ESCALATION COVERAGE only; not disease recovery.</dd>
+            </dl>
+          </article>
+          <article className={styles.evidenceCard}>
+            <div className={styles.cardTop}><div><span className={styles.cardLabel}>Real worker evidence</span><h3>Admission and resident checks</h3></div><StatusPill status="warn">Research only</StatusPill></div>
+            <dl className={styles.definitionList}>
+              <dt>Cross-process race</dt><dd>{label(data.phase7.data?.runtime?.resource_race?.status)} · {integer(data.phase7.data?.runtime?.resource_race?.admission?.admitted_count)} admitted · {integer(data.phase7.data?.runtime?.resource_race?.admission?.model_launch_count)} model launch(es)</dd>
+              <dt>Single-worker load</dt><dd>{label(data.phase7.data?.runtime?.real_load?.status)}</dd>
+              <dt>Resident lesion</dt><dd>{label(data.phase7.data?.runtime?.resident?.resident_decision)}</dd>
+              <dt>Crash matrix</dt><dd>{label(data.phase7.data?.runtime?.crash_matrix?.status)}</dd>
+            </dl>
+          </article>
+        </div>
+        <div className={styles.resourceGrid} aria-label="Phase 7 runtime evidence">
+          {(data.phase7.data?.runtime?.real_load?.points ?? []).map((point) => <div className={styles.resourceRow} key={String(point.requested)}><span>{integer(point.requested)} queued jobs</span><strong>{integer(point.completed_jobs)} complete · queue p50 {decimal(point.queue_wait_ms?.p50)} ms · service p50 {decimal(point.service_latency_ms?.p50)} ms</strong></div>)}
+          {!data.phase7.data?.runtime?.real_load?.points?.length && <p className={styles.unavailable}>Real load evidence is unavailable; no capacity is inferred.</p>}
+        </div>
+      </section>
+
       <section aria-labelledby="identity-title">
-        <SectionHeading eyebrow="03 / Model identity" title="Declared capability and limitation" detail="Registry metadata is displayed as authored; a model cannot self-declare clinical validation." />
+        <SectionHeading eyebrow="04 / Model identity" title="Declared capability and limitation" detail="Registry metadata is displayed as authored; a model cannot self-declare clinical validation." />
         <div className={styles.modelGrid} id="identity-title">
           {models.map((model) => {
             const entry = registryByModel.get(model.model_id);
