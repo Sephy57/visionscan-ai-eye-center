@@ -1,9 +1,11 @@
 {
   "schema_version": "visionscan-phase10-crash-matrix-v1",
-  "observed_at": "2026-09-13T14:29:56.755Z",
+  "observed_at": "2026-09-13T16:11:16.969Z",
   "platform": "win32",
   "node_version": "v20.20.2",
   "worker_script": "scripts/worker.ts",
+  "implementation_head_at_capture": "cdd8effcfb614d4279ba6ab12023011f7e80d164",
+  "working_tree_dirty_at_capture": true,
   "fault_seams": [
     "BEFORE_MODEL_RESULT_WRITE",
     "AFTER_MODEL_RESULT_WRITE",
@@ -25,14 +27,14 @@
   "stages": [
     {
       "stage": "BEFORE_MODEL_RESULT_WRITE",
-      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "evidence_classification": "REAL_WORKER_PROCESS_KILL_RESTART",
       "status": "PASS",
       "crash_observed": true,
       "initial_worker_exit": {
         "code": 1,
         "signal": null,
         "timed_out": false,
-        "duration_ms": 13653
+        "duration_ms": 44256
       },
       "restart": {
         "status": "COMPLETED",
@@ -44,7 +46,7 @@
           "completed_units": 1,
           "total_units": 1,
           "message": "Job completed",
-          "updated_at": "2026-09-13T14:30:31.262Z"
+          "updated_at": "2026-09-13T16:12:25.445Z"
         },
         "resource_reservation_state": "released",
         "resource_rejection_reason": null,
@@ -54,10 +56,17 @@
           "code": 0,
           "signal": null,
           "timed_out": false,
-          "duration_ms": 13922
+          "duration_ms": 14513
         }
       },
       "canonical_effects": {
+        "expected_effect_types": [
+          "MODEL_RESULT",
+          "STRUCTURED_EVIDENCE",
+          "REASONING_RECORD",
+          "REPORT",
+          "JOB_COMPLETION"
+        ],
         "counts": {
           "MODEL_RESULT": 1,
           "STRUCTURED_EVIDENCE": 1,
@@ -65,6 +74,7 @@
           "REPORT": 1,
           "JOB_COMPLETION": 1
         },
+        "complete": true,
         "duplicate_free": true,
         "job_completion_count": 1
       },
@@ -76,14 +86,15 @@
       },
       "cleanup": {
         "parent_taskkill_tree_requested": true,
+        "descendants_before_termination": [],
         "descendants_absent_after_termination": true,
         "remaining_descendant_pids": [],
-        "temporary_workspace": "visionscan-phase10-crash-oER7FS",
+        "temporary_workspace": "visionscan-phase10-crash-P4c0x4",
         "phi_included": false
       },
       "seed": {
         "status": "OK",
-        "duration_ms": 2983
+        "duration_ms": 5671
       },
       "inspect_exit": 0,
       "diagnostics": {
@@ -94,14 +105,14 @@
     },
     {
       "stage": "AFTER_MODEL_RESULT_WRITE",
-      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "evidence_classification": "REAL_WORKER_PROCESS_KILL_RESTART",
       "status": "PASS",
       "crash_observed": true,
       "initial_worker_exit": {
         "code": 1,
         "signal": null,
         "timed_out": false,
-        "duration_ms": 13725
+        "duration_ms": 14423
       },
       "restart": {
         "status": "COMPLETED",
@@ -113,7 +124,7 @@
           "completed_units": 1,
           "total_units": 1,
           "message": "Job completed",
-          "updated_at": "2026-09-13T14:30:55.006Z"
+          "updated_at": "2026-09-13T16:12:49.059Z"
         },
         "resource_reservation_state": "released",
         "resource_rejection_reason": null,
@@ -123,10 +134,17 @@
           "code": 0,
           "signal": null,
           "timed_out": false,
-          "duration_ms": 3057
+          "duration_ms": 1568
         }
       },
       "canonical_effects": {
+        "expected_effect_types": [
+          "MODEL_RESULT",
+          "STRUCTURED_EVIDENCE",
+          "REASONING_RECORD",
+          "REPORT",
+          "JOB_COMPLETION"
+        ],
         "counts": {
           "MODEL_RESULT": 1,
           "STRUCTURED_EVIDENCE": 1,
@@ -134,6 +152,7 @@
           "REPORT": 1,
           "JOB_COMPLETION": 1
         },
+        "complete": true,
         "duplicate_free": true,
         "job_completion_count": 1
       },
@@ -145,14 +164,15 @@
       },
       "cleanup": {
         "parent_taskkill_tree_requested": true,
+        "descendants_before_termination": [],
         "descendants_absent_after_termination": true,
         "remaining_descendant_pids": [],
-        "temporary_workspace": "visionscan-phase10-crash-7n5wk2",
+        "temporary_workspace": "visionscan-phase10-crash-f9ipZA",
         "phi_included": false
       },
       "seed": {
         "status": "OK",
-        "duration_ms": 2827
+        "duration_ms": 2862
       },
       "inspect_exit": 0,
       "diagnostics": {
@@ -163,14 +183,14 @@
     },
     {
       "stage": "BEFORE_EVIDENCE_COMMIT",
-      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "evidence_classification": "REAL_WORKER_PROCESS_KILL_RESTART",
       "status": "PASS",
       "crash_observed": true,
       "initial_worker_exit": {
         "code": 1,
         "signal": null,
         "timed_out": false,
-        "duration_ms": 13351
+        "duration_ms": 14146
       },
       "restart": {
         "status": "COMPLETED",
@@ -182,7 +202,7 @@
           "completed_units": 1,
           "total_units": 1,
           "message": "Job completed",
-          "updated_at": "2026-09-13T14:31:16.648Z"
+          "updated_at": "2026-09-13T16:13:12.367Z"
         },
         "resource_reservation_state": "released",
         "resource_rejection_reason": null,
@@ -192,10 +212,17 @@
           "code": 0,
           "signal": null,
           "timed_out": false,
-          "duration_ms": 1454
+          "duration_ms": 1693
         }
       },
       "canonical_effects": {
+        "expected_effect_types": [
+          "MODEL_RESULT",
+          "STRUCTURED_EVIDENCE",
+          "REASONING_RECORD",
+          "REPORT",
+          "JOB_COMPLETION"
+        ],
         "counts": {
           "MODEL_RESULT": 1,
           "STRUCTURED_EVIDENCE": 1,
@@ -203,6 +230,7 @@
           "REPORT": 1,
           "JOB_COMPLETION": 1
         },
+        "complete": true,
         "duplicate_free": true,
         "job_completion_count": 1
       },
@@ -214,14 +242,15 @@
       },
       "cleanup": {
         "parent_taskkill_tree_requested": true,
+        "descendants_before_termination": [],
         "descendants_absent_after_termination": true,
         "remaining_descendant_pids": [],
-        "temporary_workspace": "visionscan-phase10-crash-VNsp0s",
+        "temporary_workspace": "visionscan-phase10-crash-kcdUrh",
         "phi_included": false
       },
       "seed": {
         "status": "OK",
-        "duration_ms": 2711
+        "duration_ms": 2846
       },
       "inspect_exit": 0,
       "diagnostics": {
@@ -232,14 +261,14 @@
     },
     {
       "stage": "AFTER_EVIDENCE_COMMIT",
-      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "evidence_classification": "REAL_WORKER_PROCESS_KILL_RESTART",
       "status": "PASS",
       "crash_observed": true,
       "initial_worker_exit": {
         "code": 1,
         "signal": null,
         "timed_out": false,
-        "duration_ms": 15172
+        "duration_ms": 14027
       },
       "restart": {
         "status": "COMPLETED",
@@ -251,7 +280,7 @@
           "completed_units": 1,
           "total_units": 1,
           "message": "Job completed",
-          "updated_at": "2026-09-13T14:31:40.027Z"
+          "updated_at": "2026-09-13T16:13:36.501Z"
         },
         "resource_reservation_state": "released",
         "resource_rejection_reason": null,
@@ -261,10 +290,17 @@
           "code": 0,
           "signal": null,
           "timed_out": false,
-          "duration_ms": 1556
+          "duration_ms": 1540
         }
       },
       "canonical_effects": {
+        "expected_effect_types": [
+          "MODEL_RESULT",
+          "STRUCTURED_EVIDENCE",
+          "REASONING_RECORD",
+          "REPORT",
+          "JOB_COMPLETION"
+        ],
         "counts": {
           "MODEL_RESULT": 1,
           "STRUCTURED_EVIDENCE": 1,
@@ -272,6 +308,7 @@
           "REPORT": 1,
           "JOB_COMPLETION": 1
         },
+        "complete": true,
         "duplicate_free": true,
         "job_completion_count": 1
       },
@@ -283,14 +320,15 @@
       },
       "cleanup": {
         "parent_taskkill_tree_requested": true,
+        "descendants_before_termination": [],
         "descendants_absent_after_termination": true,
         "remaining_descendant_pids": [],
-        "temporary_workspace": "visionscan-phase10-crash-oiYzmg",
+        "temporary_workspace": "visionscan-phase10-crash-MDq6Aq",
         "phi_included": false
       },
       "seed": {
         "status": "OK",
-        "duration_ms": 2636
+        "duration_ms": 2810
       },
       "inspect_exit": 0,
       "diagnostics": {
@@ -301,14 +339,14 @@
     },
     {
       "stage": "BEFORE_REPORT_COMMIT",
-      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "evidence_classification": "REAL_WORKER_PROCESS_KILL_RESTART",
       "status": "PASS",
       "crash_observed": true,
       "initial_worker_exit": {
         "code": 1,
         "signal": null,
         "timed_out": false,
-        "duration_ms": 13596
+        "duration_ms": 14047
       },
       "restart": {
         "status": "COMPLETED",
@@ -320,7 +358,7 @@
           "completed_units": 1,
           "total_units": 1,
           "message": "Job completed",
-          "updated_at": "2026-09-13T14:32:02.242Z"
+          "updated_at": "2026-09-13T16:14:01.418Z"
         },
         "resource_reservation_state": "released",
         "resource_rejection_reason": null,
@@ -330,10 +368,17 @@
           "code": 0,
           "signal": null,
           "timed_out": false,
-          "duration_ms": 1544
+          "duration_ms": 1655
         }
       },
       "canonical_effects": {
+        "expected_effect_types": [
+          "MODEL_RESULT",
+          "STRUCTURED_EVIDENCE",
+          "REASONING_RECORD",
+          "REPORT",
+          "JOB_COMPLETION"
+        ],
         "counts": {
           "MODEL_RESULT": 1,
           "STRUCTURED_EVIDENCE": 1,
@@ -341,6 +386,7 @@
           "REPORT": 1,
           "JOB_COMPLETION": 1
         },
+        "complete": true,
         "duplicate_free": true,
         "job_completion_count": 1
       },
@@ -352,14 +398,15 @@
       },
       "cleanup": {
         "parent_taskkill_tree_requested": true,
+        "descendants_before_termination": [],
         "descendants_absent_after_termination": true,
         "remaining_descendant_pids": [],
-        "temporary_workspace": "visionscan-phase10-crash-3x3mOk",
+        "temporary_workspace": "visionscan-phase10-crash-H6Jtwm",
         "phi_included": false
       },
       "seed": {
         "status": "OK",
-        "duration_ms": 2942
+        "duration_ms": 2956
       },
       "inspect_exit": 0,
       "diagnostics": {
@@ -370,14 +417,14 @@
     },
     {
       "stage": "AFTER_REPORT_COMMIT",
-      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "evidence_classification": "REAL_WORKER_PROCESS_KILL_RESTART",
       "status": "PASS",
       "crash_observed": true,
       "initial_worker_exit": {
         "code": 1,
         "signal": null,
         "timed_out": false,
-        "duration_ms": 13281
+        "duration_ms": 14291
       },
       "restart": {
         "status": "COMPLETED",
@@ -389,7 +436,7 @@
           "completed_units": 1,
           "total_units": 1,
           "message": "Job completed",
-          "updated_at": "2026-09-13T14:32:23.736Z"
+          "updated_at": "2026-09-13T16:14:24.637Z"
         },
         "resource_reservation_state": "released",
         "resource_rejection_reason": null,
@@ -399,10 +446,17 @@
           "code": 0,
           "signal": null,
           "timed_out": false,
-          "duration_ms": 1190
+          "duration_ms": 1357
         }
       },
       "canonical_effects": {
+        "expected_effect_types": [
+          "MODEL_RESULT",
+          "STRUCTURED_EVIDENCE",
+          "REASONING_RECORD",
+          "REPORT",
+          "JOB_COMPLETION"
+        ],
         "counts": {
           "MODEL_RESULT": 1,
           "STRUCTURED_EVIDENCE": 1,
@@ -410,6 +464,7 @@
           "REPORT": 1,
           "JOB_COMPLETION": 1
         },
+        "complete": true,
         "duplicate_free": true,
         "job_completion_count": 1
       },
@@ -421,14 +476,15 @@
       },
       "cleanup": {
         "parent_taskkill_tree_requested": true,
+        "descendants_before_termination": [],
         "descendants_absent_after_termination": true,
         "remaining_descendant_pids": [],
-        "temporary_workspace": "visionscan-phase10-crash-RN6XIq",
+        "temporary_workspace": "visionscan-phase10-crash-hRQgVg",
         "phi_included": false
       },
       "seed": {
         "status": "OK",
-        "duration_ms": 2820
+        "duration_ms": 2863
       },
       "inspect_exit": 0,
       "diagnostics": {
@@ -439,14 +495,14 @@
     },
     {
       "stage": "BEFORE_JOB_COMPLETE",
-      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "evidence_classification": "REAL_WORKER_PROCESS_KILL_RESTART",
       "status": "PASS",
       "crash_observed": true,
       "initial_worker_exit": {
         "code": 1,
         "signal": null,
         "timed_out": false,
-        "duration_ms": 13075
+        "duration_ms": 13832
       },
       "restart": {
         "status": "COMPLETED",
@@ -458,7 +514,7 @@
           "completed_units": 1,
           "total_units": 1,
           "message": "Job completed",
-          "updated_at": "2026-09-13T14:32:44.913Z"
+          "updated_at": "2026-09-13T16:14:48.255Z"
         },
         "resource_reservation_state": "released",
         "resource_rejection_reason": null,
@@ -468,10 +524,17 @@
           "code": 0,
           "signal": null,
           "timed_out": false,
-          "duration_ms": 1424
+          "duration_ms": 2225
         }
       },
       "canonical_effects": {
+        "expected_effect_types": [
+          "MODEL_RESULT",
+          "STRUCTURED_EVIDENCE",
+          "REASONING_RECORD",
+          "REPORT",
+          "JOB_COMPLETION"
+        ],
         "counts": {
           "MODEL_RESULT": 1,
           "STRUCTURED_EVIDENCE": 1,
@@ -479,6 +542,7 @@
           "REPORT": 1,
           "JOB_COMPLETION": 1
         },
+        "complete": true,
         "duplicate_free": true,
         "job_completion_count": 1
       },
@@ -490,14 +554,15 @@
       },
       "cleanup": {
         "parent_taskkill_tree_requested": true,
+        "descendants_before_termination": [],
         "descendants_absent_after_termination": true,
         "remaining_descendant_pids": [],
-        "temporary_workspace": "visionscan-phase10-crash-PBxnzb",
+        "temporary_workspace": "visionscan-phase10-crash-AJqQ7Y",
         "phi_included": false
       },
       "seed": {
         "status": "OK",
-        "duration_ms": 2676
+        "duration_ms": 2841
       },
       "inspect_exit": 0,
       "diagnostics": {
