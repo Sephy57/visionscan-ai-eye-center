@@ -32,6 +32,12 @@ export interface ProgressUpdate {
 }
 
 export interface JobExecutionControl {
+  /** Durable worker context used only for Phase 9 effect provenance. */
+  job_id?: string;
+  attempt_id?: string;
+  /** Durable attempt/worker fence checked immediately before every
+   * publication effect. A stale worker must stop before writing a new row. */
+  assertCanCommit?: () => boolean | Promise<boolean>;
   /**
    * Cancellation is allowed to consult durable state.  Existing synchronous
    * callbacks remain valid, while workers can now re-read the persisted job
@@ -45,6 +51,13 @@ export class JobCancelledError extends Error {
   constructor() {
     super("Job cancelled");
     this.name = "JobCancelledError";
+  }
+}
+
+export class JobOwnershipLostError extends Error {
+  constructor() {
+    super("Worker attempt no longer owns the job");
+    this.name = "JobOwnershipLostError";
   }
 }
 
@@ -69,4 +82,11 @@ export async function jobCheckpoint(control: JobExecutionControl | undefined, up
   if (await control?.shouldCancel?.()) throw new JobCancelledError();
   await control?.onProgress?.(update);
   if (await control?.shouldCancel?.()) throw new JobCancelledError();
+}
+
+/** Publication boundary for service code. This is separate from cancellation
+ * so the queue can fence a late worker without turning a stale attempt into a
+ * successful or replacement terminal result. */
+export async function jobCommitCheckpoint(control: JobExecutionControl | undefined): Promise<void> {
+  if (control?.assertCanCommit && !(await control.assertCanCommit())) throw new JobOwnershipLostError();
 }

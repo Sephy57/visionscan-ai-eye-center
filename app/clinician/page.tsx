@@ -37,13 +37,18 @@ interface Bundle {
     provenance?: { analyzed_at: string };
   };
   report?: {
-    review: { status: string; reviewer_id?: string; finalized_at?: string };
+    review: {
+      status: string; reviewer_id?: string; finalized_at?: string; revision?: number;
+      conflict_state?: "NONE" | "CONCURRENT_REVIEW_CONFLICT";
+      conflicts?: Array<{ conflict_id: string; finding_id: string | null; prior_revision: number; incoming_action: string; at: string; reason: string }>;
+    };
     clinician_interpretation?: { overall: string } | null;
     clinician_corrections?: Array<{ finding_id: string; original: { type: string; location: string; severity: string; explanation: string }; correction: Record<string, string>; reviewer_id: string; note?: string; at: string }>;
     clinician_observations?: Array<{ observation_id: string; text: string; laterality?: string; reviewer_id: string; at: string }>;
     clinician_final_assessment?: { diagnosis?: string | null; impression?: string | null; plan?: string | null; follow_up?: string | null; reviewer_id: string; at: string } | null;
     treatment_review?: { reviewer_id: string; decisions: Array<{ condition_id: string; decision: string; contraindication_note?: string; patient_restriction_note?: string; clinical_note?: string; at: string }> } | null;
   };
+  reviewEvents?: Array<{ review_event_id: string; reviewer_id: string; action: string; reason: string; finding_id: string | null; created_at: string }>;
 }
 
 const ACTIONS = [
@@ -65,10 +70,14 @@ function ClinicianInner() {
 
   async function load(id: string) {
     setErr(null); setMsg(null);
-    const res = await fetch(`/api/studies/${encodeURIComponent(id)}`);
+    const [res, eventsRes] = await Promise.all([
+      fetch(`/api/studies/${encodeURIComponent(id)}`),
+      authFetch(`/api/review/${encodeURIComponent(id)}/events`),
+    ]);
     const json = await res.json();
+    const eventsJson = eventsRes.ok ? await eventsRes.json() : null;
     if (!res.ok) { setErr(json.error ?? "Not found"); setBundle(null); }
-    else setBundle(json);
+    else setBundle({ ...json, reviewEvents: eventsJson?.events ?? [] });
   }
   useEffect(() => { if (studyId) load(studyId); }, []);
 
@@ -125,6 +134,13 @@ function ClinicianInner() {
 
       {err && <div className="alert danger"><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body">{err}</div></div>}
       {msg && <div className="alert ok"><span className="alert-icon" aria-hidden="true">✓</span><div className="alert-body">{msg}</div></div>}
+
+      {bundle?.report?.review.conflict_state === "CONCURRENT_REVIEW_CONFLICT" && (
+        <div className="alert danger" role="alert" style={{ marginTop: 14 }}>
+          <span className="alert-icon" aria-hidden="true">⚠</span>
+          <div className="alert-body"><strong>Concurrent clinician review requires adjudication.</strong> Append-only events were preserved, but the current projection must not be treated as settled.</div>
+        </div>
+      )}
 
       {bundle?.analysis && (
         <>
@@ -246,7 +262,7 @@ function ClinicianInner() {
                 <button className="btn" onClick={() => act("finalize")}>Finalize Report</button>
               </div>
               <fieldset style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 12, margin: "10px 0" }}>
-                <legend className="small">Final clinician assessment (optional until finalize)</legend>
+                <legend className="small">Final clinician assessment (required to finalize)</legend>
                 <p className="tiny muted">These are your authored fields, stored separately from AI output. Do not copy an AI diagnosis without clinical review.</p>
                 {(["diagnosis", "impression", "plan", "follow_up"] as const).map((field) => (
                   <div className="field" key={field}>
@@ -340,6 +356,18 @@ function ClinicianInner() {
             </div>
           )}
           </>
+      )}
+
+      {bundle?.reviewEvents && bundle.reviewEvents.length > 0 && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-title"><h3>Immutable review event history</h3><Badge tone="info">{bundle.reviewEvents.length} event(s)</Badge></div>
+          <p className="tiny muted">Events are append-only. A concurrent projection conflict is never silently resolved in the UI.</p>
+          <div className="table-wrap" tabIndex={0}>
+            <table className="table"><thead><tr><th>Time</th><th>Reviewer</th><th>Action</th><th>Finding</th><th>Reason</th></tr></thead>
+              <tbody>{bundle.reviewEvents.map((event) => <tr key={event.review_event_id}><td>{new Date(event.created_at).toLocaleString()}</td><td>{event.reviewer_id}</td><td>{event.action.replaceAll("_", " ")}</td><td>{event.finding_id ?? "report"}</td><td>{event.reason}</td></tr>)}</tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {bundle?.analysis && (

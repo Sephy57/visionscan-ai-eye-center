@@ -1,6 +1,6 @@
 import { AnalysisResult } from "../analysis/schema";
 import { dbGet, dbPut, dbPage, dbAll, type DbPageOptions, type DbPageResult } from "../storage/db";
-import { writeJson } from "../storage/files";
+import { writeJson, readJson } from "../storage/files";
 import { DEMO_LABEL, VALIDATION_STATUS_BANNER } from "../config";
 import { OPHTHALMIC_COVERAGE_REGISTRY, OPHTHALMIC_COVERAGE_VERSION } from "../models/ophthalmicCoverage";
 import { canonicalModality } from "../models/modalities";
@@ -11,6 +11,7 @@ import { VALIDATION_REGISTRY_VERSION } from "../models/validationRegistry";
 import { SPECIALIST_PACKAGE_VERSION } from "../clinical/specialistPackages";
 import type { ImmutableReasoningRecord } from "./reasoningRecord";
 import { prepareRecoveryJournal, updateRecoveryJournal } from "../storage/reconciliation";
+import { maybeInjectPhase9Fault } from "../jobs/phase9FaultInjection";
 
 export const REPORT_VERSION = "1.2.0";
 
@@ -92,6 +93,18 @@ export interface ClinicalReport {
     status: "ai_only" | "clinician_reviewed" | "clinician_finalized";
     reviewer_id?: string;
     finalized_at?: string;
+    /** Monotonic clinician-projection revision used for optimistic
+     * concurrency detection; AI snapshot hashes remain independent. */
+    revision?: number;
+    conflict_state?: "NONE" | "CONCURRENT_REVIEW_CONFLICT";
+    conflicts?: Array<{
+      conflict_id: string;
+      finding_id: string | null;
+      prior_revision: number;
+      incoming_action: string;
+      at: string;
+      reason: string;
+    }>;
     clinician_changes?: Array<{ field: string; action: string; note?: string; at: string }>;
   };
   // AI OUTPUT, CLINICIAN INTERPRETATION and FINAL REPORT are stored separately
@@ -365,6 +378,12 @@ export async function generateReport(
       // crash. Returning the already-sealed row makes finalization effectively
       // exactly-once without rewriting its timestamp, clinician state, or
       // immutable AI payload.
+      // A controlled fault may occur after the DB commit but before the
+      // derived JSON export. Repair only the missing derived file; the sealed
+      // DB row and clinician projection remain the canonical record.
+      if (!await readJson("reports", existing.report_id)) {
+        await writeJson("reports", existing.report_id, existing);
+      }
       return existing;
     }
     if (!options.report_id) throw new Error("A sealed report already exists for a different analysis version; create an explicit version/replay instead of replacing it.");
@@ -455,8 +474,10 @@ export async function generateReport(
 
   const journal = await prepareRecoveryJournal({ operation: "report_publish", resources: [{ kind: "report", id: report.report_id }] });
   try {
+    maybeInjectPhase9Fault("BEFORE_REPORT_COMMIT");
     await dbPut("reports", report.report_id, report);
     await updateRecoveryJournal(journal.journal_id, "DB_COMMITTED");
+    maybeInjectPhase9Fault("AFTER_REPORT_COMMIT");
     report.exports.json_path = await writeJson("reports", report.report_id, report);
     await updateRecoveryJournal(journal.journal_id, "FILES_COMMITTED");
     await updateRecoveryJournal(journal.journal_id, "COMPLETE");

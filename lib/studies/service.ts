@@ -21,12 +21,15 @@ import { readExtractionArtifact } from "../documents/extraction/artifacts";
 import { readExtractedRegion } from "../documents/extraction/pdfIntelligence";
 import { canonicalModality } from "../models/modalities";
 import { presentReportWithLegacyStatus, verifyReportVersionFreeze, sha256Canonical } from "../reports/integrity";
-import { jobCheckpoint, type JobExecutionControl } from "../jobs/control";
+import { jobCheckpoint, jobCommitCheckpoint, type JobExecutionControl } from "../jobs/control";
 import { buildStructuredClinicalEvidence } from "../evidence/structuredClinicalEvidence";
 import { DeterministicReasoningEngine } from "../models/reasoningEngine";
 import { persistReasoningRecord } from "../reports/reasoningRecord";
 import { prepareRecoveryJournal, updateRecoveryJournal } from "../storage/reconciliation";
 import { buildClinicianReviewEvent } from "../clinical/reviewEvents";
+import { maybeInjectPhase9Fault } from "../jobs/phase9FaultInjection";
+import { persistOnce, recordJobEffect } from "../jobs/effects";
+import { persistStructuredEvidence } from "../evidence/persistence";
 
 export interface StudyRecord {
   study_id: string;
@@ -230,6 +233,39 @@ export async function analyzeStudy(
       inputEnvelopeMatch) {
     // A worker may be replayed after a crash that occurred after publication.
     // Reuse the sealed pair instead of running inference or rewriting history.
+    // Reconcile the committed-effect ledger as well: a fault between report
+    // DB publication and the service-level acknowledgement must not leave a
+    // durable report with no recorded canonical-effect identity.
+    await recordJobEffect({
+      effect_type: "MODEL_RESULT",
+      idempotency_key: existingAnalysis.analysis_id,
+      canonical_id: existingAnalysis.analysis_id,
+      payload: { study_id: existingAnalysis.study_id, result: existingAnalysis.result },
+      study_id: studyId,
+      job_id: control?.job_id,
+      attempt_id: control?.attempt_id,
+      note: "Reconciled from a sealed analysis/report replay.",
+    });
+    await recordJobEffect({
+      effect_type: "REASONING_RECORD",
+      idempotency_key: existingReport.reasoning_snapshot.reasoning_record_id,
+      canonical_id: existingReport.reasoning_snapshot.reasoning_record_id,
+      payload: { study_id: studyId, payload_sha256: existingReport.reasoning_snapshot.payload_sha256 },
+      study_id: studyId,
+      job_id: control?.job_id,
+      attempt_id: control?.attempt_id,
+      note: "Reconciled sealed reasoning record from replay.",
+    });
+    await recordJobEffect({
+      effect_type: "REPORT",
+      idempotency_key: existingReport.report_id,
+      canonical_id: existingReport.report_id,
+      payload: { study_id: studyId, source_analysis_sha256: existingReport.version_freeze.source_analysis_sha256, ai_payload_sha256: existingReport.version_freeze.ai_payload_sha256 },
+      study_id: studyId,
+      job_id: control?.job_id,
+      attempt_id: control?.attempt_id,
+      note: "Reconciled sealed report from publication-window replay.",
+    });
     return { analysis: existingAnalysis.result, report: existingReport };
   }
   await jobCheckpoint(control, { stage: "validating_source", percent: 12, message: "Immutable source loaded" });
@@ -318,7 +354,7 @@ export async function analyzeStudy(
   // longest stage and before any analysis/report record is written.
   await jobCheckpoint(control, { stage: "persisting_analysis", percent: 78, message: "Persisting validated analysis" });
 
-  const analysisRecord: AnalysisRecord = {
+  const proposedAnalysisRecord: AnalysisRecord = {
     analysis_id: `anl_${studyId}`,
     study_id: studyId,
     patient_id: record.patient_id ?? null,
@@ -326,8 +362,32 @@ export async function analyzeStudy(
     created_at: new Date().toISOString(),
     result: analysis,
   };
-  await dbPut("analyses", analysisRecord.analysis_id, analysisRecord);
+  maybeInjectPhase9Fault("BEFORE_MODEL_RESULT_WRITE");
+  await jobCommitCheckpoint(control);
+  const analysisRecord = await persistOnce(
+    "analyses",
+    proposedAnalysisRecord.analysis_id,
+    proposedAnalysisRecord,
+    (candidate: AnalysisRecord) => sha256Canonical({
+      analysis_id: candidate.analysis_id,
+      study_id: candidate.study_id,
+      patient_id: candidate.patient_id ?? null,
+      tenant_id: candidate.tenant_id ?? null,
+      result: candidate.result,
+    }),
+  );
   await writeJson("processed", analysisRecord.analysis_id, analysisRecord);
+  await recordJobEffect({
+    effect_type: "MODEL_RESULT",
+    idempotency_key: analysisRecord.analysis_id,
+    canonical_id: analysisRecord.analysis_id,
+    payload: { study_id: analysisRecord.study_id, result: analysisRecord.result },
+    study_id: studyId,
+    job_id: control?.job_id,
+    attempt_id: control?.attempt_id,
+    note: "Canonical model result is insert-once; at-least-once execution cannot create a second committed result id.",
+  });
+  maybeInjectPhase9Fault("AFTER_MODEL_RESULT_WRITE");
 
   // Append-only audit record with full provenance (Phase 2).
   // The primary model is taken from the validated pipeline provenance rather
@@ -369,19 +429,54 @@ export async function analyzeStudy(
   await control?.onProgress?.({ stage: "generating_report", percent: 86, message: "Persisting specialist and condition reasoning" });
   const structuredEvidence = await buildStructuredClinicalEvidence(studyId, { includeSpecialists: true });
   if ("not_found" in structuredEvidence) throw new Error("Study disappeared before reasoning persistence");
+  maybeInjectPhase9Fault("BEFORE_EVIDENCE_COMMIT");
+  await jobCommitCheckpoint(control);
+  await persistStructuredEvidence({
+    study_id: studyId,
+    analysis_id: analysisRecord.analysis_id,
+    evidence: structuredEvidence,
+    job_id: control?.job_id,
+    attempt_id: control?.attempt_id,
+  });
+  maybeInjectPhase9Fault("AFTER_EVIDENCE_COMMIT");
   const reasoning = new DeterministicReasoningEngine().analyze(structuredEvidence);
+  await jobCommitCheckpoint(control);
   const reasoningSnapshot = await persistReasoningRecord({
     report_id: reportId,
     analysis,
     evidence: structuredEvidence,
     reasoning,
+    job_id: control?.job_id,
+    attempt_id: control?.attempt_id,
+  });
+  await recordJobEffect({
+    effect_type: "REASONING_RECORD",
+    idempotency_key: reasoningSnapshot.reasoning_record_id,
+    canonical_id: reasoningSnapshot.reasoning_record_id,
+    payload: { study_id: studyId, payload_sha256: reasoningSnapshot.payload_sha256 },
+    study_id: studyId,
+    job_id: control?.job_id,
+    attempt_id: control?.attempt_id,
+    note: "Reasoning snapshot is sealed and reused on retry.",
   });
   await control?.onProgress?.({ stage: "generating_report", percent: 92, message: "Generating version-frozen report" });
+  await jobCommitCheckpoint(control);
   const report = await generateReport(analysis, undefined, reasoningSnapshot, {
     report_id: reportId,
     supersedes_report_id: supersedesReportId,
   });
+  await recordJobEffect({
+    effect_type: "REPORT",
+    idempotency_key: report.report_id,
+    canonical_id: report.report_id,
+    payload: { study_id: studyId, source_analysis_sha256: report.version_freeze.source_analysis_sha256, ai_payload_sha256: report.version_freeze.ai_payload_sha256 },
+    study_id: studyId,
+    job_id: control?.job_id,
+    attempt_id: control?.attempt_id,
+    note: "Version-frozen report identity is reused after a publication-window retry.",
+  });
 
+  await jobCommitCheckpoint(control);
   record.status = analysis.quality.acceptable ? "analyzed" : "rejected";
   record.latest_report_id = report.report_id;
   await dbPut("studies", studyId, record);
@@ -714,6 +809,14 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
   const report = await dbGet<ClinicalReport>("reports", `rep_${studyId}`);
   const analysis = await dbGet<AnalysisRecord>("analyses", `anl_${studyId}`);
   if (!report || !analysis) throw new Error("Analyzed study not found");
+  if (report.review.status === "clinician_finalized") {
+    throw new Error("Finalized report is immutable; create a new study/version for another review.");
+  }
+  const baseReviewRevision = report.review.revision ?? report.review.clinician_changes?.length ?? 0;
+  const finalAssessment = input.action === "finalize" ? sanitizeAssessment(input.assessment) : null;
+  if (input.action === "finalize" && !finalAssessment) {
+    throw new Error("A clinician final assessment is required before finalization.");
+  }
   const integrity = verifyReportVersionFreeze(report);
   if (!integrity.ok) {
     await audit({
@@ -732,6 +835,7 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
   const aiSnapshot = JSON.parse(JSON.stringify(report)) as ClinicalReport;
   const change = { field: input.finding_id ?? "report", action: input.action, note: input.note, at: new Date().toISOString() };
   report.review = report.review ?? { status: "ai_only" };
+  report.review.revision = baseReviewRevision + 1;
   report.clinician_interpretation = report.clinician_interpretation ?? {
     reviewer_id: input.reviewer_id,
     overall: "amended",
@@ -870,10 +974,7 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
           : ci.overall === "confirmed_ai_findings" ? "Automated findings confirmed by clinician review."
           : "Report finalized after clinician review."
         }` + (input.note ? ` Note: ${input.note}` : "");
-      const assessment = sanitizeAssessment(input.assessment);
-      if (assessment) {
-        report.clinician_final_assessment = { ...assessment, reviewer_id: input.reviewer_id, at: change.at };
-      }
+      report.clinician_final_assessment = { ...finalAssessment!, reviewer_id: input.reviewer_id, at: change.at };
       break;
   }
 
@@ -882,11 +983,46 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
 
   report.review.clinician_changes = [...(report.review.clinician_changes ?? []), change];
   const reviewEvent = buildClinicianReviewEvent(aiSnapshot, analysis, input, change.at);
+  let committedReport: ClinicalReport | null = null;
   await dbTransaction((tx) => {
-    tx.put("reports", report.report_id, report);
+    const stored = tx.get<ClinicalReport>("reports", report.report_id);
+    if (!stored) throw new Error("Report disappeared during clinician review");
+    if (stored.review.status === "clinician_finalized") {
+      throw new Error("Finalized report is immutable; create a new study/version for another review.");
+    }
+    const storedRevision = stored.review.revision ?? stored.review.clinician_changes?.length ?? 0;
+    if (storedRevision !== baseReviewRevision) {
+      // Two reviewers can legitimately submit append-only events at nearly
+      // the same time. Never let the stale projection overwrite the first
+      // one: preserve the incoming event, retain the stored projection, and
+      // mark the report for explicit adjudication.
+      const conflict = {
+        conflict_id: newId("review_conflict"),
+        finding_id: input.finding_id ?? null,
+        prior_revision: storedRevision,
+        incoming_action: input.action,
+        at: change.at,
+        reason: "Concurrent clinician projection revision detected; adjudication is required before relying on the projection.",
+      };
+      committedReport = {
+        ...stored,
+        review: {
+          ...stored.review,
+          revision: storedRevision + 1,
+          conflict_state: "CONCURRENT_REVIEW_CONFLICT",
+          conflicts: [...(stored.review.conflicts ?? []), conflict],
+          clinician_changes: [...(stored.review.clinician_changes ?? []), change],
+        },
+      };
+      tx.put("reports", committedReport.report_id, committedReport);
+    } else {
+      committedReport = report;
+      tx.put("reports", report.report_id, report);
+    }
     tx.put("clinician_reviews", reviewEvent.review_event_id, reviewEvent);
   });
-  await writeJson("reports", report.report_id, report);
+  const persistedReport = committedReport ?? report;
+  await writeJson("reports", persistedReport.report_id, persistedReport);
   await audit({
     actor: `clinician:${input.reviewer_id}`,
     action: `review.${input.action}`,
@@ -894,7 +1030,7 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
     outcome: "ok",
     detail: input.finding_id ? `finding=${input.finding_id}; review_event=${reviewEvent.review_event_id}` : `review_event=${reviewEvent.review_event_id}`,
   });
-  return report;
+  return persistedReport;
 }
 
 export interface CompareOutcome {

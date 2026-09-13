@@ -58,6 +58,9 @@ export const COLLECTIONS = [
   "reset_tokens",
   "calibration_records",
   "record_extractions",
+  // Immutable effect identities used to prove that retries did not create a
+  // second canonical result/evidence/report/completion effect.
+  "job_effects",
   // Cross-resource recovery records. These are intentionally metadata-only;
   // immutable clinical payloads remain in their source collections.
   "reconciliation_journal",

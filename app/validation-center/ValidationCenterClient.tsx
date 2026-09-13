@@ -149,6 +149,8 @@ interface OperationsResponse {
     counts?: Record<string, number>;
     running_deadline_overdue?: number;
     active_processes?: number;
+    oldest_queued_age_ms?: number;
+    deadline_outcomes?: Record<string, number>;
     has_more?: boolean;
   };
   worker?: { mode?: string; crash_recovery?: string; termination?: string };
@@ -159,7 +161,7 @@ interface OperationsResponse {
     budget?: { memoryBytes: number; threads: number } | null;
     activeReservations?: number;
   };
-  deadline?: { default_ms?: number; enforced_from_claim?: boolean; no_unbounded_jobs?: boolean };
+  deadline?: { default_ms?: number; enforced_from_claim?: boolean; no_unbounded_jobs?: boolean; policy?: { max_queue_wait_ms?: number; max_service_time_ms?: number; max_total_age_ms?: number } };
 }
 
 interface Phase6Response {
@@ -229,6 +231,21 @@ interface Phase8Response {
   runtime?: { persistence?: { exactly_once?: string; graceful_shutdown?: string; restart_recovery?: string } };
 }
 
+interface Phase9Response {
+  notice?: string;
+  classifications?: { engineering?: string; retinal_review_intelligence?: string; local_runtime?: string; data?: string; clinical?: string[] };
+  runtime_controls?: {
+    exactly_once_committed_effects?: { status?: string; os_process_crash_matrix?: string; post_persistence_crash_recovery?: string };
+    graceful_shutdown?: { status?: string; default_policy?: string; windows_ctrl_c_path?: string };
+    deadline_and_cleanup?: { status?: string; provider_cleanup?: string };
+    resident_lesion?: { status?: string; resident_parity?: string; resident_cancellation?: string; resident_crash_recovery?: string };
+    load_characterization?: { status?: string; rerun_1_5_10_25?: string; fairness_metric?: string };
+    review_governance?: { status?: string; concurrent_projection?: string; independent_clinical_signoff?: string };
+  };
+  external_validation_readiness?: { decision?: string; frozen_protocol?: { protocol_id?: string; hash?: string; retuning?: string }; dataset_dossiers?: Array<{ dataset?: string; decision?: string; inference_run?: boolean }> };
+  governed_release?: { release_state?: string; required_signoffs?: { present?: number; status?: string } };
+}
+
 interface Source<T> {
   data: T | null;
   error: string | null;
@@ -246,6 +263,7 @@ interface CenterData {
   phase6: Source<Phase6Response>;
   phase7: Source<Phase7Response>;
   phase8: Source<Phase8Response>;
+  phase9: Source<Phase9Response>;
   health: Record<string, Source<HealthResponse>>;
 }
 
@@ -263,6 +281,7 @@ const initialData: CenterData = {
   phase6: emptySource(),
   phase7: emptySource(),
   phase8: emptySource(),
+  phase9: emptySource(),
   health: {},
 };
 
@@ -345,7 +364,7 @@ export default function ValidationCenterClient() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [dashboard, models, registry, live, ready, metrics, admin, operations, phase6, phase7, phase8] = await Promise.all([
+    const [dashboard, models, registry, live, ready, metrics, admin, operations, phase6, phase7, phase8, phase9] = await Promise.all([
       readSource<DashboardResponse>("/api/validation/dashboard"),
       readSource<ModelsResponse>("/api/models"),
       readSource<ValidationRegistryResponse>("/api/models/validation"),
@@ -357,6 +376,7 @@ export default function ValidationCenterClient() {
       readSource<Phase6Response>("/api/validation/phase6"),
       readSource<Phase7Response>("/api/validation/phase7"),
       readSource<Phase8Response>("/api/validation/phase8"),
+      readSource<Phase9Response>("/api/validation/phase9"),
     ]);
 
     const modelsForHealth = models.data?.models ?? [];
@@ -365,7 +385,7 @@ export default function ValidationCenterClient() {
       await readSource<HealthResponse>(`/api/models/${encodeURIComponent(model.model_id)}/health`),
     ] as const));
 
-    setData({ dashboard, models, registry, live, ready, metrics, admin, operations, phase6, phase7, phase8, health: Object.fromEntries(healthEntries) });
+    setData({ dashboard, models, registry, live, ready, metrics, admin, operations, phase6, phase7, phase8, phase9, health: Object.fromEntries(healthEntries) });
     setRefreshedAt(new Date().toISOString());
     setLoading(false);
   }, []);
@@ -727,6 +747,54 @@ export default function ValidationCenterClient() {
               <dt>Graceful shutdown</dt><dd>{label(data.phase8.data?.runtime?.persistence?.graceful_shutdown)}</dd>
               <dt>Restart recovery</dt><dd>{label(data.phase8.data?.runtime?.persistence?.restart_recovery)}</dd>
               <dt>Clinical state</dt><dd>NOT CLINICALLY VALIDATED · NOT A MEDICAL DEVICE · NOT FOR AUTONOMOUS DIAGNOSIS</dd>
+            </dl>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="phase9-title">
+        <SectionHeading eyebrow="08 / Phase 9 controls" title="Controlled release-candidate boundary" detail="The dashboard shows implemented controls separately from live evidence. NOT MEASURED remains visible and is never rendered as a pass." />
+        <div className={styles.boundary} role="note" id="phase9-title">
+          <span className={styles.boundaryMark} aria-hidden="true">!</span>
+          <div><strong>{data.phase9.data?.classifications?.engineering ?? "ENGINEERING PARTIAL — BLOCKERS REMAIN"}</strong><br />{data.phase9.data?.notice ?? "Phase 9 evidence is unavailable or role-restricted; no clinical or normality claim is inferred."}</div>
+        </div>
+        <div className={styles.statusGrid}>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>Committed effects</span><StatusPill status="warn">Controlled test</StatusPill></div>
+            <strong className={styles.statusValue}>{label(data.phase9.data?.runtime_controls?.exactly_once_committed_effects?.status)}</strong>
+            <span className={styles.cardNote}>OS process-crash matrix: {label(data.phase9.data?.runtime_controls?.exactly_once_committed_effects?.os_process_crash_matrix)}</span>
+          </article>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>Shutdown</span><StatusPill status="warn">Policy explicit</StatusPill></div>
+            <strong className={styles.statusValue}>{label(data.phase9.data?.runtime_controls?.graceful_shutdown?.default_policy)}</strong>
+            <span className={styles.cardNote}>{label(data.phase9.data?.runtime_controls?.graceful_shutdown?.status)}</span>
+          </article>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>Resident lesion</span><StatusPill status="bad">Partial</StatusPill></div>
+            <strong className={styles.statusValue}>{label(data.phase9.data?.runtime_controls?.resident_lesion?.status)}</strong>
+            <span className={styles.cardNote}>Parity {label(data.phase9.data?.runtime_controls?.resident_lesion?.resident_parity)} · cancel {label(data.phase9.data?.runtime_controls?.resident_lesion?.resident_cancellation)}</span>
+          </article>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>External validation</span><StatusPill status="bad">Blocked</StatusPill></div>
+            <strong className={styles.statusValue}>{label(data.phase9.data?.external_validation_readiness?.decision)}</strong>
+            <span className={styles.cardNote}>{integer(data.phase9.data?.external_validation_readiness?.dataset_dossiers?.length)} dossier(s); no inference run</span>
+          </article>
+        </div>
+        <div className={styles.evidenceGrid}>
+          <article className={styles.evidenceCard}>
+            <div className={styles.cardTop}><div><span className={styles.cardLabel}>Runtime controls</span><h3>Bounded execution and review governance</h3></div><StatusPill status="warn">Evidence split</StatusPill></div>
+            <dl className={styles.definitionList}>
+              <dt>Deadline / cleanup</dt><dd>{label(data.phase9.data?.runtime_controls?.deadline_and_cleanup?.status)} · {label(data.phase9.data?.runtime_controls?.deadline_and_cleanup?.provider_cleanup)}</dd>
+              <dt>Load</dt><dd>{label(data.phase9.data?.runtime_controls?.load_characterization?.status)} · rerun {label(data.phase9.data?.runtime_controls?.load_characterization?.rerun_1_5_10_25)} · fairness {label(data.phase9.data?.runtime_controls?.load_characterization?.fairness_metric)}</dd>
+              <dt>Review concurrency</dt><dd>{label(data.phase9.data?.runtime_controls?.review_governance?.status)} · {label(data.phase9.data?.runtime_controls?.review_governance?.concurrent_projection)}</dd>
+            </dl>
+          </article>
+          <article className={styles.evidenceCard}>
+            <div className={styles.cardTop}><div><span className={styles.cardLabel}>Governed release</span><h3>Sign-off and allowed use</h3></div><StatusPill status="bad">{label(data.phase9.data?.governed_release?.release_state)}</StatusPill></div>
+            <dl className={styles.definitionList}>
+              <dt>Required sign-offs</dt><dd>{integer(data.phase9.data?.governed_release?.required_signoffs?.present)} present · {label(data.phase9.data?.governed_release?.required_signoffs?.status)}</dd>
+              <dt>Clinical state</dt><dd>{(data.phase9.data?.classifications?.clinical ?? ["NOT CLINICALLY VALIDATED", "NOT A MEDICAL DEVICE", "NOT FOR AUTONOMOUS DIAGNOSIS"]).join(" · ")}</dd>
+              <dt>Evidence rule</dt><dd>No unmeasured runtime, external dataset, or diagnostic claim is promoted.</dd>
             </dl>
           </article>
         </div>

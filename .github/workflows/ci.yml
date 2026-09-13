@@ -76,6 +76,9 @@ jobs:
         # explicit NOT MEASURED states and do not require research weights.
         run: npm run validation:phase8
 
+      - name: Phase 9 committed effects and lifecycle acceptance
+        run: npm run validation:phase9
+
       - name: Audit local model manifests
         run: npm run model:audit
 
@@ -141,6 +144,9 @@ jobs:
 
       - name: Phase 8 retinal evidence and review acceptance
         run: npm run validation:phase8
+
+      - name: Phase 9 committed effects and lifecycle acceptance
+        run: npm run validation:phase9
 
       - name: Audit local model manifests
         run: npm run model:audit

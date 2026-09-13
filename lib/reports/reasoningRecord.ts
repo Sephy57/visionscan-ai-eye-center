@@ -7,7 +7,8 @@ import type { SpecialistConsensus } from "../clinical/specialistConsensus";
 import type { SpecialistEvidencePackage } from "../clinical/specialistPackages";
 import type { SpecialistEvidenceBundle } from "../evidence/structuredClinicalEvidence";
 import { OPHTHALMIC_COVERAGE_VERSION } from "../models/ophthalmicCoverage";
-import { dbGet, dbPut } from "../storage/db";
+import { dbGet } from "../storage/db";
+import { persistOnce, recordJobEffect } from "../jobs/effects";
 import { REPORT_VERSION } from "./generator";
 import { REASONING_RECORD_SCHEMA_VERSION, sha256Canonical } from "./integrity";
 import { SPECIALIST_PACKAGE_VERSION } from "../clinical/specialistPackages";
@@ -121,6 +122,8 @@ async function persistReasoningRecordUnlocked(input: {
   evidence: StructuredClinicalEvidence;
   reasoning: StructuredReasoningResult;
   reasoning_record_id?: string;
+  job_id?: string;
+  attempt_id?: string;
 }): Promise<ImmutableReasoningRecord> {
   const studyId = input.analysis.study.study_id;
   if (input.evidence.study_id !== studyId || input.reasoning.study_id !== studyId) {
@@ -128,7 +131,19 @@ async function persistReasoningRecordUnlocked(input: {
   }
   const recordId = input.reasoning_record_id ?? reasoningRecordIdFor(studyId, input.analysis);
   const existing = await getReasoningRecord(recordId);
-  if (existing) return existing;
+  if (existing) {
+    await recordJobEffect({
+      effect_type: "REASONING_RECORD",
+      idempotency_key: recordId,
+      canonical_id: recordId,
+      payload: { study_id: existing.study_id, source_analysis_sha256: existing.source_analysis_sha256, payload_sha256: existing.payload_sha256 },
+      study_id: existing.study_id,
+      job_id: input.job_id,
+      attempt_id: input.attempt_id,
+      note: "Sealed reasoning record reused after retry/restart.",
+    });
+    return existing;
+  }
 
   const unsigned: UnsignedReasoningRecord = {
     reasoning_record_id: recordId,
@@ -160,8 +175,39 @@ async function persistReasoningRecordUnlocked(input: {
   const record = sign(unsigned);
   const verified = verifyReasoningRecord(record);
   if (!verified.ok) throw new Error(`Refusing to persist invalid reasoning record: ${verified.reason}`);
-  await dbPut("reasoning_records", recordId, clone(record));
-  return clone(record);
+  const committed = await persistOnce(
+    "reasoning_records",
+    recordId,
+    clone(record),
+    (candidate: ImmutableReasoningRecord) => sha256Canonical({
+      reasoning_record_id: candidate.reasoning_record_id,
+      report_id: candidate.report_id,
+      study_id: candidate.study_id,
+      analysis_id: candidate.analysis_id ?? null,
+      record_schema_version: candidate.record_schema_version,
+      source_analysis_sha256: candidate.source_analysis_sha256,
+      version_freeze: candidate.version_freeze,
+      evidence_snapshot: candidate.evidence_snapshot,
+      evidence_conflicts: candidate.evidence_conflicts,
+      condition_assessments: candidate.condition_assessments,
+      specialist_consensus: candidate.specialist_consensus,
+      specialist_bundles: candidate.specialist_bundles,
+      specialist_packages: candidate.specialist_packages,
+      reasoning: candidate.reasoning,
+      payload_sha256: candidate.payload_sha256,
+    }),
+  );
+  await recordJobEffect({
+    effect_type: "REASONING_RECORD",
+    idempotency_key: recordId,
+    canonical_id: recordId,
+    payload: { study_id: committed.study_id, source_analysis_sha256: committed.source_analysis_sha256, payload_sha256: committed.payload_sha256 },
+    study_id: committed.study_id,
+    job_id: input.job_id,
+    attempt_id: input.attempt_id,
+    note: "Sealed reasoning record is immutable; replay reuses the same record id.",
+  });
+  return clone(committed);
 }
 
 export function persistReasoningRecord(input: {
@@ -170,6 +216,8 @@ export function persistReasoningRecord(input: {
   evidence: StructuredClinicalEvidence;
   reasoning: StructuredReasoningResult;
   reasoning_record_id?: string;
+  job_id?: string;
+  attempt_id?: string;
 }): Promise<ImmutableReasoningRecord> {
   const task = reasoningWriteChain.then(() => persistReasoningRecordUnlocked(input));
   reasoningWriteChain = task.then(() => undefined, () => undefined);

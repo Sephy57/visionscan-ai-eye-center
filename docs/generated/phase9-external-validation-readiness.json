@@ -1,0 +1,64 @@
+{
+  "schema_version": "visionscan-phase9-external-validation-readiness-v1",
+  "observed_at": "2026-09-13",
+  "phi_included": false,
+  "decision": "EXTERNAL VALIDATION NOT READY — DATA RELEASE BLOCKED",
+  "frozen_protocol": {
+    "protocol_id": "VISIONSCAN_EXTERNAL_LESION_PROTOCOL_PHASE9_V1",
+    "hash": "ac25900a932804ab5ccd0f8bc60a276a205c72ad4267b22ab53332bbc772695e",
+    "frozen_rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+    "retuning": "FORBIDDEN_AFTER_FREEZE",
+    "primary_endpoint": "review escalation coverage on an eligible, patient/eye-separated lesion cohort",
+    "forbidden_relabeling": ["disease sensitivity", "disease recovery", "clinical diagnostic accuracy"],
+    "required_case_fields": ["case_id_hash", "image_sha256", "patient_group_hash", "eye", "ground_truth_provenance", "quality_state", "ood_state", "rule_output", "review_outcome"],
+    "exclusion_rules": ["unverifiable patient/eye separation", "unverified rights", "missing lesion ground truth", "duplicate or overlapping training source", "incomplete manifest", "quality or OOD exclusion without a retained ledger row"]
+  },
+  "dataset_dossiers": [
+    {
+      "dataset": "IDRiD",
+      "source_url": "https://idrid.grand-challenge.org/Data/",
+      "local_state": "LOCAL_OVERLAP_DISCLOSED_EXPORT",
+      "rights_state": "PUBLIC_PAGE_OBSERVATION_ONLY",
+      "patient_eye_separation": "NOT_VERIFIED",
+      "lesion_ground_truth": "IMAGE_LEVEL_LOCAL_EXPORT; TASK_SCOPE_NOT_ACCEPTED",
+      "overlap_state": "TRAINING_SOURCE_OVERLAP_REPORTED",
+      "inference_run": false,
+      "decision": "REJECTED_FOR_EXTERNAL_VALIDATION"
+    },
+    {
+      "dataset": "RFMiD",
+      "source_url": "https://huggingface.co/datasets/ctmedtech/RFMID",
+      "local_state": "NOT_ACQUIRED",
+      "rights_state": "PUBLIC_CARD_OBSERVATION_ONLY",
+      "patient_eye_separation": "NOT_VERIFIED",
+      "lesion_ground_truth": "NOT_ACQUIRED",
+      "overlap_state": "NOT_ASSESSED",
+      "inference_run": false,
+      "decision": "REJECTED_BEFORE_ARTIFACT_EXECUTION"
+    },
+    {
+      "dataset": "APTOS 2019",
+      "source_url": "https://www.kaggle.com/c/aptos2019-blindness-detection",
+      "local_state": "LOCAL_CAPPED_DR_COMPARABILITY_ONLY",
+      "rights_state": "REQUIRES_SEPARATE_REVIEW",
+      "patient_eye_separation": "NOT_VERIFIED",
+      "lesion_ground_truth": "NOT_ESTABLISHED",
+      "overlap_state": "NOT_APPLICABLE_TO_LESION_ENDPOINT",
+      "inference_run": false,
+      "decision": "REJECTED_FOR_EXTERNAL_LESION_VALIDATION"
+    },
+    {
+      "dataset": "TJDR",
+      "source_url": null,
+      "local_state": "INCOMPLETE_LOCAL_SCRATCH_ONLY",
+      "rights_state": "NOT_FOUND",
+      "patient_eye_separation": "NOT_VERIFIED",
+      "lesion_ground_truth": "INCOMPLETE",
+      "overlap_state": "NOT_ASSESSED",
+      "inference_run": false,
+      "decision": "REJECTED_BEFORE_ARTIFACT_EXECUTION"
+    }
+  ],
+  "required_next_evidence": ["rights-cleared local package", "auditable patient/eye grouping", "complete lesion annotations", "preregistered frozen run", "independent adjudication"],
+  "release_rule": "No external dataset or weight is copied, redistributed, inferred, or added to a denominator by this readiness package."
+}

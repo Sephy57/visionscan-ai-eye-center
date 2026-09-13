@@ -4,6 +4,7 @@ import { listJobsPage, isExternalWorkerMode } from "@/lib/jobs/queue";
 import { DEFAULT_OVERALL_JOB_DEADLINE_MS } from "@/lib/jobs/queue";
 import { activeTrackedProcessCount } from "@/lib/jobs/processControl";
 import { getHostModelJobResourceGovernor } from "@/lib/runtime";
+import { resolveJobDeadlinePolicy } from "@/lib/jobs/deadlinePolicy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,6 +24,10 @@ export async function GET(req: NextRequest) {
   const running = jobs.filter((job) => job.status === "running");
   const deadlines = running.filter((job) => job.deadline_at && Date.parse(job.deadline_at) <= Date.now()).length;
   const governor = getHostModelJobResourceGovernor().snapshot();
+  const deadlinePolicy = resolveJobDeadlinePolicy();
+  const queued = jobs.filter((job) => job.status === "queued" || job.status === "retryable");
+  const queuedAges = queued.map((job) => Math.max(0, Date.now() - Date.parse(job.created_at))).filter(Number.isFinite);
+  const deadlineOutcomes = Object.fromEntries(["WITHIN_BUDGET", "QUEUE_TIMEOUT", "JOB_DEADLINE_EXCEEDED"].map((outcome) => [outcome, jobs.filter((job) => job.deadline_outcome === outcome).length]));
 
   return NextResponse.json({
     schema_version: "visionscan-operations-snapshot-v1",
@@ -34,6 +39,8 @@ export async function GET(req: NextRequest) {
       counts: byStatus,
       running_deadline_overdue: deadlines,
       active_processes: activeTrackedProcessCount(),
+      oldest_queued_age_ms: queuedAges.length ? Math.max(...queuedAges) : 0,
+      deadline_outcomes: deadlineOutcomes,
     },
     worker: {
       mode: isExternalWorkerMode() ? "external" : "in_process",
@@ -47,7 +54,7 @@ export async function GET(req: NextRequest) {
       source: "VISIONSCAN_OVERALL_JOB_DEADLINE_MS_or_bounded_default",
       enforced_from_claim: true,
       no_unbounded_jobs: true,
+      policy: deadlinePolicy,
     },
   }, { headers: { "cache-control": "no-store" } });
 }
-

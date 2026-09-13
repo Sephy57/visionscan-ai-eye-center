@@ -1,0 +1,59 @@
+{
+  "schema_version": "visionscan-phase9-runtime-controls-v1",
+  "observed_at": "2026-09-13",
+  "phi_included": false,
+  "status": "ENGINEERING PARTIAL — BLOCKERS REMAIN",
+  "exactly_once_committed_effects": {
+    "status": "CONTROLLED_RETRY_SEAM_TESTED",
+    "distinction": "Model/provider execution remains at-least-once. Canonical committed result, evidence, reasoning, report, and terminal-effect identities are insert-once and reject a different payload under the same identity.",
+    "effect_collection": "job_effects",
+    "canonical_effect_types": ["MODEL_RESULT", "STRUCTURED_EVIDENCE", "REASONING_RECORD", "REPORT", "JOB_COMPLETION"],
+    "fault_hooks": ["BEFORE_MODEL_RESULT_WRITE", "AFTER_MODEL_RESULT_WRITE", "BEFORE_EVIDENCE_COMMIT", "AFTER_EVIDENCE_COMMIT", "BEFORE_REPORT_COMMIT", "AFTER_REPORT_COMMIT", "BEFORE_JOB_COMPLETE"],
+    "activation_guard": "NODE_ENV=test AND VISIONSCAN_TEST_ISOLATED=1 AND explicit VISIONSCAN_PHASE9_FAULT_INJECTION; no route or production activation path",
+    "tests": ["tests/phase9-controls.test.ts", "tests/job-lease-recovery.test.ts"],
+    "os_process_crash_matrix": "NOT_MEASURED",
+    "post_persistence_crash_recovery": "CONTROLLED_HOOK_READY; LIVE OS-KILL EVIDENCE NOT_MEASURED"
+  },
+  "graceful_shutdown": {
+    "status": "POLICY_STATE_MACHINE_TESTED; LIVE_SIGNAL_RUN NOT_MEASURED",
+    "default_policy": "LEASE_FOR_RECOVERY",
+    "supported_policies": ["DRAIN_CURRENT", "CANCEL_CURRENT", "LEASE_FOR_RECOVERY"],
+    "windows_ctrl_c_path": "SIGINT handler is explicit in scripts/worker.ts; live Windows console experiment remains NOT_MEASURED",
+    "new_claims_after_shutdown_request": "blocked by WorkerLifecycle.canStartPass/canClaim",
+    "durable_recovery": "current lease remains recoverable through existing stale/retry fencing"
+  },
+  "deadline_and_cleanup": {
+    "status": "BOUNDED_POLICY_IMPLEMENTED; REAL PROVIDER PATH PARTIAL",
+    "budgets": ["VISIONSCAN_MAX_QUEUE_WAIT_MS", "VISIONSCAN_MAX_SERVICE_TIME_MS", "VISIONSCAN_MAX_TOTAL_AGE_MS"],
+    "existing_queue_deadline": "VISIONSCAN_OVERALL_JOB_DEADLINE_MS enforced from claim",
+    "provider_cleanup": "tracked child-tree termination is wired to cancellation/deadline; descendant absence is NOT independently measured",
+    "phase8_real_provider_observation": "120000ms queue-claim deadline; 15 completed and 10 deadline failures at the 25-job point"
+  },
+  "resident_lesion": {
+    "status": "RESIDENT_RUNTIME_PARTIAL",
+    "short_lived_baseline": "Phase 7 finite 20-case lesion runner exists",
+    "resident_parity": "NOT_MEASURED",
+    "resident_cancellation": "NOT_MEASURED",
+    "resident_state_isolation": "BOUNDED_INPUT_SCOPE_ONLY",
+    "resident_crash_recovery": "NOT_MEASURED",
+    "resident_promotion": "BLOCKED"
+  },
+  "load_characterization": {
+    "status": "LOCAL RUNTIME PARTIAL",
+    "policy": "bounded queue timeout, service deadline, total-age budget, explicit bounded rejection",
+    "source": "docs/generated/phase7-real-load.json and docs/generated/phase8-runtime-closure.json",
+    "rerun_1_5_10_25": "NOT_RERUN_IN_PHASE9",
+    "fairness_metric": "NOT_MEASURED",
+    "25_job_observation": {"completed": 15, "failed": 10, "queue_wait_p50_ms": 16354.999, "queue_wait_p95_ms": 97586.922, "service_p50_ms": 8050.247}
+  },
+  "review_governance": {
+    "status": "APPEND_ONLY_EVENTS_AND_OPTIMISTIC_CONFLICT_STATE_IMPLEMENTED",
+    "event_collection": "clinician_reviews",
+    "ai_snapshot_hash": "preserved per event",
+    "finalized_report": "immutable; another review cannot mutate a clinician_finalized projection",
+    "concurrent_projection": "revision mismatch preserves the incoming event, retains the stored projection, and sets CONCURRENT_REVIEW_CONFLICT",
+    "final_assessment": "required for finalize and stored separately from AI output",
+    "independent_clinical_signoff": "NOT_PRESENT"
+  },
+  "release_boundary": "No model, dataset, resident runtime, clinical validation, diagnostic sensitivity, disease recovery, or medical-device claim is promoted by this artifact."
+}

@@ -1,0 +1,31 @@
+{
+  "schema_version": "visionscan-phase9-governed-release-manifest-v1",
+  "observed_at": "2026-09-13",
+  "phi_included": false,
+  "release_state": "BLOCKED",
+  "classifications": {
+    "engineering": "ENGINEERING PARTIAL — BLOCKERS REMAIN",
+    "retinal_review_intelligence": "RETINAL REVIEW INTELLIGENCE PARTIAL — INTERNAL HELD-OUT EVIDENCE ONLY",
+    "local_runtime": "LOCAL RUNTIME PARTIAL",
+    "data": "DATA RELEASE BLOCKED",
+    "clinical": ["NOT CLINICALLY VALIDATED", "NOT A MEDICAL DEVICE", "NOT FOR AUTONOMOUS DIAGNOSIS"]
+  },
+  "allowed_use": ["local engineering research", "synthetic/demo workflow testing", "internal clinician-review workflow prototyping with explicit research labeling"],
+  "prohibited_use": ["autonomous diagnosis", "clinical deployment", "medical-device representation", "training on uploaded data without separate consent and governance", "external validation claim without an eligible manifest"],
+  "required_signoffs": {
+    "clinical_safety_reviewer": 1,
+    "engineering_reviewer": 1,
+    "data_rights_reviewer": 1,
+    "present": 0,
+    "status": "NOT_SIGNED_OFF"
+  },
+  "frozen_artifacts": [
+    "docs/generated/phase8-high-grade-miss-registry.json",
+    "docs/generated/phase8-lesion-rule-freeze.json",
+    "docs/generated/phase8-external-lesion-validation.json",
+    "docs/generated/phase8-runtime-closure.json",
+    "docs/generated/phase9-runtime-controls.json",
+    "docs/generated/phase9-external-validation-readiness.json"
+  ],
+  "replay_policy": "Any change to model, rule, cohort, preprocessing, evidence taxonomy, or report schema creates a new version and requires a new governed review."
+}

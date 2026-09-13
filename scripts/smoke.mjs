@@ -192,7 +192,7 @@ async function main() {
   const rev = await af(`${BASE}/api/review/${studyId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "finalize", note: "smoke test note" }),
+    body: JSON.stringify({ action: "finalize", note: "smoke test note", assessment: { impression: "Synthetic smoke-test review only.", plan: "No clinical action; research workflow check." } }),
   });
   const revJson = await rev.json();
   check("clinician finalize", rev.status === 200 && revJson.report?.review?.status === "clinician_finalized");

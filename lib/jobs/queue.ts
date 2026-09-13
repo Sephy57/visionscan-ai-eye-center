@@ -19,6 +19,9 @@ import { checkProcessingConsent, PROCESSING_CONSENT_PURPOSES } from "../consent/
 import { DEMO_MODE } from "../config";
 import { createJobDeadline, resolveOverallJobDeadlineMs, withOverallJobDeadline, JobDeadlineExceededError } from "./jobDeadline";
 import { withProcessTreeScope, terminateTrackedProcessTrees } from "./processControl";
+import { maybeInjectPhase9Fault } from "./phase9FaultInjection";
+import { buildJobEffectRecord, putJobEffectInTransaction } from "./effects";
+import { classifyJobAge, resolveJobDeadlinePolicy, type JobDeadlinePolicy } from "./deadlinePolicy";
 import {
   reserveJobResourcesHostWide,
   releaseJobResourceLease,
@@ -100,6 +103,12 @@ export interface AnalysisJob {
   /** Overall execution budget starts at claim and is never extended by lease heartbeats. */
   deadline_ms?: number;
   deadline_at?: string;
+  /** Explicit queue/service/total-age budgets and observed age metrics. */
+  deadline_policy?: JobDeadlinePolicy;
+  queue_wait_ms?: number;
+  service_time_ms?: number;
+  total_age_ms?: number;
+  deadline_outcome?: "WITHIN_BUDGET" | "QUEUE_TIMEOUT" | "JOB_DEADLINE_EXCEEDED";
   resource_request?: { memory_bytes: number; threads: number };
   resource_reservation_state?: "admitted" | "released" | "bypassed_demo" | "rejected";
   resource_rejection_reason?: string;
@@ -275,6 +284,7 @@ export async function isJobCancellationRequested(jobId: string): Promise<boolean
 }
 
 function queuedJob(studyId: string, kind: JobKind, documentId?: string): AnalysisJob {
+  const deadlinePolicy = resolveJobDeadlinePolicy();
   const job: AnalysisJob = {
     job_id: newId("job"),
     study_id: studyId,
@@ -288,6 +298,7 @@ function queuedJob(studyId: string, kind: JobKind, documentId?: string): Analysi
     claim_version: 0,
     cancellation_requested: false,
     retry_policy_version: JOB_RETRY_POLICY_VERSION,
+    deadline_policy: deadlinePolicy,
     created_at: new Date().toISOString(),
     progress: makeJobProgress({ stage: "queued", percent: 0, message: "Waiting for a worker" }),
   };
@@ -489,6 +500,26 @@ export async function claimJob(
       persistJob(tx, jobId, cancelled);
       return null;
     }
+    const deadlinePolicy = current.deadline_policy ?? resolveJobDeadlinePolicy();
+    const queuedAge = classifyJobAge({ created_at: current.created_at, now: nowMs, policy: deadlinePolicy });
+    if (queuedAge.outcome !== "WITHIN_BUDGET") {
+      const timedOut = durableJob(current, {
+        version: (current.version ?? 0) + 1,
+        claim_version: (current.claim_version ?? current.version ?? 0) + 1,
+        status: "failed",
+        state: "failed",
+        error: `${queuedAge.outcome}: queue/service budget exceeded before worker claim`,
+        completed_at: nowIso,
+        deadline_policy: deadlinePolicy,
+        queue_wait_ms: queuedAge.queue_wait_ms,
+        service_time_ms: queuedAge.service_time_ms,
+        total_age_ms: queuedAge.total_age_ms,
+        deadline_outcome: queuedAge.outcome,
+        progress: stateProgress("failed", current, `${queuedAge.outcome}; no result was published`),
+      });
+      persistJob(tx, jobId, timedOut);
+      return null;
+    }
     const attemptId = newId("attempt");
     const attempts = current.attempts + 1;
     const deadlineMs = current.deadline_ms && Number.isSafeInteger(current.deadline_ms) && current.deadline_ms > 0
@@ -512,6 +543,11 @@ export async function claimJob(
       worker_id: workerId,
       deadline_ms: deadlineMs,
       deadline_at: deadlineAt,
+      deadline_policy: deadlinePolicy,
+      queue_wait_ms: queuedAge.queue_wait_ms,
+      service_time_ms: 0,
+      total_age_ms: queuedAge.total_age_ms,
+      deadline_outcome: "WITHIN_BUDGET",
       resource_request: {
         memory_bytes: JOB_RESOURCE_REQUESTS[current.kind].memoryBytes,
         threads: JOB_RESOURCE_REQUESTS[current.kind].threads,
@@ -835,6 +871,16 @@ export async function finalizeJobSuccess(jobId: string, attemptId: string, worke
       resource_reservation_state: current.resource_reservation_state === "admitted" ? "released" : current.resource_reservation_state,
       progress: makeJobProgress({ stage: "completed", percent: 100, completed_units: 1, total_units: 1, message: "Job completed" }),
     });
+    putJobEffectInTransaction(tx, buildJobEffectRecord({
+      effect_type: "JOB_COMPLETION",
+      idempotency_key: jobId,
+      canonical_id: jobId,
+      payload: { job_id: jobId, attempt_id: attemptId, status: "completed" },
+      study_id: current.study_id,
+      job_id: jobId,
+      attempt_id: attemptId,
+      note: "Terminal completion is atomically fenced with the job transition; duplicate finalizers are rejected.",
+    }));
     persistJob(tx, jobId, next);
     return next;
   });
@@ -1013,6 +1059,13 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
         // keeping the import here keeps the queue generic).
         const { analyzeStudy } = await import("../studies/service");
         await analyzeStudy(job.study_id, {
+          job_id: jobId,
+          attempt_id: attemptId,
+          assertCanCommit: async () => {
+            const currentRaw = await dbGet<AnalysisJob>("jobs", jobId);
+            const current = currentRaw ? normalizeJob(currentRaw) : null;
+            return !!current && current.status === "running" && current.active_attempt_id === attemptId && current.worker_id === workerId && !isCancelled(current);
+          },
           shouldCancel,
           onProgress: updateProgress,
         });
@@ -1036,6 +1089,7 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
       await finalizeCancelled();
       return;
     }
+    maybeInjectPhase9Fault("BEFORE_JOB_COMPLETE");
     const completed = await finalizeJobSuccess(jobId, attemptId, workerId);
     if (!completed) return;
     cancelFlags.delete(jobId);
