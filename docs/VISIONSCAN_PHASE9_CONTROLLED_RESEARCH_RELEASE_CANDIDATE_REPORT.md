@@ -1,9 +1,9 @@
 # VisionScan Phase 9 Controlled Research Release Candidate Report
 
-Generated: 2026-09-13T12:06:21.313Z  
-Repository: VisionScan AI Eye Center  
-Source HEAD at generation: ccc5e42dc50f73a4c274132a97f2665717c7dda6  
-PHI included: false  
+Generated: 2026-09-13T12:59:38.705Z<br>
+Repository: VisionScan AI Eye Center<br>
+Source HEAD at generation: 57d8f3f470e8d9486758cde21af9dd0e931dc3ec<br>
+PHI included: false
 
 > This report is an evidence ledger, not a clinical validation report. It preserves PARTIAL, BLOCKED, NOT MEASURED, and NOT PROVEN states.
 
@@ -17,7 +17,7 @@ The scope is the local repository, its deterministic controls, its existing Phas
 
 ## 3. Repository and report provenance
 
-Report generation timestamp: 2026-09-13T12:06:21.313Z. Repository HEAD at generation: ccc5e42dc50f73a4c274132a97f2665717c7dda6. The working-tree observation at generation was: ?? docs/VISIONSCAN_PHASE9_CONTROLLED_RESEARCH_RELEASE_CANDIDATE_REPORT.md. The final commit and remote parity must be taken from post-commit Git verification because a report cannot truthfully contain the hash of a commit that has not yet been created.
+Report generation timestamp: 2026-09-13T12:59:38.705Z. Repository HEAD at generation: 57d8f3f470e8d9486758cde21af9dd0e931dc3ec. The working-tree observation at generation was: M docs/VISIONSCAN_PHASE9_CONTROLLED_RESEARCH_RELEASE_CANDIDATE_REPORT.md. The final commit and remote parity must be taken from post-commit Git verification because a report cannot truthfully contain the hash of a commit that has not yet been created.
 
 ## 4. Phase 8 preservation
 
@@ -85,7 +85,7 @@ tests/phase9-controls.test.ts proves the isolated test guard and one-shot consum
 
 ## 20. Model result commit
 
-Analysis rows use the deterministic anl_<study> identity and a canonical fingerprint over the immutable analysis payload. A replay can reuse the row but cannot overwrite it with a different payload.
+The first analysis envelope retains the canonical anl_<study> identity; a changed symptom/document envelope receives a deterministic anl_<study>_v<hash> immutable version, while the study stores the newest analysis pointer. A replay can reuse the row but cannot overwrite it with a different payload.
 
 ## 21. Evidence commit
 
@@ -289,7 +289,7 @@ The Validation Center reads a role-gated Phase 9 route and displays controls, po
 
 ## 71. Accessibility and UI QA
 
-Existing accessibility, keyboard, responsive, visual, and browser acceptance evidence remains historical Phase 8 context. Phase 9 UI changes require the browser matrix to be rerun before any UI release claim.
+Exact-SHA CI run 34758304012 passed the hosted browser smoke. Broader local visual, accessibility, keyboard, and responsive evidence remains historical Phase 8 context and is not represented as a complete Phase 9 UI release audit.
 
 ## 72. Focused Phase 9 acceptance
 
@@ -297,11 +297,11 @@ The focused command npm run validation:phase9 passed 54 tests across Phase 9 con
 
 ## 73. Full-suite result
 
-A full Vitest attempt was not green: it reached tests/s9-real-inference.test.ts and one genuine CPU inference case timed out at 120000 ms; the remaining real-inference cases continued to run until the bounded attempt was interrupted. This is retained as a release limitation, not hidden.
+The CI-equivalent full Vitest command passed 88 test files and 1166 tests, with 1 file and 13 tests intentionally skipped. The run included genuine S9 CPU inference, symptom-driven immutable analysis versioning, dashboard status, red-team, safety, persistence, and lease/recovery paths.
 
 ## 74. Build result
 
-The production build was run separately and exited 1 with a Node heap out-of-memory failure at the configured 8192 MB limit. Therefore production build status is BLOCKED/NOT GREEN for this exact tree.
+The local Windows production build was run at the configured 8192 MB Node heap limit and exited 1 with an out-of-memory failure. The corrected source commit 46cd462e880ab16366b842e8b16cf96a295a4897 nevertheless passed the Linux and Windows production-build steps in exact-SHA CI run 34758304012. Local build reproducibility remains a bounded engineering gap, not a claim of universal build failure.
 
 ## 75. Lint and typecheck
 
@@ -321,7 +321,7 @@ A clean-checkout/no-model validation remains required for hosted CI and external
 
 ## 79. Exact-head CI
 
-Remote CI must be checked against the exact final commit after normal push. Until the remote workflow conclusion and commit SHA are observed, CI status is NOT PROVEN.
+Exact-SHA CI run 34758304012 completed SUCCESS for source commit 46cd462e880ab16366b842e8b16cf96a295a4897. verify, verify-windows, and verify-browser all passed, including the Phase 9 controls, full unit/integration matrix, generated audits, and production-build steps. The later report-only commit must retain this distinction because its own workflow is a separate run.
 
 ## 80. Artifact inventory
 
@@ -397,11 +397,11 @@ NO. Internal audit lanes are not independent sign-off. Separate clinical-safety,
 
 ## 98. Final blocker summary
 
-The release is blocked by the failed production build, full-suite real-inference timeout, missing live shutdown/restart evidence, incomplete resident proof, incomplete fairness/load rerun, external dataset eligibility, data-release findings, and absent independent sign-offs.
+The release is blocked by the local Windows build reproducibility gap, missing live shutdown/restart evidence, incomplete resident proof, incomplete fairness/load rerun, external dataset eligibility, data-release findings, and absent independent sign-offs.
 
 ## 99. Required next evidence
 
-Before promotion, obtain a green exact-head Linux/Windows/browser CI conclusion, a reproducible build or bounded build fix, controlled post-persistence OS-crash/restart evidence, resident parity/cancel/isolation/crash evidence, a complete load/fairness characterization, an eligible rights-cleared external cohort, and independent reviewer sign-offs.
+Before promotion, retain the green exact-head Linux/Windows/browser CI result, either make the local build reproducible or document a bounded build-memory fix, obtain controlled post-persistence OS-crash/restart evidence, resident parity/cancel/isolation/crash evidence, a complete load/fairness characterization, an eligible rights-cleared external cohort, and independent reviewer sign-offs.
 
 ## 100. Operator release procedure
 
