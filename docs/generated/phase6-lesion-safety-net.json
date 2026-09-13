@@ -1,117 +1,121 @@
 {
-  "schema_version": "visionscan-phase6-lesion-safety-net-v2",
-  "observed_at": "2026-09-12T21:30:45.100Z",
-  "measurement_state": "PARTIAL_TECHNICAL_RESEARCH",
+  "schema_version": "visionscan-phase6-lesion-safety-net-v3",
+  "observed_at": "2026-09-12T23:50:32.618Z",
+  "measurement_state": "MEASURED_TECHNICAL_RESEARCH",
   "scope": {
-    "selected_cases": 3,
+    "selected_cases": 400,
     "frozen_validation_cases": 400,
-    "baseline_fn_cases_selected": 0,
+    "admitted_cases": 397,
+    "baseline_fn_cases_selected": 101,
     "baseline_fn_cases_expected": 101,
-    "all_cases_processed_serially": false
+    "all_cases_processed_serially": true
   },
   "model": {
     "model_id": "fundus-lesions-clementp-unet-seresnext50",
     "model_version": "a2cfcb594e483",
     "artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
     "preprocessing_version": "clementp-source-pinned-1024-v1",
-    "output_contract": "fundus-lesion-segmentation-contract/2-original-image-geometry",
+    "output_contract": "fundus-lesion-segmentation-batch-summary/1",
     "threshold_version": "argmax-components-no-threshold-no-calibration"
   },
   "gate_definition": {
     "source_image": "regular-fundus-validation/Images/<patient>/<image>.jpg",
     "quality": "assessQuality quality_status=pass",
     "ood": "assessOod fundus with missing device treated as DOMAIN_VALIDATION_UNKNOWN",
-    "model_execution": "runFundusLesionResearchAnalysis completed",
-    "region_output": "provider strict transport contract accepted"
+    "model_execution": "one finite fundus_lesion_batch_probe.py worker, entries processed serially",
+    "region_output": "fundus-lesion-segmentation-batch-summary/1 validated; geometry mapped to original-image coordinates before summary"
   },
   "aggregate": {
-    "input_cases": 6,
-    "source_images_present": 6,
+    "input_cases": 400,
+    "source_images_present": 400,
     "source_images_missing": 0,
-    "quality_pass": 6,
+    "quality_pass": 400,
     "quality_blocked": 0,
-    "ood_pass": 6,
-    "ood_blocked": 0,
-    "inference_completed": 6,
+    "ood_pass": 397,
+    "ood_blocked": 3,
+    "inference_completed": 397,
     "inference_failed": 0,
-    "valid_region_output": 6,
-    "signal_cases": 6,
-    "no_signal_cases": 0,
+    "valid_region_output": 397,
+    "signal_cases": 330,
+    "no_signal_cases": 67,
     "class_signals": {
-      "MA-like": 0,
-      "HE-like": 0,
-      "EX-like": 0,
-      "CWS-like": 0
+      "MA-like": 1888,
+      "HE-like": 2351,
+      "EX-like": 2987,
+      "CWS-like": 265
     },
     "service_ms": {
-      "count": 6,
-      "p50": 7635,
-      "p95": 7812,
-      "max": 7812
+      "count": 397,
+      "p50": 2627.916,
+      "p95": 2701.274,
+      "max": 2891.252
     }
   },
   "baseline_fn": {
-    "input_cases": 0,
-    "source_images_present": 0,
+    "input_cases": 101,
+    "source_images_present": 101,
     "source_images_missing": 0,
-    "quality_pass": 0,
+    "quality_pass": 101,
     "quality_blocked": 0,
-    "ood_pass": 0,
-    "ood_blocked": 0,
-    "inference_completed": 0,
+    "ood_pass": 100,
+    "ood_blocked": 1,
+    "inference_completed": 100,
     "inference_failed": 0,
-    "valid_region_output": 0,
-    "signal_cases": 0,
-    "no_signal_cases": 0,
+    "valid_region_output": 100,
+    "signal_cases": 99,
+    "no_signal_cases": 1,
     "class_signals": {
-      "MA-like": 0,
-      "HE-like": 0,
-      "EX-like": 0,
-      "CWS-like": 0
+      "MA-like": 701,
+      "HE-like": 905,
+      "EX-like": 1115,
+      "CWS-like": 101
     },
     "service_ms": {
-      "count": 0,
-      "p50": null,
-      "p95": null,
-      "max": null
+      "count": 100,
+      "p50": 2643.478,
+      "p95": 2709.331,
+      "max": 2750.191
     },
-    "review_escalation_coverage": null,
+    "review_escalation_coverage": 0.9801980198019802,
     "label": "REVIEW ESCALATION COVERAGE",
     "forbidden_label": "DISEASE RECOVERY"
   },
   "nonreferable": {
-    "input_cases": 0,
-    "source_images_present": 0,
+    "input_cases": 319,
+    "source_images_present": 319,
     "source_images_missing": 0,
-    "quality_pass": 0,
+    "quality_pass": 319,
     "quality_blocked": 0,
-    "ood_pass": 0,
-    "ood_blocked": 0,
-    "inference_completed": 0,
+    "ood_pass": 316,
+    "ood_blocked": 3,
+    "inference_completed": 316,
     "inference_failed": 0,
-    "valid_region_output": 0,
-    "signal_cases": 0,
-    "no_signal_cases": 0,
+    "valid_region_output": 316,
+    "signal_cases": 249,
+    "no_signal_cases": 67,
     "class_signals": {
-      "MA-like": 0,
-      "HE-like": 0,
-      "EX-like": 0,
-      "CWS-like": 0
+      "MA-like": 944,
+      "HE-like": 1025,
+      "EX-like": 1424,
+      "CWS-like": 120
     },
     "service_ms": {
-      "count": 0,
-      "p50": null,
-      "p95": null,
-      "max": null
+      "count": 316,
+      "p50": 2627.916,
+      "p95": 2696.852,
+      "max": 2788.691
     },
-    "extra_review_escalations_per_100": null
+    "extra_review_escalations_per_100": 78.0564263322884
   },
-  "unavailable_reasons": {},
+  "unavailable_reasons": {
+    "ood_blocked": 3
+  },
   "source_hashes": {
     "source_csv_sha256": "54c2f11bf0647fe3cc64496cd83646ea4a4fdf0aab82b1cd4891ad998f220332",
     "raw_export_sha256": "c040638f5397a86af54599a6c21b3e047d6a68bcbf93a28f186e6feb802a12e5",
     "failure_registry_sha256": "8b5f258b3f56d437739436e1512b3b72052049c06185d91a90eb7f35a2206597",
-    "script_sha256": "d70aeace812d59099139be4bbcef150ae280a80696a0879447062fb25cb7b86b"
+    "script_sha256": "19384003d1cff6f76995441558e4e6338f665b5983933331a10d195ec1cdfe35",
+    "batch_probe_sha256": "784589cb889b0597ae61743974eca97794a068e6ffa81cd81b9532423c3d0cef"
   },
   "phi_included": false,
   "limitations": [
@@ -119,6 +123,7 @@
     "The source quality labels are not used as a substitute for the platform quality gate.",
     "Missing device metadata is disclosed as DOMAIN_VALIDATION_UNKNOWN; it is not a device compatibility pass.",
     "Lesion-like regions are uncalibrated research observations, not clinically confirmed lesions.",
+    "The batch worker is one finite serialized study process, not evidence for a resident production worker.",
     "The study does not establish DR disease recovery, clinical sensitivity, or safe referral utility."
   ]
 }

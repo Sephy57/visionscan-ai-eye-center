@@ -25,7 +25,7 @@
     {
       "id": "retguard-rights-dossier",
       "path": "docs/PHASE6_CANDIDATE_RIGHTS_DOSSIER.md",
-      "sha256": "a9a8377942a581868ec358bcfd5485d44d123f12b905c034d3beffa55c4a0a16",
+      "sha256": "c8552f0d0b9bc515967e6bd238ccf926439ca4d2022851ffc601aae5faa3e3cc",
       "role": "result_source"
     },
     {
@@ -42,5 +42,5 @@
     "Publisher-reported calibration ECE is above its stated gate; this is not local calibration evidence.",
     "Candidate inference was stopped before predictions; FN recovery, FP burden, high-grade behavior, threshold curves, and ensembles are unmeasured."
   ],
-  "result_sha256": "eb5414b64daef89d14002a1db8d1bb105007dccecc1b71e81f761128a68b2261"
+  "result_sha256": "5447ee39c6bf010c8a45b969ce35f0948c68e31fc807b197bf7e36be01e930a0"
 }

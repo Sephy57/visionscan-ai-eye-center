@@ -1,0 +1,76 @@
+{
+  "schema_version": "visionscan-phase6-lesion-escalation-v1",
+  "observed_at": "2026-09-12T23:51:30.558Z",
+  "measurement_state": "MEASURED_TECHNICAL_RESEARCH",
+  "study": {
+    "baseline_failure_registry": "docs/model-validation/dr-failure-registry.json",
+    "baseline_false_negative_count": 101,
+    "baseline_false_positive_count": 2,
+    "nonreferable_validation_case_count": 220,
+    "baseline_predicted_nonreferable_case_count": 319,
+    "lesion_model_id": "fundus-lesions-clementp-unet-seresnext50",
+    "lesion_model_artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2"
+  },
+  "required_evidence": {
+    "same_source_image": "PASSED_FOR_SELECTED_ROWS",
+    "same_study": "PASSED_FOR_SELECTED_ROWS",
+    "quality_passed": "RECORDED_PER_ROW_AGGREGATE",
+    "ood_passed": "RECORDED_PER_ROW_AGGREGATE",
+    "valid_model_execution": "RECORDED_PER_ROW_AGGREGATE",
+    "valid_region_output": "RECORDED_PER_ROW_AGGREGATE"
+  },
+  "fn_escalation": {
+    "reviewed_baseline_fn_count": 101,
+    "valid_lesion_signal_count": 99,
+    "no_valid_lesion_signal_count": 1,
+    "unavailable_count": 1,
+    "review_escalation_coverage": 0.9801980198019802,
+    "label": "REVIEW ESCALATION COVERAGE",
+    "forbidden_label": "DISEASE RECOVERY"
+  },
+  "nonreferable_review_burden": {
+    "evaluated_nonreferable_count": 319,
+    "extra_review_escalations": 249,
+    "escalations_per_100_nonreferable": 78.0564263322884,
+    "measurement_state": "MEASURED_TECHNICAL_RESEARCH"
+  },
+  "lesion_class_breakdown": {
+    "MA-like": {
+      "count": 701,
+      "measurement_state": "MEASURED_TECHNICAL_RESEARCH"
+    },
+    "HE-like": {
+      "count": 905,
+      "measurement_state": "MEASURED_TECHNICAL_RESEARCH"
+    },
+    "EX-like": {
+      "count": 1115,
+      "measurement_state": "MEASURED_TECHNICAL_RESEARCH"
+    },
+    "CWS-like": {
+      "count": 101,
+      "measurement_state": "MEASURED_TECHNICAL_RESEARCH"
+    }
+  },
+  "metadata_observation": {
+    "rows_with_unverified_lesion_summary_fields_among_baseline_fns": 101,
+    "interpretation": "Metadata-only fields are not accepted as model execution or valid region output because source bytes, OOD state, run provenance, and study linkage are absent."
+  },
+  "reasons": [
+    "The committed DeepDRiD failure registry contains hashed case/patient keys but no source image bytes or source-image SHA-256 values.",
+    "The raw evaluation export contains metadata-only lesion summary fields but no auditable lesion-run provenance, OOD result, or valid region-output contract for the same study.",
+    "A separate gate-aware DeepDRiD technical-research run is available; its aggregate output is not a clinical lesion or disease-recovery result."
+  ],
+  "source_hashes": {
+    "failure_registry_sha256": "8b5f258b3f56d437739436e1512b3b72052049c06185d91a90eb7f35a2206597",
+    "raw_export_sha256": "c040638f5397a86af54599a6c21b3e047d6a68bcbf93a28f186e6feb802a12e5",
+    "lesion_metrics_sha256": "4f0657eed8cd3a75cc9a35d3503dba577d94d64f6c8f3b81e6f767d6d01b1ffa",
+    "safety_net_sha256": "a9cfefc915972e621586c04b091ab08feadf649740e74086ce9e7b0fb0da0505"
+  },
+  "phi_included": false,
+  "limitations": [
+    "No raw patient identifiers, source image bytes, or raw clinical documents are copied into this result.",
+    "No disease, lesion, normality, or recovery claim is made.",
+    "A future run needs an authorized source-image manifest, same-study linkage, quality/OOD outputs, verified model hash, and a strict region-output record before coverage can be calculated."
+  ]
+}

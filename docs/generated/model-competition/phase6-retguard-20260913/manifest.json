@@ -1,8 +1,8 @@
 {
   "schema_version": "visionscan-phase6-model-competition-bundle-v1",
   "run_id": "phase6-retguard-20260913",
-  "source_commit": "9eef23e3bd95b2d0fb9c4cd00685b8d71ad9f5b6",
-  "generated_at": "2026-09-12T22:06:55.788Z",
+  "source_commit": "3ebdf48110e1e31cfc575c293302deafdca92447",
+  "generated_at": "2026-09-13T00:09:30.027Z",
   "phi_included": false,
   "frozen_baseline_manifest": {
     "format": "visionscan-dr-competition-run-manifest/v1",

@@ -1,9 +1,9 @@
 {
   "schema_version": "visionscan-phase6-bundle-hashes-v1",
   "files": {
-    "manifest.json": "3d77749116819851384d3e6fa8be300935d9c4cab260561dfca940f5b6b4844b",
+    "manifest.json": "f93d34987f248afbb415c3419c257835a1b11cc09daaae9e7962859c1966bc45",
     "baseline.json": "d0ddd9ca093b9f544d46d8fa6fe240603f2bc0b007ed72adc235ed976bd2824c",
-    "candidate.json": "3c9443328862642171ccf663e0b26ad754e6a12409ca0f9e130625a24d4567aa",
+    "candidate.json": "d3c254341da0e9174b4551b50e2cdbefc0741836f82ae3f8c1094a2f2f24a1b1",
     "paired-errors.json": "6050b14b7ac46c715aa9fc372d21f5b929862eb96622c8c2125ebddc932a4659",
     "metrics.json": "cb06eb241c9df0416ac57a7d5b2e8be9fdd0c49481a15a411e982e7b1f8125b9",
     "confusion-matrix.json": "44cb2749f33c69fab765065c2230eb4f68d716e9a50983b6d38838dec52ee2f3",
