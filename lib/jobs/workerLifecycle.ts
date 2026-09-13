@@ -33,6 +33,12 @@ export class WorkerLifecycle {
     this.currentJob = jobId;
   }
 
+  /** Adopt a job after the queue's transactional claim has succeeded. */
+  adoptClaimedJob(jobId: string): void {
+    if (this.currentJob && this.currentJob !== jobId) throw new Error("WORKER_ALREADY_HAS_CURRENT_JOB");
+    this.currentJob = jobId;
+  }
+
   finishJob(jobId: string): void {
     if (this.currentJob === jobId) this.currentJob = null;
     if (this.currentState === "STOP_REQUESTED" && !this.currentJob) this.currentState = "STOPPED";

@@ -47,6 +47,21 @@ export function maybeInjectPhase9Fault(hook: Phase9FaultHook): void {
   if (!testOnlyProcess()) return;
   if (!configuredHooks().has(hook) || consumed.has(hook)) return;
   consumed.add(hook);
+  if (process.env.VISIONSCAN_PHASE10_REAL_OS_CRASH === "1") {
+    // This switch is intentionally separate from the exception seam. It is
+    // accepted only in an isolated test process and terminates the process at
+    // the selected durable-publication boundary. The parent harness owns
+    // descendant cleanup and restart verification.
+    process.stderr.write(`${JSON.stringify({ event: "phase10_real_os_crash", hook, pid: process.pid })}\n`);
+    try {
+      process.kill(process.pid, "SIGKILL");
+    } catch {
+      // SIGKILL is implemented as process termination on supported Windows
+      // Node builds. Keep a hard-stop fallback for unusual runtimes.
+      process.exit(137);
+    }
+    return;
+  }
   throw new Phase9InjectedFaultError(hook);
 }
 

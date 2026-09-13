@@ -1,5 +1,5 @@
 import { NormalizedStudy, DeviceMetadata, SecureFileImportAdapter, ScanType, EyeLaterality } from "../devices/adapter";
-import { newId, saveOriginalScan, readOriginalScan, StoredFile, writeJson, deleteStudyFiles } from "../storage/files";
+import { newId, saveOriginalScan, readOriginalScan, StoredFile, writeJson, readJson, deleteStudyFiles } from "../storage/files";
 import { dbPut, dbGet, dbAll, dbDelete, dbPage, dbTransaction, type DbPageResult, type DbPageOptions } from "../storage/db";
 import { runPipeline } from "../analysis/pipeline";
 import { AnalysisResult } from "../analysis/schema";
@@ -276,6 +276,34 @@ export async function analyzeStudy(
       attempt_id: control?.attempt_id,
       note: "Reconciled sealed reasoning record from replay.",
     });
+    // The evidence snapshot is published before the reasoning record. If a
+    // worker died after report publication, reconcile its canonical effect
+    // from the already-persisted immutable row; never synthesize a new
+    // evidence payload just to make the ledger look complete.
+    const evidenceRecord = (await dbAll<{
+      evidence_id: string;
+      study_id: string;
+      analysis_id: string;
+      payload_sha256: string;
+    }>("evidence")).find((candidate) =>
+      candidate.study_id === studyId && candidate.analysis_id === existingAnalysis.analysis_id,
+    );
+    if (evidenceRecord) {
+      await recordJobEffect({
+        effect_type: "STRUCTURED_EVIDENCE",
+        idempotency_key: evidenceRecord.evidence_id,
+        canonical_id: evidenceRecord.evidence_id,
+        payload: {
+          study_id: evidenceRecord.study_id,
+          analysis_id: evidenceRecord.analysis_id,
+          payload_sha256: evidenceRecord.payload_sha256,
+        },
+        study_id: studyId,
+        job_id: control?.job_id,
+        attempt_id: control?.attempt_id,
+        note: "Reconciled immutable structured-evidence effect from sealed replay.",
+      });
+    }
     await recordJobEffect({
       effect_type: "REPORT",
       idempotency_key: existingReport.report_id,
@@ -286,7 +314,14 @@ export async function analyzeStudy(
       attempt_id: control?.attempt_id,
       note: "Reconciled sealed report from publication-window replay.",
     });
-    return { analysis: existingAnalysis.result, report: existingReport };
+    const replayedReport = structuredClone(existingReport);
+    if (!await readJson("reports", replayedReport.report_id)) {
+      // The database row remains the immutable source of truth. The JSON file
+      // is a derived export and can be repaired after a process crash without
+      // changing the report identity or clinician-review projection.
+      replayedReport.exports.json_path = await writeJson("reports", replayedReport.report_id, replayedReport);
+    }
+    return { analysis: existingAnalysis.result, report: replayedReport };
   }
   await jobCheckpoint(control, { stage: "validating_source", percent: 12, message: "Immutable source loaded" });
 
@@ -343,22 +378,28 @@ export async function analyzeStudy(
     total_units: linkedDocuments.length,
     message: "Running eligible research inference and safety gates",
   });
-  const { analysis } = await runPipeline({
-    study: {
-      studyId,
-      modality: (record.modality as ScanType) ?? "unknown",
-      eye: (record.eye as EyeLaterality) ?? "unknown",
-      source: record.source as NormalizedStudy["source"],
-      metadata: record.metadata,
-      files: record.files,
-      hashSeed: pickDemoScenario(bytes).seed,
-      asset_routing: record.asset_routing,
-    },
-    originalBytes: bytes,
-    symptoms: record.symptoms ?? [],
-    document_assets: documentAssets,
-    document_routing: documentRouting,
-  });
+  // If a worker died after the immutable analysis row committed but before
+  // the report was sealed, reuse that exact result. Re-running the provider
+  // would be at-least-once execution, but model runtime metadata can differ
+  // and must never overwrite the canonical analysis identity.
+  const analysis = existingAnalysis && inputEnvelopeMatch
+    ? existingAnalysis.result
+    : (await runPipeline({
+      study: {
+        studyId,
+        modality: (record.modality as ScanType) ?? "unknown",
+        eye: (record.eye as EyeLaterality) ?? "unknown",
+        source: record.source as NormalizedStudy["source"],
+        metadata: record.metadata,
+        files: record.files,
+        hashSeed: pickDemoScenario(bytes).seed,
+        asset_routing: record.asset_routing,
+      },
+      originalBytes: bytes,
+      symptoms: record.symptoms ?? [],
+      document_assets: documentAssets,
+      document_routing: documentRouting,
+    })).analysis;
 
   // Safety validation is the publication precondition. Run it before the
   // analysis record, processed JSON, reasoning snapshot, or report can be
@@ -447,7 +488,18 @@ export async function analyzeStudy(
   });
 
   await control?.onProgress?.({ stage: "generating_report", percent: 86, message: "Persisting specialist and condition reasoning" });
-  const structuredEvidence = await buildStructuredClinicalEvidence(studyId, { includeSpecialists: true, analysisId: analysisRecord.analysis_id });
+  // Structured evidence adapters allocate evidence-item ids while assembling
+  // a workspace. On a retry after evidence commit, reuse the immutable row so
+  // the same canonical evidence effect is observed instead of creating a
+  // second snapshot with fresh transient ids.
+  const persistedEvidence = (await dbAll<{
+    study_id: string;
+    analysis_id: string;
+    evidence: import("../evidence/structuredClinicalEvidence").StructuredClinicalEvidence;
+  }>("evidence")).find((candidate) =>
+    candidate.study_id === studyId && candidate.analysis_id === analysisRecord.analysis_id,
+  );
+  const structuredEvidence = persistedEvidence?.evidence ?? await buildStructuredClinicalEvidence(studyId, { includeSpecialists: true, analysisId: analysisRecord.analysis_id });
   if ("not_found" in structuredEvidence) throw new Error("Study disappeared before reasoning persistence");
   maybeInjectPhase9Fault("BEFORE_EVIDENCE_COMMIT");
   await jobCommitCheckpoint(control);

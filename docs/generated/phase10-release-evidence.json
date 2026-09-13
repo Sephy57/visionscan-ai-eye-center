@@ -1,0 +1,42 @@
+{
+  "schema_version": "visionscan-phase10-release-evidence-v1",
+  "observed_at": "2026-09-13T15:00:58.202Z",
+  "evidence_classification": "INTEGRATION",
+  "source_artifact": "docs/generated/release-data-check.json",
+  "source_generated_at": "2026-09-13T14:57:51.315Z",
+  "implementation_head_at_capture": "0c65e38366200ecafc1c8195bbf794c7fa55a4d8",
+  "working_tree_dirty_at_capture": true,
+  "decision": "DATA_RELEASE_BLOCKED",
+  "status": "BLOCKERS_REMAIN",
+  "active_data_release_safe": false,
+  "counts": {
+    "active_unresolved_sources": 235,
+    "legacy_unresolved_sources": 158,
+    "active_fk_orphan_count": 0,
+    "legacy_orphan_count": 5263,
+    "cross_tenant_count": 0,
+    "hash_mismatch_count": 0,
+    "quarantine_count": 81
+  },
+  "source_reason_counts": {
+    "active:MISSING_REQUIRED_ARTIFACT": 233,
+    "legacy:MISSING_REQUIRED_ARTIFACT": 87,
+    "active:DETACHED_ANALYSIS_PARENT": 2,
+    "legacy:MISSING_REPORT_EXPORT": 71
+  },
+  "fk_classification_counts": {
+    "LEGACY_DETACHED_DOCUMENT": 5260,
+    "LEGACY_DETACHED_ANALYSIS": 2,
+    "LEGACY_DETACHED_JOB": 1
+  },
+  "fk_relation_counts": {
+    "documents.study_id->studies": 5260,
+    "analyses.study_id->studies": 2,
+    "jobs.study_id->studies": 1
+  },
+  "phi_included": false,
+  "limitations": [
+    "The release-data check was run without weakening or deleting unresolved-source, orphan, quarantine, or hash checks.",
+    "This artifact is a release-governance result; it is not a claim that unresolved records are safe to publish."
+  ]
+}

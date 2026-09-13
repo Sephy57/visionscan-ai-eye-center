@@ -1,9 +1,9 @@
 {
   "format": "visionscan-release-data-check-v1",
-  "generated_at": "2026-09-13T10:27:59.599Z",
+  "generated_at": "2026-09-13T14:57:51.315Z",
   "database_file": "<configured-database>",
   "active_unresolved_sources": 235,
-  "legacy_unresolved_sources": 149,
+  "legacy_unresolved_sources": 158,
   "active_fk_orphan_count": 0,
   "legacy_orphan_count": 5263,
   "cross_tenant_count": 0,
@@ -11,9 +11,9 @@
   "quarantine_count": 81,
   "source_reason_counts": {
     "active:MISSING_REQUIRED_ARTIFACT": 233,
-    "legacy:MISSING_REQUIRED_ARTIFACT": 82,
+    "legacy:MISSING_REQUIRED_ARTIFACT": 87,
     "active:DETACHED_ANALYSIS_PARENT": 2,
-    "legacy:MISSING_REPORT_EXPORT": 67
+    "legacy:MISSING_REPORT_EXPORT": 71
   },
   "fk_classification_counts": {
     "LEGACY_DETACHED_DOCUMENT": 5260,

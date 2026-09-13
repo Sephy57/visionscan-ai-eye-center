@@ -1,0 +1,515 @@
+{
+  "schema_version": "visionscan-phase10-crash-matrix-v1",
+  "observed_at": "2026-09-13T14:29:56.755Z",
+  "platform": "win32",
+  "node_version": "v20.20.2",
+  "worker_script": "scripts/worker.ts",
+  "fault_seams": [
+    "BEFORE_MODEL_RESULT_WRITE",
+    "AFTER_MODEL_RESULT_WRITE",
+    "BEFORE_EVIDENCE_COMMIT",
+    "AFTER_EVIDENCE_COMMIT",
+    "BEFORE_REPORT_COMMIT",
+    "AFTER_REPORT_COMMIT",
+    "BEFORE_JOB_COMPLETE"
+  ],
+  "input_scope": "one synthetic/public example_fundus.jpg per isolated temporary SQLite workspace",
+  "lease_policy": {
+    "lease_ms": 1000,
+    "heartbeat_ms": 250,
+    "heartbeat_grace_ms": 500,
+    "retry_backoff_ms": 0
+  },
+  "phi_included": false,
+  "status": "PASS_REAL_OS_CRASH_RESTART_MATRIX",
+  "stages": [
+    {
+      "stage": "BEFORE_MODEL_RESULT_WRITE",
+      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "status": "PASS",
+      "crash_observed": true,
+      "initial_worker_exit": {
+        "code": 1,
+        "signal": null,
+        "timed_out": false,
+        "duration_ms": 13653
+      },
+      "restart": {
+        "status": "COMPLETED",
+        "attempts": 2,
+        "error": null,
+        "progress": {
+          "stage": "completed",
+          "percent": 100,
+          "completed_units": 1,
+          "total_units": 1,
+          "message": "Job completed",
+          "updated_at": "2026-09-13T14:30:31.262Z"
+        },
+        "resource_reservation_state": "released",
+        "resource_rejection_reason": null,
+        "report_sealed": true,
+        "report_export_present": true,
+        "worker_exit": {
+          "code": 0,
+          "signal": null,
+          "timed_out": false,
+          "duration_ms": 13922
+        }
+      },
+      "canonical_effects": {
+        "counts": {
+          "MODEL_RESULT": 1,
+          "STRUCTURED_EVIDENCE": 1,
+          "REASONING_RECORD": 1,
+          "REPORT": 1,
+          "JOB_COMPLETION": 1
+        },
+        "duplicate_free": true,
+        "job_completion_count": 1
+      },
+      "physical_execution_observation": {
+        "worker_attempts": 2,
+        "model_execution_ledger_rows": 3,
+        "exact_provider_invocation_count": "NOT_MEASURED",
+        "note": "The durable attempt count proves at-least-once worker execution; the current model ledger is immutable and does not expose a per-provider invocation counter."
+      },
+      "cleanup": {
+        "parent_taskkill_tree_requested": true,
+        "descendants_absent_after_termination": true,
+        "remaining_descendant_pids": [],
+        "temporary_workspace": "visionscan-phase10-crash-oER7FS",
+        "phi_included": false
+      },
+      "seed": {
+        "status": "OK",
+        "duration_ms": 2983
+      },
+      "inspect_exit": 0,
+      "diagnostics": {
+        "crash_stderr_marker": true,
+        "restart_stderr_tail": "",
+        "inspect_stderr_tail": ""
+      }
+    },
+    {
+      "stage": "AFTER_MODEL_RESULT_WRITE",
+      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "status": "PASS",
+      "crash_observed": true,
+      "initial_worker_exit": {
+        "code": 1,
+        "signal": null,
+        "timed_out": false,
+        "duration_ms": 13725
+      },
+      "restart": {
+        "status": "COMPLETED",
+        "attempts": 2,
+        "error": null,
+        "progress": {
+          "stage": "completed",
+          "percent": 100,
+          "completed_units": 1,
+          "total_units": 1,
+          "message": "Job completed",
+          "updated_at": "2026-09-13T14:30:55.006Z"
+        },
+        "resource_reservation_state": "released",
+        "resource_rejection_reason": null,
+        "report_sealed": true,
+        "report_export_present": true,
+        "worker_exit": {
+          "code": 0,
+          "signal": null,
+          "timed_out": false,
+          "duration_ms": 3057
+        }
+      },
+      "canonical_effects": {
+        "counts": {
+          "MODEL_RESULT": 1,
+          "STRUCTURED_EVIDENCE": 1,
+          "REASONING_RECORD": 1,
+          "REPORT": 1,
+          "JOB_COMPLETION": 1
+        },
+        "duplicate_free": true,
+        "job_completion_count": 1
+      },
+      "physical_execution_observation": {
+        "worker_attempts": 2,
+        "model_execution_ledger_rows": 3,
+        "exact_provider_invocation_count": "NOT_MEASURED",
+        "note": "The durable attempt count proves at-least-once worker execution; the current model ledger is immutable and does not expose a per-provider invocation counter."
+      },
+      "cleanup": {
+        "parent_taskkill_tree_requested": true,
+        "descendants_absent_after_termination": true,
+        "remaining_descendant_pids": [],
+        "temporary_workspace": "visionscan-phase10-crash-7n5wk2",
+        "phi_included": false
+      },
+      "seed": {
+        "status": "OK",
+        "duration_ms": 2827
+      },
+      "inspect_exit": 0,
+      "diagnostics": {
+        "crash_stderr_marker": true,
+        "restart_stderr_tail": "",
+        "inspect_stderr_tail": ""
+      }
+    },
+    {
+      "stage": "BEFORE_EVIDENCE_COMMIT",
+      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "status": "PASS",
+      "crash_observed": true,
+      "initial_worker_exit": {
+        "code": 1,
+        "signal": null,
+        "timed_out": false,
+        "duration_ms": 13351
+      },
+      "restart": {
+        "status": "COMPLETED",
+        "attempts": 2,
+        "error": null,
+        "progress": {
+          "stage": "completed",
+          "percent": 100,
+          "completed_units": 1,
+          "total_units": 1,
+          "message": "Job completed",
+          "updated_at": "2026-09-13T14:31:16.648Z"
+        },
+        "resource_reservation_state": "released",
+        "resource_rejection_reason": null,
+        "report_sealed": true,
+        "report_export_present": true,
+        "worker_exit": {
+          "code": 0,
+          "signal": null,
+          "timed_out": false,
+          "duration_ms": 1454
+        }
+      },
+      "canonical_effects": {
+        "counts": {
+          "MODEL_RESULT": 1,
+          "STRUCTURED_EVIDENCE": 1,
+          "REASONING_RECORD": 1,
+          "REPORT": 1,
+          "JOB_COMPLETION": 1
+        },
+        "duplicate_free": true,
+        "job_completion_count": 1
+      },
+      "physical_execution_observation": {
+        "worker_attempts": 2,
+        "model_execution_ledger_rows": 3,
+        "exact_provider_invocation_count": "NOT_MEASURED",
+        "note": "The durable attempt count proves at-least-once worker execution; the current model ledger is immutable and does not expose a per-provider invocation counter."
+      },
+      "cleanup": {
+        "parent_taskkill_tree_requested": true,
+        "descendants_absent_after_termination": true,
+        "remaining_descendant_pids": [],
+        "temporary_workspace": "visionscan-phase10-crash-VNsp0s",
+        "phi_included": false
+      },
+      "seed": {
+        "status": "OK",
+        "duration_ms": 2711
+      },
+      "inspect_exit": 0,
+      "diagnostics": {
+        "crash_stderr_marker": true,
+        "restart_stderr_tail": "",
+        "inspect_stderr_tail": ""
+      }
+    },
+    {
+      "stage": "AFTER_EVIDENCE_COMMIT",
+      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "status": "PASS",
+      "crash_observed": true,
+      "initial_worker_exit": {
+        "code": 1,
+        "signal": null,
+        "timed_out": false,
+        "duration_ms": 15172
+      },
+      "restart": {
+        "status": "COMPLETED",
+        "attempts": 2,
+        "error": null,
+        "progress": {
+          "stage": "completed",
+          "percent": 100,
+          "completed_units": 1,
+          "total_units": 1,
+          "message": "Job completed",
+          "updated_at": "2026-09-13T14:31:40.027Z"
+        },
+        "resource_reservation_state": "released",
+        "resource_rejection_reason": null,
+        "report_sealed": true,
+        "report_export_present": true,
+        "worker_exit": {
+          "code": 0,
+          "signal": null,
+          "timed_out": false,
+          "duration_ms": 1556
+        }
+      },
+      "canonical_effects": {
+        "counts": {
+          "MODEL_RESULT": 1,
+          "STRUCTURED_EVIDENCE": 1,
+          "REASONING_RECORD": 1,
+          "REPORT": 1,
+          "JOB_COMPLETION": 1
+        },
+        "duplicate_free": true,
+        "job_completion_count": 1
+      },
+      "physical_execution_observation": {
+        "worker_attempts": 2,
+        "model_execution_ledger_rows": 3,
+        "exact_provider_invocation_count": "NOT_MEASURED",
+        "note": "The durable attempt count proves at-least-once worker execution; the current model ledger is immutable and does not expose a per-provider invocation counter."
+      },
+      "cleanup": {
+        "parent_taskkill_tree_requested": true,
+        "descendants_absent_after_termination": true,
+        "remaining_descendant_pids": [],
+        "temporary_workspace": "visionscan-phase10-crash-oiYzmg",
+        "phi_included": false
+      },
+      "seed": {
+        "status": "OK",
+        "duration_ms": 2636
+      },
+      "inspect_exit": 0,
+      "diagnostics": {
+        "crash_stderr_marker": true,
+        "restart_stderr_tail": "",
+        "inspect_stderr_tail": ""
+      }
+    },
+    {
+      "stage": "BEFORE_REPORT_COMMIT",
+      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "status": "PASS",
+      "crash_observed": true,
+      "initial_worker_exit": {
+        "code": 1,
+        "signal": null,
+        "timed_out": false,
+        "duration_ms": 13596
+      },
+      "restart": {
+        "status": "COMPLETED",
+        "attempts": 2,
+        "error": null,
+        "progress": {
+          "stage": "completed",
+          "percent": 100,
+          "completed_units": 1,
+          "total_units": 1,
+          "message": "Job completed",
+          "updated_at": "2026-09-13T14:32:02.242Z"
+        },
+        "resource_reservation_state": "released",
+        "resource_rejection_reason": null,
+        "report_sealed": true,
+        "report_export_present": true,
+        "worker_exit": {
+          "code": 0,
+          "signal": null,
+          "timed_out": false,
+          "duration_ms": 1544
+        }
+      },
+      "canonical_effects": {
+        "counts": {
+          "MODEL_RESULT": 1,
+          "STRUCTURED_EVIDENCE": 1,
+          "REASONING_RECORD": 1,
+          "REPORT": 1,
+          "JOB_COMPLETION": 1
+        },
+        "duplicate_free": true,
+        "job_completion_count": 1
+      },
+      "physical_execution_observation": {
+        "worker_attempts": 2,
+        "model_execution_ledger_rows": 3,
+        "exact_provider_invocation_count": "NOT_MEASURED",
+        "note": "The durable attempt count proves at-least-once worker execution; the current model ledger is immutable and does not expose a per-provider invocation counter."
+      },
+      "cleanup": {
+        "parent_taskkill_tree_requested": true,
+        "descendants_absent_after_termination": true,
+        "remaining_descendant_pids": [],
+        "temporary_workspace": "visionscan-phase10-crash-3x3mOk",
+        "phi_included": false
+      },
+      "seed": {
+        "status": "OK",
+        "duration_ms": 2942
+      },
+      "inspect_exit": 0,
+      "diagnostics": {
+        "crash_stderr_marker": true,
+        "restart_stderr_tail": "",
+        "inspect_stderr_tail": ""
+      }
+    },
+    {
+      "stage": "AFTER_REPORT_COMMIT",
+      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "status": "PASS",
+      "crash_observed": true,
+      "initial_worker_exit": {
+        "code": 1,
+        "signal": null,
+        "timed_out": false,
+        "duration_ms": 13281
+      },
+      "restart": {
+        "status": "COMPLETED",
+        "attempts": 2,
+        "error": null,
+        "progress": {
+          "stage": "completed",
+          "percent": 100,
+          "completed_units": 1,
+          "total_units": 1,
+          "message": "Job completed",
+          "updated_at": "2026-09-13T14:32:23.736Z"
+        },
+        "resource_reservation_state": "released",
+        "resource_rejection_reason": null,
+        "report_sealed": true,
+        "report_export_present": true,
+        "worker_exit": {
+          "code": 0,
+          "signal": null,
+          "timed_out": false,
+          "duration_ms": 1190
+        }
+      },
+      "canonical_effects": {
+        "counts": {
+          "MODEL_RESULT": 1,
+          "STRUCTURED_EVIDENCE": 1,
+          "REASONING_RECORD": 1,
+          "REPORT": 1,
+          "JOB_COMPLETION": 1
+        },
+        "duplicate_free": true,
+        "job_completion_count": 1
+      },
+      "physical_execution_observation": {
+        "worker_attempts": 2,
+        "model_execution_ledger_rows": 3,
+        "exact_provider_invocation_count": "NOT_MEASURED",
+        "note": "The durable attempt count proves at-least-once worker execution; the current model ledger is immutable and does not expose a per-provider invocation counter."
+      },
+      "cleanup": {
+        "parent_taskkill_tree_requested": true,
+        "descendants_absent_after_termination": true,
+        "remaining_descendant_pids": [],
+        "temporary_workspace": "visionscan-phase10-crash-RN6XIq",
+        "phi_included": false
+      },
+      "seed": {
+        "status": "OK",
+        "duration_ms": 2820
+      },
+      "inspect_exit": 0,
+      "diagnostics": {
+        "crash_stderr_marker": true,
+        "restart_stderr_tail": "",
+        "inspect_stderr_tail": ""
+      }
+    },
+    {
+      "stage": "BEFORE_JOB_COMPLETE",
+      "evidence_classification": "REAL_OS_CRASH + REAL_WORKER",
+      "status": "PASS",
+      "crash_observed": true,
+      "initial_worker_exit": {
+        "code": 1,
+        "signal": null,
+        "timed_out": false,
+        "duration_ms": 13075
+      },
+      "restart": {
+        "status": "COMPLETED",
+        "attempts": 2,
+        "error": null,
+        "progress": {
+          "stage": "completed",
+          "percent": 100,
+          "completed_units": 1,
+          "total_units": 1,
+          "message": "Job completed",
+          "updated_at": "2026-09-13T14:32:44.913Z"
+        },
+        "resource_reservation_state": "released",
+        "resource_rejection_reason": null,
+        "report_sealed": true,
+        "report_export_present": true,
+        "worker_exit": {
+          "code": 0,
+          "signal": null,
+          "timed_out": false,
+          "duration_ms": 1424
+        }
+      },
+      "canonical_effects": {
+        "counts": {
+          "MODEL_RESULT": 1,
+          "STRUCTURED_EVIDENCE": 1,
+          "REASONING_RECORD": 1,
+          "REPORT": 1,
+          "JOB_COMPLETION": 1
+        },
+        "duplicate_free": true,
+        "job_completion_count": 1
+      },
+      "physical_execution_observation": {
+        "worker_attempts": 2,
+        "model_execution_ledger_rows": 3,
+        "exact_provider_invocation_count": "NOT_MEASURED",
+        "note": "The durable attempt count proves at-least-once worker execution; the current model ledger is immutable and does not expose a per-provider invocation counter."
+      },
+      "cleanup": {
+        "parent_taskkill_tree_requested": true,
+        "descendants_absent_after_termination": true,
+        "remaining_descendant_pids": [],
+        "temporary_workspace": "visionscan-phase10-crash-PBxnzb",
+        "phi_included": false
+      },
+      "seed": {
+        "status": "OK",
+        "duration_ms": 2676
+      },
+      "inspect_exit": 0,
+      "diagnostics": {
+        "crash_stderr_marker": true,
+        "restart_stderr_tail": "",
+        "inspect_stderr_tail": ""
+      }
+    }
+  ],
+  "limitations": [
+    "The harness proves the selected application publication seams and SQLite restart path on this Windows host; it is not a proof of every OS or launcher failure mode.",
+    "A durable worker-attempt count is available, but the current immutable model ledger does not expose an exact provider invocation counter.",
+    "The test input is a public/synthetic example image and no patient identifiers are persisted in the evidence envelope."
+  ]
+}

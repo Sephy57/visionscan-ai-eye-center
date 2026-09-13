@@ -1,0 +1,40 @@
+{
+  "schema_version": "visionscan-phase10-resident-validation-v1",
+  "observed_at": "2026-09-13T14:33:43.577Z",
+  "status": "PASS_EXPLICIT_RESIDENT_DISABLED",
+  "decision": "RESIDENT_RUNTIME_REJECTED_DISABLED",
+  "production_resident_enabled": false,
+  "active_runtime": {
+    "mode": "short_lived_python_subprocess",
+    "provider_scope": "DR, lesion, and OCT providers are isolated per request/job",
+    "resident_adoption": "disabled"
+  },
+  "resident_corpus": {
+    "requested": 20,
+    "source": "docs/generated/phase7-resident-experiment.json",
+    "historical_finite_probe_status": "MEASURED_RESIDENT_20_CASES",
+    "historical_completed": 20,
+    "note": "The finite resident experiment is retained as historical evidence only; it is not promoted to production resident-worker approval."
+  },
+  "parity": {
+    "status": "NOT_APPLICABLE_WHILE_RESIDENT_DISABLED",
+    "tolerance": null,
+    "short_lived_outputs": "AVAILABLE_SEPARATE_PROVIDER_CONTRACT",
+    "resident_outputs": "NOT_MEASURED"
+  },
+  "repeatability": "NOT_APPLICABLE_WHILE_RESIDENT_DISABLED",
+  "ordering_isolation": "NOT_APPLICABLE_WHILE_RESIDENT_DISABLED",
+  "cancellation": "NOT_APPLICABLE_WHILE_RESIDENT_DISABLED",
+  "crash_recovery": "NOT_APPLICABLE_WHILE_RESIDENT_DISABLED",
+  "memory_soak": "NOT_APPLICABLE_WHILE_RESIDENT_DISABLED",
+  "safety_boundary": "Disabling resident mode leaves the existing short-lived, process-tree-scoped provider path unchanged.",
+  "implementation_sha": "0c65e38366200ecafc1c8195bbf794c7fa55a4d8",
+  "source_artifact_sha256": "c408fdb73ba6878efc55e56ba7604acf720b793f23e7895564c2f8df0f5c5967",
+  "phi_included": false,
+  "external_professional_signoff": false,
+  "limitations": [
+    "No approved resident production service exists in this checkout.",
+    "Parity, cross-job state isolation, resident cancellation, resident crash recovery, and resident memory soak are not measured because the resident path is disabled.",
+    "This decision is an engineering containment decision, not clinical validation or a model-accuracy claim."
+  ]
+}

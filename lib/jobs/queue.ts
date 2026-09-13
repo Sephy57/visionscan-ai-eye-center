@@ -129,6 +129,8 @@ export interface JobListPageOptions {
   cursor?: string;
   status?: JobStatus;
   kind?: JobKind;
+  /** UI/operations retain newest-first by default; workers request FIFO. */
+  direction?: "asc" | "desc";
 }
 
 /** Bounded operations view of durable jobs, ordered newest first. */
@@ -136,7 +138,7 @@ export async function listJobsPage(options: JobListPageOptions = {}): Promise<Db
   const page = await dbPage<AnalysisJob>("jobs", {
     limit: options.limit,
     cursor: options.cursor,
-    direction: "desc",
+    direction: options.direction ?? "desc",
     predicate: options.status || options.kind
       ? (job) => {
         const normalized = normalizeJob(job);
@@ -936,7 +938,21 @@ export async function finalizeJobFailure(jobId: string, attemptId: string, worke
 }
 
 /** Execute one queued job. Exported for the separate local worker process. */
-export async function processJob(jobId: string, requestedWorkerId = workerInstanceId): Promise<void> {
+export interface ProcessJobCallbacks {
+  /** Checked immediately before the transactional claim. */
+  canClaim?: () => boolean | Promise<boolean>;
+  /** Called synchronously after a durable claim and before model work. */
+  onJobClaimed?: (job: AnalysisJob) => void | Promise<void>;
+  /** Called after resource cleanup, regardless of terminal outcome. */
+  onJobFinished?: (jobId: string) => void | Promise<void>;
+}
+
+export async function processJob(
+  jobId: string,
+  requestedWorkerId = workerInstanceId,
+  callbacks: ProcessJobCallbacks = {},
+): Promise<void> {
+  if (callbacks.canClaim && !(await callbacks.canClaim())) return;
   const claimedJob = await claimJob(jobId, requestedWorkerId);
   if (!claimedJob || !claimedJob.active_attempt_id) return;
   const claim = { job: claimedJob, attemptId: claimedJob.active_attempt_id };
@@ -944,6 +960,7 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
   const job = claim.job;
   const attemptId = claim.attemptId;
   const workerId = job.worker_id ?? requestedWorkerId;
+  await callbacks.onJobClaimed?.(job);
   let reservation: ModelJobReservation | null = null;
   let hostResourceLease: ResourceLeaseHandle | null = null;
   let stopHeartbeat: (() => void) | null = null;
@@ -1123,6 +1140,11 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
       const { getHostModelJobResourceGovernor } = await import("../runtime");
       getHostModelJobResourceGovernor().release(reservation);
     }
+    try {
+      await callbacks.onJobFinished?.(jobId);
+    } catch {
+      // Lifecycle telemetry must never replace the durable job outcome.
+    }
   }
 }
 
@@ -1132,7 +1154,13 @@ export async function processJob(jobId: string, requestedWorkerId = workerInstan
  * workers cannot double-own a row. The initial deployment intentionally
  * processes one job per pass to keep local model subprocess memory bounded.
  */
-export async function runWorkerOnce(options: { workerId?: string; maxJobs?: number } = {}): Promise<{
+export async function runWorkerOnce(options: {
+  workerId?: string;
+  maxJobs?: number;
+  canClaim?: () => boolean | Promise<boolean>;
+  onJobClaimed?: (job: AnalysisJob) => void | Promise<void>;
+  onJobFinished?: (jobId: string) => void | Promise<void>;
+} = {}): Promise<{
   polled: number;
   job_ids: string[];
   recovery: JobRecoveryResult;
@@ -1140,10 +1168,21 @@ export async function runWorkerOnce(options: { workerId?: string; maxJobs?: numb
   const workerId = options.workerId?.trim() || workerInstanceId;
   const maxJobs = Math.max(1, Math.min(1, Math.floor(options.maxJobs ?? 1)));
   const recovery = await recoverJobsOnStartup({ workerId, startWorkers: false });
-  const page = await listJobsPage({ limit: 32 });
+  const page = await listJobsPage({ limit: 32, direction: "asc" });
   const candidates = page.items
     .filter((job) => job.status === "queued" || job.status === "retryable")
     .slice(0, maxJobs);
-  for (const job of candidates) await processJob(job.job_id, workerId);
-  return { polled: candidates.length, job_ids: candidates.map((job) => job.job_id), recovery };
+  const claimedIds: string[] = [];
+  for (const job of candidates) {
+    if (options.canClaim && !(await options.canClaim())) break;
+    await processJob(job.job_id, workerId, {
+      canClaim: options.canClaim,
+      onJobClaimed: async (claimed) => {
+        claimedIds.push(claimed.job_id);
+        await options.onJobClaimed?.(claimed);
+      },
+      onJobFinished: options.onJobFinished,
+    });
+  }
+  return { polled: candidates.length, job_ids: claimedIds, recovery };
 }

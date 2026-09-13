@@ -1,0 +1,197 @@
+{
+  "schema_version": "visionscan-phase10-load-fairness-v1",
+  "observed_at": "2026-09-13T14:33:47.046Z",
+  "status": "PARTIAL_REAL_LOAD_PLUS_FIFO_CONTROL_PLANE",
+  "queue_policy": {
+    "worker_order": "created_at ASC, id ASC",
+    "api_default_order": "created_at DESC, id DESC",
+    "worker_concurrency": 1,
+    "page_bound": 32,
+    "fairness_metric": "rank_overtakes across a 100-job synthetic queue",
+    "starvation_definition": "a queued job is starved if a newer job is selected ahead of it while the older job remains runnable"
+  },
+  "fairness": {
+    "evidence_classification": "INTEGRATION",
+    "requested_jobs": 100,
+    "observed_jobs": 100,
+    "rank_overtakes": 0,
+    "starvation_observed": false,
+    "result": "FIFO_CONTROL_PLANE_PASS",
+    "limitation": "This is a deterministic queue-order probe, not a sustained model-service starvation SLO measurement."
+  },
+  "real_provider_load": {
+    "evidence_classification": "REAL_WORKER",
+    "source_artifact": "docs/generated/phase7-real-load.json",
+    "source_status": "PARTIAL_BOUNDED_SINGLE_WORKER_LOAD",
+    "source_observed_at": "2026-09-13T08:18:36.259Z",
+    "points": {
+      "1": {
+        "requested": 1,
+        "queued_jobs": 1,
+        "completed_jobs": 1,
+        "failed_jobs": 0,
+        "timed_out_jobs": 0,
+        "queue_wait_ms": {
+          "count": 1,
+          "p50": 60.141,
+          "p95": 60.141,
+          "max": 60.141
+        },
+        "resource_wait_ms": {
+          "count": 1,
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "service_latency_ms": {
+          "count": 1,
+          "p50": 9390.588,
+          "p95": 9390.588,
+          "max": 9390.588
+        },
+        "total_latency_ms": {
+          "count": 1,
+          "p50": 9478.743,
+          "p95": 9478.743,
+          "max": 9478.743
+        },
+        "throughput_jobs_per_second": 0.1055,
+        "peak_working_set_bytes": 1363296256,
+        "peak_private_bytes": 1697480704,
+        "peak_cpu_seconds": 16.671875,
+        "peak_thread_count": 37,
+        "retries": 0,
+        "deadlines": {
+          "deadline_120000ms_enforced_from_queue_claim": 1
+        }
+      },
+      "5": {
+        "requested": 5,
+        "queued_jobs": 5,
+        "completed_jobs": 5,
+        "failed_jobs": 0,
+        "timed_out_jobs": 0,
+        "queue_wait_ms": {
+          "count": 5,
+          "p50": 17240.32,
+          "p95": 25243.295,
+          "max": 33316.08
+        },
+        "resource_wait_ms": {
+          "count": 5,
+          "p50": 16561.521,
+          "p95": 24565.956,
+          "max": 32640.637
+        },
+        "service_latency_ms": {
+          "count": 5,
+          "p50": 7947.223,
+          "p95": 8481.898,
+          "max": 8648.659
+        },
+        "total_latency_ms": {
+          "count": 5,
+          "p50": 25224.551,
+          "p95": 33295.992,
+          "max": 41286.07
+        },
+        "throughput_jobs_per_second": 0.121,
+        "peak_working_set_bytes": 1440952320,
+        "peak_private_bytes": 1800196096,
+        "peak_cpu_seconds": 16.03125,
+        "peak_thread_count": 37,
+        "retries": 131,
+        "deadlines": {
+          "deadline_120000ms_enforced_from_queue_claim": 5
+        }
+      },
+      "10": {
+        "requested": 10,
+        "queued_jobs": 10,
+        "completed_jobs": 10,
+        "failed_jobs": 0,
+        "timed_out_jobs": 0,
+        "queue_wait_ms": {
+          "count": 10,
+          "p50": 31891.077,
+          "p95": 63945.131,
+          "max": 71958.585
+        },
+        "resource_wait_ms": {
+          "count": 10,
+          "p50": 31305.255,
+          "p95": 63364.275,
+          "max": 71378.912
+        },
+        "service_latency_ms": {
+          "count": 10,
+          "p50": 7901.525,
+          "p95": 8077.94,
+          "max": 8128.284
+        },
+        "total_latency_ms": {
+          "count": 10,
+          "p50": 39714.299,
+          "p95": 71933.831,
+          "max": 79886.523
+        },
+        "throughput_jobs_per_second": 0.1251,
+        "peak_working_set_bytes": 1439404032,
+        "peak_private_bytes": 1799925760,
+        "peak_cpu_seconds": 15.90625,
+        "peak_thread_count": 38,
+        "retries": 591,
+        "deadlines": {
+          "deadline_120000ms_enforced_from_queue_claim": 10
+        }
+      },
+      "25": {
+        "requested": 25,
+        "queued_jobs": 25,
+        "completed_jobs": 15,
+        "failed_jobs": 10,
+        "timed_out_jobs": 0,
+        "queue_wait_ms": {
+          "count": 25,
+          "p50": 16354.999,
+          "p95": 97586.922,
+          "max": 115227.026
+        },
+        "resource_wait_ms": {
+          "count": 25,
+          "p50": 15767.058,
+          "p95": 97011.242,
+          "max": 114653.692
+        },
+        "service_latency_ms": {
+          "count": 15,
+          "p50": 8050.247,
+          "p95": 9133.728,
+          "max": 9403.08
+        },
+        "total_latency_ms": {
+          "count": 25,
+          "p50": 105932.425,
+          "p95": 120370.919,
+          "max": 124663.793
+        },
+        "throughput_jobs_per_second": 0.1203,
+        "peak_working_set_bytes": 1429209088,
+        "peak_private_bytes": 1799340032,
+        "peak_cpu_seconds": 17.5625,
+        "peak_thread_count": 39,
+        "retries": 3109,
+        "deadlines": {
+          "deadline_120000ms_enforced_from_queue_claim": 15,
+          "JOB_DEADLINE_EXCEEDED": 10
+        }
+      }
+    },
+    "capacity_classification": "PARTIAL — 25-job point had 15 completed and 10 JOB_DEADLINE_EXCEEDED under max_active_leases=1"
+  },
+  "phi_included": false,
+  "limitations": [
+    "The control-plane fairness probe uses synthetic job metadata only and does not claim model throughput.",
+    "The real provider curve is preserved as measured Phase 7 evidence; it is not relabelled as a complete Phase 10 pass."
+  ]
+}

@@ -34,7 +34,18 @@ function delay(ms: number): Promise<void> {
 
 do {
   if (!lifecycle.canStartPass()) break;
-  const pass = await runWorkerOnce({ workerId, maxJobs: 1 });
+  const pass = await runWorkerOnce({
+    workerId,
+    maxJobs: 1,
+    canClaim: () => lifecycle.canClaim(),
+    onJobClaimed: (job) => {
+      // The durable claim already won the SQLite race. The lifecycle adopts
+      // that exact id so shutdown telemetry and drain policy describe the
+      // job actually being executed, not merely the candidate that was read.
+      lifecycle.adoptClaimedJob(job.job_id);
+    },
+    onJobFinished: (jobId) => lifecycle.finishJob(jobId),
+  });
   console.log(JSON.stringify({
     event: "worker_pass",
     worker_id: workerId,

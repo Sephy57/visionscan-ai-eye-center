@@ -75,7 +75,10 @@ function isActiveGrant(grant: PatientAccessGrant): boolean {
 }
 
 function allowLegacyUnscoped(): boolean {
-  if (process.env.VISIONSCAN_TEST_ISOLATED === "1") return true;
+  // Test isolation is not a production authorization switch.  A deployment
+  // that accidentally inherits the test marker must still fail closed for
+  // legacy rows with no patient, tenant, or owner scope.
+  if (process.env.NODE_ENV === "test" && process.env.VISIONSCAN_TEST_ISOLATED === "1") return true;
   return process.env.VISIONSCAN_ALLOW_LEGACY_UNSCOPED === "true" && process.env.NODE_ENV !== "production";
 }
 
