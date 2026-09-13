@@ -25,40 +25,11 @@ Phase 8 preserves the published Phase 7 state from `9798d94f9078ba0beeac9780e22b
 
 ## 2 Ending HEAD
 
-The report was generated at `9798d94f9078ba0beeac9780e22b5eb5edbf35e1`. Worktree state at generation was `M .github/workflows/ci.yml
- M app/api/studies/[id]/evidence/route.ts
- M app/api/studies/[id]/specialist-analysis/route.ts
- M app/validation-center/ValidationCenterClient.tsx
- M docs/generated/fk-orphan-report.json
- M docs/generated/release-data-check.json
- M lib/analysis/schema.ts
- M lib/clinical/claimLedger.ts
- M lib/clinical/specialistConsensus.ts
- M lib/evidence/structuredClinicalEvidence.ts
- M lib/models/reasoningEngine.ts
- M lib/reports/generator.ts
- M lib/storage/db.ts
- M lib/studies/service.ts
- M package.json
- M scripts/visual-qa.mjs
-?? app/api/review/[id]/events/
-?? app/api/validation/phase8/
-?? docs/VISIONSCAN_PHASE8_RETINAL_EVIDENCE_AND_RELIABILITY_REPORT.md
-?? docs/generated/phase8-external-lesion-validation.json
-?? docs/generated/phase8-high-grade-miss-registry.json
-?? docs/generated/phase8-lesion-rule-freeze.json
-?? docs/generated/phase8-runtime-closure.json
-?? lib/clinical/reviewEvents.ts
-?? lib/evidence/retinalEvidenceFusion.ts
-?? scripts/generate-phase8-report.mjs
-?? scripts/model-competition/phase8-high-grade-miss-registry.mjs
-?? scripts/model-competition/phase8-runtime-closure.mjs
-?? scripts/phase8-screenshot-qa.mjs
-?? tests/phase8-acceptance.test.ts`; a clean publication and exact-head CI result are not assumed from a local hash.
+The report was generated at `163df789dc16b19e2f98594b8485ffd6bcc79990`. Worktree state at generation was `CLEAN BEFORE REPORT ARTIFACT REFRESH`; a clean publication and exact-head CI result are not assumed from a local hash.
 
 ## 3 Commits
 
-Phase 8 adds `RetinalEvidenceFusionEngine`, the hashed high-grade miss registry, the frozen `LESION_ESCALATION_RULE_PHASE7_V1` record, external-validation attempt ledger, append-only clinician-review events, a Phase 8 Validation Center projection, runtime-closure projection, negation-safe urgency handling, and the 36 requested acceptance contracts plus one regression contract. Generator SHA-256 is `ecf61ddc20292ecedbe7c986557ee4859fe7eb1624c80714b958721247ef103f`; report data projection SHA-256 is `b1077b93d8e38c72d779e233597eac7f771c0a2b1b2a842181ff1109c28242fa`.
+Phase 8 adds `RetinalEvidenceFusionEngine`, the hashed high-grade miss registry, the frozen `LESION_ESCALATION_RULE_PHASE7_V1` record, external-validation attempt ledger, append-only clinician-review events, a Phase 8 Validation Center projection, runtime-closure projection, negation-safe urgency handling, and the 36 requested acceptance contracts plus one regression contract. Generator SHA-256 is `484b890c1010d54857a980235e3520d767562c3055c3b009e53491fb22b1a81a`; report data projection SHA-256 is `b1077b93d8e38c72d779e233597eac7f771c0a2b1b2a842181ff1109c28242fa`.
 
 ## 4 Push
 
@@ -66,7 +37,7 @@ NOT RECORDED — publication state not inferred from a local checkout. A local c
 
 ## 5 Exact-head CI
 
-NOT RECORDED — no exact-head Phase 8 CI run supplied. The historical Phase 7 run remains useful implementation evidence, but it is not exact-head Phase 8 CI unless the supplied commit matches `9798d94f9078ba0beeac9780e22b5eb5edbf35e1`.
+NOT RECORDED — no exact-head Phase 8 CI run supplied. The historical Phase 7 run remains useful implementation evidence, but it is not exact-head Phase 8 CI unless the supplied commit matches `163df789dc16b19e2f98594b8485ffd6bcc79990`.
 
 ## 6 Phase 7 baseline
 
@@ -458,7 +429,7 @@ Release data-check status is `BLOCKED — release:data-check exit 1; 235 active 
 
 ## 103 clean checkout
 
-Clean-checkout status is `NOT CLEAN — Phase 8 changes remain uncommitted in the local worktree`. The current local worktree state is reported in section 2 and is not rewritten as clean.
+Clean-checkout status is `PASS — implementation tree clean before report artifact refresh`. The current local worktree state is reported in section 2 and is not rewritten as clean.
 
 ## 104 Linux CI
 
