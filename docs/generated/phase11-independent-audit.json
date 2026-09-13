@@ -1,0 +1,49 @@
+{
+  "schema_version": "visionscan-phase11-independent-audit-v1",
+  "observed_at": "2026-09-13T19:37:13.6033840Z",
+  "audited_commit": "79d9cae39e136896db3b0c0784b39e067e71708e",
+  "audit_scope": "PHASE11_ENGINEERING",
+  "audit_method": "fresh_process_read_only_source_and_evidence_inspection",
+  "audit_status": "PASS_NO_P0_SOFTWARE_BLOCKER",
+  "findings": [
+    {
+      "id": "ENG-01",
+      "severity": "PASS",
+      "finding": "Worker lifecycle and genuine SIGINT lease-recovery evidence agree: shutdown stops new claims, terminates the owned provider tree, preserves the active job for recovery, and a restart completes it without duplicate effects.",
+      "evidence": [
+        "docs/generated/phase11-live-shutdown-final.json",
+        "lib/jobs/workerLifecycle.ts",
+        "lib/jobs/queue.ts"
+      ]
+    },
+    {
+      "id": "ENG-02",
+      "severity": "PASS",
+      "finding": "The active-provider deadline, resource-wait deadline, and post-terminal crash seam are represented by real Windows harness evidence with bounded cleanup and duplicate-free durable effects.",
+      "evidence": [
+        "docs/generated/phase11-deadline-evidence.json",
+        "docs/generated/phase11-post-terminal-crash.json",
+        "lib/jobs/jobDeadline.ts"
+      ]
+    },
+    {
+      "id": "ENG-03",
+      "severity": "PASS",
+      "finding": "Capacity states, FIFO control-plane behavior, retry interpretation, review-conflict adjudication, additive laterality correction, prompt-safety handling, and truthful deletion retention wording are covered by source checks and committed evidence.",
+      "evidence": [
+        "docs/generated/phase11-capacity-policy.json",
+        "tests/phase11-acceptance.test.ts",
+        "docs/CONSENT_DATA_GOVERNANCE.md",
+        "lib/documents/extraction/promptSafety.ts"
+      ]
+    }
+  ],
+  "remaining_p0": [],
+  "remaining_p1": [],
+  "limitations": [
+    "This is an engineering evidence audit, not clinical validation, regulatory review, or model-performance sign-off.",
+    "The independent audit records code and committed evidence; it does not re-run the long provider harnesses.",
+    "The current implementation-head CI run must be re-observed after this artifact is pushed; report-head CI is a separate post-report verification gate."
+  ],
+  "clinical_safety_boundary_audit": "SEE phase11-clinical-safety-boundary-audit.json"
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": "visionscan-phase11-clinical-safety-boundary-audit-v1",
+  "observed_at": "2026-09-13T19:37:13.6033840Z",
+  "audited_commit": "79d9cae39e136896db3b0c0784b39e067e71708e",
+  "audit_type": "CLINICAL_SAFETY_BOUNDARY",
+  "audit_method": "fresh_process_read_only_source_and_evidence_inspection",
+  "status": "PASS_BOUNDARY_INTACT",
+  "claims_not_made": [
+    "NOT CLINICALLY VALIDATED",
+    "NOT A MEDICAL DEVICE",
+    "NOT FOR AUTONOMOUS DIAGNOSIS",
+    "No clinical diagnostic, normality, prevalence, calibration, or deployment claim is asserted by this audit."
+  ],
+  "checks": {
+    "research_only_model_manifests": true,
+    "clinician_review_and_provenance_retained": true,
+    "no_false_normal_gate_retained": true,
+    "diagnosis_gate_retained": true,
+    "prompt_injection_content_untrusted": true,
+    "unresolved_review_conflict_blocks_finalization": true,
+    "laterality_correction_is_additive_and_reasoned": true,
+    "data_release_block_remains_explicit": true
+  },
+  "evidence": [
+    "docs/generated/phase10-resident-validation.json",
+    "docs/generated/release-data-check.json",
+    "tests/phase11-acceptance.test.ts",
+    "lib/evidence/retinalEvidenceFusion.ts",
+    "lib/documents/extraction/promptSafety.ts",
+    "lib/studies/service.ts"
+  ],
+  "remaining_p0": [],
+  "remaining_p1": [],
+  "limitations": [
+    "Boundary integrity is a software and governance conclusion; it is not evidence of clinical safety, clinical validity, or regulatory compliance."
+  ]
+}
