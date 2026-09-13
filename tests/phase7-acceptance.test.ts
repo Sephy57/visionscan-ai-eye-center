@@ -15,7 +15,7 @@ function read(relativePath: string): string {
 }
 
 function sha256(relativePath: string): string {
-  return crypto.createHash("sha256").update(read(relativePath)).digest("hex");
+  return crypto.createHash("sha256").update(read(relativePath).replaceAll("\r\n", "\n")).digest("hex");
 }
 
 describe("Phase 7 retinal intelligence and runtime acceptance", () => {

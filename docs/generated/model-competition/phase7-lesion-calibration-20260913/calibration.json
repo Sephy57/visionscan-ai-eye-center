@@ -632,7 +632,7 @@
     "source_csv_sha256": "54c2f11bf0647fe3cc64496cd83646ea4a4fdf0aab82b1cd4891ad998f220332",
     "raw_export_sha256": "c040638f5397a86af54599a6c21b3e047d6a68bcbf93a28f186e6feb802a12e5",
     "failure_registry_sha256": "8b5f258b3f56d437739436e1512b3b72052049c06185d91a90eb7f35a2206597",
-    "calibration_script_sha256": "5b34d6e09dfd97ba2fd81ea50cc3a6a0843bdc69250bc58e23b2f15b8993ee44",
+    "calibration_script_sha256": "cacb7b647dc29d14a4549475b4a952b7b270ecba20aee373a668abb9af90fb44",
     "batch_probe_sha256": "784589cb889b0597ae61743974eca97794a068e6ffa81cd81b9532423c3d0cef"
   },
   "phi_included": false,

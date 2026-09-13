@@ -78,6 +78,13 @@ function sha256File(file: string): string {
   return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 }
 
+function sha256TextFile(file: string): string {
+  // Git may materialize text files as CRLF on Windows. Normalize only source
+  // code hashes so the evidence remains reproducible across clean checkouts;
+  // dataset/artifact hashes above remain byte hashes.
+  return sha256Text(fs.readFileSync(file, "utf8").replaceAll("\r\n", "\n"));
+}
+
 function sha256Text(value: string): string {
   return crypto.createHash("sha256").update(value, "utf8").digest("hex");
 }
@@ -395,8 +402,8 @@ async function main(): Promise<void> {
       source_csv_sha256: sha256File(SOURCE_CSV),
       raw_export_sha256: sha256File(RAW_EXPORT),
       failure_registry_sha256: sha256File(FAILURE_REGISTRY),
-      calibration_script_sha256: sha256File(path.join(ROOT, "scripts", "model-competition", "run-phase7-lesion-calibration.ts")),
-      batch_probe_sha256: sha256File(BATCH_SCRIPT),
+      calibration_script_sha256: sha256TextFile(path.join(ROOT, "scripts", "model-competition", "run-phase7-lesion-calibration.ts")),
+      batch_probe_sha256: sha256TextFile(BATCH_SCRIPT),
     },
     phi_included: false,
     limitations: [
