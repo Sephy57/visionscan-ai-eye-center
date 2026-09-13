@@ -1,6 +1,6 @@
 # VisionScan AI Eye Center — Phase 6 DR Candidate and Runtime Validation Report
 
-Generated: 2026-09-13T00:19:07.066Z
+Generated: 2026-09-13T00:26:33.383Z
 
 ## Executive outcome
 
@@ -29,19 +29,19 @@ Phase 6 started from `9eef23e3bd95b2d0fb9c4cd00685b8d71ad9f5b6` on `main`, with 
 
 ## 2 Ending HEAD
 
-The evidence snapshot was generated at `3ebdf48110e1e31cfc575c293302deafdca92447`. Worktree state at generation: modified/uncommitted changes remained while evidence was assembled. A later publication commit must be checked independently.
+The evidence snapshot was generated at `a2a7dc19ce26bdc4569f07b9a3769da8372a2dbf`. Worktree state at generation: modified/uncommitted changes remained while evidence was assembled. A later publication commit must be checked independently.
 
 ## 3 Commits
 
-Phase 6 implementation scope includes durable SQLite leases, host-memory observation, thread-governed providers/probes, RetGuard rights/acquisition artifacts, lesion runner, resource-load experiment, Phase 6 API/UI, acceptance tests, CI wiring, and this report generator. Generator SHA-256: `e10b47274b388b4ab187531099d5793afdb5368c28e285196aede5302fb10339`.
+Phase 6 implementation scope includes durable SQLite leases, host-memory observation, thread-governed providers/probes, RetGuard rights/acquisition artifacts, lesion runner, resource-load experiment, Phase 6 API/UI, acceptance tests, CI wiring, and this report generator. Generator SHA-256: `567d3d64b2ba7ea1b0300b18e7af377c6bfbf527222b51d33bbd50ff2ef5daff`.
 
 ## 4 Push
 
-NOT PUSHED AT REPORT GENERATION; normal push pending A normal push is required before any remote CI result can be called exact-head evidence.
+PUSHED origin/main at a2a7dc1; git ls-remote matched.
 
 ## 5 Exact-head CI
 
-NOT RUN FOR PHASE6 EXACT HEAD; normal push pending. Historical Phase 5 runs are retained as historical evidence only and are not substituted for a Phase 6 exact-head result.
+PASS: exact pushed SHA a2a7dc1; CI run 34727722430 passed Linux, Windows, and browser jobs. Historical Phase 5 runs are retained as historical evidence only and are not substituted for a Phase 6 exact-head result.
 
 ## 6 Phase 5 baseline
 
@@ -377,15 +377,15 @@ The Phase 6 clean-checkout evidence is PASS: D:/visionscan-phase6-clean-final-20
 
 ## 89 Linux CI
 
-Linux CI is configured for npm ci, SQLite init, typecheck, tests, Phase 4/5/6 acceptance, audits, SBOM, filesystem audit, and build. Exact-head result: NOT RUN FOR PHASE6 EXACT HEAD.
+Linux CI is configured for npm ci, SQLite init, typecheck, tests, Phase 4/5/6 acceptance, audits, SBOM, filesystem audit, and build. Exact-head result: PASS (run 34727722430; job verify 103644750078; exact SHA a2a7dc1).
 
 ## 90 Windows CI
 
-Windows CI is configured for native path/reparse tests, typecheck, tests, Phase 4/5/6 acceptance, audits, SBOM, filesystem audit, and build. Exact-head result: NOT RUN FOR PHASE6 EXACT HEAD.
+Windows CI is configured for native path/reparse tests, typecheck, tests, Phase 4/5/6 acceptance, audits, SBOM, filesystem audit, and build. Exact-head result: PASS (run 34727722430; job verify-windows 103644750163; exact SHA a2a7dc1).
 
 ## 91 Browser CI
 
-Browser CI remains a separate synthetic authenticated smoke job with isolated storage and no private models. Exact-head result: NOT RUN FOR PHASE6 EXACT HEAD.
+Browser CI remains a separate synthetic authenticated smoke job with isolated storage and no private models. Exact-head result: PASS (run 34727722430; job verify-browser 103644750180; synthetic/no-model exact SHA a2a7dc1).
 
 ## 92 Independent model audit
 

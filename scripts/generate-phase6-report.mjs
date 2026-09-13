@@ -72,6 +72,7 @@ const worktreeStatus = git(["status", "--short"]);
 const reportSha = sha256("scripts/generate-phase6-report.mjs");
 const ciEvidence = process.env.PHASE6_CI_EVIDENCE ?? "NOT RUN FOR THE ASSESSED HEAD";
 const pushEvidence = process.env.PHASE6_PUSH_EVIDENCE ?? "NOT PUSHED AT REPORT GENERATION";
+const pushRequirement = pushEvidence.startsWith("PUSHED") ? "." : " A normal push is required before any remote CI result can be called exact-head evidence.";
 const acquisitionState = acquisition?.status ?? (acquisitionRecord?.runtime_state === "NOT_BENCHMARK_READY" ? "ACQUIRED_BUT_NOT_BENCHMARK_READY" : "NOT AVAILABLE");
 const acceptanceEvidence = process.env.PHASE6_ACCEPTANCE_STATUS ?? "NOT RECORDED";
 const equippedTestsEvidence = process.env.PHASE6_EQUIPPED_TESTS ?? "NOT RECORDED";
@@ -82,7 +83,7 @@ const sections = [
   ["1 Starting HEAD", "Phase 6 started from " + inline(STARTING_HEAD) + " on " + inline("main") + ", with " + inline("origin/main") + " verified at the same commit. The starting worktree was clean; no reset, clean, force-push, or history rewrite was used."],
   ["2 Ending HEAD", "The evidence snapshot was generated at " + inline(endingHead) + ". Worktree state at generation: " + (worktreeStatus ? "modified/uncommitted changes remained while evidence was assembled." : "clean.") + " A later publication commit must be checked independently."],
   ["3 Commits", "Phase 6 implementation scope includes durable SQLite leases, host-memory observation, thread-governed providers/probes, RetGuard rights/acquisition artifacts, lesion runner, resource-load experiment, Phase 6 API/UI, acceptance tests, CI wiring, and this report generator. Generator SHA-256: " + inline(reportSha) + "."],
-  ["4 Push", pushEvidence + " A normal push is required before any remote CI result can be called exact-head evidence."],
+  ["4 Push", pushEvidence + pushRequirement],
   ["5 Exact-head CI", ciEvidence + ". Historical Phase 5 runs are retained as historical evidence only and are not substituted for a Phase 6 exact-head result."],
   ["6 Phase 5 baseline", "The frozen baseline is DeepDRiD regular-fundus validation: 400 images, 100 patients, baseline " + inline("fundus-dr-grading-effb0") + ", referable threshold ICDR grade >=2. The preserved reference result is 101 referable false negatives and 2 false positives."],
   ["7 Candidate search", "RetGuard was investigated first because its publisher reports relevant DR results. ABSSNET remains a bounded next due-diligence target. RetinaLens and RETFound were not accepted as Phase 6 candidates under the recorded rights/technical screen. Publisher metrics were not treated as local results."],
