@@ -2,10 +2,10 @@
 
 ## Final Engineering Sign-off Report
 
-Report date: 2026-09-14  
-Repository: https://github.com/Sephy57/visionscan-ai-eye-center  
-Branch: main  
-Scope: final Phase 11 evidence close-out only. This is not Phase 12.  
+Report date: 2026-09-14
+Repository: https://github.com/Sephy57/visionscan-ai-eye-center
+Branch: main
+Scope: final Phase 11 evidence close-out only. This is not Phase 12.
 Evidence policy: observed repository behavior, committed artifacts, real subprocess/worker runs, local gates, and exact-head CI. No clinical validation is implied.
 
 The final decision is:
@@ -430,7 +430,7 @@ The clean no-model checkout at the exact evidence SHA also completed npm run bui
 
 ## 38. Clean no-model checkout
 
-Fresh detached checkout: D:\visionscan-final-clean-4f27c81  
+Fresh detached checkout: D:\visionscan-final-clean-4f27c81
 Exact SHA: 4f27c81e163f1058e9d2ef79faed2d9b9f2d9460
 
 The checkout began without .env, database, uploads, reports, scratch data, model weights, or node_modules. npm ci passed, setup passed, and SQLite initialization passed.
@@ -487,39 +487,39 @@ The report commit is intentionally not self-embedded in this file. Its exact REP
 
 ## 43. Linux CI
 
-Exact evidence-head workflow run: 34784732836  
-Head SHA: 4f27c81e163f1058e9d2ef79faed2d9b9f2d9460  
-Job: verify  
-Job ID: 103798016798  
+Exact evidence-head workflow run: 34784732836
+Head SHA: 4f27c81e163f1058e9d2ef79faed2d9b9f2d9460
+Job: verify
+Job ID: 103798016798
 Conclusion: success.
 
 The Linux job passed install, SQLite initialization, typecheck, single-worker tests, migration/backup checks, acceptance gates, model audit, SBOM, inventory, filesystem audit, and production build.
 
 ## 44. Windows CI
 
-Exact evidence-head workflow run: 34784732836  
-Head SHA: 4f27c81e163f1058e9d2ef79faed2d9b9f2d9460  
-Job: verify-windows  
-Job ID: 103798016854  
+Exact evidence-head workflow run: 34784732836
+Head SHA: 4f27c81e163f1058e9d2ef79faed2d9b9f2d9460
+Job: verify-windows
+Job ID: 103798016854
 Conclusion: success.
 
 The Windows job passed install, SQLite initialization, typecheck, native path/reparse tests, single-worker tests, acceptance gates, model audit, SBOM, filesystem audit, and production build.
 
 ## 45. Browser CI
 
-Exact evidence-head workflow run: 34784732836  
-Head SHA: 4f27c81e163f1058e9d2ef79faed2d9b9f2d9460  
-Job: verify-browser  
-Job ID: 103798016626  
+Exact evidence-head workflow run: 34784732836
+Head SHA: 4f27c81e163f1058e9d2ef79faed2d9b9f2d9460
+Job: verify-browser
+Job ID: 103798016626
 Conclusion: success.
 
 The Browser job passed isolated SQLite setup, synthetic account setup, Chromium installation, local-server startup, hosted browser smoke, and cleanup.
 
 ## 46. Independent auditor identity/type
 
-Auditor identity supplied by the subagent: Newton.  
-Auditor type: explorer.  
-Audit type: fresh bounded read-only engineering audit.  
+Auditor identity supplied by the subagent: Newton.
+Auditor type: explorer.
+Audit type: fresh bounded read-only engineering audit.
 Audit target: 4f27c81e163f1058e9d2ef79faed2d9b9f2d9460.
 
 The auditor reported no file changes, no experiments, no commits, and no pushes. It was instructed to inspect actual code and evidence, not to treat repository prose as approval.
@@ -676,8 +676,8 @@ Synthetic/demo output must remain visibly labeled and must not be presented as p
 
 ## 63. Clinical classification
 
-NOT CLINICALLY VALIDATED  
-NOT A MEDICAL DEVICE  
+NOT CLINICALLY VALIDATED
+NOT A MEDICAL DEVICE
 NOT FOR AUTONOMOUS DIAGNOSIS
 
 ## Primary final questions
