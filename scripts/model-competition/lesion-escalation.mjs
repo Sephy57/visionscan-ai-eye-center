@@ -31,7 +31,8 @@ const safetyNet = fs.existsSync(SAFETY_NET) ? readJson(SAFETY_NET) : null;
 const validationRows = raw.filter((row) => row.split === "regular-fundus-validation");
 const baselineFns = failures.false_negatives;
 const baselineFps = failures.false_positives;
-const nonreferableCount = validationRows.filter((row) => row.eye_grade < 2).length;
+const groundTruthNonreferableCount = validationRows.filter((row) => row.eye_grade < 2).length;
+const predictedNonreferableCount = safetyNet?.nonreferable?.input_cases ?? validationRows.filter((row) => row.dr_grade < 2).length;
 const metadataOnlyFnSummaries = validationRows.filter((row) => row.eye_grade >= 2 && row.dr_grade < 2 && typeof row.lesion_summary === "string").length;
 
 const result = {
@@ -42,8 +43,8 @@ const result = {
     baseline_failure_registry: "docs/model-validation/dr-failure-registry.json",
     baseline_false_negative_count: baselineFns.length,
     baseline_false_positive_count: baselineFps.length,
-    nonreferable_validation_case_count: nonreferableCount,
-    baseline_predicted_nonreferable_case_count: safetyNet?.nonreferable?.input_cases ?? validationRows.filter((row) => row.dr_grade < 2).length,
+    nonreferable_validation_case_count: groundTruthNonreferableCount,
+    baseline_predicted_nonreferable_case_count: predictedNonreferableCount,
     lesion_model_id: lesionMetrics.model.model_id,
     lesion_model_artifact_sha256: lesionMetrics.model.artifact.sha256,
   },
@@ -65,7 +66,7 @@ const result = {
     forbidden_label: "DISEASE RECOVERY",
   },
   nonreferable_review_burden: {
-    evaluated_nonreferable_count: nonreferableCount,
+    evaluated_nonreferable_count: predictedNonreferableCount,
     extra_review_escalations: safetyNet?.nonreferable?.signal_cases ?? null,
     escalations_per_100_nonreferable: safetyNet?.nonreferable?.extra_review_escalations_per_100 ?? null,
     measurement_state: safetyNet?.measurement_state ?? "NOT_MEASURED",
@@ -84,6 +85,7 @@ const result = {
     failure_registry_sha256: sha256(FAILURE_REGISTRY),
     raw_export_sha256: sha256(RAW_EXPORT),
     lesion_metrics_sha256: sha256(LESION_METRICS),
+    safety_net_sha256: safetyNet ? sha256(SAFETY_NET) : null,
   },
   phi_included: false,
   limitations: [
@@ -95,4 +97,4 @@ const result = {
 
 fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
 fs.writeFileSync(OUTPUT, `${JSON.stringify(result, null, 2)}\n`, "utf8");
-process.stdout.write(`${JSON.stringify({ status: result.measurement_state, output: path.relative(ROOT, OUTPUT), reviewed_fn_count: baselineFns.length, valid_signal_count: null }, null, 2)}\n`);
+process.stdout.write(`${JSON.stringify({ status: result.measurement_state, output: path.relative(ROOT, OUTPUT), reviewed_fn_count: baselineFns.length, valid_signal_count: result.fn_escalation.valid_lesion_signal_count, evaluated_predicted_nonreferable_count: result.nonreferable_review_burden.evaluated_nonreferable_count }, null, 2)}\n`);
