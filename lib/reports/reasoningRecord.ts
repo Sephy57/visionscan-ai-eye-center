@@ -122,6 +122,7 @@ async function persistReasoningRecordUnlocked(input: {
   evidence: StructuredClinicalEvidence;
   reasoning: StructuredReasoningResult;
   reasoning_record_id?: string;
+  analysis_id?: string;
   job_id?: string;
   attempt_id?: string;
 }): Promise<ImmutableReasoningRecord> {
@@ -149,7 +150,7 @@ async function persistReasoningRecordUnlocked(input: {
     reasoning_record_id: recordId,
     report_id: input.report_id,
     study_id: studyId,
-    analysis_id: `anl_${studyId}`,
+    analysis_id: input.analysis_id ?? `anl_${studyId}`,
     created_at: new Date().toISOString(),
     record_schema_version: REASONING_RECORD_SCHEMA_VERSION,
     source_analysis_sha256: sourceAnalysisSha256(input.analysis),
@@ -216,6 +217,7 @@ export function persistReasoningRecord(input: {
   evidence: StructuredClinicalEvidence;
   reasoning: StructuredReasoningResult;
   reasoning_record_id?: string;
+  analysis_id?: string;
   job_id?: string;
   attempt_id?: string;
 }): Promise<ImmutableReasoningRecord> {

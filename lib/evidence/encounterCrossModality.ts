@@ -10,6 +10,7 @@
 import { dbGet } from "../storage/db";
 import type { StudyRecord, AnalysisRecord } from "../studies/service";
 import type { PatientEncounter } from "../patients/encounter";
+import { currentAnalysisId } from "../studies/analysisIdentity";
 import {
   compareFundusOctPair,
   type CrossModalityResult,
@@ -57,7 +58,7 @@ export async function assessEncounterCrossModality(
       continue;
     }
     studies.push(study);
-    const analysis = await dbGet<AnalysisRecord>("analyses", `anl_${studyId}`);
+    const analysis = await dbGet<AnalysisRecord>("analyses", currentAnalysisId(study));
     if (analysis) analyses.set(studyId, analysis);
   }
   const fundus = studies.filter((s) => canonicalModalityLocal(s.modality) === "FUNDUS");

@@ -250,12 +250,18 @@ export function assessConditions(items: EvidenceItem[], defs: EvidenceConditionD
  * defense-in-depth against cross-study contamination (S5.17), not the only
  * safeguard.
  */
-export async function buildEvidenceWorkspace(studyId: string): Promise<EvidenceWorkspace | { study_id: string; not_found: true }> {
+export async function buildEvidenceWorkspace(
+  studyId: string,
+  options: { analysisId?: string } = {},
+): Promise<EvidenceWorkspace | { study_id: string; not_found: true }> {
   const study = await dbGet<StudyRecord>("studies", studyId);
   if (!study) return { study_id: studyId, not_found: true };
 
-  const analysisRecord = await dbGet<AnalysisRecord>("analyses", `anl_${studyId}`);
-  const reportRecord = await dbGet<ClinicalReport>("reports", `rep_${studyId}`);
+  const analysisRecord = await dbGet<AnalysisRecord>(
+    "analyses",
+    options.analysisId ?? study.latest_analysis_id ?? `anl_${studyId}`,
+  );
+  const reportRecord = await dbGet<ClinicalReport>("reports", study.latest_report_id ?? `rep_${studyId}`);
   const testResults = (await listTestResultsForStudy(studyId)).filter((r) => r.study_id === studyId);
   const symptoms = study.symptoms ?? [];
   const findings = analysisRecord?.result.findings ?? [];
@@ -286,7 +292,7 @@ export async function buildEvidenceWorkspace(studyId: string): Promise<EvidenceW
     }
   }
   const testItems = evidenceFromTestResults(testResults);
-  const findingItems = evidenceFromFindings(studyId, study.eye, findings);
+  const findingItems = evidenceFromFindings(studyId, study.eye, findings, analysisRecord?.analysis_id ?? `anl_${studyId}`);
 
   // Encounter facts are linked explicitly to a study. They are not inferred
   // merely because two records happen to share a patient_ref, which keeps a

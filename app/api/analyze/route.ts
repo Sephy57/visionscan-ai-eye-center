@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const { analysis, report } = await analyzeStudy(study_id);
     return NextResponse.json({
       study_id,
-      analysis_id: `anl_${study_id}`,
+      analysis_id: report.analysis_id,
       report_id: report.report_id,
       overall_result: report.overall_result,
       triage_priority: report.triage_priority,

@@ -30,6 +30,7 @@ import { buildClinicianReviewEvent } from "../clinical/reviewEvents";
 import { maybeInjectPhase9Fault } from "../jobs/phase9FaultInjection";
 import { persistOnce, recordJobEffect } from "../jobs/effects";
 import { persistStructuredEvidence } from "../evidence/persistence";
+import { canonicalAnalysisId, currentAnalysisId, versionedAnalysisId } from "./analysisIdentity";
 
 export interface StudyRecord {
   study_id: string;
@@ -55,6 +56,8 @@ export interface StudyRecord {
   asset_routing?: import("../assets/assetRouter").AssetRoutingResult;
   /** Mutable pointer to the newest immutable report version for this study. */
   latest_report_id?: string;
+  /** Mutable pointer to the newest immutable analysis version for this study. */
+  latest_analysis_id?: string;
 }
 
 export interface AnalysisRecord {
@@ -181,6 +184,7 @@ export async function analyzeStudy(
   const record = await dbGet<StudyRecord>("studies", studyId);
   if (!record) throw new Error("Study not found");
   const canonicalReportId = `rep_${studyId}`;
+  const canonicalAnalysisIdValue = canonicalAnalysisId(studyId);
   const existingReportId = record.latest_report_id ?? canonicalReportId;
   const existingReport = await dbGet<ClinicalReport>("reports", existingReportId);
   if (existingReport?.review.status === "clinician_finalized") {
@@ -196,7 +200,7 @@ export async function analyzeStudy(
   if (/^[a-f0-9]{64}$/i.test(record.original_sha256) && assetHash(bytes) !== record.original_sha256) {
     throw new Error("Original scan integrity check failed; SOURCE_PERMANENTLY_UNAVAILABLE");
   }
-  const existingAnalysis = await dbGet<AnalysisRecord>("analyses", `anl_${studyId}`);
+  const existingAnalysis = await dbGet<AnalysisRecord>("analyses", currentAnalysisId(record));
   // A sealed analysis/report pair is reusable only when the complete immutable
   // input envelope is unchanged. Linked documents are added asynchronously by
   // the extraction worker, so comparing the study-image hash alone would
@@ -224,8 +228,20 @@ export async function analyzeStudy(
   const existingSymptoms = existingAnalysis?.result.patient_context?.symptoms ?? [];
   const symptomsMatch = sha256Canonical(currentSymptoms) === sha256Canonical(existingSymptoms);
   const inputEnvelopeMatch = documentInputsMatch && symptomsMatch;
+  const inputEnvelopeSha256 = sha256Canonical({
+    study_id: studyId,
+    original_sha256: record.original_sha256,
+    document_inputs: currentDocumentInputs,
+    symptoms: currentSymptoms,
+  });
+  // A changed symptom/document envelope is a new immutable analysis version;
+  // at-least-once retries of the same envelope keep the same id and therefore
+  // reuse the committed result instead of overwriting history.
+  const analysisId = existingAnalysis && !inputEnvelopeMatch
+    ? versionedAnalysisId(studyId, inputEnvelopeSha256)
+    : existingAnalysis?.analysis_id ?? canonicalAnalysisIdValue;
   const reportId = existingReport?.version_freeze && !inputEnvelopeMatch
-    ? `${canonicalReportId}_v${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
+    ? `${canonicalReportId}_v${inputEnvelopeSha256.slice(0, 24)}`
     : existingReportId;
   const supersedesReportId = reportId === existingReportId ? undefined : existingReport?.report_id;
   if (existingReport?.version_freeze && existingReport.reasoning_snapshot && existingAnalysis?.result &&
@@ -250,7 +266,11 @@ export async function analyzeStudy(
       effect_type: "REASONING_RECORD",
       idempotency_key: existingReport.reasoning_snapshot.reasoning_record_id,
       canonical_id: existingReport.reasoning_snapshot.reasoning_record_id,
-      payload: { study_id: studyId, payload_sha256: existingReport.reasoning_snapshot.payload_sha256 },
+      payload: {
+        study_id: studyId,
+        source_analysis_sha256: existingReport.reasoning_snapshot.source_analysis_sha256,
+        payload_sha256: existingReport.reasoning_snapshot.payload_sha256,
+      },
       study_id: studyId,
       job_id: control?.job_id,
       attempt_id: control?.attempt_id,
@@ -355,7 +375,7 @@ export async function analyzeStudy(
   await jobCheckpoint(control, { stage: "persisting_analysis", percent: 78, message: "Persisting validated analysis" });
 
   const proposedAnalysisRecord: AnalysisRecord = {
-    analysis_id: `anl_${studyId}`,
+    analysis_id: analysisId,
     study_id: studyId,
     patient_id: record.patient_id ?? null,
     tenant_id: record.tenant_id ?? null,
@@ -427,7 +447,7 @@ export async function analyzeStudy(
   });
 
   await control?.onProgress?.({ stage: "generating_report", percent: 86, message: "Persisting specialist and condition reasoning" });
-  const structuredEvidence = await buildStructuredClinicalEvidence(studyId, { includeSpecialists: true });
+  const structuredEvidence = await buildStructuredClinicalEvidence(studyId, { includeSpecialists: true, analysisId: analysisRecord.analysis_id });
   if ("not_found" in structuredEvidence) throw new Error("Study disappeared before reasoning persistence");
   maybeInjectPhase9Fault("BEFORE_EVIDENCE_COMMIT");
   await jobCommitCheckpoint(control);
@@ -446,24 +466,16 @@ export async function analyzeStudy(
     analysis,
     evidence: structuredEvidence,
     reasoning,
+    analysis_id: analysisRecord.analysis_id,
     job_id: control?.job_id,
     attempt_id: control?.attempt_id,
-  });
-  await recordJobEffect({
-    effect_type: "REASONING_RECORD",
-    idempotency_key: reasoningSnapshot.reasoning_record_id,
-    canonical_id: reasoningSnapshot.reasoning_record_id,
-    payload: { study_id: studyId, payload_sha256: reasoningSnapshot.payload_sha256 },
-    study_id: studyId,
-    job_id: control?.job_id,
-    attempt_id: control?.attempt_id,
-    note: "Reasoning snapshot is sealed and reused on retry.",
   });
   await control?.onProgress?.({ stage: "generating_report", percent: 92, message: "Generating version-frozen report" });
   await jobCommitCheckpoint(control);
   const report = await generateReport(analysis, undefined, reasoningSnapshot, {
     report_id: reportId,
     supersedes_report_id: supersedesReportId,
+    analysis_id: analysisRecord.analysis_id,
   });
   await recordJobEffect({
     effect_type: "REPORT",
@@ -478,6 +490,7 @@ export async function analyzeStudy(
 
   await jobCommitCheckpoint(control);
   record.status = analysis.quality.acceptable ? "analyzed" : "rejected";
+  record.latest_analysis_id = analysisRecord.analysis_id;
   record.latest_report_id = report.report_id;
   await dbPut("studies", studyId, record);
   await audit({
@@ -499,7 +512,9 @@ export async function getStudyBundle(studyId: string): Promise<{
   report: ClinicalReport | null;
 }> {
   const study = await dbGet<StudyRecord>("studies", studyId);
-  const analysisRecord = await dbGet<AnalysisRecord>("analyses", `anl_${studyId}`);
+  const analysisRecord = study
+    ? await dbGet<AnalysisRecord>("analyses", currentAnalysisId(study))
+    : null;
   const reportId = study?.latest_report_id ?? `rep_${studyId}`;
   const report = await dbGet<ClinicalReport>("reports", reportId);
   if (analysisRecord?.result) {
@@ -585,7 +600,7 @@ export async function listStudiesWithStatus(): Promise<DashboardStudyRow[]> {
     // it for both analyzed and rejected studies so an unsupported/corrupt
     // asset is not presented as a generic quality failure.
     const analysisRecord = s.status === "analyzed" || s.status === "rejected"
-      ? await dbGet<AnalysisRecord>("analyses", `anl_${s.study_id}`)
+      ? await dbGet<AnalysisRecord>("analyses", currentAnalysisId(s))
       : null;
     if (s.status === "rejected") {
       const ledger = analysisRecord?.result.model_execution_ledger ?? [];
@@ -641,7 +656,7 @@ export async function listStudiesWithStatusPage(
     let dashboard_status: DashboardStatus = "UPLOADED";
     let triage_priority: string | undefined;
     const analysisRecord = s.status === "analyzed" || s.status === "rejected"
-      ? await dbGet<AnalysisRecord>("analyses", `anl_${s.study_id}`)
+      ? await dbGet<AnalysisRecord>("analyses", currentAnalysisId(s))
       : null;
     if (s.status === "rejected") {
       const ledger = analysisRecord?.result.model_execution_ledger ?? [];
@@ -683,6 +698,8 @@ export async function deleteStudy(studyId: string): Promise<boolean> {
   const documentIds = docs.map((doc) => doc.document_id);
   const testResults = await dbAll<{ result_id: string; document_id: string }>("test_results");
   const resultIds = testResults.filter((result) => documentIds.includes(result.document_id)).map((result) => result.result_id);
+  const studyAnalyses = (await dbAll<AnalysisRecord>("analyses")).filter((analysis) => analysis.study_id === studyId);
+  const analysisIds = studyAnalyses.map((analysis) => analysis.analysis_id);
   const studyReports = (await dbAll<ClinicalReport>("reports")).filter((report) => report.study_id === studyId);
   const reportIds = studyReports.map((report) => report.report_id);
   const preserveFinalizedReport = studyReports.some((report) => report.review.status === "clinician_finalized");
@@ -690,7 +707,7 @@ export async function deleteStudy(studyId: string): Promise<boolean> {
     operation: "study_delete",
     resources: [
       { kind: "study", id: studyId },
-      { kind: "analysis", id: `anl_${studyId}` },
+      ...analysisIds.map((id) => ({ kind: "analysis", id })),
       ...reportIds.map((id) => ({ kind: "report", id })),
       ...documentIds.map((id) => ({ kind: "document", id })),
     ],
@@ -707,8 +724,10 @@ export async function deleteStudy(studyId: string): Promise<boolean> {
       // reports and clinician amendments are never destroyed; non-finalized
       // reports/analyses remain available to audit and replay as DELETED rows.
       tx.put("studies", studyId, { ...record, lifecycle: "DELETED" });
-      const analysis = tx.get<AnalysisRecord>("analyses", `anl_${studyId}`);
-      if (analysis) tx.put("analyses", `anl_${studyId}`, { ...analysis, lifecycle: "DELETED" });
+      for (const analysisId of analysisIds) {
+        const analysis = tx.get<AnalysisRecord>("analyses", analysisId);
+        if (analysis) tx.put("analyses", analysisId, { ...analysis, lifecycle: "DELETED" });
+      }
       const report = tx.get<ClinicalReport>("reports", `rep_${studyId}`);
       if (report) tx.put("reports", `rep_${studyId}`, { ...report, lifecycle: "DELETED" });
       for (const reportId of reportIds) {
@@ -806,8 +825,9 @@ function sanitizeAssessment(input: ReviewInput["assessment"]): NonNullable<Clini
 }
 
 export async function submitReview(studyId: string, input: ReviewInput): Promise<ClinicalReport | null> {
-  const report = await dbGet<ClinicalReport>("reports", `rep_${studyId}`);
-  const analysis = await dbGet<AnalysisRecord>("analyses", `anl_${studyId}`);
+  const study = await dbGet<StudyRecord>("studies", studyId);
+  const report = await dbGet<ClinicalReport>("reports", study?.latest_report_id ?? `rep_${studyId}`);
+  const analysis = study ? await dbGet<AnalysisRecord>("analyses", currentAnalysisId(study)) : null;
   if (!report || !analysis) throw new Error("Analyzed study not found");
   if (report.review.status === "clinician_finalized") {
     throw new Error("Finalized report is immutable; create a new study/version for another review.");
@@ -1051,8 +1071,14 @@ export interface CompareOutcome {
  * comparison requires validated measurements.
  */
 export async function compareStudies(previousStudyId: string, currentStudyId: string): Promise<CompareOutcome> {
-  const prev = await dbGet<AnalysisRecord>("analyses", `anl_${previousStudyId}`);
-  const cur = await dbGet<AnalysisRecord>("analyses", `anl_${currentStudyId}`);
+  const previousStudy = await dbGet<StudyRecord>("studies", previousStudyId);
+  const currentStudy = await dbGet<StudyRecord>("studies", currentStudyId);
+  const prev = previousStudy
+    ? await dbGet<AnalysisRecord>("analyses", currentAnalysisId(previousStudy))
+    : null;
+  const cur = currentStudy
+    ? await dbGet<AnalysisRecord>("analyses", currentAnalysisId(currentStudy))
+    : null;
   if (!prev || !cur) throw new Error("Both studies must be analyzed before comparison");
 
   const countByType = (r: AnalysisRecord) => {

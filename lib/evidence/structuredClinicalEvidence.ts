@@ -60,6 +60,9 @@ export interface StructuredClinicalEvidence {
 
 export interface StructuredEvidenceOptions {
   encounter?: PatientEncounter | null;
+  /** Resolve the analysis version being assembled instead of the study's
+   * latest pointer. This is used while publishing a new immutable version. */
+  analysisId?: string;
   /** Skip specialist orchestration (e.g. for a pure history/symptom-only synthesis, or to avoid a real inference call in a fast test). */
   includeSpecialists?: boolean;
   /** Opt into the exact nine Phase 2 specialty lanes; legacy callers retain four packages by default. */
@@ -104,7 +107,7 @@ export async function buildStructuredClinicalEvidence(
   const study = await dbGet<StudyRecord>("studies", studyId);
   if (!study) return { study_id: studyId, not_found: true };
 
-  const workspace = await buildEvidenceWorkspace(studyId);
+  const workspace = await buildEvidenceWorkspace(studyId, { analysisId: options.analysisId });
   if ("not_found" in workspace) return { study_id: studyId, not_found: true };
 
   let evidence: EvidenceItem[] = [...workspace.evidence];
@@ -134,7 +137,10 @@ export async function buildStructuredClinicalEvidence(
   attachConflictIds(evidence, conflicts);
   const possibleConditions = assessConditions(evidence);
   const retinalEvidenceFusion = fuseRetinalEvidence(evidence, conflicts);
-  const analysisRecord = await dbGet<{ result?: import("../analysis/schema").AnalysisResult }>("analyses", `anl_${studyId}`);
+  const analysisRecord = await dbGet<{ result?: import("../analysis/schema").AnalysisResult }>(
+    "analyses",
+    options.analysisId ?? study.latest_analysis_id ?? `anl_${studyId}`,
+  );
   const specialistPackages = buildSpecialistEvidencePackages({
     analysis: analysisRecord?.result ?? null,
     evidence,

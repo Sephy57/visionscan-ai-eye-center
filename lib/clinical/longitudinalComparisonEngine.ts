@@ -23,6 +23,7 @@ import { compareFindings, type FindingComparisonResult, type VisitFindingContext
 import { compareSymptoms, type SymptomTrend } from "../evidence/symptomTrend";
 import { redFlagSymptoms } from "./symptoms";
 import type { EvidenceItem } from "../evidence/types";
+import { currentAnalysisId } from "../studies/analysisIdentity";
 
 export const LONGITUDINAL_ENGINE_VERSION = "1.0.0";
 
@@ -74,9 +75,9 @@ export async function compareVisits(priorStudyId: string, currentStudyId: string
 
   const priorStudy = await dbGet<StudyRecord>("studies", priorStudyId);
   const currentStudy = await dbGet<StudyRecord>("studies", currentStudyId);
-  const priorAnalysis = await dbGet<AnalysisRecord>("analyses", `anl_${priorStudyId}`);
-  const currentAnalysis = await dbGet<AnalysisRecord>("analyses", `anl_${currentStudyId}`);
   if (!priorStudy || !currentStudy) throw new Error("compareVisits: study record missing.");
+  const priorAnalysis = await dbGet<AnalysisRecord>("analyses", currentAnalysisId(priorStudy));
+  const currentAnalysis = await dbGet<AnalysisRecord>("analyses", currentAnalysisId(currentStudy));
 
   // Direct library callers do not pass through the HTTP scope guard, so the
   // comparison engine repeats the same patient and tenant isolation checks

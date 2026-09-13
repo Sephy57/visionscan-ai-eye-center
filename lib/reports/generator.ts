@@ -355,6 +355,7 @@ export async function generateReport(
   reasoningSnapshot?: ImmutableReasoningRecord,
   options: {
     report_id?: string;
+    analysis_id?: string;
     supersedes_report_id?: string;
     source_legacy_report_id?: string;
     replay_reason?: string;
@@ -396,7 +397,7 @@ export async function generateReport(
   const report: ClinicalReport = {
     report_id: reportId,
     study_id: analysis.study.study_id,
-    analysis_id: `anl_${analysis.study.study_id}`,
+    analysis_id: options.analysis_id ?? `anl_${analysis.study.study_id}`,
     generated_at: new Date().toISOString(),
     report_version: REPORT_VERSION,
     validation_banner: VALIDATION_STATUS_BANNER,

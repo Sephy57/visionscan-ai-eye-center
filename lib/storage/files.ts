@@ -131,6 +131,19 @@ export async function deleteStudyFiles(studyId: string, options: { preserveRepor
     for (const name of names) {
       await fs.rm(safeJoin(dir, name), { force: true });
     }
+    const versionPrefix = dir === PROCESSED_ROOT
+      ? `anl_${studyId}_v`
+      : dir === REPORT_ROOT && !options.preserveReportExport
+        ? `rep_${studyId}_v`
+        : null;
+    if (versionPrefix) {
+      const entries = await fs.readdir(dir).catch(() => [] as string[]);
+      for (const entry of entries) {
+        if (entry.startsWith(versionPrefix) && entry.endsWith(".json")) {
+          await fs.rm(safeJoin(dir, entry), { force: true });
+        }
+      }
+    }
   }
 }
 

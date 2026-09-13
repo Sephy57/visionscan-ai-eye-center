@@ -3,11 +3,12 @@ import { requireRole } from "@/lib/auth/rbac";
 import { requireStudyScope } from "@/lib/auth/scope";
 import { buildStructuredClinicalEvidence } from "@/lib/evidence/structuredClinicalEvidence";
 import { DeterministicReasoningEngine } from "@/lib/models/reasoningEngine";
-import type { AnalysisResult } from "@/lib/analysis/schema";
 import { dbGet } from "@/lib/storage/db";
 import { getReasoningRecordForAnalysis, persistReasoningRecord } from "@/lib/reports/reasoningRecord";
 import type { ClinicalReport } from "@/lib/reports/generator";
 import { checkProcessingConsent, consentRequiredPayload, PROCESSING_CONSENT_PURPOSES } from "@/lib/consent/policy";
+import { currentAnalysisId } from "@/lib/studies/analysisIdentity";
+import type { StudyRecord, AnalysisRecord } from "@/lib/studies/service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,11 +32,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const consent = await checkProcessingConsent(params.id, PROCESSING_CONSENT_PURPOSES.clinicalResearchAnalysis);
   if (!consent.ok) return NextResponse.json(consentRequiredPayload(consent), { status: 403 });
 
-  const analysisRecord = await dbGet<{ result: AnalysisResult }>("analyses", `anl_${params.id}`);
+  const study = await dbGet<StudyRecord>("studies", params.id);
+  const analysisRecord = study
+    ? await dbGet<AnalysisRecord>("analyses", currentAnalysisId(study))
+    : null;
+  const reportId = study?.latest_report_id ?? `rep_${params.id}`;
   if (analysisRecord?.result) {
     const persisted = await getReasoningRecordForAnalysis(params.id, analysisRecord.result);
     if (persisted) {
-      const report = await dbGet<ClinicalReport>("reports", `rep_${params.id}`);
+      const report = await dbGet<ClinicalReport>("reports", reportId);
       return NextResponse.json({
         study_id: params.id,
         reasoning_record_id: persisted.reasoning_record_id,
@@ -57,10 +62,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const reasoning = new DeterministicReasoningEngine().analyze(evidence);
   const persisted = analysisRecord?.result
     ? await persistReasoningRecord({
-        report_id: `rep_${params.id}`,
+        report_id: reportId,
         analysis: analysisRecord.result,
         evidence,
         reasoning,
+        analysis_id: analysisRecord.analysis_id,
       })
     : null;
   if (persisted) {

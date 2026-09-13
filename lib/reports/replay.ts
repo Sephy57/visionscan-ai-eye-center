@@ -8,6 +8,7 @@ import { generateReport, type ClinicalReport } from "./generator";
 import { replayReasoningRecordId, persistReasoningRecord } from "./reasoningRecord";
 import { sha256Canonical } from "./integrity";
 import type { AnalysisRecord, StudyRecord } from "../studies/service";
+import { currentAnalysisId } from "../studies/analysisIdentity";
 
 export const LEGACY_REPLAY_NOT_POSSIBLE = "LEGACY_REPLAY_NOT_POSSIBLE" as const;
 
@@ -44,7 +45,9 @@ export async function replayLegacyReport(reportId: string, replayedBy: string, r
   if (!studyId) throw new LegacyReplayError("source report has no study id");
 
   const study = await dbGet<StudyRecord>("studies", studyId);
-  const analysisRecord = await dbGet<AnalysisRecord>("analyses", `anl_${studyId}`);
+  const analysisRecord = study
+    ? await dbGet<AnalysisRecord>("analyses", currentAnalysisId(study))
+    : null;
   if (!study || !analysisRecord?.result) throw new LegacyReplayError("immutable source study or analysis is missing");
   const analysis = analysisRecord.result;
   const analysisHash = sha256Canonical(analysis);
@@ -70,6 +73,7 @@ export async function replayLegacyReport(reportId: string, replayedBy: string, r
     report_id: newReportId,
     reasoning_record_id: replayReasoningRecordId(sourceReasoningId, newReportId.slice(-16)),
     analysis,
+    analysis_id: analysisRecord.analysis_id,
     evidence,
     reasoning,
   });
@@ -80,7 +84,7 @@ export async function replayLegacyReport(reportId: string, replayedBy: string, r
     replay_reason: reason.slice(0, 300),
     replayed_by: replayedBy.slice(0, 120),
     replayed_at: new Date().toISOString(),
+    analysis_id: analysisRecord.analysis_id,
   });
   return { original_report_id: reportId, new_report_id: report.report_id, reasoning_record_id: reasoningSnapshot.reasoning_record_id, source_analysis_sha256: analysisHash, report };
 }
-

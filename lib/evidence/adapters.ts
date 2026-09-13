@@ -383,7 +383,12 @@ export function evidenceFromClinicianObservations(
  * finding is UNVERIFIED here regardless of its numeric confidence - a
  * confidence score is not clinical calibration (S5.9).
  */
-export function evidenceFromFindings(studyId: string, studyEye: string, findings: Finding[]): EvidenceItem[] {
+export function evidenceFromFindings(
+  studyId: string,
+  studyEye: string,
+  findings: Finding[],
+  analysisId = `anl_${studyId}`,
+): EvidenceItem[] {
   return findings.map((f) => ({
     id: newId("ev"),
     study_id: studyId,
@@ -403,7 +408,7 @@ export function evidenceFromFindings(studyId: string, studyEye: string, findings
     confidence: f.confidence,
     provenance: {
       study_id: studyId,
-      analysis_id: `anl_${studyId}`,
+      analysis_id: analysisId,
       finding_id: f.id,
       source_asset_id: f.source_asset_id,
       page: f.source_page,
