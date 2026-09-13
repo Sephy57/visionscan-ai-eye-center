@@ -1,6 +1,6 @@
 {
   "schema_version": "visionscan-phase10-resident-validation-v1",
-  "observed_at": "2026-09-13T14:33:43.577Z",
+  "observed_at": "2026-09-13T16:17:59.114Z",
   "status": "PASS_EXPLICIT_RESIDENT_DISABLED",
   "decision": "RESIDENT_RUNTIME_REJECTED_DISABLED",
   "production_resident_enabled": false,
@@ -28,7 +28,7 @@
   "crash_recovery": "NOT_APPLICABLE_WHILE_RESIDENT_DISABLED",
   "memory_soak": "NOT_APPLICABLE_WHILE_RESIDENT_DISABLED",
   "safety_boundary": "Disabling resident mode leaves the existing short-lived, process-tree-scoped provider path unchanged.",
-  "implementation_sha": "0c65e38366200ecafc1c8195bbf794c7fa55a4d8",
+  "implementation_sha": "132fb00ad40c13870dd1d25fe6b862770c418243",
   "source_artifact_sha256": "c408fdb73ba6878efc55e56ba7604acf720b793f23e7895564c2f8df0f5c5967",
   "phi_included": false,
   "external_professional_signoff": false,

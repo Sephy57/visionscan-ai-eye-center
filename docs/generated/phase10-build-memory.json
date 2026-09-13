@@ -1,11 +1,12 @@
 {
   "schema_version": "visionscan-phase10-build-memory-v1",
-  "observed_at": "2026-09-13T14:57:06.263Z",
+  "observed_at": "2026-09-13T16:06:32.083Z",
   "platform": "win32",
   "node_version": "v20.20.2",
-  "implementation_head_at_capture": "0c65e38366200ecafc1c8195bbf794c7fa55a4d8",
+  "implementation_head_at_capture": "cdd8effcfb614d4279ba6ab12023011f7e80d164",
   "working_tree_dirty_at_capture": true,
   "build_command": "npm run build",
+  "configured_heap_limit_mb": 10240,
   "next_config": {
     "webpackMemoryOptimizations": true,
     "serverSourceMaps": false,
@@ -34,16 +35,16 @@
     "status": "PASS",
     "exit_code": 0,
     "signal": null,
-    "duration_ms": 713000,
+    "duration_ms": 619437,
     "peak": {
       "process_count": 16,
-      "working_set_bytes": 8340127744,
-      "private_bytes": 8658505728,
-      "cpu_seconds": 545.578125,
+      "working_set_bytes": 8789901312,
+      "private_bytes": 9397448704,
+      "cpu_seconds": 399.5,
       "thread_count": null
     },
     "output_tail": {
-      "stdout": "\n> eye-ai-platform@0.1.0 build\n> node --max-old-space-size=8192 node_modules/next/dist/bin/next build --webpack\n\n▲ Next.js 16.3.4 (webpack)\n- Environments: .env\n✓ Running next.config.mjs took 101ms\n- Experiments (use with caution):\n  ⨯ serverSourceMaps\n  ✓ webpackMemoryOptimizations\n\n  Creating an optimized production build ...\n✓ Compiled successfully in 10.0min\n  Running TypeScript ...\n  Finished TypeScript in 22.7s ...\n  Collecting page data using 11 workers ...\n  Generating static pages using 11 workers (0/22) ...\n  Generating static pages using 11 workers (5/22) \r\n  Generating static pages using 11 workers (10/22) \r\n  Generating static pages using 11 workers (16/22) \r\n✓ Generating static pages using 11 workers (22/22) in 1246ms\n  Finalizing page optimization ...\n  Collecting build traces ...\n\nRoute (app)\n┌ ○ /\n├ ○ /_not-found\n├ ○ /access-denied\n├ ○ /admin\n├ ○ /analyze\n├ ƒ /api/admin\n├ ƒ /api/admin/access\n├ ƒ /api/admin/maintenance\n├ ƒ /api/admin/metrics\n├ ƒ /api/admin/operations\n├ ƒ /api/admin/reconciliation\n├ ƒ /api/analyze\n├ ƒ /api/auth/bootstrap-admin\n├ ƒ /api/auth/login\n├ ƒ /api/auth/logout\n├ ƒ /api/auth/password\n├ ƒ /api/auth/reset-confirm\n├ ƒ /api/auth/reset-request\n├ ƒ /api/auth/session\n├ ƒ /api/auth/users\n├ ƒ /api/compare\n├ ƒ /api/documents/[id]\n├ ƒ /api/documents/[id]/extract\n├ ƒ /api/documents/[id]/extraction\n├ ƒ /api/documents/[id]/extraction/annotations\n├ ƒ /api/documents/[id]/file\n├ ƒ /api/documents/[id]/results\n├ ƒ /api/documents/[id]/status\n├ ƒ /api/documents/[id]/text\n├ ƒ /api/encounters/[id]/cross-modality\n├ ƒ /api/evaluations\n├ ƒ /api/health/live\n├ ƒ /api/health/ready\n├ ƒ /api/jobs\n├ ƒ /api/jobs/[id]\n├ ƒ /api/models\n├ ƒ /api/models/[id]\n├ ƒ /api/models/[id]/health\n├ ƒ /api/models/[id]/transitions\n├ ƒ /api/models/candidates\n├ ƒ /api/models/coverage\n├ ƒ /api/models/validation\n├ ƒ /api/patients\n├ ƒ /api/patients/[id]\n├ ƒ /api/patients/[id]/encounters\n├ ƒ /api/reports\n├ ƒ /api/reports/[id]/replay\n├ ƒ /api/research/metrics\n├ ƒ /api/results/[resultId]/verify\n├ ƒ /api/review/[id]\n├ ƒ /api/review/[id]/events\n├ ƒ /api/selftest\n├ ƒ /api/studies\n├ ƒ /api/studies/[id]\n├ ƒ /api/studies/[id]/consent\n├ ƒ /api/studies/[id]/documents\n├ ƒ /api/studies/[id]/evidence\n├ ƒ /api/studies/[id]/image\n├ ƒ /api/studies/[id]/record-analysis\n├ ƒ /api/studies/[id]/research-analysis\n├ ƒ /api/studies/[id]/specialist-analysis\n├ ƒ /api/studies/[id]/symptoms\n├ ƒ /api/upload\n├ ƒ /api/validation/dashboard\n├ ƒ /api/validation/errors\n├ ƒ /api/validation/phase6\n├ ƒ /api/validation/phase7\n├ ƒ /api/validation/phase8\n├ ƒ /api/validation/phase9\n├ ○ /clinician\n├ ○ /compare\n├ ○ /dashboard\n├ ○ /devices\n├ ○ /evaluations\n├ ○ /history\n├ ○ /icon.svg\n├ ○ /login\n├ ○ /models\n├ ○ /patients\n├ ƒ /patients/[id]\n├ ○ /processing\n├ ○ /report\n├ ○ /result\n├ ○ /settings\n├ ○ /validation\n└ ○ /validation-center\n\n\nƒ Proxy (Middleware)\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand\n\n",
+      "stdout": "\n> eye-ai-platform@0.1.0 build\n> node --max-old-space-size=10240 node_modules/next/dist/bin/next build --webpack\n\n▲ Next.js 16.3.4 (webpack)\n- Environments: .env\n✓ Running next.config.mjs took 47ms\n- Experiments (use with caution):\n  ⨯ serverSourceMaps\n  ✓ webpackMemoryOptimizations\n\n  Creating an optimized production build ...\n✓ Compiled successfully in 8.7min\n  Running TypeScript ...\n  Finished TypeScript in 18.4s ...\n  Collecting page data using 11 workers ...\n  Generating static pages using 11 workers (0/22) ...\n  Generating static pages using 11 workers (5/22) \r\n  Generating static pages using 11 workers (10/22) \r\n  Generating static pages using 11 workers (16/22) \r\n✓ Generating static pages using 11 workers (22/22) in 1308ms\n  Finalizing page optimization ...\n  Collecting build traces ...\n\nRoute (app)\n┌ ○ /\n├ ○ /_not-found\n├ ○ /access-denied\n├ ○ /admin\n├ ○ /analyze\n├ ƒ /api/admin\n├ ƒ /api/admin/access\n├ ƒ /api/admin/maintenance\n├ ƒ /api/admin/metrics\n├ ƒ /api/admin/operations\n├ ƒ /api/admin/reconciliation\n├ ƒ /api/analyze\n├ ƒ /api/auth/bootstrap-admin\n├ ƒ /api/auth/login\n├ ƒ /api/auth/logout\n├ ƒ /api/auth/password\n├ ƒ /api/auth/reset-confirm\n├ ƒ /api/auth/reset-request\n├ ƒ /api/auth/session\n├ ƒ /api/auth/users\n├ ƒ /api/compare\n├ ƒ /api/documents/[id]\n├ ƒ /api/documents/[id]/extract\n├ ƒ /api/documents/[id]/extraction\n├ ƒ /api/documents/[id]/extraction/annotations\n├ ƒ /api/documents/[id]/file\n├ ƒ /api/documents/[id]/results\n├ ƒ /api/documents/[id]/status\n├ ƒ /api/documents/[id]/text\n├ ƒ /api/encounters/[id]/cross-modality\n├ ƒ /api/evaluations\n├ ƒ /api/health/live\n├ ƒ /api/health/ready\n├ ƒ /api/jobs\n├ ƒ /api/jobs/[id]\n├ ƒ /api/models\n├ ƒ /api/models/[id]\n├ ƒ /api/models/[id]/health\n├ ƒ /api/models/[id]/transitions\n├ ƒ /api/models/candidates\n├ ƒ /api/models/coverage\n├ ƒ /api/models/validation\n├ ƒ /api/patients\n├ ƒ /api/patients/[id]\n├ ƒ /api/patients/[id]/encounters\n├ ƒ /api/reports\n├ ƒ /api/reports/[id]/replay\n├ ƒ /api/research/metrics\n├ ƒ /api/results/[resultId]/verify\n├ ƒ /api/review/[id]\n├ ƒ /api/review/[id]/events\n├ ƒ /api/selftest\n├ ƒ /api/studies\n├ ƒ /api/studies/[id]\n├ ƒ /api/studies/[id]/consent\n├ ƒ /api/studies/[id]/documents\n├ ƒ /api/studies/[id]/evidence\n├ ƒ /api/studies/[id]/image\n├ ƒ /api/studies/[id]/record-analysis\n├ ƒ /api/studies/[id]/research-analysis\n├ ƒ /api/studies/[id]/specialist-analysis\n├ ƒ /api/studies/[id]/symptoms\n├ ƒ /api/upload\n├ ƒ /api/validation/dashboard\n├ ƒ /api/validation/errors\n├ ƒ /api/validation/phase6\n├ ƒ /api/validation/phase7\n├ ƒ /api/validation/phase8\n├ ƒ /api/validation/phase9\n├ ○ /clinician\n├ ○ /compare\n├ ○ /dashboard\n├ ○ /devices\n├ ○ /evaluations\n├ ○ /history\n├ ○ /icon.svg\n├ ○ /login\n├ ○ /models\n├ ○ /patients\n├ ƒ /patients/[id]\n├ ○ /processing\n├ ○ /report\n├ ○ /result\n├ ○ /settings\n├ ○ /validation\n└ ○ /validation-center\n\n\nƒ Proxy (Middleware)\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand\n\n",
       "stderr": ""
     }
   },
