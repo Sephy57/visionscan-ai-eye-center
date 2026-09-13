@@ -1,7 +1,7 @@
 {
   "schema_version": "visionscan-phase10-load-fairness-v1",
-  "observed_at": "2026-09-13T16:17:49.382Z",
-  "implementation_head_at_capture": "132fb00ad40c13870dd1d25fe6b862770c418243",
+  "observed_at": "2026-09-13T21:12:34.994Z",
+  "implementation_head_at_capture": "fd4f4658b6f994f7c009e29e8d8acca682784f97",
   "working_tree_dirty_at_capture": true,
   "status": "PARTIAL_REAL_LOAD_PLUS_FIFO_CONTROL_PLANE",
   "queue_policy": {

@@ -1,0 +1,190 @@
+{
+  "schema_version": "visionscan-final-mutex-wait-evidence-v1",
+  "observed_at": "2026-09-13T21:03:00.161Z",
+  "evidence_label": [
+    "REAL_SUBPROCESS",
+    "REAL_WORKER"
+  ],
+  "provider": {
+    "provider_id": "local-fundus-lesion",
+    "model_id": "fundus-lesions-clementp-unet-seresnext50",
+    "execution": "existing hash-verified Python subprocess"
+  },
+  "experiment": {
+    "started_at": "2026-09-13T21:02:51.191Z",
+    "input_fixture": "public/de-identified DeepDRiD fundus image; identifier omitted",
+    "image_sha256": "6b672f301e7b258c0baf2a0cf06234f2e9350052ef30f9eb6634e18a0a4d2854",
+    "phi_included": false,
+    "same_node_process": true,
+    "shared_mutex": "fundusLesionLocalProvider module-level inferenceMutex"
+  },
+  "job_a": {
+    "job_id": "final-mutex-job-a",
+    "study_id": "final-mutex-study-a",
+    "mutex_acquired_time": "2026-09-13T21:02:51.806Z",
+    "final_state": "COMPLETED",
+    "provider_output_status": "completed",
+    "elapsed_ms": 7548.133,
+    "canonical_effect_counts": {
+      "MODEL_RESULT": 0,
+      "STRUCTURED_EVIDENCE": 0,
+      "REASONING_RECORD": 0,
+      "REPORT": 0,
+      "JOB_COMPLETION": 0
+    },
+    "durable_job_before": {
+      "job_id": "final-mutex-job-a",
+      "study_id": "final-mutex-study-a",
+      "kind": "analysis",
+      "status": "running",
+      "state": "running",
+      "attempts": 1,
+      "created_at": "2026-09-13T21:02:49.557Z",
+      "started_at": "2026-09-13T21:02:49.557Z",
+      "claimed_at": "2026-09-13T21:02:49.557Z",
+      "progress": {
+        "stage": "provider",
+        "percent": 50,
+        "completed_units": 0,
+        "total_units": 1,
+        "message": "Job A holds provider mutex",
+        "updated_at": "2026-09-13T21:02:49.557Z"
+      }
+    },
+    "durable_job_after": {
+      "job_id": "final-mutex-job-a",
+      "study_id": "final-mutex-study-a",
+      "kind": "analysis",
+      "status": "completed",
+      "state": "completed",
+      "attempts": 1,
+      "created_at": "2026-09-13T21:02:49.557Z",
+      "started_at": "2026-09-13T21:02:49.557Z",
+      "claimed_at": "2026-09-13T21:02:49.557Z",
+      "progress": {
+        "stage": "completed",
+        "percent": 100,
+        "completed_units": 1,
+        "total_units": 1,
+        "message": "Job A completed",
+        "updated_at": "2026-09-13T21:03:00.133Z"
+      },
+      "completed_at": "2026-09-13T21:03:00.133Z"
+    }
+  },
+  "job_b": {
+    "job_id": "final-mutex-job-b",
+    "study_id": "final-mutex-study-b",
+    "mutex_wait_start": "2026-09-13T21:02:52.197Z",
+    "abort_time": "2026-09-13T21:02:52.286Z",
+    "final_state": "JOB_DEADLINE_EXCEEDED",
+    "error": "FINAL_MUTEX_WAIT_DEADLINE_EXCEEDED",
+    "provider_launched_for_job_b": false,
+    "max_tracked_processes_during_wait": 1,
+    "observed_provider_children_after_abort": [
+      {
+        "process_id": 5348,
+        "parent_process_id": 29828,
+        "executable_path": "D:\\AI EYE ANALYSIS PLATFORM\\.venv-ophthalmic\\Scripts\\python.exe"
+      }
+    ],
+    "elapsed_ms": 6541.614,
+    "canonical_effect_counts": {
+      "MODEL_RESULT": 0,
+      "STRUCTURED_EVIDENCE": 0,
+      "REASONING_RECORD": 0,
+      "REPORT": 0,
+      "JOB_COMPLETION": 0
+    },
+    "durable_job_before": {
+      "job_id": "final-mutex-job-b",
+      "study_id": "final-mutex-study-b",
+      "kind": "analysis",
+      "status": "running",
+      "state": "running",
+      "attempts": 1,
+      "created_at": "2026-09-13T21:02:49.557Z",
+      "started_at": "2026-09-13T21:02:49.557Z",
+      "claimed_at": "2026-09-13T21:02:49.557Z",
+      "progress": {
+        "stage": "provider_mutex_wait",
+        "percent": 50,
+        "completed_units": 0,
+        "total_units": 1,
+        "message": "Job B waiting on provider mutex",
+        "updated_at": "2026-09-13T21:02:49.557Z"
+      }
+    },
+    "durable_job_after": {
+      "job_id": "final-mutex-job-b",
+      "study_id": "final-mutex-study-b",
+      "kind": "analysis",
+      "status": "failed",
+      "state": "job_deadline_exceeded",
+      "attempts": 1,
+      "created_at": "2026-09-13T21:02:49.557Z",
+      "started_at": "2026-09-13T21:02:49.557Z",
+      "claimed_at": "2026-09-13T21:02:49.557Z",
+      "progress": {
+        "stage": "failed",
+        "percent": 100,
+        "completed_units": 0,
+        "total_units": 1,
+        "message": "No provider launch after mutex-wait deadline",
+        "updated_at": "2026-09-13T21:03:00.157Z"
+      },
+      "completed_at": "2026-09-13T21:03:00.157Z",
+      "error": "JOB_DEADLINE_EXCEEDED:FINAL_MUTEX_WAIT_DEADLINE_EXCEEDED",
+      "deadline_outcome": "JOB_DEADLINE_EXCEEDED"
+    }
+  },
+  "timing": {
+    "provider_observed": true,
+    "tracked_processes_while_a_active": 1,
+    "observed_children_while_a_active": [
+      {
+        "process_id": 5348,
+        "parent_process_id": 29828,
+        "executable_path": "D:\\AI EYE ANALYSIS PLATFORM\\.venv-ophthalmic\\Scripts\\python.exe"
+      }
+    ],
+    "observed_children_after_cleanup": [],
+    "tracked_processes_after_cleanup": 0
+  },
+  "resource_state": {
+    "policy_note": "Provider mutex experiment did not bypass or mutate the one-heavy-slot production policy; no host lease was created by the direct provider-layer call.",
+    "active_leases": 0,
+    "stale_reservations": 0
+  },
+  "canonical_effect_counts": {
+    "job_a": {
+      "MODEL_RESULT": 0,
+      "STRUCTURED_EVIDENCE": 0,
+      "REASONING_RECORD": 0,
+      "REPORT": 0,
+      "JOB_COMPLETION": 0
+    },
+    "job_b": {
+      "MODEL_RESULT": 0,
+      "STRUCTURED_EVIDENCE": 0,
+      "REASONING_RECORD": 0,
+      "REPORT": 0,
+      "JOB_COMPLETION": 0
+    }
+  },
+  "cleanup_result": {
+    "mutex_usable_after_job_a": true,
+    "job_a_not_corrupted": true,
+    "job_b_no_model_output": true,
+    "job_b_no_clinical_negative": true,
+    "job_b_no_evidence_reasoning_report": true,
+    "observed_provider_descendants_absent": true,
+    "tracked_provider_children_absent": true
+  },
+  "limitations": [
+    "This is a provider-layer mutex experiment with durable harness job-state projections; it is not a second full queue-capacity run.",
+    "The direct provider layer does not create canonical analysis/report effects; zero Job B effects are the safety assertion.",
+    "No host resource lease was created because the existing one-heavy-slot queue policy would make Job B wait for capacity before reaching the provider mutex.",
+    "Observed descendant cleanup is limited to the actual Python children observed by this harness."
+  ]
+}
