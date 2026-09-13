@@ -35,7 +35,7 @@ Phase 7 adds bounded candidate due diligence, one fixed-tolerance RetGuard inves
 
 ## 4 Push
 
-PUSHED: origin/main resolves to 12956fa05ceaf319d25a51fe32f0eb7cb5f79efe; exact-head CI run 34749152439 passed for that head. A normal push is required before a remote result can be called exact-head evidence.
+PUBLISHED: the CI-validated implementation/evidence head `12956fa05ceaf319d25a51fe32f0eb7cb5f79efe` is present in `origin/main` history; exact-head CI run `34749152439` passed for that head. This report is a documentation-only refresh after that validation.
 
 ## 5 Exact-head CI
 
