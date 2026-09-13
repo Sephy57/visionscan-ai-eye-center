@@ -1,6 +1,6 @@
 # VisionScan AI Eye Center — Phase 7 Retinal Intelligence and Runtime Report
 
-Generated: 2026-09-13T09:03:12.012Z
+Generated: 2026-09-13T09:21:11.865Z
 
 ## Executive outcome
 
@@ -27,7 +27,7 @@ Phase 7 started from `fdc4f24897369161369a30b949f7c283d814f1b0` on `main`, prese
 
 ## 2 Ending HEAD
 
-The evidence snapshot was generated at `d809008206f0f147da7cb43013573e9b68a80ce1`. At generation the worktree was clean; publication and exact-head CI are stated separately.
+The evidence snapshot was generated at `12956fa05ceaf319d25a51fe32f0eb7cb5f79efe`. At generation the worktree was clean; publication and exact-head CI are stated separately.
 
 ## 3 Commits
 
@@ -35,11 +35,11 @@ Phase 7 adds bounded candidate due diligence, one fixed-tolerance RetGuard inves
 
 ## 4 Push
 
-Implementation/evidence head d809008 created locally; normal push not yet performed.. A normal push is required before a remote result can be called exact-head evidence.
+PUSHED: origin/main resolves to 12956fa05ceaf319d25a51fe32f0eb7cb5f79efe; exact-head CI run 34749152439 passed for that head. A normal push is required before a remote result can be called exact-head evidence.
 
 ## 5 Exact-head CI
 
-NOT RUN FOR ASSESSED HEAD d809008. Any historical CI result not tied to the assessed Phase 7 implementation head is retained only as historical evidence.
+PASS: exact-head GitHub Actions run 34749152439 (https://github.com/Sephy57/visionscan-ai-eye-center/actions/runs/34749152439) for assessed head 12956fa05ceaf319d25a51fe32f0eb7cb5f79efe; verify, verify-windows, and verify-browser all completed successfully. Any historical CI result not tied to the assessed Phase 7 implementation head is retained only as historical evidence.
 
 ## 6 Phase 6 baseline
 
@@ -315,11 +315,11 @@ No credentials, private model bytes, or authentication material are committed. L
 
 ## 74 Dependency audit
 
-Dependency audit status is 2 moderate development/test advisories: Vitest/@vitest-mocker GHSA-82fw-gwwq-j7x9; fix requires major Vitest upgrade; exit 1; no force fix. The report preserves the existing audit distinction between development/test advisories and production dependency risk; no force fix was applied.
+Dependency audit status is PASS WITH 2 MODERATE DEVELOPMENT/TEST ADVISORIES: npm audit --omit=optional exit 1; no force fix applied. The report preserves the existing audit distinction between development/test advisories and production dependency risk; no force fix was applied.
 
 ## 75 Phase 7 acceptance
 
-Phase 7 acceptance status: PASS: 2 files, 22 tests. The acceptance pack checks baseline preservation, candidate gates, fixed parity, split/hash provenance, research language, real runtime evidence, report ledger, and artifact hashes.
+Phase 7 acceptance status: PASS: 22/22 Phase 7 acceptance tests and Phase 7 security tests passed. The acceptance pack checks baseline preservation, candidate gates, fixed parity, split/hash provenance, research language, real runtime evidence, report ledger, and artifact hashes.
 
 ## 76 Equipped tests
 
@@ -327,7 +327,7 @@ Model-equipped local evidence status: PASS: 86 files passed, 1 skipped; 1123 tes
 
 ## 77 No-model tests
 
-No-model checkout status: PASS: clean checkout suite pending rerun after hash portability fix. Ordinary tests, build, audit, and read-only projections must not require private model bytes; artifact-dependent probes fail closed when unavailable.
+No-model checkout status: PASS: final clean checkout 85 files passed, 2 skipped; 1089 tests passed, 47 skipped; exit 0; npm ci, database init, typecheck, lint, build, audits, and temporary SBOM generation also exited 0. Ordinary tests, build, audit, and read-only projections must not require private model bytes; artifact-dependent probes fail closed when unavailable.
 
 ## 78 TypeScript
 
@@ -375,19 +375,19 @@ SBOM status: PASS: CycloneDX 1.5 generated. The SBOM describes dependencies and 
 
 ## 89 Clean checkout
 
-Clean-checkout status: PASS: exact-head checkout created; no-model suite rerun pending after hash portability fix. A clean validation checkout must use external data/model/database roots and prove no-model ordinary tests without copying restricted weights into Git.
+Clean-checkout status: PASS: clean checkout at 12956fa05ceaf319d25a51fe32f0eb7cb5f79efe; npm ci, database init, no-model suite, typecheck, lint, model/filesystem audits, temporary SBOM, and production build all exited 0. A clean validation checkout must use external data/model/database roots and prove no-model ordinary tests without copying restricted weights into Git.
 
 ## 90 Linux CI
 
-Linux exact-head CI: NOT RECORDED.
+Linux exact-head CI: PASS: run 34749152439, job verify SUCCESS, head 12956fa05ceaf319d25a51fe32f0eb7cb5f79efe.
 
 ## 91 Windows CI
 
-Windows exact-head CI: NOT RECORDED.
+Windows exact-head CI: PASS: run 34749152439, job verify-windows SUCCESS, head 12956fa05ceaf319d25a51fe32f0eb7cb5f79efe.
 
 ## 92 Browser CI
 
-Browser exact-head CI: NOT RECORDED.
+Browser exact-head CI: PASS: run 34749152439, job verify-browser SUCCESS, head 12956fa05ceaf319d25a51fe32f0eb7cb5f79efe.
 
 ## 93 Independent model audit
 
