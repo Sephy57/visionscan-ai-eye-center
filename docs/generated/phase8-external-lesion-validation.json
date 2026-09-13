@@ -1,0 +1,65 @@
+{
+  "schema_version": "visionscan-phase8-external-lesion-validation-v1",
+  "observed_at": "2026-09-13",
+  "phi_included": false,
+  "decision": "EXTERNAL LESION ESCALATION VALIDATION NOT ESTABLISHED.",
+  "search_scope": "Bounded review of existing local dataset/evaluation inventory and publicly documented dataset access/licence metadata. No dataset was silently added to the Phase 7 denominator.",
+  "frozen_rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+  "attempts": [
+    {
+      "dataset": "IDRiD",
+      "source_url": "https://idrid.grand-challenge.org/Data/",
+      "rights_observation": "Official page states Creative Commons Attribution 4.0 International for the work.",
+      "local_state": "LOCAL_OVERLAP_DISCLOSED_EXPORT",
+      "decision": "REJECTED_FOR_EXTERNAL_VALIDATION",
+      "reason": "The installed lesion checkpoint reports IDRiD among its training sources; the local export is image-level without verifiable patient/eye separation. It is comparability evidence, not independent external validation.",
+      "inference_run": false
+    },
+    {
+      "dataset": "APTOS 2019",
+      "source_url": "https://www.kaggle.com/c/aptos2019-blindness-detection",
+      "rights_observation": "Existing project record treats access and downstream terms as requiring separate review.",
+      "local_state": "LOCAL_CAPPED_DR_COMPARABILITY_ONLY",
+      "decision": "REJECTED_FOR_EXTERNAL_LESION_VALIDATION",
+      "reason": "The available local material is a DR grading comparison, not a lesion-ground-truth evaluation; patient separation is not verifiable and lesion rights/annotations are not established.",
+      "inference_run": false
+    },
+    {
+      "dataset": "RFMiD",
+      "source_url": "https://huggingface.co/datasets/ctmedtech/RFMID",
+      "rights_observation": "The referenced dataset card reports CC BY 4.0, but local acquisition, exact image/annotation manifest, and task-specific lesion ground truth are not present.",
+      "local_state": "NOT_ACQUIRED",
+      "decision": "REJECTED_BEFORE_ARTIFACT_EXECUTION",
+      "reason": "No locally verified, rights-cleared lesion annotation package or patient-separated evaluation manifest was available in the checkout.",
+      "inference_run": false
+    },
+    {
+      "dataset": "TJDR",
+      "source_url": null,
+      "rights_observation": "No local licence or provenance manifest was found.",
+      "local_state": "INCOMPLETE_LOCAL_SCRATCH_ONLY",
+      "decision": "REJECTED_BEFORE_ARTIFACT_EXECUTION",
+      "reason": "The local scratch inventory is incomplete (7 images and 50 annotations reported by the audit) and lacks acquisition, grouping, rights, and completeness evidence.",
+      "inference_run": false
+    },
+    {
+      "dataset": "DeepDRiD regular-fundus validation",
+      "source_url": null,
+      "rights_observation": "This is the frozen internal Phase 7 comparison cohort, not an external holdout for Phase 8.",
+      "local_state": "USED_BY_PHASE7_INTERNAL_CALIBRATION_AND_EVALUATION",
+      "decision": "NOT_EXTERNAL",
+      "reason": "Reusing it would violate the external-validation question and would collapse the frozen internal evidence boundary.",
+      "inference_run": false
+    }
+  ],
+  "required_next_evidence": [
+    "A legally usable lesion-annotated cohort with an auditable artifact manifest",
+    "Verified patient/eye separation from all reported training sources",
+    "A reproducible run of LESION_ESCALATION_RULE_PHASE7_V1 with per-case provenance and aggregate review burden",
+    "Independent review/adjudication of the escalation target"
+  ],
+  "limitations": [
+    "Public source pages document availability/licence observations only; they do not authorize this repository to redistribute data or weights.",
+    "No external image inference was run, so external sensitivity, specificity, burden, calibration, and confidence intervals are NOT MEASURED."
+  ]
+}

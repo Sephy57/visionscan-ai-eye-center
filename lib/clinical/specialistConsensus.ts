@@ -80,8 +80,9 @@ export function buildSpecialistConsensus(results: SpecialistAnalysisResult[]): S
     failure_state: result.failure_state,
     limitations: [...result.limitations],
   }));
-  const hasActionableOutput = results.some((result) => result.failure_state !== "NO_VALIDATED_MODEL_AVAILABLE");
-  const completed = results.filter((result) => !result.failure_state).length;
+  const completed = results.filter((result) => outcomeOf(result) === "COMPLETED").length;
+  const failed = results.some((result) => outcomeOf(result) === "FAILED");
+  const hasActionableOutput = completed > 0 || disagreements.length > 0;
   const consensusState: SpecialistConsensus["consensus_state"] = !hasActionableOutput
     ? "INSUFFICIENT_SPECIALIST_EVIDENCE"
     : disagreements.length > 0
@@ -91,7 +92,7 @@ export function buildSpecialistConsensus(results: SpecialistAnalysisResult[]): S
         : "PARTIAL_CORROBORATION";
 
   return {
-    status: hasActionableOutput ? "REVIEW_REQUIRED" : "NO_SPECIALIST_OUTPUT",
+    status: hasActionableOutput || failed ? "REVIEW_REQUIRED" : "NO_SPECIALIST_OUTPUT",
     consensus_state: consensusState,
     specialty_summaries: summaries,
     shared_evidence_ids: [...evidenceCounts.entries()].filter(([, count]) => count > 1).map(([id]) => id),
@@ -101,7 +102,9 @@ export function buildSpecialistConsensus(results: SpecialistAnalysisResult[]): S
     requires_clinician_review: true,
     note: hasActionableOutput
       ? "Specialist outputs are shown side by side. No score was averaged and no specialist was selected as a winner; independent triage and clinician review remain authoritative."
-      : "No specialist model produced an actionable output for this record. This is an explicit safe state, not a normality claim.",
+      : failed
+        ? "A specialist execution failed without an actionable output. The failure is retained for review and is not interpreted as a negative or normal result."
+        : "No specialist model produced an actionable output for this record. This is an explicit safe state, not a normality claim.",
     generated_at: new Date().toISOString(),
   };
 }

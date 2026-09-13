@@ -99,7 +99,7 @@ export interface ClinicalReport {
   clinician_interpretation?: {
     reviewer_id: string;
     overall: "confirmed_ai_findings" | "rejected_ai_findings" | "indeterminate" | "request_new_scan" | "amended" | string;
-    finding_decisions?: Array<{ finding_id: string; decision: "confirm" | "reject" | "correct" | "indeterminate"; note?: string; correction?: Partial<{ severity: string; location: string; explanation: string; type: string }>; at: string }>;
+    finding_decisions?: Array<{ finding_id: string; decision: "confirm" | "reject" | "correct" | "indeterminate"; note?: string; correction?: Partial<{ severity: string; location: string; explanation: string; type: string; laterality: "OD" | "OS" | "OU" | "unknown" }>; at: string }>;
     notes?: string | null;
     at: string;
   } | null;
@@ -107,8 +107,8 @@ export interface ClinicalReport {
    * remains byte-for-byte unchanged when a finding is corrected. */
   clinician_corrections?: Array<{
     finding_id: string;
-    original: { type: string; location: string; severity: string; explanation: string };
-    correction: Partial<{ severity: string; location: string; explanation: string; type: string }>;
+    original: { type: string; location: string; severity: string; explanation: string; laterality?: "OD" | "OS" | "OU" | "unknown" };
+    correction: Partial<{ severity: string; location: string; explanation: string; type: string; laterality: "OD" | "OS" | "OU" | "unknown" }>;
     reviewer_id: string;
     note?: string;
     at: string;

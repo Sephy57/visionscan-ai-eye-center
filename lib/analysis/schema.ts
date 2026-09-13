@@ -133,6 +133,10 @@ export interface ClaimLedgerEntry {
   model_execution_ids?: string[];
   rule_ids?: string[];
   knowledge_source_ids?: string[];
+  /** Explicit image/measurement lineage used by this claim. */
+  dependency_group_ids?: string[];
+  /** Lineage is not the same as statistical independence. */
+  independence_state?: "DEPENDENT_SHARED_INPUT" | "INDEPENDENT_SOURCE_GROUPS_PRESENT" | "NO_DEPENDENCY_RECORDED";
 }
 
 export interface ClaimLedger {
@@ -436,6 +440,13 @@ export function validateAnalysisResult(r: unknown): { valid: boolean; errors: Va
         for (const field of ["source_ids", "model_execution_ids", "rule_ids", "knowledge_source_ids"] as const) {
           need(Array.isArray(entry[field]), `claim_ledger.entries[${i}].${field}`, "Phase 2 traceability list is required");
           need((entry[field] ?? []).every((ref) => typeof ref === "string" && ref.length > 0), `claim_ledger.entries[${i}].${field}`, "traceability references must be non-empty strings");
+        }
+        if (entry.dependency_group_ids !== undefined) {
+          need(Array.isArray(entry.dependency_group_ids), `claim_ledger.entries[${i}].dependency_group_ids`, "must be array when present");
+          need((entry.dependency_group_ids ?? []).every((ref) => typeof ref === "string" && ref.length > 0), `claim_ledger.entries[${i}].dependency_group_ids`, "dependency references must be non-empty strings");
+        }
+        if (entry.independence_state !== undefined) {
+          need(["DEPENDENT_SHARED_INPUT", "INDEPENDENT_SOURCE_GROUPS_PRESENT", "NO_DEPENDENCY_RECORDED"].includes(entry.independence_state), `claim_ledger.entries[${i}].independence_state`, "invalid independence state");
         }
       }
     }

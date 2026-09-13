@@ -1,0 +1,4166 @@
+{
+  "schema_version": "visionscan-phase8-high-grade-miss-registry-v1",
+  "observed_at": "2026-09-13T10:05:45.352Z",
+  "phi_included": false,
+  "registry_state": "FROZEN_FOR_RESEARCH_REVIEW",
+  "execution_source": "EXISTING_PHASE7_RESEARCH_EXPORT",
+  "fresh_phase8_inference": false,
+  "definition": "Exact high-grade miss means eye_grade is 3 or 4 and the frozen baseline dr_grade is not equal to eye_grade. Grade 3 and grade 4 are analyzed separately.",
+  "frozen_rule": {
+    "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+    "rule": "source_export_lesion_regions >= 3",
+    "selection_source": "Phase 7 calibration-only selection",
+    "phase7_evaluation_retuned": false,
+    "label": "REVIEW ESCALATION COVERAGE",
+    "forbidden_label": "DISEASE RECOVERY"
+  },
+  "source_hashes": {
+    "source_export_sha256": "c040638f5397a86af54599a6c21b3e047d6a68bcbf93a28f186e6feb802a12e5",
+    "baseline_artifact_sha256": "0d9a18b0cb6c90d1f30bf2e66153b368bd7ff0bcb45b6690e8d5ce14fa19f69b",
+    "lesion_model_artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+    "registry_script_sha256": "a1a99d05b50ea0f937f3feb55f2e1a6f0a9e9e8e8b9e4d7b68a5bcaa6be37858"
+  },
+  "cohort": {
+    "source_split": "regular-fundus-validation",
+    "total_source_cases": 400,
+    "total_source_patients": 100,
+    "high_grade_cases": 88,
+    "exact_high_grade_miss_cases": 85,
+    "grade_3_exact_miss_cases": 65,
+    "grade_4_exact_miss_cases": 20,
+    "patient_separation": "INHERITED_FROM_FROZEN_PHASE7_EXPORT; NO_NEW_SPLIT"
+  },
+  "aggregate": {
+    "3": {
+      "exact_miss_cases": 65,
+      "escalated_cases": 62,
+      "non_escalated_cases": 3,
+      "review_escalation_coverage": 0.9538461538461539,
+      "predicted_grade_counts": {
+        "0": 12,
+        "1": 18,
+        "2": 35
+      },
+      "source_quality_flag_counts": {
+        "0": 37,
+        "1": 28
+      }
+    },
+    "4": {
+      "exact_miss_cases": 20,
+      "escalated_cases": 19,
+      "non_escalated_cases": 1,
+      "review_escalation_coverage": 0.95,
+      "predicted_grade_counts": {
+        "0": 5,
+        "1": 7,
+        "2": 8
+      },
+      "source_quality_flag_counts": {
+        "0": 10,
+        "1": 10
+      }
+    }
+  },
+  "combined": {
+    "exact_miss_cases": 85,
+    "escalated_cases": 81,
+    "non_escalated_cases": 4,
+    "review_escalation_coverage": 0.9529411764705882
+  },
+  "entries": [
+    {
+      "case_id_sha256": "1af170abdbc2588475cd8cd357b446b045848a79ed6c6531bdbb1728a9952ab2",
+      "patient_key_sha256": "b60b379502bfcd155b62c67297ba9fc264459f1f0632a8a6a379f25337c8fd4c",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.22734466195106506
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 7,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "44f19d8eb3a6a09f0265aa6b6cc732aa0502e935b60f8f5c31fc2b2eb84145d6",
+      "patient_key_sha256": "9285278c0199a1450ea29cf6f51fd4fab5ea60b5150ee82dd1c8d3d1a015b379",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 0.8769853115081787
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 9,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "49ea7509eddb808927ed78b1a3f517feea45273eac2ae2fb89bf9f3350e56fe9",
+      "patient_key_sha256": "f4f3e75f73d31f5ddb298045bc2737758502aa4a185e223b0d58699b9878c556",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.031268835067749
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 65,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "a1ae77358c10c5120621b913899bf96e36ade00e303ad6a983edc116e560b5be",
+      "patient_key_sha256": "053169bdd9c8563d35bca5e22f756d25dd5ac966deb326c985779a924c0b534f",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.1298606395721436
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 34,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "c4895b12d7ed5053cb221cc4883f4d427ba2e008c0e017e8b1505ec1cc851940",
+      "patient_key_sha256": "80540fa1341f050d0e69c826c5ce76c980da868d78d0e9a94f8b3cede29beffb",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 1.334017276763916
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 110,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "fb6977bdfc591dff49310fb66d3cfb3814f2629c7ba7a28dacc0ea4b1c4c0c78",
+      "patient_key_sha256": "16cbe28bdb7e1969ccfb8f5080742b18e996feaa78ad027e24d0db138c79482a",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 0.7819036245346069
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 62,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "0a1fb242e94be9e99fbc105991e2f5837c7ed8fd48e2f4f48986f5a12bc8e113",
+      "patient_key_sha256": "2dbf3ff8c04287c2cd34c209280b94d98280193e3b7a3643aa05b8475843e2a3",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.173701524734497
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 167,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "d1aaa9e13f935e99686f08d255847077ad743bdc4801f8a761abf2b6a56652eb",
+      "patient_key_sha256": "1b8bc36a06f9f72cc3ee9b63178820887ff49a27e9ad927f805fc4d33b2b311d",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.503873586654663
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 4,
+        "source_export_classes": [
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "5f7b8101e0a371b058eec4d1687b77d9178327b8ecb90db026287d93d96cd962",
+      "patient_key_sha256": "9a8c8af75c23465214ed8a5a861090ff795d6465ae3951b6aa1e89371f40c662",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.935542345046997
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 21,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "cceefc0be3ad1e1fb09556be09e19052cb69554f4acf059531c12d7e7d0e6005",
+      "patient_key_sha256": "95de6ac7fbb1087f2a620d1d632090bd996db405ebb360f9146e10ddc397deaa",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.479929208755493
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 38,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "5f600d9944e67a272ecf11fb6018805bdde8e2468c53661511c66892b4e207fa",
+      "patient_key_sha256": "5bf18b13269cdb02cfddbd7d0916d4ddf47b5d0f8b66d128092e6ba4864ea10b",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.1855576038360596
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 26,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "fdfb680c5e2efdc22e9cc6af574eb000a23633054a5f0f56d9c48613e5e18618",
+      "patient_key_sha256": "0e85d397072388afe521fc5132bb25b79ba46c68df95942af7ad2544aa817860",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.2094688415527344
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 141,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "b18029cef78140282f0f905c34c9393eb4c9223d2039b283ac918a25d34cae31",
+      "patient_key_sha256": "951c4ed14a6ec6babbd10fe8166b5502d5d7d4ef42b7720623255627ac65d275",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.6100835800170898
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 9,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "9fc007c3a8ac8d609e49d294e0ae56c2b4609c578f605af612e0a9e01b84d296",
+      "patient_key_sha256": "1b8bc36a06f9f72cc3ee9b63178820887ff49a27e9ad927f805fc4d33b2b311d",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 0.8913788795471191
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 10,
+        "source_export_classes": [
+          "hard_exudate"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "69805fd62007f10f4c8905d3fa60a7e31ca10856418c141d3d3897adde6bc7ac",
+      "patient_key_sha256": "f1123f797eef1476f0d7dd482e8cb973c318eed5466ea384637b257a1f6d4555",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.06389894336462021
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 10,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "2f3ffa9c1bf46b5ae6b9e5874f4d2521d21acfe5f18440312fa3d972e382d89b",
+      "patient_key_sha256": "689b21ec8861996e9136927eb3967abae26890933f6378a444f5021b00c413ea",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.35700151324272156
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 15,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "449a327f0f0efb606dd513486698aea7de1b51cb0f8a3f075d3bad13bc337b8c",
+      "patient_key_sha256": "5aed4086d4527226db96ada4f6ccc8c404fe1c85b3f9e17baaccd754a4237746",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.1302309036254883
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 51,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "107d31e43fd78c1bf0d73defa4c33c87258d172dcb7df45cb0d7f32be746f4a9",
+      "patient_key_sha256": "03964631eb49057cd5e998f4aeb7c5be5d32821174193849aeedfeb0da78d8c0",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.5798423290252686
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 10,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "23dc22290f94280b72786a2758b548362a4e0d2cfccf961bba1d9ef895d24d1b",
+      "patient_key_sha256": "5aed4086d4527226db96ada4f6ccc8c404fe1c85b3f9e17baaccd754a4237746",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.811736822128296
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 39,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "eb9e1729fdc45c7edbc6f29d5578e090814d39505861690225bb6d43c2020007",
+      "patient_key_sha256": "3d02a1d931825c521662a6a4f47ebd7d512785b33effd9c08e6ae74afda07b04",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.639691710472107
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 61,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "a470ee17bc30f4f6a9acc7b3bd65b176869ed492187937e7e746fcb4d045ada1",
+      "patient_key_sha256": "b60b379502bfcd155b62c67297ba9fc264459f1f0632a8a6a379f25337c8fd4c",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.0017638206481934
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 1,
+        "source_export_classes": [
+          "hard_exudate"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": false,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": false,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "2e20cb7e7c8021dcd6c0b0a2a569af2b5c693d47519c1d4f312a62b27f3c5f34",
+      "patient_key_sha256": "7e6138f1fc36471c61f18979167f2a6abaf77c15af3b4e52b41374d55bb9f0c9",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.20721688866615295
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 49,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "c670d92ca0d71639b3c212c3074eafc1bc2d699b5c4b4fe14911ffd697e8306b",
+      "patient_key_sha256": "a5ef44bbbd49079900b13cd2161fdeac26dba3c1204eb90001ccd4757257b5c4",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 0.9434984922409058
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 81,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "d2a76c1abc550c43f5150d8dd73bc3cf7ded007cda6b8449805d12abb277b64a",
+      "patient_key_sha256": "16cbe28bdb7e1969ccfb8f5080742b18e996feaa78ad027e24d0db138c79482a",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 1.0852656364440918
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 46,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "48423100e05bf5b61e1c87e66f2c8ec94fc401259463f1c9eff4132177078100",
+      "patient_key_sha256": "9285278c0199a1450ea29cf6f51fd4fab5ea60b5150ee82dd1c8d3d1a015b379",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.619855523109436
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 66,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "1dd3c4cba8fcac2c6dcdeb7ccc9888bd235cbbb78aa77c5ab77591a445fdadcf",
+      "patient_key_sha256": "e508476a749dbd8006895770a477b86628e53ddaa36f8490132b852f075fa11c",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.4812939167022705
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 69,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "96ad0904a0083cef076380ada89723441c0974a85e46ede5ef052e4dd3e79a72",
+      "patient_key_sha256": "5bf18b13269cdb02cfddbd7d0916d4ddf47b5d0f8b66d128092e6ba4864ea10b",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.71470308303833
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 27,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "d6a137fe5afa125daa673843aa5815fb22a968059007f3c5acedb012099feded",
+      "patient_key_sha256": "0e85d397072388afe521fc5132bb25b79ba46c68df95942af7ad2544aa817860",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 1.1785664558410645
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 102,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "6be7591b1a016fa95a2a1648f7fc9e1bd54eece5eb38c407114dc0aa70c0fa6c",
+      "patient_key_sha256": "b16b05dd4fa94c479613a312d1c07e106a7434a691b2f44ce487146f559d3984",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.140748977661133
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 31,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "f97da316574c1de1f0a2926550b7c7f39660082cd8e9c247ea70ceb80c3f4b5c",
+      "patient_key_sha256": "0e85d397072388afe521fc5132bb25b79ba46c68df95942af7ad2544aa817860",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.235494613647461
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 113,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "79fc635645d6f546b6ebe57a137b8cc9a8e6a4aefcd68faeb4149e9971908cf0",
+      "patient_key_sha256": "c87bb85bc1b37710289b5c44cec48032a9622f4d01d2db9020c7f4d2ce82bbbf",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.1361699402332306
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 7,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "618add2d48e8d1b0ae4d6d5831f3979a8217316ba7f76755972835c6b2f2d570",
+      "patient_key_sha256": "2dbf3ff8c04287c2cd34c209280b94d98280193e3b7a3643aa05b8475843e2a3",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 1.3578741550445557
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 15,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "949004d95fbfd9be6e47daee746c5e5f20d721637ddaa797a783ca2f81e5519e",
+      "patient_key_sha256": "7e6138f1fc36471c61f18979167f2a6abaf77c15af3b4e52b41374d55bb9f0c9",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.6295907497406006
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 45,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "06c8f3691165a2bdac570aae900ab8bd4834056ea6596405bd288683175c2619",
+      "patient_key_sha256": "951c4ed14a6ec6babbd10fe8166b5502d5d7d4ef42b7720623255627ac65d275",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 0.890556275844574
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 10,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "e6a4d4ff42eb11e8a1365f844764218965ca97d683b5d55df4f8d39a0f2a5906",
+      "patient_key_sha256": "0e85d397072388afe521fc5132bb25b79ba46c68df95942af7ad2544aa817860",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.6470812559127808
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 70,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "dba433a1f769485f0c6fd332fa64023d148a36b5b128713b96461c2a992131c0",
+      "patient_key_sha256": "95de6ac7fbb1087f2a620d1d632090bd996db405ebb360f9146e10ddc397deaa",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.1596953868865967
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 20,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "2b940bdb375b1ecee0abe0d1d4c2da05777b4cd0c669293b644db8a4489e0737",
+      "patient_key_sha256": "5f9ee3949853b5356da2391506bb3a137b87cb077466dc85eb9e770776050c17",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 0.5278200507164001
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 0,
+        "source_export_classes": [],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": false,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": false,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "98b2c52420893b7ae7175114d57fa4b48073dd5774cad54b983e71f75165e2ac",
+      "patient_key_sha256": "3d02a1d931825c521662a6a4f47ebd7d512785b33effd9c08e6ae74afda07b04",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.0611464977264404
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 99,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "036c9d0729b8d96b93a429d99d50b7bb770bf6bc031c8aba6845d987419e16fe",
+      "patient_key_sha256": "2169926481c87da22be605a7c434053c64246bb338445b809b1fa1166c31c2db",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.6350624561309814
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 45,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "fa01941125afcfdf57355c2237f18220d480750f366ee06fbc45a31a4c933bca",
+      "patient_key_sha256": "7e6138f1fc36471c61f18979167f2a6abaf77c15af3b4e52b41374d55bb9f0c9",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 1.471854329109192
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 66,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "dee8c653c8ffd4406e327fbf36e0b645bd80a4e46d7d5a8e6bb95ec234eeaa1e",
+      "patient_key_sha256": "5aed4086d4527226db96ada4f6ccc8c404fe1c85b3f9e17baaccd754a4237746",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.9365825653076172
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 45,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "4b4a06156382a226720ca6a2a7b325ecc90fa23a78c6b506ab93d42f2edd6d21",
+      "patient_key_sha256": "2169926481c87da22be605a7c434053c64246bb338445b809b1fa1166c31c2db",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.1254047453403473
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 10,
+        "source_export_classes": [
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "8c5eca3ea9f2b176607d1d5143cc55f892d76a402223249eaac76ee7e99e248d",
+      "patient_key_sha256": "2169926481c87da22be605a7c434053c64246bb338445b809b1fa1166c31c2db",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 0.7812784910202026
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 35,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "5d0487c47b5b867bc677aa39829f624601a8635084b19d3065a8d8b329b77c17",
+      "patient_key_sha256": "b5477acac67205fe5a54cb7ab66c19fa388167f47c52197e681f3f987095f98c",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.972658634185791
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 24,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "6ff257bcae8aa26172f8275ecb689fd8e82c9fc07c41a1ba0eaef802540aee7d",
+      "patient_key_sha256": "bc749ad2e821c3841cdc90c3e5a1c4fbe1053043fc87e60b628eb3278d345f6e",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.16393104195594788
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 22,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "dee7705c705d8dab0af08c1c4184fcba71aa7d58ce533e76033d3a1e9acb82ac",
+      "patient_key_sha256": "689b21ec8861996e9136927eb3967abae26890933f6378a444f5021b00c413ea",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.031047726050019264
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 19,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "e3fbce6a530f7deae90e34b9f3b23232daa8d8331ea16a6ab23d8ebe47bde6f1",
+      "patient_key_sha256": "9a8c8af75c23465214ed8a5a861090ff795d6465ae3951b6aa1e89371f40c662",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 0.8107432126998901
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 9,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "87c677245e481952b60d1e5f1446672df581b32b55f67a48d7e39839fc5bd561",
+      "patient_key_sha256": "f4f3e75f73d31f5ddb298045bc2737758502aa4a185e223b0d58699b9878c556",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.4804878532886505
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 2,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": false,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": false,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "5f1105b60242310cc7802b694033a42ca8061c0a41d37285bd9914234d663cd4",
+      "patient_key_sha256": "b5477acac67205fe5a54cb7ab66c19fa388167f47c52197e681f3f987095f98c",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.8526244163513184
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 66,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "1aefa1bcbfe956a54eeaf19aa855d2f92aa11b9818338246b346991a7edd3d23",
+      "patient_key_sha256": "2dbf3ff8c04287c2cd34c209280b94d98280193e3b7a3643aa05b8475843e2a3",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 0.7529847621917725
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 100,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "a561ef359e3765789b57adf0f7caa026482f93b68d67cce7a01c2bc76e859ba3",
+      "patient_key_sha256": "7e6138f1fc36471c61f18979167f2a6abaf77c15af3b4e52b41374d55bb9f0c9",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.007331609725952
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 46,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "d6387a8d5176f2d3099f21923eed58b9aee7533fb97bde08cb5d20a5220006f7",
+      "patient_key_sha256": "9a8c8af75c23465214ed8a5a861090ff795d6465ae3951b6aa1e89371f40c662",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.12901028990745544
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 5,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "d80caf99a17b7af063401bc9f1d580a5eea2eb2658a44b26b835636475a658c6",
+      "patient_key_sha256": "80540fa1341f050d0e69c826c5ce76c980da868d78d0e9a94f8b3cede29beffb",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.30179688334465027
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 20,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "3d24f33baf2dbf28530962f221c1b159463e49a36b020a4bab8bf24df9f260f8",
+      "patient_key_sha256": "951c4ed14a6ec6babbd10fe8166b5502d5d7d4ef42b7720623255627ac65d275",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.4729788601398468
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 7,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "bae54b4a748929ddebc88a1464ce3fcd0cfbbe370799cf9af4fc98ffdacffc87",
+      "patient_key_sha256": "f4f3e75f73d31f5ddb298045bc2737758502aa4a185e223b0d58699b9878c556",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 1.1793303489685059
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 33,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "dea7e099f541e5b186777370662c629e2235aa3c321e4f6cdefc81d81559df74",
+      "patient_key_sha256": "9a8c8af75c23465214ed8a5a861090ff795d6465ae3951b6aa1e89371f40c662",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": -0.09420225769281387
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 2,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": false,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": false,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "47b69f1f3e5b1d9e30542f894c4f88f30c870bd44c618944d7daf414a775412a",
+      "patient_key_sha256": "03964631eb49057cd5e998f4aeb7c5be5d32821174193849aeedfeb0da78d8c0",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.163179636001587
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 11,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "eb83678e06ed6b6c8cf369fa9d037eb58fd644adb4f83dad38c1609c9959910a",
+      "patient_key_sha256": "5f9ee3949853b5356da2391506bb3a137b87cb077466dc85eb9e770776050c17",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 1.4622918367385864
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 11,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "5cf8b70bc8e4513854796b9909f63041162989702a818fd6aee858a2d6e9edbb",
+      "patient_key_sha256": "e508476a749dbd8006895770a477b86628e53ddaa36f8490132b852f075fa11c",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.4830543994903564
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 76,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "8c1108550f13f46b669ff4d6f07b6ac7ddb37a6d79a8b917aeb99969191f545d",
+      "patient_key_sha256": "a5ef44bbbd49079900b13cd2161fdeac26dba3c1204eb90001ccd4757257b5c4",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 0.7768338918685913
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 51,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "f0002240895932f9689f9bb36924dd82698f0f00d4d5c49737c7f0316718a613",
+      "patient_key_sha256": "951c4ed14a6ec6babbd10fe8166b5502d5d7d4ef42b7720623255627ac65d275",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 1.003383755683899
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 4,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "0db89b4c64f55b6cc1834eac259c773b9074d7209d05be082e81c1d04358e348",
+      "patient_key_sha256": "053169bdd9c8563d35bca5e22f756d25dd5ac966deb326c985779a924c0b534f",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.6367180347442627
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 60,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "616e69fcfc72aa9e698ae96add8d3508025136d419c0fb2760639351e4b9e391",
+      "patient_key_sha256": "bf10599ca6abd3a5b005aee7039746d43e5d2a72ecbbc92ebe6b9a81b1b29a4b",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 0.7534168362617493
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 4,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "25931b052465244e7c73f6a5483cea5c8a6687714e3e74ce5ada369df180c51a",
+      "patient_key_sha256": "03964631eb49057cd5e998f4aeb7c5be5d32821174193849aeedfeb0da78d8c0",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.295607805252075
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 106,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "10b75394ac35044948a838f8ff6f806ea55d4eda31bb7abee6d07c401ff432c4",
+      "patient_key_sha256": "c87bb85bc1b37710289b5c44cec48032a9622f4d01d2db9020c7f4d2ce82bbbf",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.29417917132377625
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 15,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "5e5e869ae5420c539fedca13ce3f111951e15d2e7197b7065e7812eb83617d18",
+      "patient_key_sha256": "b60b379502bfcd155b62c67297ba9fc264459f1f0632a8a6a379f25337c8fd4c",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 0.5367736220359802
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 7,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "cbcaa4361023eb8b9a2412facd3ac42800d138596590257ed6a26a36f861bfd3",
+      "patient_key_sha256": "80540fa1341f050d0e69c826c5ce76c980da868d78d0e9a94f8b3cede29beffb",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.1376810371875763
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 34,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "64a88855e615f796a07e2b124661a3115f48f404100e04858f350ae6cd62e18f",
+      "patient_key_sha256": "f1123f797eef1476f0d7dd482e8cb973c318eed5466ea384637b257a1f6d4555",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": 0.465242475271225
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 28,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "64119cfa2b3448ee6fe54d388972c9d72052d8cca7a3566f7686a455b8bf54ca",
+      "patient_key_sha256": "3d02a1d931825c521662a6a4f47ebd7d512785b33effd9c08e6ae74afda07b04",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.533841609954834
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 133,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "9a53eeaad5736371a6e8459536cbcefe8247298bc6e337c22a4c9726eb2435c2",
+      "patient_key_sha256": "03964631eb49057cd5e998f4aeb7c5be5d32821174193849aeedfeb0da78d8c0",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 1.3514950275421143
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 70,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "17ada64bc4f447650c2695042267430b63913e7f6185cb1a37f3b834319fd1e2",
+      "patient_key_sha256": "5aed4086d4527226db96ada4f6ccc8c404fe1c85b3f9e17baaccd754a4237746",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.4004623889923096
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 121,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "6c33bb8cbb5f38d67461d0ab7011d594e06f018588b7e465905b57cbc75d37b4",
+      "patient_key_sha256": "16b48d3dc67d789844ea58fe1bf9bdf7036f10e54498ad815cecf352e7f8645b",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.9409031867980957
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 45,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "03e9284c2ab08ba3665400486486e4ca4b76016a8ed92aa4eab82b8f3291ab8a",
+      "patient_key_sha256": "e508476a749dbd8006895770a477b86628e53ddaa36f8490132b852f075fa11c",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.942347526550293
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 17,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "b427b6d9e2c2d9f9857a13e68ac4fae7dbe65b1662e9ccad037c971ffb4e4d14",
+      "patient_key_sha256": "b16b05dd4fa94c479613a312d1c07e106a7434a691b2f44ce487146f559d3984",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.6777609586715698
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 36,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "22cb2a1c81b9d76c19e2a7c9cd946b46a8bf463120d1954d2b1caf873c51c698",
+      "patient_key_sha256": "bc749ad2e821c3841cdc90c3e5a1c4fbe1053043fc87e60b628eb3278d345f6e",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 1.0333924293518066
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 34,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "b1b8d228cd8b28f81866594389411455a02ded0aa0b1f361e8e7e2ea2e8f28fb",
+      "patient_key_sha256": "2169926481c87da22be605a7c434053c64246bb338445b809b1fa1166c31c2db",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.5980818271636963
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 20,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "651e61cbeec70adaef6bd96be31b238cef6173fc96290fe59183839eb2c520bb",
+      "patient_key_sha256": "1b8bc36a06f9f72cc3ee9b63178820887ff49a27e9ad927f805fc4d33b2b311d",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.2233383655548096
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 9,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "cf8bf7dba2b27567e89015331284b6a53e343a4258e5b042076b729d3878cca4",
+      "patient_key_sha256": "3d02a1d931825c521662a6a4f47ebd7d512785b33effd9c08e6ae74afda07b04",
+      "ground_truth_grade": 4,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 0.9176528453826904
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 282,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "33102e6c9f2b368913c675f99e7bd3e5f3eaa1b6bbc6cd0bfface4acb6664763",
+      "patient_key_sha256": "bf10599ca6abd3a5b005aee7039746d43e5d2a72ecbbc92ebe6b9a81b1b29a4b",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 0,
+        "referable": false,
+        "logit_recorded": -0.14426091313362122
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 57,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "1e4f130a02ad5dba9ad37dd89bab3d8bb6ef0c2df616cef1cef34e898cf9fc8f",
+      "patient_key_sha256": "f4f3e75f73d31f5ddb298045bc2737758502aa4a185e223b0d58699b9878c556",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 1.1838666200637817
+      },
+      "quality": {
+        "source_flag": "0",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 28,
+        "source_export_classes": [
+          "hard_exudate",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "b20ad3f67ff6776025929b64e26100c913aec1ae3077b58a205569f9a1b21009",
+      "patient_key_sha256": "16b48d3dc67d789844ea58fe1bf9bdf7036f10e54498ad815cecf352e7f8645b",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 1.9639604091644287
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 74,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "dbf183e5e7571f92f047da237decbb539f90814002af20504b3e8418af16eea7",
+      "patient_key_sha256": "1b8bc36a06f9f72cc3ee9b63178820887ff49a27e9ad927f805fc4d33b2b311d",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 1,
+        "referable": false,
+        "logit_recorded": 1.12278413772583
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 5,
+        "source_export_classes": [
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "13ed43d09953710ac47d8b49ce200f7c1950565376b2fae908fe17b26e127b65",
+      "patient_key_sha256": "9e88f4de82fdfd53556df8a29f44354a042bedf35243ac10f65bf06519b0d86b",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.174651622772217
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 71,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "d333182a840de5248b184a350deeb87ffd91fdbe6296e25609a9832dd07f52cb",
+      "patient_key_sha256": "9e88f4de82fdfd53556df8a29f44354a042bedf35243ac10f65bf06519b0d86b",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.3737916946411133
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 70,
+        "source_export_classes": [
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    },
+    {
+      "case_id_sha256": "a18e9853594958ca31fbd20bfd96f3a23d31dfee5f25442e485cb52662141580",
+      "patient_key_sha256": "2dbf3ff8c04287c2cd34c209280b94d98280193e3b7a3643aa05b8475843e2a3",
+      "ground_truth_grade": 3,
+      "baseline_output": {
+        "predicted_grade": 2,
+        "referable": true,
+        "logit_recorded": 2.354818105697632
+      },
+      "quality": {
+        "source_flag": "1",
+        "platform_quality_status": "NOT_RECORDED",
+        "interpretation": "Dataset quality flag preserved without assuming its threshold semantics or substituting a platform quality result."
+      },
+      "ood": {
+        "status": "NOT_RECORDED",
+        "reason": "The persisted DR export has no per-case OOD field."
+      },
+      "lesion": {
+        "source_export_regions": 45,
+        "source_export_classes": [
+          "cotton_wool_spot",
+          "hard_exudate",
+          "microaneurysm_like_lesion",
+          "retinal_hemorrhage"
+        ],
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "review_escalated": true,
+        "inference_provenance": "EXISTING_PHASE7_RESEARCH_EXPORT_FIELDS; FRESH_PHASE8_INFERENCE_NOT_RUN"
+      },
+      "oct": {
+        "status": "NOT_RECORDED",
+        "reason": "No per-case OCT result is attached to the fundus export."
+      },
+      "document_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No source-document evidence is attached to the export."
+      },
+      "independent_clinician_evidence": {
+        "status": "NOT_RECORDED",
+        "reason": "No clinician adjudication is attached to the export."
+      },
+      "review_escalation": {
+        "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+        "escalated": true,
+        "label": "REVIEW ESCALATION COVERAGE",
+        "forbidden_interpretation": "DISEASE RECOVERY"
+      }
+    }
+  ],
+  "limitations": [
+    "This registry is a hashed projection of an existing Phase 7 export; it is not a fresh Phase 8 image inference.",
+    "The source export contains no per-case OCT, document, independent clinician, or OOD evidence, so those fields are NOT_RECORDED rather than false.",
+    "Dataset quality flags are preserved as source values only; they are not reinterpreted as platform quality-gate outcomes.",
+    "Escalation coverage is review-routing evidence and does not recover disease, prove lesions, or validate a clinical safety net."
+  ]
+}

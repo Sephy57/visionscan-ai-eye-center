@@ -27,6 +27,7 @@ import { buildSpecialistConsensus, type SpecialistConsensus } from "../clinical/
 import type { PatientSymptom } from "../clinical/symptoms";
 import { buildSpecialistEvidencePackages, type SpecialistEvidencePackage } from "../clinical/specialistPackages";
 import { enrichEvidenceGraph } from "./canonical";
+import { fuseRetinalEvidence, type RetinalEvidenceFusionResult } from "./retinalEvidenceFusion";
 
 export interface SpecialistEvidenceBundle {
   specialty_id: SpecialistAnalysisResult["specialty_id"];
@@ -52,6 +53,8 @@ export interface StructuredClinicalEvidence {
   /** Present on newly-built packages; optional for compatibility with older
    * persisted/test fixtures created before the consensus layer existed. */
   specialist_consensus?: SpecialistConsensus;
+  /** Deterministic Phase 8 review routing over the same evidence array. */
+  retinal_evidence_fusion?: RetinalEvidenceFusionResult;
   safety_banner: string;
 }
 
@@ -130,6 +133,7 @@ export async function buildStructuredClinicalEvidence(
   const conflicts = detectConflicts(evidence);
   attachConflictIds(evidence, conflicts);
   const possibleConditions = assessConditions(evidence);
+  const retinalEvidenceFusion = fuseRetinalEvidence(evidence, conflicts);
   const analysisRecord = await dbGet<{ result?: import("../analysis/schema").AnalysisResult }>("analyses", `anl_${studyId}`);
   const specialistPackages = buildSpecialistEvidencePackages({
     analysis: analysisRecord?.result ?? null,
@@ -183,6 +187,7 @@ export async function buildStructuredClinicalEvidence(
     specialist_bundles: specialistBundles,
     specialist_packages: specialistPackages,
     specialist_consensus: specialistConsensus,
+    retinal_evidence_fusion: retinalEvidenceFusion,
     safety_banner: SAFETY_BANNER,
   };
 }

@@ -1,0 +1,75 @@
+{
+  "schema_version": "visionscan-phase8-runtime-closure-v1",
+  "observed_at": "2026-09-13T10:00:46.589Z",
+  "phi_included": false,
+  "source_artifacts": [
+    "docs/generated/phase7-real-load.json",
+    "docs/generated/phase7-provider-crash-matrix.json"
+  ],
+  "status": "LOCAL RUNTIME PARTIAL",
+  "root_cause": {
+    "classification": "BOUNDED_SINGLE_SLOT_QUEUE_DEADLINE",
+    "statement": "The 25-job point did not complete because one heavy-model reservation slot serialized service while queued/resource wait consumed the 120000 ms job deadline from queue claim.",
+    "observed_deadline_code": "JOB_DEADLINE_EXCEEDED",
+    "capacity_policy": "max_active_leases=1",
+    "evidence": {
+      "requested_jobs": 25,
+      "completed_jobs": 15,
+      "failed_jobs": 10,
+      "retries": 3109,
+      "queue_wait_ms": {
+        "count": 25,
+        "p50": 16354.999,
+        "p95": 97586.922,
+        "max": 115227.026
+      },
+      "resource_wait_ms": {
+        "count": 25,
+        "p50": 15767.058,
+        "p95": 97011.242,
+        "max": 114653.692
+      },
+      "service_latency_ms": {
+        "count": 15,
+        "p50": 8050.247,
+        "p95": 9133.728,
+        "max": 9403.08
+      },
+      "deadline_counts": {
+        "deadline_120000ms_enforced_from_queue_claim": 15,
+        "JOB_DEADLINE_EXCEEDED": 10
+      }
+    }
+  },
+  "fairness": {
+    "status": "NOT_MEASURED",
+    "reason": "The Phase 7 load probe records completion order and wait distributions but does not define a fairness target or starvation metric.",
+    "completion_order_available": true
+  },
+  "backpressure": {
+    "status": "MEASURED_BOUNDED_ADMISSION",
+    "admission_limit": 1,
+    "rejection_signal": "reservation_limit_reached",
+    "queue_age_status": "MEASURED",
+    "queue_age_max_ms": 115227.026
+  },
+  "persistence": {
+    "exactly_once": "NOT_MEASURED",
+    "crash_before_result_persistence": "No completed payload was observed in the forced termination windows",
+    "crash_after_result_persistence_before_completion": "NOT_MEASURED",
+    "graceful_shutdown": "NOT_MEASURED",
+    "restart_recovery": "NOT_MEASURED",
+    "duplicate_completion": "NOT_MEASURED"
+  },
+  "real_provider_deadline": {
+    "status": "MEASURED_REAL_QUEUE_DEADLINE",
+    "deadline_ms": 120000,
+    "enforced_from": "QUEUE_CLAIM",
+    "provider_process_termination": "PARTIAL_REAL_PROVIDER_CRASH_MATRIX"
+  },
+  "limitations": [
+    "This is a projection of the real Phase 7 single-worker run, not a new 25-job rerun.",
+    "Fairness, exactly-once completion, post-persistence crash recovery, graceful shutdown, and restart recovery remain NOT_MEASURED.",
+    "Host memory readings are observational; they do not enforce an OS-level memory limit."
+  ]
+}

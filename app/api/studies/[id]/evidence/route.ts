@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/rbac";
 import { buildEvidenceWorkspace } from "@/lib/evidence/synthesize";
 import { requireStudyScope } from "@/lib/auth/scope";
+import { fuseRetinalEvidence } from "@/lib/evidence/retinalEvidenceFusion";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,5 +37,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if ("not_found" in workspace) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  return NextResponse.json(workspace);
+  return NextResponse.json({
+    ...workspace,
+    retinal_evidence_fusion: fuseRetinalEvidence(workspace.evidence, workspace.conflicts),
+  });
 }

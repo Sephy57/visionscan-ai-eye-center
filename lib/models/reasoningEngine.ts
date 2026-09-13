@@ -71,6 +71,8 @@ export interface StructuredReasoningResult {
   adversarial_reviews: AdversarialConditionReview[];
   /** Referential/safety verification; disagreement is surfaced, never hidden. */
   independent_verification: IndependentReasoningVerification;
+  /** Phase 8 deterministic review-routing result over the same evidence graph. */
+  retinal_evidence_fusion?: StructuredClinicalEvidence["retinal_evidence_fusion"];
 }
 
 export interface ReasoningEngine {
@@ -109,7 +111,8 @@ export class DeterministicReasoningEngine implements ReasoningEngine {
     const now = new Date().toISOString();
 
     const symptomItems = evidence.evidence.filter((e) => e.source_type === "SYMPTOM");
-    const syntheticSymptoms = symptomItems.map((e) => ({
+    const presentSymptomItems = symptomItems.filter((e) => e.presence === "PRESENT");
+    const syntheticSymptoms = presentSymptomItems.map((e) => ({
       type: e.category,
       onset: "unknown" as const, duration: "unknown" as const, severity: "moderate" as const,
       laterality: "unknown" as const, progression: "unknown" as const, frequency: "unknown" as const,
@@ -170,7 +173,7 @@ export class DeterministicReasoningEngine implements ReasoningEngine {
       study_id: evidence.study_id,
       encounter_id: evidence.encounter_id,
       evidence_references: evidence.evidence.map((e) => e.id),
-      relevant_symptoms: [...new Set(symptomItems.map((e) => e.category))],
+      relevant_symptoms: [...new Set(presentSymptomItems.map((e) => e.category))],
       evidence_conflicts: evidence.conflicts,
       specialist_contributions: evidence.specialist_bundles,
       possible_conditions: evidence.possible_conditions,
@@ -188,6 +191,7 @@ export class DeterministicReasoningEngine implements ReasoningEngine {
       blocked_claims: blockedClaims,
       adversarial_reviews: adversarialReviews,
       independent_verification: independentVerification,
+      retinal_evidence_fusion: evidence.retinal_evidence_fusion,
     };
   }
 }

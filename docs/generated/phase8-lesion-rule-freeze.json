@@ -1,0 +1,58 @@
+{
+  "schema_version": "visionscan-phase8-lesion-rule-freeze-v1",
+  "rule_id": "LESION_ESCALATION_RULE_PHASE7_V1",
+  "status": "FROZEN_RESEARCH_REVIEW_RULE",
+  "label": "REVIEW ESCALATION COVERAGE",
+  "forbidden_interpretation": "DISEASE RECOVERY",
+  "rule": {
+    "operator": "GREATER_THAN_OR_EQUAL",
+    "feature": "region_count",
+    "threshold": 3,
+    "source": "lesion model connected-region output"
+  },
+  "model": {
+    "model_id": "fundus-lesions-clementp-unet-seresnext50",
+    "model_version": "a2cfcb594e483",
+    "artifact_sha256": "a7a7cb45b92328f7c9a8e581eec3944fd435d37fae8cbf340b1319c5f987c6d2",
+    "preprocessing_version": "clementp-source-pinned-1024-v1",
+    "validation_status": "RESEARCH_ONLY"
+  },
+  "selection": {
+    "selection_state": "SELECTED_ON_CALIBRATION_ONLY",
+    "calibration_patients": 80,
+    "evaluation_patients": 20,
+    "split_assignment_sha256": "2a0694734556e5a591efdc3c320eb44053031f83bef144bd3d9accf8b624add0",
+    "minimum_review_escalation_coverage": 0.9,
+    "evaluation_reused_for_selection": false,
+    "retuning_after_phase7_evaluation": false
+  },
+  "measured_evidence": {
+    "calibration": {
+      "fn_review_escalation_coverage": 0.9080459770114943,
+      "review_escalations_per_100_path_cases": 57.48031496062992,
+      "fn_available_cases": 86,
+      "path_available_cases": 252
+    },
+    "held_out": {
+      "fn_review_escalation_coverage": 1,
+      "review_escalations_per_100_path_cases": 50.76923076923077,
+      "fn_available_cases": 14,
+      "path_available_cases": 64
+    }
+  },
+  "source_hashes": {
+    "raw_export_sha256": "c040638f5397a86af54599a6c21b3e047d6a68bcbf93a28f186e6feb802a12e5",
+    "source_csv_sha256": "54c2f11bf0647fe3cc64496cd83646ea4a4fdf0aab82b1cd4891ad998f220332",
+    "calibration_script_sha256": "cacb7b647dc29d14a4549475b4a952b7b270ecba20aee373a668abb9af90fb44",
+    "batch_probe_sha256": "784589cb889b0597ae61743974eca97794a068e6ffa81cd81b9532423c3d0cef",
+    "phase7_calibration_bundle_sha256": "7026fc92ae3a0ab7e51ba0cf7b1e509eee76b2063ca8d64149c706d598f9768c"
+  },
+  "runtime_consumer": "NO_AUTONOMOUS_DECISION_CONSUMER; REVIEW_ROUTING_ONLY",
+  "limitations": [
+    "This frozen rule is a review escalation policy, not a lesion detector validation certificate.",
+    "It does not establish disease recovery, sensitivity, specificity, referral utility, or clinical safety.",
+    "The model is research-only and its connected-region outputs are not a calibrated probability.",
+    "The Phase 7 evaluation partition was not used to tune this rule."
+  ],
+  "phi_included": false
+}

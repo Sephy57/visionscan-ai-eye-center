@@ -6,6 +6,9 @@ import type {
   ClaimLedgerReleaseStatus,
 } from "../analysis/schema";
 
+// Keep the established ledger envelope version stable. The Phase 8 dependency
+// metadata is optional and additive, so it does not require breaking existing
+// Phase 2-7 consumers that assert the 1.1.0 contract.
 export const CLAIM_LEDGER_SCHEMA_VERSION = "claim-ledger-1.1.0";
 
 const VALIDATED_MODEL_STATES = new Set(["EXTERNALLY_VALIDATED", "CLINICALLY_VALIDATED"]);
@@ -33,6 +36,8 @@ function findingClaim(analysis: AnalysisResult, finding: AnalysisResult["finding
     ...(finding.source_asset_id ? [`asset:${finding.source_asset_id}`] : []),
     ...(finding.source_page === undefined ? [] : [`document-page:${finding.source_page}`]),
   ];
+  const dependencyGroupIds = [...new Set(executionRows.map((row) => row.dependency_group_id).filter(Boolean))];
+  if (dependencyGroupIds.length === 0 && finding.source_asset_id) dependencyGroupIds.push(`asset:${finding.source_asset_id}`);
   const certainty: ClaimCertainty = modelStatus === "RESEARCH" || modelStatus === "INTERNAL_VALIDATION"
     ? "RESEARCH_SCORE_ONLY"
     : finding.confidence_category === "HIGH CONFIDENCE" ? "HIGH"
@@ -61,6 +66,10 @@ function findingClaim(analysis: AnalysisResult, finding: AnalysisResult["finding
     model_execution_ids: executionRows.map((row) => `model-execution:${row.model_id}:${row.input_asset_id}:${row.input_roi_id ?? "primary"}`),
     rule_ids: ["rule:claim-ledger-evidence-gate", "rule:research-review-boundary"],
     knowledge_source_ids: [],
+    dependency_group_ids: dependencyGroupIds,
+    independence_state: dependencyGroupIds.length === 0
+      ? "NO_DEPENDENCY_RECORDED"
+      : dependencyGroupIds.length === 1 ? "DEPENDENT_SHARED_INPUT" : "INDEPENDENT_SOURCE_GROUPS_PRESENT",
   };
 }
 
@@ -71,6 +80,10 @@ export function buildClaimLedger(analysis: AnalysisResult): ClaimLedger {
     ...analysis.findings.map((finding) => `finding:${finding.id}`),
     ...(analysis.patient_context?.symptoms ?? []).map((symptom) => `symptom:${symptom.type}`),
   ];
+  const recommendationDependencyGroups = [...new Set([
+    ...(analysis.model_execution_ledger ?? []).map((row) => row.dependency_group_id),
+    ...(analysis.patient_context?.symptoms ?? []).map((symptom) => `symptom:${symptom.type}`),
+  ].filter(Boolean))];
   entries.push({
     claim_id: `claim:triage:${analysis.study.study_id}`,
     claim_type: "TRIAGE_RECOMMENDATION",
@@ -94,6 +107,10 @@ export function buildClaimLedger(analysis: AnalysisResult): ClaimLedger {
     model_execution_ids: [],
     rule_ids: ["rule:quality-gate", "rule:conservative-triage", "rule:claim-ledger-evidence-gate"],
     knowledge_source_ids: [],
+    dependency_group_ids: recommendationDependencyGroups,
+    independence_state: recommendationDependencyGroups.length === 0
+      ? "NO_DEPENDENCY_RECORDED"
+      : recommendationDependencyGroups.length === 1 ? "DEPENDENT_SHARED_INPUT" : "INDEPENDENT_SOURCE_GROUPS_PRESENT",
   });
 
   const publicationBlocked = entries.some((entry) => entry.release_status === "BLOCKED_NO_EVIDENCE");

@@ -26,6 +26,7 @@ import { buildStructuredClinicalEvidence } from "../evidence/structuredClinicalE
 import { DeterministicReasoningEngine } from "../models/reasoningEngine";
 import { persistReasoningRecord } from "../reports/reasoningRecord";
 import { prepareRecoveryJournal, updateRecoveryJournal } from "../storage/reconciliation";
+import { buildClinicianReviewEvent } from "../clinical/reviewEvents";
 
 export interface StudyRecord {
   study_id: string;
@@ -666,9 +667,11 @@ export type TreatmentReviewAction =
 export interface ReviewInput {
   reviewer_id: string;
   action: "accept" | "reject" | "correct" | "note" | "add_observation" | "finalize" | "confirm" | "indeterminate" | "request_new_scan" | TreatmentReviewAction;
+  /** Optional bounded rationale retained in the immutable review event. */
+  reason?: string;
   finding_id?: string;
   note?: string;
-  correction?: Partial<{ severity: string; location: string; explanation: string; type: string }>;
+  correction?: Partial<{ severity: string; location: string; explanation: string; type: string; laterality: "OD" | "OS" | "OU" | "unknown" }>;
   observation?: { text: string; laterality?: "OD" | "OS" | "OU" | "UNKNOWN" };
   /** Explicit clinician-authored fields for final assessment; never AI-generated. */
   assessment?: { diagnosis?: string; impression?: string; plan?: string; follow_up?: string };
@@ -683,16 +686,18 @@ export interface ReviewInput {
  * bounded and auditable. */
 function sanitizeFindingCorrection(
   input: ReviewInput["correction"],
-): Partial<{ severity: string; location: string; explanation: string; type: string }> | null {
+): Partial<{ severity: string; location: string; explanation: string; type: string; laterality: "OD" | "OS" | "OU" | "unknown" }> | null {
   if (!input || typeof input !== "object" || Array.isArray(input)) return null;
-  const out: Partial<{ severity: string; location: string; explanation: string; type: string }> = {};
-  const allowed = ["severity", "location", "explanation", "type"] as const;
+  const out: Partial<{ severity: string; location: string; explanation: string; type: string; laterality: "OD" | "OS" | "OU" | "unknown" }> = {};
+  const allowed = ["severity", "location", "explanation", "type", "laterality"] as const;
   for (const key of allowed) {
     if (!(key in input)) continue;
     const value = input[key];
     if (typeof value !== "string" || value.trim().length === 0 || value.length > 2000) return null;
     if (key === "severity" && !["none", "mild", "moderate", "severe", "indeterminate"].includes(value)) return null;
-    out[key] = value.trim();
+    if (key === "laterality" && !["OD", "OS", "OU", "unknown"].includes(value)) return null;
+    if (key === "laterality") out[key] = value as "OD" | "OS" | "OU" | "unknown";
+    else out[key] = value.trim();
   }
   return Object.keys(out).length > 0 ? out : null;
 }
@@ -721,6 +726,10 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
     throw new Error(`Immutable AI report integrity check failed: ${integrity.reason}`);
   }
 
+  // Capture the unchanged AI payload before applying the clinician projection.
+  // The append-only event hashes this snapshot, while the report remains a
+  // convenient current-state projection for existing consumers.
+  const aiSnapshot = JSON.parse(JSON.stringify(report)) as ClinicalReport;
   const change = { field: input.finding_id ?? "report", action: input.action, note: input.note, at: new Date().toISOString() };
   report.review = report.review ?? { status: "ai_only" };
   report.clinician_interpretation = report.clinician_interpretation ?? {
@@ -768,7 +777,7 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
           ...(report.clinician_corrections ?? []),
           {
             finding_id: f.id,
-            original: { type: f.type, location: f.location, severity: f.severity, explanation: f.explanation },
+            original: { type: f.type, location: f.location, severity: f.severity, explanation: f.explanation, laterality: f.laterality },
             correction,
             reviewer_id: input.reviewer_id,
             note: input.note,
@@ -872,14 +881,18 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
   ci.at = change.at;
 
   report.review.clinician_changes = [...(report.review.clinician_changes ?? []), change];
-  await dbPut("reports", report.report_id, report);
+  const reviewEvent = buildClinicianReviewEvent(aiSnapshot, analysis, input, change.at);
+  await dbTransaction((tx) => {
+    tx.put("reports", report.report_id, report);
+    tx.put("clinician_reviews", reviewEvent.review_event_id, reviewEvent);
+  });
   await writeJson("reports", report.report_id, report);
   await audit({
     actor: `clinician:${input.reviewer_id}`,
     action: `review.${input.action}`,
     studyId,
     outcome: "ok",
-    detail: input.finding_id ? `finding=${input.finding_id}` : undefined,
+    detail: input.finding_id ? `finding=${input.finding_id}; review_event=${reviewEvent.review_event_id}` : `review_event=${reviewEvent.review_event_id}`,
   });
   return report;
 }

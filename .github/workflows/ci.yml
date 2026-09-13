@@ -71,6 +71,11 @@ jobs:
         # runs remain outside hosted CI and are never inferred here.
         run: npm run validation:phase7
 
+      - name: Phase 8 retinal evidence and review acceptance
+        # Phase 8 contracts are deterministic/aggregate-only. They preserve
+        # explicit NOT MEASURED states and do not require research weights.
+        run: npm run validation:phase8
+
       - name: Audit local model manifests
         run: npm run model:audit
 
@@ -133,6 +138,9 @@ jobs:
 
       - name: Phase 7 retinal intelligence and runtime acceptance
         run: npm run validation:phase7
+
+      - name: Phase 8 retinal evidence and review acceptance
+        run: npm run validation:phase8
 
       - name: Audit local model manifests
         run: npm run model:audit

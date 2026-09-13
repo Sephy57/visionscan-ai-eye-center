@@ -219,6 +219,16 @@ interface Phase7Response {
   runtime?: { resource_race?: { status?: string; admission?: { admitted_count?: number; model_launch_count?: number; no_double_launch?: boolean }; ownership_fencing?: { old_release_blocked?: boolean } }; real_load?: { status?: string; points?: Array<{ requested?: number; completed_jobs?: number; throughput_jobs_per_second?: number; queue_wait_ms?: { p50?: number | null; p95?: number | null; max?: number | null }; service_latency_ms?: { p50?: number | null; p95?: number | null; max?: number | null } }> }; resident?: { status?: string; resident_decision?: string; initial_load_ms?: number | null; warm_inference_ms?: { p50?: number | null; p95?: number | null } }; crash_matrix?: { status?: string } };
 }
 
+interface Phase8Response {
+  notice?: string;
+  classifications?: { retinal_intelligence?: string; runtime?: string; software?: string; data?: string; clinical?: string[] };
+  high_grade_miss_registry?: { cohort?: { exact_high_grade_miss_cases?: number; grade_3_exact_miss_cases?: number; grade_4_exact_miss_cases?: number }; aggregate?: Record<string, { escalated_cases?: number; non_escalated_cases?: number; review_escalation_coverage?: number }>; combined?: { review_escalation_coverage?: number } };
+  lesion_rule_freeze?: { rule_id?: string; rule?: { feature?: string; threshold?: number }; measured_evidence?: { held_out?: { fn_review_escalation_coverage?: number; review_escalations_per_100_path_cases?: number } } };
+  external_validation?: { decision?: string; attempts?: Array<{ dataset?: string; decision?: string; inference_run?: boolean }> };
+  fusion?: { engine?: string; diagnostic_ensemble?: boolean; score_averaging?: boolean; normality_claim_allowed?: boolean; urgent_symptoms_independent?: boolean };
+  runtime?: { persistence?: { exactly_once?: string; graceful_shutdown?: string; restart_recovery?: string } };
+}
+
 interface Source<T> {
   data: T | null;
   error: string | null;
@@ -235,6 +245,7 @@ interface CenterData {
   operations: Source<OperationsResponse>;
   phase6: Source<Phase6Response>;
   phase7: Source<Phase7Response>;
+  phase8: Source<Phase8Response>;
   health: Record<string, Source<HealthResponse>>;
 }
 
@@ -251,6 +262,7 @@ const initialData: CenterData = {
   operations: emptySource(),
   phase6: emptySource(),
   phase7: emptySource(),
+  phase8: emptySource(),
   health: {},
 };
 
@@ -333,7 +345,7 @@ export default function ValidationCenterClient() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [dashboard, models, registry, live, ready, metrics, admin, operations, phase6, phase7] = await Promise.all([
+    const [dashboard, models, registry, live, ready, metrics, admin, operations, phase6, phase7, phase8] = await Promise.all([
       readSource<DashboardResponse>("/api/validation/dashboard"),
       readSource<ModelsResponse>("/api/models"),
       readSource<ValidationRegistryResponse>("/api/models/validation"),
@@ -344,6 +356,7 @@ export default function ValidationCenterClient() {
       readSource<OperationsResponse>("/api/admin/operations"),
       readSource<Phase6Response>("/api/validation/phase6"),
       readSource<Phase7Response>("/api/validation/phase7"),
+      readSource<Phase8Response>("/api/validation/phase8"),
     ]);
 
     const modelsForHealth = models.data?.models ?? [];
@@ -352,7 +365,7 @@ export default function ValidationCenterClient() {
       await readSource<HealthResponse>(`/api/models/${encodeURIComponent(model.model_id)}/health`),
     ] as const));
 
-    setData({ dashboard, models, registry, live, ready, metrics, admin, operations, phase6, phase7, health: Object.fromEntries(healthEntries) });
+    setData({ dashboard, models, registry, live, ready, metrics, admin, operations, phase6, phase7, phase8, health: Object.fromEntries(healthEntries) });
     setRefreshedAt(new Date().toISOString());
     setLoading(false);
   }, []);
@@ -665,6 +678,56 @@ export default function ValidationCenterClient() {
             </dl>
             {data.admin.data?.audit_tail && data.admin.data.audit_tail.length > 0 && <div className={styles.activityList}>{data.admin.data.audit_tail.slice(0, 8).map((event, index) => <div className={styles.activityRow} key={`${event.ts}-${event.action}-${index}`}><span>{formatDate(event.ts)}</span><strong>{label(event.action)}</strong><span>{event.role ?? "role not recorded"} · {event.outcome}</span></div>)}</div>}
             {!data.admin.data && <p className={styles.unavailable}>Audit detail is admin-only or unavailable; no activity is guessed.</p>}
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="phase8-title">
+        <SectionHeading eyebrow="07 / Phase 8 evidence" title="High-grade safety net and evidence fusion" detail="Aggregate research evidence only. Hashed case keys and explicit NOT_RECORDED states prevent false precision or patient disclosure." />
+        <div className={styles.boundary} role="note" id="phase8-title">
+          <span className={styles.boundaryMark} aria-hidden="true">!</span>
+          <div><strong>{data.phase8.data?.classifications?.retinal_intelligence ?? "RETINAL REVIEW INTELLIGENCE PARTIAL — INTERNAL HELD-OUT EVIDENCE ONLY"}</strong><br />{data.phase8.data?.notice ?? "Phase 8 evidence is unavailable or role-restricted; no clinical or normality claim is inferred."}</div>
+        </div>
+        <div className={styles.statusGrid}>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>High-grade registry</span><StatusPill status="warn">Research</StatusPill></div>
+            <strong className={styles.statusValue}>{integer(data.phase8.data?.high_grade_miss_registry?.cohort?.exact_high_grade_miss_cases)} cases</strong>
+            <span className={styles.cardNote}>Grade 3: {integer(data.phase8.data?.high_grade_miss_registry?.cohort?.grade_3_exact_miss_cases)} · grade 4: {integer(data.phase8.data?.high_grade_miss_registry?.cohort?.grade_4_exact_miss_cases)}</span>
+          </article>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>Frozen escalation rule</span><StatusPill status="warn">Held out</StatusPill></div>
+            <strong className={styles.statusValue}>{label(data.phase8.data?.lesion_rule_freeze?.rule_id)}</strong>
+            <span className={styles.cardNote}>{data.phase8.data?.lesion_rule_freeze?.rule ? `${data.phase8.data.lesion_rule_freeze.rule.feature} ≥ ${data.phase8.data.lesion_rule_freeze.rule.threshold}` : "Not recorded"} · review routing only</span>
+          </article>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>External validation</span><StatusPill status="bad">Blocked</StatusPill></div>
+            <strong className={styles.statusValue}>Not established</strong>
+            <span className={styles.cardNote}>{integer(data.phase8.data?.external_validation?.attempts?.length)} dataset attempt(s); no external inference run</span>
+          </article>
+          <article className={styles.statusCard}>
+            <div className={styles.cardTop}><span className={styles.cardLabel}>Fusion safety</span><StatusPill status={data.phase8.data?.fusion?.normality_claim_allowed === false ? "ok" : "neutral"}>{data.phase8.data?.fusion?.engine ?? "Not recorded"}</StatusPill></div>
+            <strong className={styles.statusValue}>{data.phase8.data?.fusion?.normality_claim_allowed === false ? "No false normal" : "Not recorded"}</strong>
+            <span className={styles.cardNote}>Urgent symptoms independent · no score averaging</span>
+          </article>
+        </div>
+        <div className={styles.evidenceGrid}>
+          <article className={styles.evidenceCard}>
+            <div className={styles.cardTop}><div><span className={styles.cardLabel}>Grade-specific review coverage</span><h3>Escalation, not disease recovery</h3></div><StatusPill status="warn">Internal holdout</StatusPill></div>
+            <div className={styles.metricStrip}>
+              <div><span>Grade 3 coverage</span><strong>{percent(data.phase8.data?.high_grade_miss_registry?.aggregate?.["3"]?.review_escalation_coverage)}</strong></div>
+              <div><span>Grade 4 coverage</span><strong>{percent(data.phase8.data?.high_grade_miss_registry?.aggregate?.["4"]?.review_escalation_coverage)}</strong></div>
+              <div><span>Held-out rule coverage</span><strong>{percent(data.phase8.data?.lesion_rule_freeze?.measured_evidence?.held_out?.fn_review_escalation_coverage)}</strong></div>
+            </div>
+            <p className={styles.evidenceText}>Every high-grade non-escalated case remains represented by a hashed case key in the scoped artifact. Source OCT, document, OOD, and clinician evidence are displayed as not recorded when absent.</p>
+          </article>
+          <article className={styles.evidenceCard}>
+            <div className={styles.cardTop}><div><span className={styles.cardLabel}>Runtime closure</span><h3>Persistence boundary</h3></div><StatusPill status="bad">Partial</StatusPill></div>
+            <dl className={styles.definitionList}>
+              <dt>Exactly once</dt><dd>{label(data.phase8.data?.runtime?.persistence?.exactly_once)}</dd>
+              <dt>Graceful shutdown</dt><dd>{label(data.phase8.data?.runtime?.persistence?.graceful_shutdown)}</dd>
+              <dt>Restart recovery</dt><dd>{label(data.phase8.data?.runtime?.persistence?.restart_recovery)}</dd>
+              <dt>Clinical state</dt><dd>NOT CLINICALLY VALIDATED · NOT A MEDICAL DEVICE · NOT FOR AUTONOMOUS DIAGNOSIS</dd>
+            </dl>
           </article>
         </div>
       </section>

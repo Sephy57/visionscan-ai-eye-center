@@ -514,6 +514,9 @@ function sqliteTransaction(): SyncTransaction {
       return rows.map((row) => clone(parsePayload<T>(collection, row.id, row.payload)));
     },
     put<T>(collection: Collection, id: string, doc: T) {
+      if (collection === "clinician_reviews" && readTarget(collection, id)) {
+        throw new Error(`IMMUTABLE_REVIEW_EVENT_EXISTS:${id}`);
+      }
       assertRequiredFutureReferences(collection, doc, readTarget);
       assertTenantReferences(collection, doc, readTarget);
       const payload = jsonPayload(doc);
@@ -612,6 +615,9 @@ export async function dbTransaction<T>(work: (tx: DbTransaction) => T): Promise<
       );
     },
     put<TValue>(collection: Collection, id: string, doc: TValue) {
+      if (collection === "clinician_reviews" && (draft.collections[collection] as Record<string, unknown> | undefined)?.[id] !== undefined) {
+        throw new Error(`IMMUTABLE_REVIEW_EVENT_EXISTS:${id}`);
+      }
       assertRequiredFutureReferences(collection, doc, <T>(target: Collection, targetId: string) => {
         const value = (draft.collections[target] as Record<string, unknown> | undefined)?.[targetId];
         return value === undefined ? null : value as T;
@@ -660,6 +666,9 @@ export async function dbPut<T>(collection: Collection, id: string, doc: T): Prom
     return;
   }
   const db = await loadJson();
+  if (collection === "clinician_reviews" && db.collections[collection]?.[id] !== undefined) {
+    throw new Error(`IMMUTABLE_REVIEW_EVENT_EXISTS:${id}`);
+  }
   assertRequiredFutureReferences(collection, doc, <TValue>(target: Collection, targetId: string) => {
     const value = (db.collections[target] as Record<string, unknown> | undefined)?.[targetId];
     return value === undefined ? null : value as TValue;
