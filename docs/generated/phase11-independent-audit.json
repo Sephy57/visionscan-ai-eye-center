@@ -3,12 +3,12 @@
   "observed_at": "2026-09-13T19:37:13.6033840Z",
   "audited_commit": "79d9cae39e136896db3b0c0784b39e067e71708e",
   "audit_scope": "PHASE11_ENGINEERING",
-  "audit_method": "fresh_process_read_only_source_and_evidence_inspection",
-  "audit_status": "PASS_NO_P0_SOFTWARE_BLOCKER",
+  "audit_method": "primary_targeted_read_only_verification; independent_bounded_auditor_attempt_did_not_return",
+  "audit_status": "NOT_MEASURED_INDEPENDENT_AUDITOR_TIMEOUT",
   "findings": [
     {
       "id": "ENG-01",
-      "severity": "PASS",
+      "severity": "PRIMARY_REVIEW_ONLY",
       "finding": "Worker lifecycle and genuine SIGINT lease-recovery evidence agree: shutdown stops new claims, terminates the owned provider tree, preserves the active job for recovery, and a restart completes it without duplicate effects.",
       "evidence": [
         "docs/generated/phase11-live-shutdown-final.json",
@@ -18,7 +18,7 @@
     },
     {
       "id": "ENG-02",
-      "severity": "PASS",
+      "severity": "PRIMARY_REVIEW_ONLY",
       "finding": "The active-provider deadline, resource-wait deadline, and post-terminal crash seam are represented by real Windows harness evidence with bounded cleanup and duplicate-free durable effects.",
       "evidence": [
         "docs/generated/phase11-deadline-evidence.json",
@@ -28,7 +28,7 @@
     },
     {
       "id": "ENG-03",
-      "severity": "PASS",
+      "severity": "PRIMARY_REVIEW_ONLY",
       "finding": "Capacity states, FIFO control-plane behavior, retry interpretation, review-conflict adjudication, additive laterality correction, prompt-safety handling, and truthful deletion retention wording are covered by source checks and committed evidence.",
       "evidence": [
         "docs/generated/phase11-capacity-policy.json",
@@ -39,10 +39,13 @@
     }
   ],
   "remaining_p0": [],
-  "remaining_p1": [],
+  "remaining_p1": [
+    "NOT_MEASURED — no independent post-implementation auditor returned within the bounded 120-second window; primary review is not a substitute for independent sign-off."
+  ],
   "limitations": [
     "This is an engineering evidence audit, not clinical validation, regulatory review, or model-performance sign-off.",
-    "The independent audit records code and committed evidence; it does not re-run the long provider harnesses.",
+    "The primary read-only review records code and committed evidence; it does not substitute for an independent auditor sign-off and does not re-run the long provider harnesses.",
+    "Two bounded independent auditor attempts were stopped after no result was returned; this evidence gap is retained explicitly.",
     "The current implementation-head CI run must be re-observed after this artifact is pushed; report-head CI is a separate post-report verification gate."
   ],
   "clinical_safety_boundary_audit": "SEE phase11-clinical-safety-boundary-audit.json"
