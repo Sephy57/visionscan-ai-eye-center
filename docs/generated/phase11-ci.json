@@ -1,21 +1,46 @@
 {
   "schema_version": "visionscan-phase11-ci-v1",
-  "evidence_classification": "NOT_MEASURED_REMOTE_CI_NOT_PUSHED",
+  "evidence_classification": "PASS_EXACT_IMPLEMENTATION_HEAD_CI",
   "repository": "https://github.com/Sephy57/visionscan-ai-eye-center.git",
   "workflow": ".github/workflows/ci.yml",
-  "head_sha": null,
-  "runs": [],
+  "head_sha": "39cb5f44177aabbdb2f621fa9c90738c45c04528",
+  "runs": [
+    {
+      "run_id": 34778722481,
+      "head_sha": "39cb5f44177aabbdb2f621fa9c90738c45c04528",
+      "status": "success",
+      "url": "https://github.com/Sephy57/visionscan-ai-eye-center/actions/runs/34778722481",
+      "jobs": {
+        "linux": { "job_id": 103781668677, "status": "success" },
+        "browser": { "job_id": 103781668761, "status": "success" },
+        "windows": { "job_id": 103781668789, "status": "success" }
+      }
+    },
+    {
+      "run_id": 34777447122,
+      "head_sha": "79d9cae39e136896db3b0c0784b39e067e71708e",
+      "status": "failure_artifact_missing",
+      "url": "https://github.com/Sephy57/visionscan-ai-eye-center/actions/runs/34777447122",
+      "note": "Superseded implementation-head run; Linux and Windows stopped at the missing independent-audit artifact, while browser passed."
+    }
+  ],
   "linux": {
-    "status": "NOT_MEASURED",
-    "reason": "No exact Phase 11 implementation or report head was pushed during this local evidence pass."
+    "status": "PASS",
+    "run_id": 34778722481,
+    "job_id": 103781668677,
+    "head_sha_verified": true
   },
   "windows": {
-    "status": "NOT_MEASURED",
-    "reason": "No exact Phase 11 implementation or report head was pushed during this local evidence pass."
+    "status": "PASS",
+    "run_id": 34778722481,
+    "job_id": 103781668789,
+    "head_sha_verified": true
   },
   "browser": {
-    "status": "NOT_MEASURED",
-    "reason": "No exact Phase 11 implementation or report head was pushed during this local evidence pass."
+    "status": "PASS",
+    "run_id": 34778722481,
+    "job_id": 103781668761,
+    "head_sha_verified": true
   },
-  "policy": "Remote CI results are not inferred from local equivalents or historical runs."
+  "policy": "Remote CI results are recorded only when the run head SHA and job conclusions are observed; local equivalents do not substitute for the hosted gate."
 }
