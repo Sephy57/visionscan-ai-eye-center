@@ -3,8 +3,19 @@
   "evidence_classification": "PASS_EXACT_IMPLEMENTATION_HEAD_CI",
   "repository": "https://github.com/Sephy57/visionscan-ai-eye-center.git",
   "workflow": ".github/workflows/ci.yml",
-  "head_sha": "39cb5f44177aabbdb2f621fa9c90738c45c04528",
+  "head_sha": "4f27c81e163f1058e9d2ef79faed2d9b9f2d9460",
   "runs": [
+    {
+      "run_id": 34784732836,
+      "head_sha": "4f27c81e163f1058e9d2ef79faed2d9b9f2d9460",
+      "status": "success",
+      "url": "https://github.com/Sephy57/visionscan-ai-eye-center/actions/runs/34784732836",
+      "jobs": {
+        "linux": { "job_id": 103798016798, "status": "success" },
+        "browser": { "job_id": 103798016626, "status": "success" },
+        "windows": { "job_id": 103798016854, "status": "success" }
+      }
+    },
     {
       "run_id": 34778722481,
       "head_sha": "39cb5f44177aabbdb2f621fa9c90738c45c04528",
@@ -14,7 +25,8 @@
         "linux": { "job_id": 103781668677, "status": "success" },
         "browser": { "job_id": 103781668761, "status": "success" },
         "windows": { "job_id": 103781668789, "status": "success" }
-      }
+      },
+      "note": "Superseded implementation-head run; the exact evidence-head run above is authoritative."
     },
     {
       "run_id": 34777447122,
@@ -26,20 +38,20 @@
   ],
   "linux": {
     "status": "PASS",
-    "run_id": 34778722481,
-    "job_id": 103781668677,
+    "run_id": 34784732836,
+    "job_id": 103798016798,
     "head_sha_verified": true
   },
   "windows": {
     "status": "PASS",
-    "run_id": 34778722481,
-    "job_id": 103781668789,
+    "run_id": 34784732836,
+    "job_id": 103798016854,
     "head_sha_verified": true
   },
   "browser": {
     "status": "PASS",
-    "run_id": 34778722481,
-    "job_id": 103781668761,
+    "run_id": 34784732836,
+    "job_id": 103798016626,
     "head_sha_verified": true
   },
   "policy": "Remote CI results are recorded only when the run head SHA and job conclusions are observed; local equivalents do not substitute for the hosted gate."
