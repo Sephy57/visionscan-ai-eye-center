@@ -1,0 +1,77 @@
+{
+  "schema_version": "visionscan-phase11-capacity-policy-v1",
+  "generated_at": "2026-09-13T18:13:28.186Z",
+  "evidence_classification": "INHERITED_REAL_PROVIDER_LOAD_PLUS_EXPLICIT_POLICY_MAPPING",
+  "source_artifact": "docs/generated/phase10-load-fairness.json",
+  "policy_version": "bounded-single-slot-absolute-job-deadline-v1",
+  "states": [
+    "QUEUED",
+    "WAITING_FOR_RESOURCE",
+    "DEFERRED_CAPACITY",
+    "QUEUE_TIMEOUT",
+    "SERVICE_TIMEOUT",
+    "JOB_DEADLINE_EXCEEDED",
+    "COMPLETED"
+  ],
+  "transitions": {
+    "QUEUED": [
+      "WAITING_FOR_RESOURCE",
+      "QUEUE_TIMEOUT",
+      "COMPLETED",
+      "JOB_DEADLINE_EXCEEDED"
+    ],
+    "WAITING_FOR_RESOURCE": [
+      "COMPLETED",
+      "DEFERRED_CAPACITY",
+      "JOB_DEADLINE_EXCEEDED"
+    ],
+    "DEFERRED_CAPACITY": [
+      "QUEUED",
+      "QUEUE_TIMEOUT"
+    ],
+    "QUEUE_TIMEOUT": [],
+    "SERVICE_TIMEOUT": [],
+    "JOB_DEADLINE_EXCEEDED": [],
+    "COMPLETED": []
+  },
+  "operational_policy": {
+    "queue_order": "FIFO by created_at/job_id; transactional claim remains authoritative",
+    "max_active_heavy_leases": 1,
+    "resource_wait": "bounded polling under the same absolute job deadline; no provider launch before admission",
+    "deadline_terminal_state": "JOB_DEADLINE_EXCEEDED",
+    "queue_timeout_state": "QUEUE_TIMEOUT when queued age exceeds max_queue_wait_ms before claim",
+    "service_timeout_state": "SERVICE_TIMEOUT is reserved for a separately instrumented service budget; this observed run records the unified JOB_DEADLINE_EXCEEDED terminal state",
+    "infinite_capacity_hunt": false
+  },
+  "observed_jobs": 25,
+  "observed_terminal_counts": {
+    "QUEUED": 0,
+    "WAITING_FOR_RESOURCE": 0,
+    "DEFERRED_CAPACITY": 0,
+    "QUEUE_TIMEOUT": 0,
+    "SERVICE_TIMEOUT": 0,
+    "JOB_DEADLINE_EXCEEDED": 10,
+    "COMPLETED": 15
+  },
+  "observed_terminal_state_for_every_job": true,
+  "fifo": {
+    "evidence_classification": "INTEGRATION",
+    "requested_jobs": 100,
+    "observed_jobs": 100,
+    "rank_overtakes": 0,
+    "starvation_observed": false,
+    "result": "FIFO_CONTROL_PLANE_PASS",
+    "limitation": "This is a deterministic queue-order probe, not a sustained model-service starvation SLO measurement."
+  },
+  "retry_analysis": {
+    "retries_3109": 3109,
+    "retries_3109_classification": "RESOURCE_POLLING_NOT_JOB_RETRY_CHURN",
+    "bounded_poll_ms": 250,
+    "job_retry_policy": "explicit idempotency key, maximum three attempts, durable retry_after_at",
+    "note": "The load artifact labels 3,109 retries; under the worker path these are repeated capacity/resource polling observations, not 3,109 durable job retries or provider relaunches."
+  },
+  "limitations": [
+    "The 25-job provider measurement predates the Phase 11 resource-wait implementation and is retained as observed evidence; the Phase 11 policy mapping does not claim a new 25-job rerun.",
+    "DEFERRED_CAPACITY and QUEUE_TIMEOUT were defined but had zero observations in this 25-job run."
+  ]
+}

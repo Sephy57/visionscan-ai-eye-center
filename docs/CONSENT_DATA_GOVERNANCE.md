@@ -48,8 +48,8 @@ logic; production callers must use the authenticated HTTP/job boundaries.
 
 | Concern | Status | Notes |
 |---|---|---|
-| Deletion | **IMPLEMENTED** | `deleteStudy()` removes the study record, analysis, report, and all files under `data/uploads/<id>`, `data/processed/<id>`, `data/reports/<id>` (path-traversal-safe as of this phase - see `docs/PHASE5B_SECURITY.md`). Verified end-to-end by `tests/selftest.ts` and `scripts/smoke.mjs`. |
-| Deletion verification | **IMPLEMENTED** | `deleteStudy()`'s return value and the self-test both re-fetch the bundle after deletion and assert it is gone. |
+| Deletion | **PARTIALLY IMPLEMENTED** | `deleteStudy()` marks study/analysis/report history `lifecycle=DELETED`, removes source/derived files and selected transient derivatives, and retains finalized reports, clinician amendments, audit history, and the recovery journal. It is not permanent erasure of every historical database row. |
+| Deletion verification | **IMPLEMENTED — BOUNDED** | The deletion transaction and file cleanup are journaled and idempotent; source-file removal is audited. API callers receive explicit `SOURCE_BYTES_REMOVED_HISTORY_RETAINED` semantics rather than a claim that all records vanished. |
 | Access logging | **IMPLEMENTED** | Every study access, upload, analysis, review action, and RBAC denial is audit-logged (`lib/audit`), hash-chained for tamper evidence. |
 | Data export | **PARTIALLY IMPLEMENTED** | Every analysis/report is already written to a JSON file (`lib/storage/files.ts writeJson`) and the report UI has a "download JSON" action. A structured, access-controlled bulk-export *endpoint* (e.g. "export everything for study X as a signed package") does not exist - **DEFERRED**. |
 | Correction workflow | **IMPLEMENTED** | The clinician review `correct` action (`lib/studies/service.ts submitReview`) lets a clinician amend a finding; the original AI output is never overwritten (see immutability note below). |

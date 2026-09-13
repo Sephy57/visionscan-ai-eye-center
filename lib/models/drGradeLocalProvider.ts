@@ -36,6 +36,7 @@ import { lateralityForStudy } from "./fundusLesionLocalProvider";
 import { assetHash } from "../assets/assetRouter";
 import { getInferenceCache, inferenceCacheKey, setInferenceCache } from "./inferenceCache";
 import { trackChildProcess } from "../jobs/processControl";
+import { terminateProcessTree } from "../jobs/processTree";
 import { buildThreadGovernedEnv } from "../runtime/threadGovernance";
 
 const PROBE_SCRIPT = path.join(PROJECT_ROOT, "scripts", "inference", "dr_grade_probe.py");
@@ -52,8 +53,16 @@ const PROBE_THREADS = 4;
 
 let inferenceMutex: Promise<void> = Promise.resolve();
 
-function runWithMutex<T>(work: () => Promise<T>): Promise<T> {
-  const run = inferenceMutex.then(work, work);
+function abortError(signal?: AbortSignal): Error {
+  return signal?.reason instanceof Error ? signal.reason : new Error("MODEL_PROVIDER_ABORTED");
+}
+
+function runWithMutex<T>(work: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+  const guarded = () => {
+    if (signal?.aborted) return Promise.reject(abortError(signal));
+    return work();
+  };
+  const run = inferenceMutex.then(guarded, guarded);
   inferenceMutex = run.then(
     () => undefined,
     () => undefined
@@ -64,7 +73,8 @@ function runWithMutex<T>(work: () => Promise<T>): Promise<T> {
 function spawnBounded(
   command: string,
   args: string[],
-  timeoutMs: number
+  timeoutMs: number,
+  signal?: AbortSignal,
 ): Promise<{ code: number | null; stdout: string; stderr: string; truncated: boolean } | { spawnError: Error }> {
   return new Promise((resolve) => {
     let stdout = "";
@@ -72,6 +82,7 @@ function spawnBounded(
     let settled = false;
     let truncated = false;
     let proc: ReturnType<typeof spawn>;
+    let removeAbortListener: () => void = () => undefined;
     try {
       proc = spawn(command, args, { timeout: timeoutMs, env: buildThreadGovernedEnv(PROBE_THREADS) });
     } catch (err) {
@@ -79,6 +90,21 @@ function spawnBounded(
       return;
     }
     const releaseTrackedProcess = trackChildProcess(proc);
+    const terminate = () => {
+      void terminateProcessTree(proc).then((result) => {
+        if (result.outcome !== "terminated" && proc.exitCode === null) {
+          try { proc.kill(); } catch { /* the close/error event remains authoritative */ }
+        }
+      });
+    };
+    if (signal) {
+      if (signal?.aborted) terminate();
+      else {
+        const onAbort = () => terminate();
+        signal.addEventListener("abort", onAbort, { once: true });
+        removeAbortListener = () => signal.removeEventListener("abort", onAbort);
+      }
+    }
     if (!proc.stdout || !proc.stderr) {
       releaseTrackedProcess();
       resolve({ spawnError: new Error("Child-process stdio streams are unavailable.") });
@@ -98,12 +124,14 @@ function spawnBounded(
     proc.on("error", (err) => {
       if (!settled) {
         settled = true;
+        removeAbortListener();
         resolve({ spawnError: err });
       }
     });
     proc.on("close", (code) => {
       if (!settled) {
         settled = true;
+        removeAbortListener();
         resolve({ code, stdout, stderr, truncated });
       }
     });
@@ -154,7 +182,7 @@ export function drOutputToRaw(
   };
 }
 
-async function runProbeOnce(imageBytes: Buffer, studyId: string, laterality: "OD" | "OS" | "both" | "unknown"): Promise<{ raw: RawModelOutput; worker: DrGradeWorkerOutput | null }> {
+async function runProbeOnce(imageBytes: Buffer, studyId: string, laterality: "OD" | "OS" | "both" | "unknown", signal?: AbortSignal): Promise<{ raw: RawModelOutput; worker: DrGradeWorkerOutput | null }> {
   const pkg = loadModelPackage(DR_GRADE_MODEL_ID);
   if (!pkg.ok) {
     return { raw: { inference_status: "failed", inference_error: `DR package verification failed at execution time: ${pkg.reasons.join(" ").slice(0, 250)}` }, worker: null };
@@ -168,7 +196,8 @@ async function runProbeOnce(imageBytes: Buffer, studyId: string, laterality: "OD
     const result = await spawnBounded(
       VENV_PYTHON,
       ["-I", "-s", PROBE_SCRIPT, packageDir, tmpFile, "--threads", String(PROBE_THREADS)],
-      INFERENCE_TIMEOUT_MS
+      INFERENCE_TIMEOUT_MS,
+      signal,
     );
     if ("spawnError" in result) {
       return { raw: { inference_status: "failed", inference_error: `Failed to spawn DR worker: ${result.spawnError.message.slice(0, 200)}` }, worker: null };
@@ -271,10 +300,10 @@ export async function runDrGradeResearchAnalysis(
       const hit = getInferenceCache<{ raw: RawModelOutput; worker: DrGradeWorkerOutput | null }>(cacheKey);
       if (hit) return { ...hit, cacheHit: true };
     }
-    const result = await runProbeOnce(imageBytes, study.studyId, lateralityForStudy(study));
+    const result = await runProbeOnce(imageBytes, study.studyId, lateralityForStudy(study), ctx.signal);
     if (integrity.trusted && result.raw.inference_status === "completed") setInferenceCache(cacheKey, result);
     return { ...result, cacheHit: false };
-  });
+  }, ctx.signal);
   const { raw, worker } = probe;
   if (raw.inference_status === "failed") {
     return {

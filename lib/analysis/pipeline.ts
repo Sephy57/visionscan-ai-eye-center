@@ -72,6 +72,8 @@ export interface PipelineInput {
     source_page_hash: string; roi_hash: string; content_type: "OCT_BSCAN";
     modality: "OCT"; eye: "OD" | "OS" | "unknown"; bytes: Buffer;
   }>;
+  /** Worker-owned absolute deadline; propagated to every local provider. */
+  signal?: AbortSignal;
 }
 
 export interface PipelineOutput {
@@ -304,6 +306,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         eye: study.eye,
         device: deviceInfo,
         imageBytes: originalBytes,
+        signal: input.signal,
       });
       if (run.raw.inference_status !== "completed") {
         // Worker failed (no package, no runtime, timeout, malformed output):
@@ -380,6 +383,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         eye: study.eye,
         device: deviceInfo,
         imageBytes: originalBytes,
+        signal: input.signal,
       });
       if (run.raw.inference_status !== "completed" || !run.grade) {
         drAttemptNote = run.notes[0] ?? "Research DR grader failed; no grade was estimated.";
@@ -449,6 +453,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
         eye: study.eye,
         device: deviceInfo,
         imageBytes: originalBytes,
+        signal: input.signal,
       });
       if (run.raw.inference_status !== "completed" || !run.oct) {
         octAttemptNote = run.notes[0] ?? "Research OCT classifier failed; no class was estimated.";
@@ -536,6 +541,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
           device: deviceInfo,
           imageBytes: asset.bytes,
           cacheProvenance: { contentHash: asset.source_page_hash, roiHash: asset.roi_hash },
+          signal: input.signal,
         });
         if (run.raw.inference_status !== "completed" || !run.oct) {
           markModel(octRecord, "failed", run.notes[0] ?? "OCT ROI classifier failed");

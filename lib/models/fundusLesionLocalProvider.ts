@@ -52,6 +52,7 @@ import type { Finding } from "../analysis/schema";
 import { assetHash } from "../assets/assetRouter";
 import { getInferenceCache, inferenceCacheKey, setInferenceCache } from "./inferenceCache";
 import { trackChildProcess } from "../jobs/processControl";
+import { terminateProcessTree } from "../jobs/processTree";
 import { buildThreadGovernedEnv } from "../runtime/threadGovernance";
 
 const PROBE_SCRIPT = path.join(PROJECT_ROOT, "scripts", "inference", "fundus_lesion_probe.py");
@@ -82,8 +83,16 @@ export interface FundusLesionEnvironment {
 /** Serializes local lesion inference: one ~1.3 GB-RSS worker at a time. */
 let inferenceMutex: Promise<void> = Promise.resolve();
 
-function runWithMutex<T>(work: () => Promise<T>): Promise<T> {
-  const run = inferenceMutex.then(work, work);
+function abortError(signal?: AbortSignal): Error {
+  return signal?.reason instanceof Error ? signal.reason : new Error("MODEL_PROVIDER_ABORTED");
+}
+
+function runWithMutex<T>(work: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+  const guarded = () => {
+    if (signal?.aborted) return Promise.reject(abortError(signal));
+    return work();
+  };
+  const run = inferenceMutex.then(guarded, guarded);
   // The chain itself must never reject or every later caller would inherit it.
   inferenceMutex = run.then(
     () => undefined,
@@ -95,7 +104,8 @@ function runWithMutex<T>(work: () => Promise<T>): Promise<T> {
 function spawnBounded(
   command: string,
   args: string[],
-  timeoutMs: number
+  timeoutMs: number,
+  signal?: AbortSignal,
 ): Promise<{ code: number | null; stdout: string; stderr: string; truncated: boolean } | { spawnError: Error }> {
   return new Promise((resolve) => {
     let stdout = "";
@@ -103,6 +113,7 @@ function spawnBounded(
     let settled = false;
     let truncated = false;
     let proc: ReturnType<typeof spawn>;
+    let removeAbortListener: () => void = () => undefined;
     try {
       proc = spawn(command, args, { timeout: timeoutMs, env: buildThreadGovernedEnv(PROBE_THREADS) });
     } catch (err) {
@@ -110,6 +121,21 @@ function spawnBounded(
       return;
     }
     const releaseTrackedProcess = trackChildProcess(proc);
+    const terminate = () => {
+      void terminateProcessTree(proc).then((result) => {
+        if (result.outcome !== "terminated" && proc.exitCode === null) {
+          try { proc.kill(); } catch { /* the close/error event remains authoritative */ }
+        }
+      });
+    };
+    if (signal) {
+      if (signal?.aborted) terminate();
+      else {
+        const onAbort = () => terminate();
+        signal.addEventListener("abort", onAbort, { once: true });
+        removeAbortListener = () => signal.removeEventListener("abort", onAbort);
+      }
+    }
     if (!proc.stdout || !proc.stderr) {
       releaseTrackedProcess();
       resolve({ spawnError: new Error("Child-process stdio streams are unavailable.") });
@@ -131,12 +157,14 @@ function spawnBounded(
     proc.on("error", (err) => {
       if (!settled) {
         settled = true;
+        removeAbortListener();
         resolve({ spawnError: err });
       }
     });
     proc.on("close", (code) => {
       if (!settled) {
         settled = true;
+        removeAbortListener();
         resolve({ code, stdout, stderr, truncated });
       }
     });
@@ -227,7 +255,8 @@ export function lesionOutputToRaw(
 async function runProbeOnce(
   imageBytes: Buffer,
   studyId: string,
-  laterality: "OD" | "OS" | "both" | "unknown"
+  laterality: "OD" | "OS" | "both" | "unknown",
+  signal?: AbortSignal,
 ): Promise<RawModelOutput> {
   // Re-verify the package immediately before execution (TOCTOU-aware: the
   // probe also re-hashes the artifact after loading it).
@@ -244,7 +273,8 @@ async function runProbeOnce(
     const result = await spawnBounded(
       VENV_PYTHON,
       ["-I", "-s", PROBE_SCRIPT, packageDir, tmpFile, "--threads", String(PROBE_THREADS)],
-      INFERENCE_TIMEOUT_MS
+      INFERENCE_TIMEOUT_MS,
+      signal,
     );
     if ("spawnError" in result) {
       return { inference_status: "failed", inference_error: `Failed to spawn lesion worker: ${result.spawnError.message.slice(0, 200)}` };
@@ -356,10 +386,10 @@ export async function runFundusLesionResearchAnalysis(
       const hit = getInferenceCache<{ raw: RawModelOutput }>(cacheKey);
       if (hit) return { ...hit, cacheHit: true };
     }
-    const raw = await runProbeOnce(imageBytes, study.studyId, lateralityForStudy(study));
+    const raw = await runProbeOnce(imageBytes, study.studyId, lateralityForStudy(study), ctx.signal);
     if (integrity.trusted && raw.inference_status === "completed") setInferenceCache(cacheKey, { raw });
     return { raw, cacheHit: false };
-  });
+  }, ctx.signal);
   const raw = probe.raw;
   if (raw.inference_status === "failed") {
     return {

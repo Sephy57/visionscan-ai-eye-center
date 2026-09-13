@@ -35,6 +35,8 @@ export interface JobExecutionControl {
   /** Durable worker context used only for Phase 9 effect provenance. */
   job_id?: string;
   attempt_id?: string;
+  /** Absolute worker deadline propagated to every provider-facing stage. */
+  signal?: AbortSignal;
   /** Durable attempt/worker fence checked immediately before every
    * publication effect. A stale worker must stop before writing a new row. */
   assertCanCommit?: () => boolean | Promise<boolean>;

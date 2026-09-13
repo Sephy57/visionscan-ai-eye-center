@@ -13,7 +13,8 @@ export type Phase9FaultHook =
   | "AFTER_EVIDENCE_COMMIT"
   | "BEFORE_REPORT_COMMIT"
   | "AFTER_REPORT_COMMIT"
-  | "BEFORE_JOB_COMPLETE";
+  | "BEFORE_JOB_COMPLETE"
+  | "AFTER_JOB_COMPLETION_TRANSACTION";
 
 export class Phase9InjectedFaultError extends Error {
   readonly code = "PHASE9_INJECTED_FAULT" as const;
@@ -47,12 +48,15 @@ export function maybeInjectPhase9Fault(hook: Phase9FaultHook): void {
   if (!testOnlyProcess()) return;
   if (!configuredHooks().has(hook) || consumed.has(hook)) return;
   consumed.add(hook);
-  if (process.env.VISIONSCAN_PHASE10_REAL_OS_CRASH === "1") {
+  if (process.env.VISIONSCAN_PHASE10_REAL_OS_CRASH === "1" || process.env.VISIONSCAN_PHASE11_REAL_POST_TERMINAL_CRASH === "1") {
     // This switch is intentionally separate from the exception seam. It is
     // accepted only in an isolated test process and terminates the process at
     // the selected durable-publication boundary. The parent harness owns
     // descendant cleanup and restart verification.
-    process.stderr.write(`${JSON.stringify({ event: "phase10_real_os_crash", hook, pid: process.pid })}\n`);
+    const event = process.env.VISIONSCAN_PHASE11_REAL_POST_TERMINAL_CRASH === "1"
+      ? "phase11_post_terminal_crash"
+      : "phase10_real_os_crash";
+    process.stderr.write(`${JSON.stringify({ event, hook, pid: process.pid })}\n`);
     try {
       process.kill(process.pid, "SIGKILL");
     } catch {
@@ -85,6 +89,7 @@ export function phase9FaultInjectionStatus(): {
       "BEFORE_REPORT_COMMIT",
       "AFTER_REPORT_COMMIT",
       "BEFORE_JOB_COMPLETE",
+      "AFTER_JOB_COMPLETION_TRANSACTION",
     ].includes(hook),
   );
   return {

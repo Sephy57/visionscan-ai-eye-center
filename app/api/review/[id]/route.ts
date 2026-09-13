@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const check = await validateSession(req.cookies.get(SESSION_COOKIE)?.value);
     body.reviewer_id = check.session!.username;
     const ALLOWED_ACTIONS = [
-      "accept", "reject", "correct", "note", "add_observation", "finalize", "confirm", "indeterminate", "request_new_scan",
+      "accept", "reject", "correct", "note", "add_observation", "finalize", "confirm", "indeterminate", "request_new_scan", "adjudicate_conflict",
       "treatment_accept", "treatment_modify", "treatment_reject",
       "treatment_add_medication", "treatment_remove_medication",
       "treatment_mark_contraindication", "treatment_mark_restriction", "treatment_note",

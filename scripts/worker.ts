@@ -10,7 +10,7 @@ process.env.VISIONSCAN_WORKER_PROCESS = "true";
 process.env.VISIONSCAN_EXTERNAL_WORKER = "true";
 
 const { runWorkerOnce } = await import("../lib/jobs/queue");
-const { terminateAllTrackedProcessTrees } = await import("../lib/jobs/processControl");
+const { terminateAllTrackedProcessTrees, activeTrackedProcessCount } = await import("../lib/jobs/processControl");
 const { WorkerLifecycle, resolveWorkerShutdownPolicy } = await import("../lib/jobs/workerLifecycle");
 
 const workerId = process.env.VISIONSCAN_WORKER_ID?.trim() || `external-worker-${process.pid}`;
@@ -24,6 +24,25 @@ const stop = (source: "SIGINT" | "SIGTERM") => {
   const event = lifecycle.requestShutdown(source);
   console.log(JSON.stringify({ event: "worker_shutdown_requested", ...event }));
   if (lifecycle.policy === "CANCEL_CURRENT") shutdown ??= terminateAllTrackedProcessTrees();
+  if (lifecycle.policy === "LEASE_FOR_RECOVERY" && lifecycle.current_job_id) {
+    // A lease-recovery shutdown must stop the provider process and then leave
+    // the durable running row fenced for the next worker. Do not finalize the
+    // job as cancelled/failed here: the lease expiry is the recovery signal.
+    shutdown ??= (async () => {
+      await terminateAllTrackedProcessTrees();
+      const waitUntil = Date.now() + 10_000;
+      while (activeTrackedProcessCount() > 0 && Date.now() < waitUntil) await delay(50);
+      console.log(JSON.stringify({
+        event: "worker_shutdown_complete",
+        policy: lifecycle.policy,
+        current_job_id: lifecycle.current_job_id,
+        tracked_processes_remaining: activeTrackedProcessCount(),
+        action: "PROVIDER_TREE_TERMINATED_WORKER_EXITED_FOR_LEASE_RECOVERY",
+      }));
+      process.exitCode = 0;
+      process.exit(0);
+    })();
+  }
 };
 process.on("SIGINT", () => stop("SIGINT"));
 process.on("SIGTERM", () => stop("SIGTERM"));
@@ -38,6 +57,7 @@ do {
     workerId,
     maxJobs: 1,
     canClaim: () => lifecycle.canClaim(),
+    canClaimSync: () => lifecycle.canClaim(),
     onJobClaimed: (job) => {
       // The durable claim already won the SQLite race. The lifecycle adopts
       // that exact id so shutdown telemetry and drain policy describe the

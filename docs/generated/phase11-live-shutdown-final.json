@@ -1,0 +1,76 @@
+{
+  "schema_version": "visionscan-phase11-live-shutdown-v2",
+  "observed_at": "2026-09-13T19:16:06.957Z",
+  "platform": "win32",
+  "node_version": "v20.20.2",
+  "worker_script": "scripts/worker.ts",
+  "data_scope": "isolated temporary SQLite workspace with synthetic/public example_fundus.jpg",
+  "phi_included": false,
+  "transport": { "kind": "PTY_ASCII_ETX", "genuine_ctrl_c": true, "source_event": "SIGINT" },
+  "shutdown": {
+    "worker_id": "phase11-live-shutdown-final2",
+    "policy": "LEASE_FOR_RECOVERY",
+    "request": { "source": "SIGINT", "state": "STOP_REQUESTED", "current_job_id": "job_mu0721vnciq2c3ly", "timestamp": "2026-09-13T19:16:06.957Z" },
+    "post_shutdown_pre_restart_job_snapshot": {
+      "study_id": "study_mu0721trwog03lu0",
+      "job_id": "job_mu0721vnciq2c3ly",
+      "status": "running",
+      "attempts": 1,
+      "progress_stage": "persisting_analysis",
+      "resource_reservation_state": "admitted",
+      "active_resource_leases": 1,
+      "analyses": 1,
+      "evidence": 0,
+      "reasoning_records": 0,
+      "reports": 0,
+      "effects": 0
+    },
+    "completion_event": {
+      "policy": "LEASE_FOR_RECOVERY",
+      "current_job_id": "job_mu0721vnciq2c3ly",
+      "tracked_processes_remaining": 0,
+      "action": "PROVIDER_TREE_TERMINATED_WORKER_EXITED_FOR_LEASE_RECOVERY",
+      "application_exit_code": 0,
+      "pty_wrapper_exit_code": 1,
+      "wrapper_exit_code_note": "The PTY wrapper reported 1 after the interrupt; the worker emitted its explicit completion event and calls process.exit(0)."
+    }
+  },
+  "restart": {
+    "worker_id": "phase11-live-restart-final2",
+    "worker_once": true,
+    "exit_code": 0,
+    "worker_pass": { "polled": 1, "job_count": 1, "recovered": 3, "worker_state": "RUNNING" },
+    "recovered_job": {
+      "study_id": "study_mu0721trwog03lu0",
+      "job_id": "job_mu0721vnciq2c3ly",
+      "status": "completed",
+      "attempts": 2,
+      "retry_count": 1,
+      "resource_reservation_state": "released",
+      "active_resource_leases_after_restart": 0,
+      "analyses": 1,
+      "evidence": 1,
+      "reasoning_records": 1,
+      "reports": 1,
+      "effects": 5,
+      "effect_counts": { "MODEL_RESULT": 1, "STRUCTURED_EVIDENCE": 1, "REASONING_RECORD": 1, "REPORT": 1, "JOB_COMPLETION": 1 },
+      "report_sealed": true,
+      "report_export_present": true,
+      "phi_included": false
+    },
+    "remaining_seeded_jobs": ["job_mu0722x29txx579p", "job_mu0723vdzbpb8mfe"]
+  },
+  "checks": {
+    "genuine_windows_ctrl_c_observed": true,
+    "shutdown_captured_live_current_job": true,
+    "lease_preserved_for_recovery": true,
+    "provider_tree_termination_event_observed": true,
+    "tracked_processes_zero_before_worker_exit": true,
+    "restart_recovered_and_completed_job": true,
+    "attempt_incremented_once": true,
+    "completion_effects_exactly_once": true,
+    "report_sealed_and_exported": true,
+    "resources_released_after_restart": true
+  },
+  "status": "PASS_REAL_SIGINT_LEASE_RECOVERY"
+}

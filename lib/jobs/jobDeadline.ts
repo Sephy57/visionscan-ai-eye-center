@@ -48,6 +48,8 @@ export interface JobDeadline {
   readonly expired: boolean;
   remainingMs(nowMs?: number): number;
   throwIfExpired(nowMs?: number): void;
+  /** Wait for the one-shot expiry cleanup before terminalizing the caller. */
+  waitForCleanup(): Promise<void>;
   dispose(): void;
 }
 
@@ -87,6 +89,7 @@ export function createJobDeadline(options: JobDeadlineOptions = {}): JobDeadline
   let expired = false;
   let disposed = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let cleanupPromise: Promise<void> = Promise.resolve();
 
   const expire = () => {
     if (expired || disposed) return;
@@ -94,13 +97,11 @@ export function createJobDeadline(options: JobDeadlineOptions = {}): JobDeadline
     const error = deadlineError();
     controller.abort(error);
     try {
-      const cleanup = options.onExpired?.(error);
-      if (cleanup && typeof (cleanup as Promise<void>).catch === "function") {
-        void (cleanup as Promise<void>).catch(() => undefined);
-      }
+      cleanupPromise = Promise.resolve(options.onExpired?.(error)).catch(() => undefined);
     } catch {
       // Expiry must remain observable as the deadline error even if cleanup
       // itself fails. Durable failure/fencing belongs to the queue owner.
+      cleanupPromise = Promise.resolve();
     }
   };
 
@@ -126,6 +127,9 @@ export function createJobDeadline(options: JobDeadlineOptions = {}): JobDeadline
         expire();
         throw deadlineError();
       }
+    },
+    waitForCleanup() {
+      return cleanupPromise;
     },
     dispose() {
       if (disposed) return;
@@ -156,6 +160,10 @@ export async function withOverallJobDeadline<T>(
   try {
     return await Promise.race([operation, expiry]);
   } finally {
+    // Promise.race rejects as soon as the deadline aborts, but provider-tree
+    // termination and its durable telemetry must settle before the queue can
+    // publish the terminal job failure and release the lease.
+    await deadline.waitForCleanup();
     deadline.dispose();
   }
 }

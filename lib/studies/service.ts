@@ -399,6 +399,7 @@ export async function analyzeStudy(
       symptoms: record.symptoms ?? [],
       document_assets: documentAssets,
       document_routing: documentRouting,
+      signal: control?.signal,
     })).analysis;
 
   // Safety validation is the publication precondition. Run it before the
@@ -810,7 +811,7 @@ export async function deleteStudy(studyId: string): Promise<boolean> {
     await updateRecoveryJournal(journal.journal_id, "FAILED_RECONCILIATION", String(error)).catch(() => undefined);
     throw error;
   }
-  await audit({ actor: "user", action: "delete", studyId, outcome: "ok", detail: "study lifecycle marked DELETED; source bytes removed by explicit operator workflow" });
+  await audit({ actor: "user", action: "delete", studyId, outcome: "ok", detail: "SOURCE_BYTES_REMOVED_HISTORY_RETAINED: study/analysis/report lifecycle marked DELETED; finalized history and audit records retained under policy" });
   return true;
 }
 
@@ -832,7 +833,7 @@ export type TreatmentReviewAction =
 
 export interface ReviewInput {
   reviewer_id: string;
-  action: "accept" | "reject" | "correct" | "note" | "add_observation" | "finalize" | "confirm" | "indeterminate" | "request_new_scan" | TreatmentReviewAction;
+  action: "accept" | "reject" | "correct" | "note" | "add_observation" | "finalize" | "confirm" | "indeterminate" | "request_new_scan" | "adjudicate_conflict" | TreatmentReviewAction;
   /** Optional bounded rationale retained in the immutable review event. */
   reason?: string;
   finding_id?: string;
@@ -841,6 +842,12 @@ export interface ReviewInput {
   observation?: { text: string; laterality?: "OD" | "OS" | "OU" | "UNKNOWN" };
   /** Explicit clinician-authored fields for final assessment; never AI-generated. */
   assessment?: { diagnosis?: string; impression?: string; plan?: string; follow_up?: string };
+  /** Explicit manual resolution acknowledgement for one preserved conflict. */
+  adjudication?: {
+    conflict_id: string;
+    resolution: "MANUAL_REVIEW_ACKNOWLEDGED";
+    note: string;
+  };
   // Treatment-review-only fields.
   condition_id?: string;
   medication_id?: string;
@@ -876,6 +883,14 @@ function sanitizeAssessment(input: ReviewInput["assessment"]): NonNullable<Clini
   return { ...out, reviewer_id: "", at: "" };
 }
 
+/** A clinician projection is not settled while any concurrent review event
+ * remains unresolved. Keep this predicate small and reusable so the API,
+ * tests, and finalization path share one governance rule. */
+export function hasUnresolvedReviewConflict(review: ClinicalReport["review"]): boolean {
+  return review.conflict_state === "CONCURRENT_REVIEW_CONFLICT" ||
+    (review.conflicts ?? []).some((conflict) => !conflict.adjudicated_at);
+}
+
 export async function submitReview(studyId: string, input: ReviewInput): Promise<ClinicalReport | null> {
   const study = await dbGet<StudyRecord>("studies", studyId);
   const report = await dbGet<ClinicalReport>("reports", study?.latest_report_id ?? `rep_${studyId}`);
@@ -888,6 +903,9 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
   const finalAssessment = input.action === "finalize" ? sanitizeAssessment(input.assessment) : null;
   if (input.action === "finalize" && !finalAssessment) {
     throw new Error("A clinician final assessment is required before finalization.");
+  }
+  if (input.action === "finalize" && hasUnresolvedReviewConflict(report.review)) {
+    throw new Error("REVIEW_CONFLICT_REQUIRES_ADJUDICATION");
   }
   const integrity = verifyReportVersionFreeze(report);
   if (!integrity.ok) {
@@ -977,6 +995,31 @@ export async function submitReview(studyId: string, input: ReviewInput): Promise
       report.review.reviewer_id = input.reviewer_id;
       ci.overall = "request_new_scan";
       break;
+    case "adjudicate_conflict": {
+      const adjudication = input.adjudication;
+      if (!adjudication || typeof adjudication.conflict_id !== "string" || !adjudication.conflict_id.trim() ||
+        adjudication.resolution !== "MANUAL_REVIEW_ACKNOWLEDGED" || typeof adjudication.note !== "string" || !adjudication.note.trim()) {
+        throw new Error("A conflict id, MANUAL_REVIEW_ACKNOWLEDGED resolution, and adjudication note are required.");
+      }
+      const conflict = (report.review.conflicts ?? []).find((candidate) => candidate.conflict_id === adjudication.conflict_id);
+      if (!conflict) throw new Error("Review conflict not found");
+      if (conflict.adjudicated_at) throw new Error("Review conflict is already adjudicated");
+      const at = change.at;
+      const note = adjudication.note.trim().slice(0, 2000);
+      report.review.adjudications = [
+        ...(report.review.adjudications ?? []),
+        { conflict_id: conflict.conflict_id, resolution: adjudication.resolution, note, reviewer_id: input.reviewer_id, at },
+      ];
+      const updatedConflicts = (report.review.conflicts ?? []).map((candidate) => candidate.conflict_id === conflict.conflict_id
+        ? { ...candidate, adjudicated_at: at, adjudicated_by: input.reviewer_id, adjudication_note: note }
+        : candidate);
+      report.review.conflicts = updatedConflicts;
+      report.review.conflict_state = updatedConflicts.every((candidate) => Boolean(candidate.adjudicated_at)) ? "NONE" : "CONCURRENT_REVIEW_CONFLICT";
+      report.review.status = "clinician_reviewed";
+      report.review.reviewer_id = input.reviewer_id;
+      ci.overall = "amended";
+      break;
+    }
     case "note":
       report.patient.notes = (report.patient.notes ? report.patient.notes + " | " : "") + `[${input.reviewer_id}] ${input.note ?? ""}`;
       ci.notes = (ci.notes ? ci.notes + " | " : "") + `[${input.reviewer_id}] ${input.note ?? ""}`;

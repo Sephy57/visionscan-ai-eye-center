@@ -31,5 +31,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!scoped.resource) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const ok = await deleteStudy(params.id);
   if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ deleted: true });
+  return NextResponse.json({
+    deleted: true,
+    deletion_semantics: "SOURCE_BYTES_REMOVED_HISTORY_RETAINED",
+    note: "Source and derived files were removed where applicable; lifecycle-marked study, finalized report history, clinician review events, audit records, and recovery-journal evidence may be retained under policy.",
+  });
 }

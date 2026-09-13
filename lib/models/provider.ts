@@ -42,6 +42,9 @@ export interface ModelAnalysisContext {
   /** Server-derived immutable cache scope. For a bounded PDF ROI,
    * contentHash is the source-page hash and roiHash must match imageBytes. */
   cacheProvenance?: { contentHash: string; roiHash: string | null };
+  /** The owning worker's absolute deadline signal. Providers must treat an
+   * aborted signal as a hard no-launch/no-publish boundary. */
+  signal?: AbortSignal;
 }
 
 export interface ModelAnalysisOutput {

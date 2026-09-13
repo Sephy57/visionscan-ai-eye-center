@@ -11,6 +11,7 @@ interface Finding {
   id: string; type: string; location: string; severity: string;
   confidence: number; confidence_category: string;
   explanation: string; synthetic: boolean; model_id: string;
+  laterality?: "OD" | "OS" | "OU" | "unknown";
   region?: { x: number; y: number; w: number; h: number } | null;
 }
 interface Bundle {
@@ -40,7 +41,8 @@ interface Bundle {
     review: {
       status: string; reviewer_id?: string; finalized_at?: string; revision?: number;
       conflict_state?: "NONE" | "CONCURRENT_REVIEW_CONFLICT";
-      conflicts?: Array<{ conflict_id: string; finding_id: string | null; prior_revision: number; incoming_action: string; at: string; reason: string }>;
+      conflicts?: Array<{ conflict_id: string; finding_id: string | null; prior_revision: number; incoming_action: string; at: string; reason: string; adjudicated_at?: string; adjudicated_by?: string; adjudication_note?: string }>;
+      adjudications?: Array<{ conflict_id: string; resolution: string; note: string; reviewer_id: string; at: string }>;
     };
     clinician_interpretation?: { overall: string } | null;
     clinician_corrections?: Array<{ finding_id: string; original: { type: string; location: string; severity: string; explanation: string }; correction: Record<string, string>; reviewer_id: string; note?: string; at: string }>;
@@ -63,6 +65,7 @@ function ClinicianInner() {
   const [studyId, setStudyId] = useState(params.get("study") ?? "");
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [note, setNote] = useState("");
+  const [reviewReason, setReviewReason] = useState("");
   const [assessment, setAssessment] = useState({ diagnosis: "", impression: "", plan: "", follow_up: "" });
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -81,7 +84,7 @@ function ClinicianInner() {
   }
   useEffect(() => { if (studyId) load(studyId); }, []);
 
-  async function act(action: string, findingId?: string, correction?: Record<string, string>, extra?: { condition_id?: string; medication_id?: string; note?: string }) {
+  async function act(action: string, findingId?: string, correction?: Record<string, string>, extra?: { condition_id?: string; medication_id?: string; note?: string; conflict_id?: string; resolution?: string }) {
     // reviewer_id is always taken server-side from the authenticated
     // session (see app/api/review/[id]/route.ts) - it is not sent from here.
     const res = await authFetch(`/api/review/${encodeURIComponent(studyId)}`, {
@@ -89,7 +92,9 @@ function ClinicianInner() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action, finding_id: findingId, correction,
-        note: extra?.note ?? note, condition_id: extra?.condition_id, medication_id: extra?.medication_id,
+        note: extra?.note ?? note, reason: reviewReason || undefined,
+        condition_id: extra?.condition_id, medication_id: extra?.medication_id,
+        adjudication: extra?.conflict_id ? { conflict_id: extra.conflict_id, resolution: extra.resolution, note: extra.note ?? note } : undefined,
         assessment: action === "finalize" ? assessment : undefined,
       }),
     });
@@ -97,7 +102,7 @@ function ClinicianInner() {
     if (!res.ok) setErr(json.error ?? "Review action failed");
     else {
       setMsg(`Action "${action.replaceAll("_", " ")}" recorded. AI output, clinician interpretation, and final report are stored separately and every change is audited.`);
-      setNote(""); load(studyId);
+       setNote(""); setReviewReason(""); load(studyId);
     }
   }
 
@@ -138,7 +143,18 @@ function ClinicianInner() {
       {bundle?.report?.review.conflict_state === "CONCURRENT_REVIEW_CONFLICT" && (
         <div className="alert danger" role="alert" style={{ marginTop: 14 }}>
           <span className="alert-icon" aria-hidden="true">⚠</span>
-          <div className="alert-body"><strong>Concurrent clinician review requires adjudication.</strong> Append-only events were preserved, but the current projection must not be treated as settled.</div>
+          <div className="alert-body">
+            <strong>Concurrent clinician review requires adjudication.</strong> Append-only events were preserved, but the current projection must not be treated as settled.
+            {(bundle.report.review.conflicts ?? []).filter((conflict) => !conflict.adjudicated_at).map((conflict) => (
+              <div key={conflict.conflict_id} style={{ marginTop: 8 }}>
+                <span className="tiny">Conflict {conflict.conflict_id} — {conflict.incoming_action.replaceAll("_", " ")}</span>{" "}
+                <button className="btn secondary sm" onClick={() => {
+                  const reason = prompt("Adjudication note (required):", "Reviewed competing clinician event and acknowledged the preserved projection.");
+                  if (reason?.trim()) act("adjudicate_conflict", undefined, undefined, { conflict_id: conflict.conflict_id, resolution: "MANUAL_REVIEW_ACKNOWLEDGED", note: reason });
+                }}>Record adjudication</button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -231,10 +247,11 @@ function ClinicianInner() {
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     <button className="btn sm" onClick={() => act("confirm", f.id)}>Confirm</button>
                     <button className="btn danger sm" onClick={() => act("reject", f.id)}>Reject</button>
-                    <button className="btn secondary sm" onClick={() => {
-                      const type = prompt("Corrected finding type:", f.type);
-                      if (type) act("correct", f.id, { type, location: f.location, severity: f.severity, explanation: f.explanation });
-                    }}>Correct</button>
+                     <button className="btn secondary sm" onClick={() => {
+                       const type = prompt("Corrected finding type:", f.type);
+                       const laterality = prompt("Corrected laterality (OD, OS, OU, or unknown):", f.laterality ?? "unknown");
+                       if (type && laterality) act("correct", f.id, { type, location: f.location, severity: f.severity, explanation: f.explanation, laterality });
+                     }}>Correct</button>
                     <button className="btn secondary sm" onClick={() => act("indeterminate", f.id)}>Indeterminate</button>
                     {f.region && <button className="btn ghost sm" onClick={() => setActiveRegion(f.region ?? null)}>View region</button>}
                   </div>
@@ -252,10 +269,14 @@ function ClinicianInner() {
                   <button key={a} className={`btn ${style === "danger" ? "danger" : "secondary"} sm`} onClick={() => act(a)}>{label}</button>
                 ))}
               </div>
-              <div className="field">
-                <label htmlFor="note">Clinician notes</label>
-                <textarea id="note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Clinical note for the record…" />
-              </div>
+               <div className="field">
+                 <label htmlFor="note">Clinician notes</label>
+                 <textarea id="note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Clinical note for the record…" />
+               </div>
+               <div className="field">
+                 <label htmlFor="review-reason">Structured review reason</label>
+                 <input id="review-reason" value={reviewReason} onChange={(e) => setReviewReason(e.target.value)} maxLength={1000} placeholder="Why was this action taken? (optional but recommended)" />
+               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button className="btn secondary sm" onClick={() => act("note")}>Add note</button>
                 <button className="btn secondary sm" onClick={() => act("add_observation")}>Add clinician observation</button>

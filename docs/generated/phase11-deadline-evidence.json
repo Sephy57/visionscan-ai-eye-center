@@ -1,0 +1,433 @@
+{
+  "schema_version": "visionscan-phase11-deadline-evidence-v1",
+  "observed_at": "2026-09-13T19:13:03.254Z",
+  "platform": "win32",
+  "node_version": "v20.20.2",
+  "worker_script": "scripts/worker.ts",
+  "input_scope": "synthetic/public example_fundus.jpg in isolated temporary SQLite workspaces",
+  "phi_included": false,
+  "status": "PASS_REAL_DEADLINE_AND_RESOURCE_WAIT",
+  "active_provider_deadline": {
+    "configured_deadline_ms": 6000,
+    "process": {
+      "code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 6958
+    },
+    "provider_descendant_observed": true,
+    "descendant_observations": [
+      {
+        "at_ms": 1571,
+        "descendants": [
+          {
+            "pid": 18100,
+            "name": "conhost.exe",
+            "command_line": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          },
+          {
+            "pid": 30440,
+            "name": "esbuild.exe",
+            "command_line": "\"D:\\AI EYE ANALYSIS PLATFORM\\node_modules\\@esbuild\\win32-x64\\esbuild.exe\" --service=0.28.2 --ping"
+          }
+        ]
+      },
+      {
+        "at_ms": 2196,
+        "descendants": [
+          {
+            "pid": 18100,
+            "name": "conhost.exe",
+            "command_line": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          },
+          {
+            "pid": 30440,
+            "name": "esbuild.exe",
+            "command_line": "\"D:\\AI EYE ANALYSIS PLATFORM\\node_modules\\@esbuild\\win32-x64\\esbuild.exe\" --service=0.28.2 --ping"
+          }
+        ]
+      },
+      {
+        "at_ms": 2836,
+        "descendants": [
+          {
+            "pid": 18100,
+            "name": "conhost.exe",
+            "command_line": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          },
+          {
+            "pid": 30440,
+            "name": "esbuild.exe",
+            "command_line": "\"D:\\AI EYE ANALYSIS PLATFORM\\node_modules\\@esbuild\\win32-x64\\esbuild.exe\" --service=0.28.2 --ping"
+          }
+        ]
+      },
+      {
+        "at_ms": 3600,
+        "descendants": [
+          {
+            "pid": 18100,
+            "name": "conhost.exe",
+            "command_line": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          },
+          {
+            "pid": 30440,
+            "name": "esbuild.exe",
+            "command_line": "\"D:\\AI EYE ANALYSIS PLATFORM\\node_modules\\@esbuild\\win32-x64\\esbuild.exe\" --service=0.28.2 --ping"
+          },
+          {
+            "pid": 19184,
+            "name": "python.exe",
+            "command_line": "\"D:\\AI EYE ANALYSIS PLATFORM\\.venv-ophthalmic\\Scripts\\python.exe\" -I -s \"D:\\AI EYE ANALYSIS PLATFORM\\scripts\\inference\\fundus_lesion_probe.py\" \"D:\\AI EYE ANALYSIS PLATFORM\\data\\models\\fundus-lesions-clementp-unet-seresnext50\" C:\\Users\\pc\\AppData\\Local\\Temp\\visionscan-phase11-active-deadline-PcdiU5\\tmp\\lesion_img_mu06z03qerysoyvv.bin --threads 4"
+          },
+          {
+            "pid": 6004,
+            "name": "python.exe",
+            "command_line": "\"C:\\Users\\pc\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" -I -s \"D:\\AI EYE ANALYSIS PLATFORM\\scripts\\inference\\fundus_lesion_probe.py\" \"D:\\AI EYE ANALYSIS PLATFORM\\data\\models\\fundus-lesions-clementp-unet-seresnext50\" C:\\Users\\pc\\AppData\\Local\\Temp\\visionscan-phase11-active-deadline-PcdiU5\\tmp\\lesion_img_mu06z03qerysoyvv.bin --threads 4"
+          }
+        ]
+      }
+    ],
+    "descendants_after_deadline": [],
+    "outcome": {
+      "job": {
+        "job_id": "job_mu06yxsm5s053osg",
+        "status": "failed",
+        "attempts": 1,
+        "retry_count": 0,
+        "error": "JOB_DEADLINE_EXCEEDED:2026-09-13T19:13:14.709Z",
+        "progress": {
+          "stage": "failed",
+          "percent": 35,
+          "completed_units": 0,
+          "total_units": 0,
+          "message": "Job failed; no result was published",
+          "updated_at": "2026-09-13T19:13:14.820Z"
+        },
+        "deadline_outcome": "JOB_DEADLINE_EXCEEDED",
+        "resource_reservation_state": "released",
+        "resource_rejection_reason": null
+      },
+      "counts": {
+        "jobs": 1,
+        "analyses": 0,
+        "evidence": 0,
+        "reasoning_records": 0,
+        "reports": 0,
+        "effects": 0
+      },
+      "effect_counts": {
+        "MODEL_RESULT": 0,
+        "STRUCTURED_EVIDENCE": 0,
+        "REASONING_RECORD": 0,
+        "REPORT": 0,
+        "JOB_COMPLETION": 0
+      },
+      "resource_leases": {
+        "active_leases": 0,
+        "reserved_memory_bytes": 0,
+        "reserved_threads": 0,
+        "max_active_leases": 1
+      },
+      "report_sealed": false,
+      "report_export_present": false
+    },
+    "checks": {
+      "deadline_recorded": true,
+      "children_gone": true,
+      "no_clinical_result": true,
+      "resource_released": true
+    }
+  },
+  "resource_wait_deadline": {
+    "configured_deadline_ms": 1500,
+    "holder_process": {
+      "code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 74489
+    },
+    "holder_descendant_observations": [
+      {
+        "at_ms": 493,
+        "descendants": [
+          {
+            "pid": 22616,
+            "name": "conhost.exe",
+            "command_line": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          }
+        ]
+      },
+      {
+        "at_ms": 1223,
+        "descendants": [
+          {
+            "pid": 22616,
+            "name": "conhost.exe",
+            "command_line": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          },
+          {
+            "pid": 28756,
+            "name": "esbuild.exe",
+            "command_line": "\"D:\\AI EYE ANALYSIS PLATFORM\\node_modules\\@esbuild\\win32-x64\\esbuild.exe\" --service=0.28.2 --ping"
+          }
+        ]
+      },
+      {
+        "at_ms": 1857,
+        "descendants": [
+          {
+            "pid": 22616,
+            "name": "conhost.exe",
+            "command_line": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          },
+          {
+            "pid": 28756,
+            "name": "esbuild.exe",
+            "command_line": "\"D:\\AI EYE ANALYSIS PLATFORM\\node_modules\\@esbuild\\win32-x64\\esbuild.exe\" --service=0.28.2 --ping"
+          }
+        ]
+      },
+      {
+        "at_ms": 3321,
+        "descendants": [
+          {
+            "pid": 22616,
+            "name": "conhost.exe",
+            "command_line": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          },
+          {
+            "pid": 28756,
+            "name": "esbuild.exe",
+            "command_line": "\"D:\\AI EYE ANALYSIS PLATFORM\\node_modules\\@esbuild\\win32-x64\\esbuild.exe\" --service=0.28.2 --ping"
+          }
+        ]
+      },
+      {
+        "at_ms": 4055,
+        "descendants": [
+          {
+            "pid": 22616,
+            "name": "conhost.exe",
+            "command_line": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          },
+          {
+            "pid": 28756,
+            "name": "esbuild.exe",
+            "command_line": "\"D:\\AI EYE ANALYSIS PLATFORM\\node_modules\\@esbuild\\win32-x64\\esbuild.exe\" --service=0.28.2 --ping"
+          },
+          {
+            "pid": 15876,
+            "name": "python.exe",
+            "command_line": "\"D:\\AI EYE ANALYSIS PLATFORM\\.venv-ophthalmic\\Scripts\\python.exe\" -I -s \"D:\\AI EYE ANALYSIS PLATFORM\\scripts\\inference\\fundus_lesion_probe.py\" \"D:\\AI EYE ANALYSIS PLATFORM\\data\\models\\fundus-lesions-clementp-unet-seresnext50\" C:\\Users\\pc\\AppData\\Local\\Temp\\visionscan-phase11-resource-wait-HdpPs3\\tmp\\lesion_img_mu06zavm5z7mgef2.bin --threads 4"
+          },
+          {
+            "pid": 30460,
+            "name": "python.exe",
+            "command_line": "\"C:\\Users\\pc\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" -I -s \"D:\\AI EYE ANALYSIS PLATFORM\\scripts\\inference\\fundus_lesion_probe.py\" \"D:\\AI EYE ANALYSIS PLATFORM\\data\\models\\fundus-lesions-clementp-unet-seresnext50\" C:\\Users\\pc\\AppData\\Local\\Temp\\visionscan-phase11-resource-wait-HdpPs3\\tmp\\lesion_img_mu06zavm5z7mgef2.bin --threads 4"
+          }
+        ]
+      }
+    ],
+    "holder_outcome": {
+      "job": {
+        "job_id": "job_mu06z7cg5bie2y54",
+        "status": "completed",
+        "attempts": 1,
+        "retry_count": 0,
+        "error": null,
+        "progress": {
+          "stage": "completed",
+          "percent": 100,
+          "completed_units": 1,
+          "total_units": 1,
+          "message": "Job completed",
+          "updated_at": "2026-09-13T19:14:36.077Z"
+        },
+        "deadline_outcome": "WITHIN_BUDGET",
+        "resource_reservation_state": "released",
+        "resource_rejection_reason": null
+      },
+      "counts": {
+        "jobs": 1,
+        "analyses": 1,
+        "evidence": 1,
+        "reasoning_records": 1,
+        "reports": 1,
+        "effects": 5
+      },
+      "effect_counts": {
+        "MODEL_RESULT": 1,
+        "STRUCTURED_EVIDENCE": 1,
+        "REASONING_RECORD": 1,
+        "REPORT": 1,
+        "JOB_COMPLETION": 1
+      },
+      "resource_leases": {
+        "active_leases": 0,
+        "reserved_memory_bytes": 0,
+        "reserved_threads": 0,
+        "max_active_leases": 1
+      },
+      "report_sealed": true,
+      "report_export_present": true
+    },
+    "waiter_process": {
+      "code": 0,
+      "signal": null,
+      "timed_out": false,
+      "duration_ms": 2291
+    },
+    "waiter_descendant_observations": [
+      {
+        "at_ms": 487,
+        "descendants": [
+          {
+            "pid": 26068,
+            "name": "conhost.exe",
+            "command_line": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          }
+        ]
+      },
+      {
+        "at_ms": 1124,
+        "descendants": [
+          {
+            "pid": 26068,
+            "name": "conhost.exe",
+            "command_line": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          },
+          {
+            "pid": 23896,
+            "name": "esbuild.exe",
+            "command_line": "\"D:\\AI EYE ANALYSIS PLATFORM\\node_modules\\@esbuild\\win32-x64\\esbuild.exe\" --service=0.28.2 --ping"
+          }
+        ]
+      },
+      {
+        "at_ms": 1756,
+        "descendants": [
+          {
+            "pid": 26068,
+            "name": "conhost.exe",
+            "command_line": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          },
+          {
+            "pid": 23896,
+            "name": "esbuild.exe",
+            "command_line": "\"D:\\AI EYE ANALYSIS PLATFORM\\node_modules\\@esbuild\\win32-x64\\esbuild.exe\" --service=0.28.2 --ping"
+          }
+        ]
+      },
+      {
+        "at_ms": 2421,
+        "descendants": []
+      }
+    ],
+    "waiter_outcome": {
+      "job": {
+        "job_id": "job_mu06z8ae42np49v3",
+        "status": "failed",
+        "attempts": 1,
+        "retry_count": 0,
+        "error": "JOB_DEADLINE_EXCEEDED:2026-09-13T19:13:27.869Z",
+        "progress": {
+          "stage": "failed",
+          "percent": 2,
+          "completed_units": 0,
+          "total_units": 0,
+          "message": "Job failed; no result was published",
+          "updated_at": "2026-09-13T19:13:27.953Z"
+        },
+        "deadline_outcome": "JOB_DEADLINE_EXCEEDED",
+        "resource_reservation_state": "rejected",
+        "resource_rejection_reason": "RESOURCE_WAIT_DEADLINE_EXCEEDED"
+      },
+      "counts": {
+        "jobs": 1,
+        "analyses": 0,
+        "evidence": 0,
+        "reasoning_records": 0,
+        "reports": 0,
+        "effects": 0
+      },
+      "effect_counts": {
+        "MODEL_RESULT": 0,
+        "STRUCTURED_EVIDENCE": 0,
+        "REASONING_RECORD": 0,
+        "REPORT": 0,
+        "JOB_COMPLETION": 0
+      },
+      "resource_leases": {
+        "active_leases": 1,
+        "reserved_memory_bytes": 2147483648,
+        "reserved_threads": 4,
+        "max_active_leases": 1
+      },
+      "report_sealed": false,
+      "report_export_present": false
+    },
+    "waiter_outcome_after_holder_completion": {
+      "job": {
+        "job_id": "job_mu06z8ae42np49v3",
+        "status": "failed",
+        "attempts": 1,
+        "retry_count": 0,
+        "error": "JOB_DEADLINE_EXCEEDED:2026-09-13T19:13:27.869Z",
+        "progress": {
+          "stage": "failed",
+          "percent": 2,
+          "completed_units": 0,
+          "total_units": 0,
+          "message": "Job failed; no result was published",
+          "updated_at": "2026-09-13T19:13:27.953Z"
+        },
+        "deadline_outcome": "JOB_DEADLINE_EXCEEDED",
+        "resource_reservation_state": "rejected",
+        "resource_rejection_reason": "RESOURCE_WAIT_DEADLINE_EXCEEDED"
+      },
+      "counts": {
+        "jobs": 1,
+        "analyses": 0,
+        "evidence": 0,
+        "reasoning_records": 0,
+        "reports": 0,
+        "effects": 0
+      },
+      "effect_counts": {
+        "MODEL_RESULT": 0,
+        "STRUCTURED_EVIDENCE": 0,
+        "REASONING_RECORD": 0,
+        "REPORT": 0,
+        "JOB_COMPLETION": 0
+      },
+      "resource_leases": {
+        "active_leases": 0,
+        "reserved_memory_bytes": 0,
+        "reserved_threads": 0,
+        "max_active_leases": 1
+      },
+      "report_sealed": false,
+      "report_export_present": false
+    },
+    "checks": {
+      "holder_completed": true,
+      "waiter_deadline_recorded": true,
+      "waiter_provider_not_launched": true,
+      "waiter_no_clinical_result": true,
+      "waiter_resource_released": true
+    }
+  },
+  "mutex_wait_behavior": {
+    "status": "MEASURED_BY_CODE_PATH",
+    "mutexes": [
+      "fundusLesionLocalProvider",
+      "drGradeLocalProvider",
+      "octLocalProvider"
+    ],
+    "behavior": "aborted mutex wait rejects before provider launch"
+  },
+  "limitations": [
+    "A descendant PID proves an owned child process existed, not its exact model class; provider-specific invocation counts remain unavailable in the immutable ledger."
+  ]
+}

@@ -22,6 +22,7 @@ export type ClinicianReviewReason =
   | "request_new_scan"
   | "add_observation"
   | "treatment_review"
+  | "adjudicate_conflict"
   | "finalize"
   | "note";
 
@@ -47,6 +48,7 @@ export interface ClinicianReviewEvent {
     correction: ReviewInput["correction"] | null;
     observation: ReviewInput["observation"] | null;
     assessment: ReviewInput["assessment"] | null;
+    adjudication: ReviewInput["adjudication"] | null;
     condition_id: string | null;
     medication_id: string | null;
   };
@@ -72,6 +74,7 @@ function reasonFor(action: ReviewInput["action"]): ClinicianReviewReason {
   if (action === "indeterminate") return "uncertain";
   if (action === "request_new_scan") return "request_new_scan";
   if (action === "add_observation") return "add_observation";
+  if (action === "adjudicate_conflict") return "adjudicate_conflict";
   if (action.startsWith("treatment_")) return "treatment_review";
   if (action === "finalize") return "finalize";
   return "note";
@@ -119,6 +122,7 @@ export function buildClinicianReviewEvent(
     correction: input.correction ?? null,
     observation: input.observation ?? null,
     assessment: input.assessment ?? null,
+    adjudication: input.adjudication ?? null,
     condition_id: input.condition_id ?? null,
     medication_id: input.medication_id ?? null,
   };

@@ -104,6 +104,17 @@ export interface ClinicalReport {
       incoming_action: string;
       at: string;
       reason: string;
+      adjudicated_at?: string;
+      adjudicated_by?: string;
+      adjudication_note?: string;
+    }>;
+    /** Conflict history remains append-only even after manual adjudication. */
+    adjudications?: Array<{
+      conflict_id: string;
+      resolution: "MANUAL_REVIEW_ACKNOWLEDGED";
+      note: string;
+      reviewer_id: string;
+      at: string;
     }>;
     clinician_changes?: Array<{ field: string; action: string; note?: string; at: string }>;
   };

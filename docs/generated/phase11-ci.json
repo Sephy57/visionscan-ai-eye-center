@@ -1,0 +1,21 @@
+{
+  "schema_version": "visionscan-phase11-ci-v1",
+  "evidence_classification": "NOT_MEASURED_REMOTE_CI_NOT_PUSHED",
+  "repository": "https://github.com/Sephy57/visionscan-ai-eye-center.git",
+  "workflow": ".github/workflows/ci.yml",
+  "head_sha": null,
+  "runs": [],
+  "linux": {
+    "status": "NOT_MEASURED",
+    "reason": "No exact Phase 11 implementation or report head was pushed during this local evidence pass."
+  },
+  "windows": {
+    "status": "NOT_MEASURED",
+    "reason": "No exact Phase 11 implementation or report head was pushed during this local evidence pass."
+  },
+  "browser": {
+    "status": "NOT_MEASURED",
+    "reason": "No exact Phase 11 implementation or report head was pushed during this local evidence pass."
+  },
+  "policy": "Remote CI results are not inferred from local equivalents or historical runs."
+}

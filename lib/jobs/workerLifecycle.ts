@@ -46,7 +46,7 @@ export class WorkerLifecycle {
 
   requestShutdown(source: WorkerShutdownEvent["source"] = "operator"): WorkerShutdownEvent {
     if (this.currentState === "STOPPED" && this.lastEvent) return this.lastEvent;
-    this.currentState = "STOP_REQUESTED";
+    this.currentState = this.currentJob ? "STOP_REQUESTED" : "STOPPED";
     this.lastEvent = {
       source,
       policy: this.policy,
@@ -54,7 +54,6 @@ export class WorkerLifecycle {
       current_job_id: this.currentJob,
       at: new Date().toISOString(),
     };
-    if (!this.currentJob) this.currentState = "STOPPED";
     return this.lastEvent;
   }
 

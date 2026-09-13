@@ -27,9 +27,47 @@ const INSTRUCTION_PATTERNS: Array<[string, RegExp]> = [
   ["system_override", /\b(?:system\s+message|developer\s+message|assistant\s+instruction|new\s+rule)\s*:/i],
 ];
 
+/**
+ * Build a detection-only view of extracted text. Document bytes remain
+ * immutable and the original text is never rewritten or sent to an
+ * instruction executor. NFKD/NFKC handles compatibility/full-width forms;
+ * the small confusable map covers common Latin-looking Cyrillic/Greek glyphs.
+ */
+function safetyDetectionView(text: string): string {
+  const confusables: Record<string, string> = {
+    "а": "a", "е": "e", "і": "i", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x",
+    "А": "A", "Е": "E", "І": "I", "О": "O", "Р": "P", "С": "C", "У": "Y", "Х": "X",
+    "ο": "o", "Ο": "O", "ρ": "p", "Ρ": "P",
+  };
+  return text
+    .normalize("NFKD")
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
+    .replace(/[\u0300-\u036F]/g, "")
+    .replace(/[\u2010-\u2015]/g, "-")
+    .replace(/[аеиорсухАЕІОРСУХοΟρΡ]/g, (character) => confusables[character] ?? character)
+    .normalize("NFKC")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Join only separator-delimited single-letter runs for the second,
+ * detection-only pass. This catches `i g n o r e` and `i-g-n-o-r-e` without
+ * collapsing ordinary multi-letter word boundaries such as `you are`. */
+function splitTokenDetectionView(text: string): string {
+  let previous = "";
+  let current = text;
+  while (current !== previous) {
+    previous = current;
+    current = current.replace(/(?<=[A-Za-z])[\s_-]+(?=[A-Za-z](?:\b|[\s_-]))/g, "");
+  }
+  return current;
+}
+
 export function classifyDocumentTextSafety(text: string): DocumentTextSafety {
+  const normalized = safetyDetectionView(String(text ?? ""));
+  const splitTokenView = splitTokenDetectionView(normalized);
   const matched_patterns = INSTRUCTION_PATTERNS
-    .filter(([, pattern]) => pattern.test(text))
+    .filter(([, pattern]) => pattern.test(normalized) || pattern.test(splitTokenView))
     .map(([name]) => name);
   const instructionLike = matched_patterns.length > 0;
   return {

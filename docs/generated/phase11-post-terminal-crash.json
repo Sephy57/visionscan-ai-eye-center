@@ -1,0 +1,211 @@
+{
+  "schema_version": "visionscan-phase11-post-terminal-crash-v1",
+  "observed_at": "2026-09-13T19:14:44.732Z",
+  "platform": "win32",
+  "node_version": "v20.20.2",
+  "seam": "AFTER_JOB_COMPLETION_TRANSACTION",
+  "worker_script": "scripts/worker.ts",
+  "input_scope": "one synthetic/public example_fundus.jpg in one temporary SQLite workspace",
+  "phi_included": false,
+  "status": "PASS_REAL_POST_TERMINAL_CRASH_RESTART",
+  "study_id": "study_mu0711eesyzoypam",
+  "job_id": "job_mu0712qcn7pbjhen",
+  "crash": {
+    "code": 1,
+    "signal": null,
+    "timed_out": false,
+    "marker_observed": true,
+    "duration_ms": 14231,
+    "stderr_tail": "{\"event\":\"phase11_post_terminal_crash\",\"hook\":\"AFTER_JOB_COMPLETION_TRANSACTION\",\"pid\":18704}\n"
+  },
+  "pre_restart": {
+    "job": {
+      "job_id": "job_mu0712qcn7pbjhen",
+      "status": "completed",
+      "attempts": 1,
+      "retry_count": 0,
+      "error": null,
+      "progress": {
+        "stage": "completed",
+        "percent": 100,
+        "completed_units": 1,
+        "total_units": 1,
+        "message": "Job completed",
+        "updated_at": "2026-09-13T19:15:01.951Z"
+      },
+      "deadline_outcome": "WITHIN_BUDGET",
+      "resource_reservation_state": "released",
+      "resource_rejection_reason": null
+    },
+    "effects": {
+      "counts": {
+        "MODEL_RESULT": 1,
+        "STRUCTURED_EVIDENCE": 1,
+        "REASONING_RECORD": 1,
+        "REPORT": 1,
+        "JOB_COMPLETION": 1
+      },
+      "records": [
+        {
+          "effect_id": "effect_model_result_anl_study_mu0711eesyzoypam",
+          "effect_type": "MODEL_RESULT",
+          "canonical_id": "anl_study_mu0711eesyzoypam",
+          "job_id": "job_mu0712qcn7pbjhen",
+          "attempt_id": "attempt_mu07138y08zktnfw",
+          "payload_sha256": "66906f9b18bc2f8cb54a68370adb2106b43fa4d54ed4197350f0d37f31b3d39d"
+        },
+        {
+          "effect_id": "effect_structured_evidence_evidence_study_mu0711eesyzoypam_afff61ca4f6c2cc42a97da75",
+          "effect_type": "STRUCTURED_EVIDENCE",
+          "canonical_id": "evidence_study_mu0711eesyzoypam_afff61ca4f6c2cc42a97da75",
+          "job_id": "job_mu0712qcn7pbjhen",
+          "attempt_id": "attempt_mu07138y08zktnfw",
+          "payload_sha256": "39a5868aee0c1a97db0ee86987f299e91089f31e009e3c006b0dc63002698095"
+        },
+        {
+          "effect_id": "effect_reasoning_record_reason_study_mu0711eesyzoypam_556a1e3ac79b1144df926253",
+          "effect_type": "REASONING_RECORD",
+          "canonical_id": "reason_study_mu0711eesyzoypam_556a1e3ac79b1144df926253",
+          "job_id": "job_mu0712qcn7pbjhen",
+          "attempt_id": "attempt_mu07138y08zktnfw",
+          "payload_sha256": "d53e14ef014a4f09f5d544b4dba3ac7925c4db733a784ade723c65e8c7bdf97b"
+        },
+        {
+          "effect_id": "effect_report_rep_study_mu0711eesyzoypam",
+          "effect_type": "REPORT",
+          "canonical_id": "rep_study_mu0711eesyzoypam",
+          "job_id": "job_mu0712qcn7pbjhen",
+          "attempt_id": "attempt_mu07138y08zktnfw",
+          "payload_sha256": "025c323ad0a0ced70cfde88463bbdb07b2f03745be427135ce04c4cea3b9f1af"
+        },
+        {
+          "effect_id": "effect_job_completion_job_mu0712qcn7pbjhen",
+          "effect_type": "JOB_COMPLETION",
+          "canonical_id": "job_mu0712qcn7pbjhen",
+          "job_id": "job_mu0712qcn7pbjhen",
+          "attempt_id": "attempt_mu07138y08zktnfw",
+          "payload_sha256": "028cd7b04fb0b6dbc5661c169db8fa1799d7a869ec6e29dacd0cd9cfa85d90ad"
+        }
+      ],
+      "exact": true,
+      "duplicate_free": true
+    },
+    "report_sealed": true,
+    "report_export_present": true,
+    "resource_leases": {
+      "active_leases": 1,
+      "reserved_memory_bytes": 2147483648,
+      "reserved_threads": 4,
+      "max_active_leases": 1
+    }
+  },
+  "restart": {
+    "code": 0,
+    "signal": null,
+    "timed_out": false,
+    "duration_ms": 736
+  },
+  "post_restart": {
+    "job": {
+      "job_id": "job_mu0712qcn7pbjhen",
+      "status": "completed",
+      "attempts": 1,
+      "retry_count": 0,
+      "error": null,
+      "progress": {
+        "stage": "completed",
+        "percent": 100,
+        "completed_units": 1,
+        "total_units": 1,
+        "message": "Job completed",
+        "updated_at": "2026-09-13T19:15:01.951Z"
+      },
+      "deadline_outcome": "WITHIN_BUDGET",
+      "resource_reservation_state": "released",
+      "resource_rejection_reason": null
+    },
+    "effects": {
+      "counts": {
+        "MODEL_RESULT": 1,
+        "STRUCTURED_EVIDENCE": 1,
+        "REASONING_RECORD": 1,
+        "REPORT": 1,
+        "JOB_COMPLETION": 1
+      },
+      "records": [
+        {
+          "effect_id": "effect_model_result_anl_study_mu0711eesyzoypam",
+          "effect_type": "MODEL_RESULT",
+          "canonical_id": "anl_study_mu0711eesyzoypam",
+          "job_id": "job_mu0712qcn7pbjhen",
+          "attempt_id": "attempt_mu07138y08zktnfw",
+          "payload_sha256": "66906f9b18bc2f8cb54a68370adb2106b43fa4d54ed4197350f0d37f31b3d39d"
+        },
+        {
+          "effect_id": "effect_structured_evidence_evidence_study_mu0711eesyzoypam_afff61ca4f6c2cc42a97da75",
+          "effect_type": "STRUCTURED_EVIDENCE",
+          "canonical_id": "evidence_study_mu0711eesyzoypam_afff61ca4f6c2cc42a97da75",
+          "job_id": "job_mu0712qcn7pbjhen",
+          "attempt_id": "attempt_mu07138y08zktnfw",
+          "payload_sha256": "39a5868aee0c1a97db0ee86987f299e91089f31e009e3c006b0dc63002698095"
+        },
+        {
+          "effect_id": "effect_reasoning_record_reason_study_mu0711eesyzoypam_556a1e3ac79b1144df926253",
+          "effect_type": "REASONING_RECORD",
+          "canonical_id": "reason_study_mu0711eesyzoypam_556a1e3ac79b1144df926253",
+          "job_id": "job_mu0712qcn7pbjhen",
+          "attempt_id": "attempt_mu07138y08zktnfw",
+          "payload_sha256": "d53e14ef014a4f09f5d544b4dba3ac7925c4db733a784ade723c65e8c7bdf97b"
+        },
+        {
+          "effect_id": "effect_report_rep_study_mu0711eesyzoypam",
+          "effect_type": "REPORT",
+          "canonical_id": "rep_study_mu0711eesyzoypam",
+          "job_id": "job_mu0712qcn7pbjhen",
+          "attempt_id": "attempt_mu07138y08zktnfw",
+          "payload_sha256": "025c323ad0a0ced70cfde88463bbdb07b2f03745be427135ce04c4cea3b9f1af"
+        },
+        {
+          "effect_id": "effect_job_completion_job_mu0712qcn7pbjhen",
+          "effect_type": "JOB_COMPLETION",
+          "canonical_id": "job_mu0712qcn7pbjhen",
+          "job_id": "job_mu0712qcn7pbjhen",
+          "attempt_id": "attempt_mu07138y08zktnfw",
+          "payload_sha256": "028cd7b04fb0b6dbc5661c169db8fa1799d7a869ec6e29dacd0cd9cfa85d90ad"
+        }
+      ],
+      "exact": true,
+      "duplicate_free": true
+    },
+    "report_sealed": true,
+    "report_export_present": true,
+    "resource_leases": {
+      "active_leases": 0,
+      "reserved_memory_bytes": 0,
+      "reserved_threads": 0,
+      "max_active_leases": 1
+    }
+  },
+  "checks": {
+    "terminal_row_survived": true,
+    "attempts_unchanged": true,
+    "canonical_effects_stable": true,
+    "one_each_expected_effect": true,
+    "duplicate_free": true,
+    "resource_recovered": true,
+    "no_retry_after_restart": true
+  },
+  "cleanup": {
+    "resource_lease_ttl_ms": 1000,
+    "reap": {
+      "expired": 1,
+      "active_leases": 0,
+      "phi_included": false
+    },
+    "observed_descendants_after_worker_exit": [],
+    "note": "Post-terminal seam is after provider completion; no descendant remained when the worker exited. The harness separately reaped the un-finalized lease after its bounded TTL."
+  },
+  "limitations": [
+    "The exact provider invocation count is not exposed by the immutable model ledger; this seam proves durable terminal publication and duplicate-free restart behavior."
+  ]
+}

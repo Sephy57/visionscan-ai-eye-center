@@ -27,8 +27,9 @@ import {
   releaseJobResourceLease,
   startResourceLeaseHeartbeat,
   JOB_RESOURCE_REQUESTS,
+  type HostWideJobResourceAdmission,
 } from "./resourceAdmission";
-import type { ModelJobReservation, ResourceLeaseHandle } from "../runtime";
+import { resourceLeaseConfigFromEnv, type ModelJobReservation, type ResourceLeaseConfig, type ResourceLeaseHandle } from "../runtime";
 
 /**
  * Durable lifecycle states. `stale` and `retryable` are intentionally
@@ -110,7 +111,7 @@ export interface AnalysisJob {
   total_age_ms?: number;
   deadline_outcome?: "WITHIN_BUDGET" | "QUEUE_TIMEOUT" | "JOB_DEADLINE_EXCEEDED";
   resource_request?: { memory_bytes: number; threads: number };
-  resource_reservation_state?: "admitted" | "released" | "bypassed_demo" | "rejected";
+  resource_reservation_state?: "waiting" | "admitted" | "released" | "bypassed_demo" | "rejected";
   resource_rejection_reason?: string;
   termination_requested_at?: string;
   termination_outcome?: string;
@@ -161,6 +162,7 @@ const configuredHeartbeatMs = boundedPositive(process.env.VISIONSCAN_JOB_HEARTBE
 const configuredHeartbeatGraceMs = boundedPositive(process.env.VISIONSCAN_JOB_HEARTBEAT_GRACE_MS, configuredHeartbeatMs * 2, 0);
 const configuredRetryBackoffMs = boundedPositive(process.env.VISIONSCAN_JOB_RETRY_BACKOFF_MS, DEFAULT_JOB_RETRY_BACKOFF_MS, 0);
 const configuredOverallDeadlineMs = resolveOverallJobDeadlineMs();
+const configuredResourceWaitPollMs = boundedPositive(process.env.VISIONSCAN_RESOURCE_WAIT_POLL_MS, 250, 25);
 
 const terminalStatuses = new Set<JobStatus>(["completed", "failed", "cancelled"]);
 const workerInstanceId = process.env.VISIONSCAN_WORKER_ID?.trim() || `worker-${process.pid}-${Math.random().toString(36).slice(2, 10)}`;
@@ -476,7 +478,7 @@ export async function retryJob(jobId: string, requestedBy: string, idempotencyKe
 export async function claimJob(
   jobId: string,
   workerId = workerInstanceId,
-  options: { now?: Date | string | number; leaseMs?: number } = {},
+  options: { now?: Date | string | number; leaseMs?: number; canClaim?: () => boolean } = {},
 ): Promise<AnalysisJob | null> {
   const nowMs = asTimestamp(options.now);
   const nowIso = new Date(nowMs).toISOString();
@@ -486,6 +488,10 @@ export async function claimJob(
     const current = raw ? normalizeJob(raw) : null;
     if (!current || (current.status !== "queued" && current.status !== "retryable")) return null;
     if (current.retry_after_at && asTimestamp(current.retry_after_at) > nowMs) return null;
+    // Evaluate the lifecycle guard inside the same synchronous transaction as
+    // the durable claim. A shutdown cannot slip between a separate check and
+    // this state transition.
+    if (options.canClaim && !options.canClaim()) return null;
     if (isCancelled(current)) {
       const cancelled = durableJob(current, {
         version: (current.version ?? 0) + 1,
@@ -820,7 +826,7 @@ async function updateRunningJobMetadata(
   jobId: string,
   attemptId: string,
   workerId: string,
-  metadata: Partial<Pick<AnalysisJob, "resource_reservation_state" | "resource_rejection_reason" | "termination_requested_at" | "termination_outcome">>,
+  metadata: Partial<Pick<AnalysisJob, "resource_reservation_state" | "resource_rejection_reason" | "termination_requested_at" | "termination_outcome" | "deadline_outcome" | "service_time_ms" | "total_age_ms">>,
 ): Promise<void> {
   await dbTransaction((tx) => {
     const raw = tx.get<AnalysisJob>("jobs", jobId);
@@ -832,6 +838,55 @@ async function updateRunningJobMetadata(
       claim_version: (current.claim_version ?? current.version ?? 0) + 1,
     });
     persistJob(tx, jobId, next);
+  });
+}
+
+function waitDelay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
+}
+
+/**
+ * Capacity is a bounded wait, not an implicit failure.  The durable job has
+ * already been claimed, but no provider is started until both the process-local
+ * governor and the host-wide lease admit it.  The same absolute job deadline
+ * covers this wait; expiry is therefore recorded as a timeout rather than a
+ * provider failure or a stale reservation.
+ */
+async function waitForJobResources(options: {
+  kind: JobKind;
+  jobId: string;
+  attemptId: string;
+  workerId: string;
+  demoMode: boolean;
+  startedAt?: string;
+  timeoutMs?: number;
+  leaseConfig?: ResourceLeaseConfig;
+}): Promise<HostWideJobResourceAdmission> {
+  return withOverallJobDeadline(async (deadline) => {
+    while (true) {
+      deadline.throwIfExpired();
+      if (await isJobCancellationRequested(options.jobId)) throw new JobCancelledError();
+      const admission = await reserveJobResourcesHostWide(options.kind, {
+        jobId: options.jobId,
+        workerId: options.workerId,
+        modelId: `job:${options.kind}`,
+        demoMode: options.demoMode,
+        leaseConfig: options.leaseConfig,
+      });
+      if (admission.admitted) return admission;
+      await updateRunningJobMetadata(options.jobId, options.attemptId, options.workerId, {
+        resource_reservation_state: "waiting",
+        resource_rejection_reason: admission.reason ?? "capacity_unavailable",
+      });
+      deadline.throwIfExpired();
+      await waitDelay(Math.min(configuredResourceWaitPollMs, Math.max(1, deadline.remainingMs())));
+    }
+  }, {
+    startedAt: options.startedAt,
+    timeoutMs: options.timeoutMs,
+    onExpired: async () => {
+      await terminateTrackedProcessTrees(options.jobId);
+    },
   });
 }
 
@@ -941,6 +996,8 @@ export async function finalizeJobFailure(jobId: string, attemptId: string, worke
 export interface ProcessJobCallbacks {
   /** Checked immediately before the transactional claim. */
   canClaim?: () => boolean | Promise<boolean>;
+  /** Synchronous guard evaluated inside the claim transaction. */
+  canClaimSync?: () => boolean;
   /** Called synchronously after a durable claim and before model work. */
   onJobClaimed?: (job: AnalysisJob) => void | Promise<void>;
   /** Called after resource cleanup, regardless of terminal outcome. */
@@ -953,7 +1010,7 @@ export async function processJob(
   callbacks: ProcessJobCallbacks = {},
 ): Promise<void> {
   if (callbacks.canClaim && !(await callbacks.canClaim())) return;
-  const claimedJob = await claimJob(jobId, requestedWorkerId);
+  const claimedJob = await claimJob(jobId, requestedWorkerId, { canClaim: callbacks.canClaimSync });
   if (!claimedJob || !claimedJob.active_attempt_id) return;
   const claim = { job: claimedJob, attemptId: claimedJob.active_attempt_id };
   if (!claim.job || !claim.attemptId) return;
@@ -961,10 +1018,14 @@ export async function processJob(
   const attemptId = claim.attemptId;
   const workerId = job.worker_id ?? requestedWorkerId;
   await callbacks.onJobClaimed?.(job);
+  const finishClaimedJob = async (): Promise<void> => {
+    try { await callbacks.onJobFinished?.(jobId); } catch { /* lifecycle telemetry is best effort */ }
+  };
   let reservation: ModelJobReservation | null = null;
   let hostResourceLease: ResourceLeaseHandle | null = null;
   let stopHeartbeat: (() => void) | null = null;
   let stopResourceLeaseHeartbeat: (() => void) | null = null;
+  const hostResourceLeaseConfig = resourceLeaseConfigFromEnv();
   let consent;
   try {
     consent = await checkProcessingConsent(job.study_id, consentPurposeForJob(job.kind));
@@ -981,6 +1042,7 @@ export async function processJob(
         detail: `${jobId}: consent check failed before processing`,
       });
     }
+    await finishClaimedJob();
     return;
   }
   if (!consent.ok) {
@@ -1001,35 +1063,61 @@ export async function processJob(
         detail: `${jobId}: consent ${consentPurposeForJob(job.kind)} ${consent.status}`,
       });
     }
+    await finishClaimedJob();
     return;
   }
-  const admission = await reserveJobResourcesHostWide(job.kind, {
-    jobId,
-    workerId,
-    modelId: `job:${job.kind}`,
-    demoMode: DEMO_MODE,
-  });
-  await updateRunningJobMetadata(jobId, attemptId, workerId, {
-    resource_reservation_state: admission.bypassedDemoMode ? "bypassed_demo" : admission.admitted ? "admitted" : "rejected",
-    resource_rejection_reason: admission.reason ?? undefined,
-  });
-  if (!admission.admitted) {
-    const failed = await finalizeJobFailure(jobId, attemptId, workerId, `RESOURCE_GOVERNOR_REJECTED:${admission.reason ?? "unknown"}`);
+  let admission: HostWideJobResourceAdmission;
+  try {
+    admission = await waitForJobResources({
+      kind: job.kind,
+      jobId,
+      attemptId,
+      workerId,
+      demoMode: DEMO_MODE,
+      startedAt: job.claimed_at ?? job.started_at,
+      timeoutMs: job.deadline_ms,
+      leaseConfig: hostResourceLeaseConfig,
+    });
+  } catch (error) {
+    if (error instanceof JobCancelledError || await isJobCancellationRequested(jobId)) {
+      const cancelled = await finalizeJobCancelled(jobId, attemptId, workerId);
+      if (cancelled) cancelFlags.delete(jobId);
+      try { await callbacks.onJobFinished?.(jobId); } catch { /* lifecycle telemetry is best effort */ }
+      return;
+    }
+    const deadlineExceeded = error instanceof JobDeadlineExceededError;
+    const serviceTimeMs = Math.max(0, Date.now() - asTimestamp(job.claimed_at ?? job.started_at));
+    await updateRunningJobMetadata(jobId, attemptId, workerId, {
+      resource_reservation_state: "rejected",
+      resource_rejection_reason: deadlineExceeded ? "RESOURCE_WAIT_DEADLINE_EXCEEDED" : "RESOURCE_WAIT_FAILED",
+      deadline_outcome: deadlineExceeded ? "JOB_DEADLINE_EXCEEDED" : undefined,
+      service_time_ms: serviceTimeMs,
+      total_age_ms: Math.max(0, Date.now() - asTimestamp(job.created_at)),
+    });
+    const failure = deadlineExceeded
+      ? `JOB_DEADLINE_EXCEEDED:${(error as JobDeadlineExceededError).deadlineAt}`
+      : `RESOURCE_WAIT_FAILED:${String(error instanceof Error ? error.message : error).slice(0, 300)}`;
+    const failed = await finalizeJobFailure(jobId, attemptId, workerId, failure);
     if (failed) {
       await audit({
         actor: "system",
         action: "job.fail",
         studyId: job.study_id,
-        outcome: "rejected",
-        detail: `${jobId}: resource governor rejected the bounded request`,
+        outcome: "error",
+        detail: `${jobId}: ${deadlineExceeded ? "resource wait exceeded the job deadline" : "resource wait failed"}`,
       });
     }
+    try { await callbacks.onJobFinished?.(jobId); } catch { /* lifecycle telemetry is best effort */ }
     return;
   }
+  await updateRunningJobMetadata(jobId, attemptId, workerId, {
+    resource_reservation_state: admission.bypassedDemoMode ? "bypassed_demo" : "admitted",
+    resource_rejection_reason: undefined,
+  });
   reservation = admission.reservation;
   hostResourceLease = admission.resourceLease;
   stopHeartbeat = startLeaseHeartbeat(jobId, attemptId, workerId);
-  if (hostResourceLease) stopResourceLeaseHeartbeat = startResourceLeaseHeartbeat(hostResourceLease);
+  if (hostResourceLease) stopResourceLeaseHeartbeat = startResourceLeaseHeartbeat(hostResourceLease, { leaseConfig: hostResourceLeaseConfig });
 
   const updateProgress = async (update: ProgressUpdate): Promise<void> => {
     await dbTransaction((tx) => {
@@ -1078,6 +1166,7 @@ export async function processJob(
         await analyzeStudy(job.study_id, {
           job_id: jobId,
           attempt_id: attemptId,
+          signal: deadline.signal,
           assertCanCommit: async () => {
             const currentRaw = await dbGet<AnalysisJob>("jobs", jobId);
             const current = currentRaw ? normalizeJob(currentRaw) : null;
@@ -1110,6 +1199,10 @@ export async function processJob(
     const completed = await finalizeJobSuccess(jobId, attemptId, workerId);
     if (!completed) return;
     cancelFlags.delete(jobId);
+    // This seam is deliberately after the SQLite terminal transaction has
+    // committed, but before post-transaction audit/lifecycle acknowledgement.
+    // A restart must observe the completed row and replay no provider/effects.
+    maybeInjectPhase9Fault("AFTER_JOB_COMPLETION_TRANSACTION");
     await audit({ actor: "system", action: "job.complete", studyId: job.study_id, resource: job.kind === "extraction" ? "document" : undefined, resourceId: job.document_id, outcome: "ok", detail: jobId });
   } catch (err) {
     if (err instanceof JobCancelledError || await isJobCancellationRequested(jobId)) {
@@ -1119,6 +1212,14 @@ export async function processJob(
     const error = err instanceof JobDeadlineExceededError
       ? `JOB_DEADLINE_EXCEEDED:${err.deadlineAt}`
       : String(err instanceof Error ? err.message : err);
+    if (err instanceof JobDeadlineExceededError) {
+      const nowMs = Date.now();
+      await updateRunningJobMetadata(jobId, attemptId, workerId, {
+        deadline_outcome: "JOB_DEADLINE_EXCEEDED",
+        service_time_ms: Math.max(0, nowMs - asTimestamp(job.claimed_at ?? job.started_at)),
+        total_age_ms: Math.max(0, nowMs - asTimestamp(job.created_at)),
+      });
+    }
     const failed = await finalizeJobFailure(
       jobId,
       attemptId,
@@ -1134,7 +1235,7 @@ export async function processJob(
     stopHeartbeat?.();
     stopResourceLeaseHeartbeat?.();
     if (hostResourceLease) {
-      await releaseJobResourceLease(hostResourceLease).catch(() => false);
+      await releaseJobResourceLease(hostResourceLease, { leaseConfig: hostResourceLeaseConfig }).catch(() => false);
     }
     if (reservation) {
       const { getHostModelJobResourceGovernor } = await import("../runtime");
@@ -1158,6 +1259,7 @@ export async function runWorkerOnce(options: {
   workerId?: string;
   maxJobs?: number;
   canClaim?: () => boolean | Promise<boolean>;
+  canClaimSync?: () => boolean;
   onJobClaimed?: (job: AnalysisJob) => void | Promise<void>;
   onJobFinished?: (jobId: string) => void | Promise<void>;
 } = {}): Promise<{
@@ -1177,6 +1279,7 @@ export async function runWorkerOnce(options: {
     if (options.canClaim && !(await options.canClaim())) break;
     await processJob(job.job_id, workerId, {
       canClaim: options.canClaim,
+      canClaimSync: options.canClaimSync,
       onJobClaimed: async (claimed) => {
         claimedIds.push(claimed.job_id);
         await options.onJobClaimed?.(claimed);

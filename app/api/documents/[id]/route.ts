@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 /**
  * Single document metadata (GET) and deletion (DELETE).
  * Metadata/status view: ADMIN, CLINICIAN, REVIEWER, TECHNICIAN.
- * Deletion (removes original bytes; audit record retained): ADMIN, CLINICIAN.
+ * Deletion (removes original bytes; audit/recovery history may be retained): ADMIN, CLINICIAN.
  * Document content is NEVER included in these responses - only metadata.
  */
 
@@ -45,5 +45,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const { user } = await requireSession(req);
   const result = await deleteDocument(params.id, user?.username ?? "unknown");
   if (!result.ok) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-  return NextResponse.json({ deleted: true });
+  return NextResponse.json({
+    deleted: true,
+    deletion_semantics: "SOURCE_BYTES_REMOVED_HISTORY_RETAINED",
+    note: "Document source bytes and derived extraction files were removed where applicable; audit and recovery history may be retained under policy.",
+  });
 }
