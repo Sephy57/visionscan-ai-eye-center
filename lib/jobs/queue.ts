@@ -316,11 +316,26 @@ export async function enqueueAnalysis(studyId: string): Promise<AnalysisJob> {
     throw new Error(`CONSENT_REQUIRED:${consentPurposeForJob("analysis")}:${consent.status}`);
   }
   await ensureStartupRecovery();
-  const job = queuedJob(studyId, "analysis");
-  await dbPut("jobs", job.job_id, job);
-  await audit({ actor: "system", action: "job.enqueue", studyId, outcome: "ok", detail: job.job_id });
-  // Fire-and-forget worker execution; UI polls job status.
-  dispatchJob(job.job_id);
+  // Idempotent per study: a duplicate request (double submit, a second tab,
+  // or React StrictMode re-running the processing page's effect in
+  // development) reuses the study's active analysis job. Two concurrent
+  // executions would otherwise both compute a result for the same analysis
+  // id and the second would fail on the immutable-effect guard. The check and
+  // the insert share one transaction so near-simultaneous requests cannot
+  // both create a job.
+  const { job, reused } = await dbTransaction((tx) => {
+    const active = tx.where<AnalysisJob>("jobs", "study_id", studyId)
+      .map((candidate) => normalizeJob(candidate))
+      .find((candidate) => candidate.kind === "analysis" && !terminalStatuses.has(candidate.status));
+    if (active) return { job: active, reused: true };
+    const created = queuedJob(studyId, "analysis");
+    tx.put("jobs", created.job_id, created);
+    return { job: created, reused: false };
+  });
+  await audit({ actor: "system", action: "job.enqueue", studyId, outcome: "ok", detail: reused ? `reused active ${job.job_id}` : job.job_id });
+  // Fire-and-forget worker execution; UI polls job status. A reused job is
+  // already dispatched (or owned by the external worker / recovery).
+  if (!reused) dispatchJob(job.job_id);
   return job;
 }
 

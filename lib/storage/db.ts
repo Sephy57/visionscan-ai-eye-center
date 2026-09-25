@@ -457,6 +457,8 @@ function persistJson(db: DbShape): Promise<void> {
 interface SyncTransaction {
   get<T>(collection: Collection, id: string): T | null;
   all<T>(collection: Collection): T[];
+  /** Rows whose indexed relational column equals `value`, oldest first. */
+  where<T>(collection: Collection, column: RelationalColumn, value: string): T[];
   put<T>(collection: Collection, id: string, doc: T): void;
   delete(collection: Collection, id: string): boolean;
   deleteMany(collection: Collection, ids: readonly string[]): number;
@@ -514,6 +516,15 @@ function sqliteTransaction(): SyncTransaction {
       const rows = connection
         .prepare(`SELECT id, payload FROM ${tableName(collection)} ORDER BY created_at, id`)
         .all() as Array<{ id: string; payload: string }>;
+      return rows.map((row) => clone(parsePayload<T>(collection, row.id, row.payload)));
+    },
+    where<T>(collection: Collection, column: RelationalColumn, value: string) {
+      // `column` is constrained to the fixed RELATIONAL_COLUMNS allow-list, so
+      // it is never caller-controlled SQL; the value is always bound.
+      if (!RELATIONAL_COLUMNS.includes(column)) throw new Error(`Unsupported relational column: ${column}`);
+      const rows = connection
+        .prepare(`SELECT id, payload FROM ${tableName(collection)} WHERE ${column} = ? ORDER BY created_at, id`)
+        .all(value) as Array<{ id: string; payload: string }>;
       return rows.map((row) => clone(parsePayload<T>(collection, row.id, row.payload)));
     },
     put<T>(collection: Collection, id: string, doc: T) {
@@ -616,6 +627,12 @@ export async function dbTransaction<T>(work: (tx: DbTransaction) => T): Promise<
       return Object.values((draft.collections[collection] ?? {}) as Record<string, unknown>).map((value) =>
         clone(value as TValue),
       );
+    },
+    where<TValue>(collection: Collection, column: RelationalColumn, value: string) {
+      return Object.values((draft.collections[collection] ?? {}) as Record<string, unknown>)
+        .filter((doc) => referenceValue(doc, column) === value)
+        .sort((a, b) => String((a as { created_at?: unknown }).created_at ?? "").localeCompare(String((b as { created_at?: unknown }).created_at ?? "")))
+        .map((doc) => clone(doc as TValue));
     },
     put<TValue>(collection: Collection, id: string, doc: TValue) {
       if (collection === "clinician_reviews" && (draft.collections[collection] as Record<string, unknown> | undefined)?.[id] !== undefined) {

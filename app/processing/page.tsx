@@ -24,6 +24,35 @@ const PIPELINE_STAGES: Array<{ stage: string; title: string; desc: string }> = [
 ];
 const STAGE_INDEX: Record<string, number> = Object.fromEntries(PIPELINE_STAGES.map((s, i) => [s.stage, i]));
 
+/**
+ * One in-flight job request per study. React StrictMode runs effects
+ * twice in development; sharing the in-flight request keeps that (or any
+ * remount) from enqueueing a second analysis job for the same study. The
+ * server also reuses a study's active job, so this only avoids the extra
+ * round trip.
+ */
+const jobRequests = new Map<string, Promise<string>>();
+function requestAnalysisJob(study: string): Promise<string> {
+  const existing = jobRequests.get(study);
+  if (existing) return existing;
+  const request = (async () => {
+    const res = await authFetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ study_id: study, async: true }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Could not start analysis");
+    if (typeof data.job_id !== "string" || data.job_id.length === 0) throw new Error("Analysis job response did not include a job id");
+    return data.job_id as string;
+  })();
+  jobRequests.set(study, request);
+  // Shared only while in flight (StrictMode's second effect run happens in
+  // the same commit), so a later visit can still request a new analysis.
+  request.then(() => jobRequests.delete(study), () => jobRequests.delete(study));
+  return request;
+}
+
 interface Job {
   job_id: string; study_id: string;
   status: "queued" | "running" | "completed" | "failed" | "cancelled";
@@ -57,17 +86,10 @@ function ProcessingInner() {
         // a job, preventing refresh/retry from duplicating work or audit rows.
         let activeJobId = resumeJobId;
         if (!activeJobId) {
-          const res = await authFetch("/api/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ study_id: study, async: true }),
-          });
-          const data = await res.json();
+          const createdJobId = await requestAnalysisJob(study);
           if (cancelled) return;
-          if (!res.ok) throw new Error(data.error ?? "Could not start analysis");
-          if (typeof data.job_id !== "string" || data.job_id.length === 0) throw new Error("Analysis job response did not include a job id");
-          activeJobId = data.job_id;
-          window.history.replaceState({}, "", `/processing?study=${encodeURIComponent(study)}&job=${encodeURIComponent(data.job_id)}`);
+          activeJobId = createdJobId;
+          window.history.replaceState({}, "", `/processing?study=${encodeURIComponent(study)}&job=${encodeURIComponent(createdJobId)}`);
         }
         if (!activeJobId) throw new Error("Analysis job id is unavailable");
         const polledJobId = activeJobId;
