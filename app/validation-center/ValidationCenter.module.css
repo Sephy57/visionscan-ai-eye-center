@@ -1,5 +1,6 @@
 .page {
-  --vc-accent: #68c9ca;
+  /* Follows the design-system token so it meets contrast in both themes. */
+  --vc-accent: var(--prov-model);
   --vc-accent-soft: color-mix(in srgb, var(--vc-accent) 13%, var(--surface));
   display: grid;
   width: 100%;

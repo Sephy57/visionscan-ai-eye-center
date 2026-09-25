@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
+import { classifySourceResponse, SOURCE_STATE_COPY, type SourceAvailabilityResult } from "@/lib/imaging/sourceAvailability";
 
 /**
  * Ophthalmic imaging viewer.
@@ -36,6 +37,8 @@ export interface ScanViewerProps {
   overlayUnavailableNote?: string;
   /** Classification-only model output (e.g. OCT class): no pixel localization exists and none is drawn. */
   classificationOnly?: boolean;
+  /** Shown with a missing/unavailable source when derived evidence (e.g. PDF OCT regions) still exists. Never a substitute image. */
+  derivativeNote?: string;
   showToolbar?: boolean;
   viewerId?: string;
   // Controlled mode (used by Compare for synchronized zoom/pan)
@@ -47,7 +50,7 @@ export interface ScanViewerProps {
 export default function ScanViewer({
   src, alt, region = null, regionLabel = "AI-highlighted region",
   localizations, infoOverlay, overlayUnavailableNote = "No validated localization data available.",
-  overlayStatus, classificationOnly = false, showToolbar = true, viewerId, zoom: controlledZoom, onZoomChange, onReset,
+  overlayStatus, classificationOnly = false, derivativeNote, showToolbar = true, viewerId, zoom: controlledZoom, onZoomChange, onReset,
 }: ScanViewerProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -57,7 +60,22 @@ export default function ScanViewer({
   const [dragging, setDragging] = useState(false);
   const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
   const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
+  // Overlays are drawn only once the original itself has loaded: a missing
+  // or unavailable source must never look as if the image were there.
+  const [source, setSource] = useState<SourceAvailabilityResult>({ state: "CHECKING" });
+  useEffect(() => { setSource({ state: "CHECKING" }); }, [src]);
+  const failed = source.state === "SOURCE_MISSING" || source.state === "SOURCE_UNAVAILABLE";
+  const sourceShown = source.state === "SOURCE_AVAILABLE";
+  const diagnoseLoadFailure = () => {
+    fetch(src, { cache: "no-store" })
+      .then(async (response) => {
+        const code = response.ok ? null : await response.json().then((j: { error?: string }) => j.error ?? null).catch(() => null);
+        const result = classifySourceResponse(response.status, code, response.headers.get("content-type"));
+        // The request succeeded but the browser could not decode the bytes.
+        setSource(result.state === "SOURCE_AVAILABLE" ? { state: "SOURCE_UNAVAILABLE", reason: "not_an_image" } : result);
+      })
+      .catch(() => setSource(classifySourceResponse(null)));
+  };
   const [viewMode, setViewMode] = useState<"original" | "overlay" | "side_by_side">((localizations?.length ?? 0) > 0 || region ? "overlay" : "original");
 
   const zoom = controlledZoom ?? internalZoom;
@@ -114,9 +132,9 @@ export default function ScanViewer({
     !!box && [box.x, box.y, box.w, box.h].every(Number.isFinite) && box.x >= 0 && box.y >= 0 && box.w > 0 && box.h > 0 && box.x + box.w <= 1 && box.y + box.h <= 1;
   const renderableOverlays = (localizations ?? []).filter((loc) => loc.kind === "bounding_box" && boundedBox(loc.coordinates));
   const overlayStatusMissing = (localizations?.length ?? 0) > 0 && !overlayStatus;
-  const hasRenderableOverlays = renderableOverlays.length > 0 && !overlayStatusMissing && !failed;
+  const hasRenderableOverlays = renderableOverlays.length > 0 && !overlayStatusMissing && sourceShown;
   const unsupportedOverlayCount = Math.max(0, (localizations?.length ?? 0) - renderableOverlays.length);
-  const boundedRegion = region && boundedBox(region) && !failed ? region : null;
+  const boundedRegion = region && boundedBox(region) && sourceShown ? region : null;
   const hasAnyOverlay = hasRenderableOverlays || boundedRegion !== null;
   const overlayIssue = overlayStatusMissing
     ? "Overlay hidden because its validation/research status was not provided."
@@ -146,8 +164,8 @@ export default function ScanViewer({
           loading="lazy"
           decoding="async"
           style={{ width: imgSize.w || "auto", height: imgSize.h || "auto" }}
-          onLoad={primary ? () => { setLoaded(true); setFailed(false); } : undefined}
-          onError={primary ? () => setFailed(true) : undefined}
+          onLoad={primary ? () => { setLoaded(true); setSource({ state: "SOURCE_AVAILABLE" }); } : undefined}
+          onError={primary ? diagnoseLoadFailure : undefined}
         />
         {showLayers && regionStyle && (
           <div className="viewer-overlay-box" style={regionStyle}>
@@ -173,7 +191,7 @@ export default function ScanViewer({
   );
 
   return (
-    <div className="viewer-frame" id={viewerId}>
+    <div className="viewer-frame" id={viewerId} data-source-state={source.state}>
       {/* Image info overlay — rendered AROUND the scan, never burned into pixels */}
       {infoOverlay && (
         <div className="viewer-info" aria-hidden="true">
@@ -210,13 +228,18 @@ export default function ScanViewer({
         {viewMode === "side_by_side" ? (
           <>{renderPane(false, "Original scan — unmodified pixels", true)}{renderPane(true, "Overlay — annotations rendered separately", false)}</>
         ) : renderPane(viewMode === "overlay", viewMode === "overlay" ? "Overlay view — original pixels unchanged" : "Original scan — unmodified pixels", true)}
-        {failed && (
-          <div className="viewer-failed" role="alert">
-            <Icon name="warning" size={18} />
-            <strong>Original image could not be loaded</strong>
-            <span>The server did not return the stored original (it may be missing from storage or access was refused). No substitute image or overlay is shown.</span>
-          </div>
-        )}
+        {failed && (() => {
+          const copy = SOURCE_STATE_COPY[source.state as "SOURCE_MISSING" | "SOURCE_UNAVAILABLE"][source.reason ?? "service_error"]
+            ?? SOURCE_STATE_COPY.SOURCE_UNAVAILABLE.service_error;
+          return (
+            <div className="viewer-failed" role="alert">
+              <Icon name="warning" size={18} />
+              <strong>{copy.title}</strong>
+              <span>{copy.body}</span>
+              {derivativeNote && <span className="viewer-derivative"><strong>Derivative available:</strong> {derivativeNote}</span>}
+            </div>
+          );
+        })()}
       </div>
 
       {showToolbar && (
@@ -235,6 +258,10 @@ export default function ScanViewer({
             <button className="vbtn" onClick={fullscreen} aria-label="Fullscreen"><Icon name="fullscreen" size={13} /> Fullscreen</button>
           </div>
           <div className="viewer-status">
+            <span className={`viewer-source ${source.state === "SOURCE_AVAILABLE" ? "ok" : failed ? "bad" : "pending"}`}>
+              <span aria-hidden="true">{source.state === "SOURCE_AVAILABLE" ? "●" : failed ? "○" : "◌"}</span>
+              {source.state === "SOURCE_AVAILABLE" ? "Source available · original" : source.state === "SOURCE_MISSING" ? "Source missing" : failed ? "Source unavailable" : "Loading original…"}
+            </span>
             {hasRenderableOverlays && overlayStatus
               ? <span className="viewer-legend"><span className="viewer-layer-status"><span className="legend-swatch" aria-hidden="true" />{overlayStatus.replaceAll("_", " ")} overlay · {renderableOverlays.length} region{renderableOverlays.length === 1 ? "" : "s"}</span><span>Boxes are research localizations, not diagnoses.</span></span>
               : boundedRegion ? <span className="viewer-legend"><span className="viewer-layer-status"><span className="legend-swatch" aria-hidden="true" />{regionLabel}</span></span>

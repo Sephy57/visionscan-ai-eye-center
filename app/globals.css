@@ -67,7 +67,7 @@
   --prov-model: #38c6d9;
   --prov-clinician: #3ccf8a;
   --prov-unavailable: #8a9bad;
-  --prov-not-assessed: #6b7c8f;
+  --prov-not-assessed: #7a8b9e;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 28px rgba(0, 0, 0, 0.28);
@@ -789,6 +789,12 @@ details.tech[open] summary, details.disclosure[open] summary { margin-bottom: 10
 .viewer-failed { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 24px; text-align: center; color: #aebccb; font-size: var(--fs-sm); max-width: 440px; margin: auto; }
 .viewer-failed svg { color: var(--warning); }
 .viewer-failed strong { color: #e7eef6; font-size: var(--fs-md); }
+.viewer-derivative { margin-top: 4px; color: #aebccb; }
+.viewer-derivative strong { font-size: inherit; color: #e7eef6; }
+.viewer-source { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; white-space: nowrap; }
+.viewer-source.ok { color: var(--success); }
+.viewer-source.bad { color: var(--warning); }
+.viewer-source.pending { color: var(--text-muted); }
 .viewer-viewport.side-by-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1px; background: #1b2735; }
 .viewer-pane { position: relative; min-width: 0; height: 100%; overflow: hidden; background: #000; }
 .viewer-img-wrap { position: absolute; top: 50%; left: 50%; transform-origin: center; will-change: transform; }

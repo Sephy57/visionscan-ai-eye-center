@@ -9,6 +9,9 @@ const CHROME = process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Ap
 const USERNAME = process.env.SMOKE_ADMIN_USERNAME || "smoke-admin";
 const PASSWORD = process.env.SMOKE_ADMIN_PASSWORD || "SmokeTest#Local1234";
 const VIEWPORTS = [320, 1280];
+// Both shipped colour themes must pass; the theme is chosen by the inline
+// bootstrap script from localStorage before first paint.
+const THEMES = (process.env.A11Y_THEMES || "dark,light").split(",").map((t) => t.trim()).filter(Boolean);
 const ROUTES = ["/login", "/dashboard", "/patients", "/analyze", "/history", "/result", "/report", "/clinician", "/settings", "/admin", "/validation-center"];
 
 function fail(message) {
@@ -31,10 +34,14 @@ async function main() {
     await page.waitForFunction(() => window.location.pathname === "/dashboard", undefined, { timeout: 10_000 });
 
     let checks = 0;
+    for (const theme of THEMES) {
+    await page.evaluate((t) => localStorage.setItem("vsa-theme", t), theme);
     for (const width of VIEWPORTS) {
       await page.setViewportSize({ width, height: 900 });
       for (const route of ROUTES) {
         await page.goto(`${BASE}${route}`, { waitUntil: "domcontentloaded" });
+        const applied = await page.evaluate(() => document.documentElement.dataset.theme);
+        if (applied !== theme) fail(`${route} at ${width}px: theme ${applied} applied, expected ${theme}`);
         await page.addScriptTag({ content: axe.source });
         const violations = await page.evaluate(async () => {
           const result = await globalThis.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] } });
@@ -46,10 +53,11 @@ async function main() {
             summaries: v.nodes.slice(0, 3).map((node) => node.failureSummary),
           }));
         });
-        if (violations.length) fail(`${route} at ${width}px: ${JSON.stringify(violations)}`);
+        if (violations.length) fail(`${route} at ${width}px (${theme}): ${JSON.stringify(violations)}`);
         checks += 1;
-        console.log(`[ok ] ${route.padEnd(11)} ${String(width).padStart(4)}px axe WCAG A/AA`);
+        console.log(`[ok ] ${route.padEnd(11)} ${String(width).padStart(4)}px ${theme.padEnd(5)} axe WCAG A/AA`);
       }
+    }
     }
     console.log(`\nREAL BROWSER ACCESSIBILITY QA: PASSED (${checks}/${checks})`);
   } finally {

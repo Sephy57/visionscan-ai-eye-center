@@ -498,6 +498,9 @@ function ResultInner() {
                 localizations={(fundus?.regions ?? []).map((r) => ({ id: r.id, finding_id: r.id, kind: r.localization.kind, coordinates: r.localization.coordinates, priority: "high" as const, note: `SUSPICIOUS REGION — ${r.finding_type.replaceAll("_", " ")}` }))}
                 overlayStatus={fundus?.regions?.length ? (fundus.validation_state === "CLINICALLY_VALIDATED" ? "CLINICALLY_VALIDATED" : "RESEARCH") : undefined}
                 classificationOnly={isOctStudy && a.oct_assessment?.state === "CLASS_ESTIMATED"}
+                derivativeNote={(a.oct_region_results?.length ?? 0) > 0
+                  ? `${a.oct_region_results!.length} bounded OCT region(s) derived from the linked PDF remain listed under multimodal evidence. They are not a substitute for this original.`
+                  : undefined}
                 infoOverlay={{
                   eye: eyeLabel(a.study?.eye),
                   modality: modalityLabel(a.study?.modality),
