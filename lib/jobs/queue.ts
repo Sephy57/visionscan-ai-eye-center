@@ -890,6 +890,22 @@ async function waitForJobResources(options: {
   });
 }
 
+/**
+ * Oldest claimable (queued or retryable) jobs. The status filter runs inside
+ * the bounded page scanner, so claimable jobs are found however many terminal
+ * jobs precede them; filtering a fixed page of the oldest rows would starve
+ * every new job once the history exceeded that page.
+ */
+export async function listClaimCandidates(limit: number): Promise<AnalysisJob[]> {
+  const [queued, retryable] = await Promise.all([
+    listJobsPage({ limit, direction: "asc", status: "queued" }),
+    listJobsPage({ limit, direction: "asc", status: "retryable" }),
+  ]);
+  return [...queued.items, ...retryable.items]
+    .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.job_id.localeCompare(b.job_id))
+    .slice(0, limit);
+}
+
 /** Schedule a bounded retry without keeping the process alive solely for a
  * maintenance timer. The durable retry_after_at remains authoritative if the
  * process exits before this callback fires. */
@@ -1270,10 +1286,7 @@ export async function runWorkerOnce(options: {
   const workerId = options.workerId?.trim() || workerInstanceId;
   const maxJobs = Math.max(1, Math.min(1, Math.floor(options.maxJobs ?? 1)));
   const recovery = await recoverJobsOnStartup({ workerId, startWorkers: false });
-  const page = await listJobsPage({ limit: 32, direction: "asc" });
-  const candidates = page.items
-    .filter((job) => job.status === "queued" || job.status === "retryable")
-    .slice(0, maxJobs);
+  const candidates = await listClaimCandidates(maxJobs);
   const claimedIds: string[] = [];
   for (const job of candidates) {
     if (options.canClaim && !(await options.canClaim())) break;
