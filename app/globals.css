@@ -288,7 +288,7 @@ a.status-chip:hover { text-decoration: none; border-color: var(--border-strong);
 .content.wide { max-width: 1560px; }
 /* Model/pipeline output contains long unbreakable identifiers (e.g. UNCALIBRATED_RESEARCH_GRADE_ESTIMATE);
    let running text break them rather than widen the page on narrow screens. */
-.content :is(p, li, dd, dt, h2, h3, h4, blockquote, figcaption, label, .alert-body) { overflow-wrap: anywhere; }
+.content :is(p, li, dd, dt, h1, h2, h3, h4, blockquote, figcaption, label, .alert-body) { overflow-wrap: anywhere; }
 /* Links inside running text are underlined so colour is never the only cue (WCAG 1.4.1). */
 .content :is(p, li, dd, .field-hint, .alert-body, .es-body, .card-foot) a:not(.btn):not(.chip) { text-decoration: underline; text-underline-offset: 2px; }
 .app-footer {

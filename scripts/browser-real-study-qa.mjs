@@ -213,12 +213,20 @@ async function main() {
       const page = await context.newPage();
       await withSyntheticBundle(page, studyId, { overlay: false, longToken: true });
       for (const route of routes.slice(3)) {
-        await page.goto(`${BASE}${route}`, { waitUntil: "domcontentloaded" });
-        await settle(page);
-        const overflow = await overflowReport(page);
-        if (overflow) fail(`long-token ${route} 320px: horizontal overflow ${overflow}`);
+        // Font metrics differ by platform (Linux CI's fallback font is wider
+        // than Windows' Segoe UI), so also check with a deliberately wide font.
+        for (const wideFont of [false, true]) {
+          await page.goto(`${BASE}${route}`, { waitUntil: "domcontentloaded" });
+          await settle(page);
+          if (wideFont) {
+            await page.addStyleTag({ content: '* { font-family: Verdana, "DejaVu Sans", sans-serif !important; }' });
+            await page.waitForTimeout(200);
+          }
+          const overflow = await overflowReport(page);
+          if (overflow) fail(`long-token${wideFont ? " wide-font" : ""} ${route} 320px: horizontal overflow ${overflow}`);
+        }
       }
-      ok("long unbreakable identifiers wrap at 320px on result/clinician/report");
+      ok("long unbreakable identifiers wrap at 320px on result/clinician/report (default and wide fonts)");
       await context.close();
     }
 
