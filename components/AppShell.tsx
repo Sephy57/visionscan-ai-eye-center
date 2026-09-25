@@ -4,6 +4,7 @@ import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Icon, IconName } from "./icons";
+import { authFetch } from "@/lib/auth/clientFetch";
 
 /**
  * Single application shell.
@@ -128,7 +129,7 @@ function UserMenu() {
   }, []);
 
   async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await authFetch("/api/auth/logout", { method: "POST" });
     router.replace("/login");
     router.refresh();
   }
