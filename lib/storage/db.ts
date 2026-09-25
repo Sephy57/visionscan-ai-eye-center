@@ -650,10 +650,9 @@ async function jsonTransaction<T>(work: (tx: DbTransaction) => T): Promise<T> {
       );
     },
     where<TValue>(collection: Collection, column: RelationalColumn, value: string) {
-      return Object.values((draft.collections[collection] ?? {}) as Record<string, unknown>)
+      return Object.values((draft.collections[collection] ?? {}) as Record<string, Record<string, unknown>>)
         .filter((doc) => referenceValue(doc, column) === value)
-        .sort((a, b) => String((a as { created_at?: unknown }).created_at ?? "").localeCompare(String((b as { created_at?: unknown }).created_at ?? ""))
-          || String((a as { id?: unknown }).id ?? "").localeCompare(String((b as { id?: unknown }).id ?? "")))
+        .sort((a, b) => String(a.created_at ?? "").localeCompare(String(b.created_at ?? "")) || String(a.id ?? "").localeCompare(String(b.id ?? "")))
         .map((doc) => clone(doc as TValue));
     },
     put<TValue>(collection: Collection, id: string, doc: TValue) {
@@ -942,8 +941,8 @@ export async function dbPage<T>(collection: Collection, options: DbPageOptions<T
 /**
  * Oldest rows whose top-level payload value — the first present of `fields`,
  * like `a ?? b` — is NOT one of `excluded` (case-insensitive; absent counts
- * as not excluded), optionally only
- * those whose `dueField` is absent or at/before `dueAtOrBefore` (ISO-8601
+ * as not excluded), optionally only those whose `dueField` is absent or
+ * at/before `dueAtOrBefore` (ISO-8601
  * strings compare chronologically). SQLite evaluates the filter itself, so
  * the cost does not grow with parsing every historical row in JavaScript and
  * there is no page-scan ceiling. Field names are restricted to identifiers
@@ -965,7 +964,8 @@ export async function dbSelectExcludingFieldValues<T>(collection: Collection, op
     const clauses = [`(${fieldExpr} IS NULL${excluded.length ? ` OR ${fieldExpr} NOT IN (${excluded.map(() => "?").join(", ")})` : ""})`];
     const params: unknown[] = [...excluded];
     if (options.dueField && options.dueAtOrBefore) {
-      clauses.push(`(json_extract(payload, '$.${options.dueField}') IS NULL OR json_extract(payload, '$.${options.dueField}') <= ?)`);
+      const dueExpr = `json_extract(payload, '$.${options.dueField}')`;
+      clauses.push(`(${dueExpr} IS NULL OR ${dueExpr} <= ?)`);
       params.push(options.dueAtOrBefore);
     }
     const rows = sqlite
@@ -977,7 +977,7 @@ export async function dbSelectExcludingFieldValues<T>(collection: Collection, op
   return Object.values((db.collections[collection] ?? {}) as Record<string, Record<string, unknown>>)
     .filter((doc) => {
       const value = options.fields.map((f) => doc[f]).find((v) => v !== undefined && v !== null);
-      if (value !== undefined && value !== null && excluded.includes(String(value).toLowerCase())) return false;
+      if (value !== undefined && excluded.includes(String(value).toLowerCase())) return false;
       if (options.dueField && options.dueAtOrBefore) {
         const due = doc[options.dueField];
         if (due !== undefined && due !== null && String(due) > options.dueAtOrBefore) return false;

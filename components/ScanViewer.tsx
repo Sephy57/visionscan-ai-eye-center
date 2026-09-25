@@ -151,7 +151,26 @@ export default function ScanViewer({
     ? { left: `${boundedRegion.x * 100}%`, top: `${boundedRegion.y * 100}%`, width: `${boundedRegion.w * 100}%`, height: `${boundedRegion.h * 100}%`, position: "absolute" }
     : null;
 
-  const renderPane = (showLayers: boolean, paneLabel: string, primary: boolean) => (
+  const failureCopy = failed
+    ? SOURCE_STATE_COPY[source.state as "SOURCE_MISSING" | "SOURCE_UNAVAILABLE"][source.reason ?? "service_error"]
+      ?? SOURCE_STATE_COPY.SOURCE_UNAVAILABLE.service_error
+    : null;
+  let sourceBadge: { tone: string; glyph: string; label: string };
+  switch (source.state) {
+    case "SOURCE_AVAILABLE":
+      sourceBadge = { tone: "ok", glyph: "●", label: "Source available · original" };
+      break;
+    case "SOURCE_MISSING":
+      sourceBadge = { tone: "bad", glyph: "○", label: "Source missing" };
+      break;
+    case "SOURCE_UNAVAILABLE":
+      sourceBadge = { tone: "bad", glyph: "○", label: "Source unavailable" };
+      break;
+    default:
+      sourceBadge = { tone: "pending", glyph: "◌", label: "Loading original…" };
+  }
+
+  const renderPane =(showLayers: boolean, paneLabel: string, primary: boolean) => (
     <div className="viewer-pane" role="group" aria-label={paneLabel}>
       <span className="viewer-hint">{paneLabel}</span>
       <div
@@ -174,14 +193,16 @@ export default function ScanViewer({
           onError={primary ? diagnoseLoadFailure : undefined}
         />
         {showLayers && regionStyle && (
-          <div className="viewer-overlay-box" style={regionStyle}>
+          <div className={`viewer-overlay-box${boundedRegion && boundedRegion.x + boundedRegion.w / 2 > 0.5 ? " label-end" : ""}`} style={regionStyle}>
             <span>{regionLabel}{overlayStatus ? ` (${overlayStatus.replaceAll("_", " ")})` : ""}</span>
           </div>
         )}
         {showLayers && hasRenderableOverlays && renderableOverlays.map((loc) => loc.coordinates ? (
           <div
             key={loc.id}
-            className={`viewer-overlay-box loc-${loc.priority ?? "moderate"}`}
+            // Boxes in the right half anchor their label to the right edge so it
+            // grows inward instead of being clipped by the viewport.
+            className={`viewer-overlay-box loc-${loc.priority ?? "moderate"}${loc.coordinates.x + loc.coordinates.w / 2 > 0.5 ? " label-end" : ""}`}
             style={{
               left: `${loc.coordinates.x * 100}%`, top: `${loc.coordinates.y * 100}%`,
               width: `${loc.coordinates.w * 100}%`, height: `${loc.coordinates.h * 100}%`,
@@ -234,18 +255,14 @@ export default function ScanViewer({
         {viewMode === "side_by_side" ? (
           <>{renderPane(false, "Original scan — unmodified pixels", true)}{renderPane(true, "Overlay — annotations rendered separately", false)}</>
         ) : renderPane(viewMode === "overlay", viewMode === "overlay" ? "Overlay view — original pixels unchanged" : "Original scan — unmodified pixels", true)}
-        {failed && (() => {
-          const copy = SOURCE_STATE_COPY[source.state as "SOURCE_MISSING" | "SOURCE_UNAVAILABLE"][source.reason ?? "service_error"]
-            ?? SOURCE_STATE_COPY.SOURCE_UNAVAILABLE.service_error;
-          return (
-            <div className="viewer-failed" role="alert">
-              <Icon name="warning" size={18} />
-              <strong>{copy.title}</strong>
-              <span>{copy.body}</span>
-              {derivativeNote && <span className="viewer-derivative"><strong>Derivative available:</strong> {derivativeNote}</span>}
-            </div>
-          );
-        })()}
+        {failureCopy && (
+          <div className="viewer-failed" role="alert">
+            <Icon name="warning" size={18} />
+            <strong>{failureCopy.title}</strong>
+            <span>{failureCopy.body}</span>
+            {derivativeNote && <span className="viewer-derivative"><strong>Derivative available:</strong> {derivativeNote}</span>}
+          </div>
+        )}
       </div>
 
       {showToolbar && (
@@ -264,9 +281,9 @@ export default function ScanViewer({
             <button className="vbtn" onClick={fullscreen} aria-label="Fullscreen"><Icon name="fullscreen" size={13} /> Fullscreen</button>
           </div>
           <div className="viewer-status">
-            <span className={`viewer-source ${source.state === "SOURCE_AVAILABLE" ? "ok" : failed ? "bad" : "pending"}`}>
-              <span aria-hidden="true">{source.state === "SOURCE_AVAILABLE" ? "●" : failed ? "○" : "◌"}</span>
-              {source.state === "SOURCE_AVAILABLE" ? "Source available · original" : source.state === "SOURCE_MISSING" ? "Source missing" : failed ? "Source unavailable" : "Loading original…"}
+            <span className={`viewer-source ${sourceBadge.tone}`}>
+              <span aria-hidden="true">{sourceBadge.glyph}</span>
+              {sourceBadge.label}
             </span>
             {hasRenderableOverlays && overlayStatus
               ? <span className="viewer-legend"><span className="viewer-layer-status"><span className="legend-swatch" aria-hidden="true" />{overlayStatus.replaceAll("_", " ")} overlay · {renderableOverlays.length} region{renderableOverlays.length === 1 ? "" : "s"}</span><span>Boxes are research localizations, not diagnoses.</span></span>

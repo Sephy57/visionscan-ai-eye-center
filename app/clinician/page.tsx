@@ -84,7 +84,7 @@ function ReviewQueue({ studyId, setStudyId, onOpen }: { studyId: string; setStud
         const res: Response = await fetch(`/api/studies?with_status=1&limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const body: { studies?: QueueRow[]; has_more?: boolean; next_cursor?: string | null } = await res.json();
-        found.push(...(body.studies ?? []).filter((s: QueueRow) => AWAITING.includes(s.dashboard_status ?? "")));
+        found.push(...(body.studies ?? []).filter((s) => AWAITING.includes(s.dashboard_status ?? "")));
         cursor = body.has_more ? body.next_cursor ?? null : null;
         if (!cursor) break;
       }

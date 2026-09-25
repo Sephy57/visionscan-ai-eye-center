@@ -801,7 +801,10 @@ details.tech[open] summary, details.disclosure[open] summary { margin-bottom: 10
 .viewer-img-wrap { position: absolute; top: 50%; left: 50%; transform-origin: center; will-change: transform; }
 .viewer-img-wrap img { display: block; max-width: none; user-select: none; -webkit-user-drag: none; }
 .viewer-overlay-box { position: absolute; border: 1.5px dashed #38c6d9; background: rgba(56, 198, 217, 0.08); border-radius: 3px; pointer-events: none; }
-.viewer-overlay-box span { font: 600 0.6rem/1.3 var(--font); background: rgba(3, 26, 33, 0.88); color: #8fe6f1; padding: 2px 6px; border-radius: 3px; margin: 3px; white-space: nowrap; display: inline-block; }
+/* Labels wrap within a viewport-relative width and start from the box edge
+   nearest the image centre, so a long finding name is never clipped. */
+.viewer-overlay-box span { position: absolute; top: 0; left: 0; width: max-content; max-width: min(220px, 40vw); font: 600 0.6rem/1.3 var(--font); background: rgba(3, 26, 33, 0.88); color: #8fe6f1; padding: 2px 6px; border-radius: 3px; margin: 3px; white-space: normal; overflow-wrap: anywhere; }
+.viewer-overlay-box.label-end span { left: auto; right: 0; }
 .viewer-overlay-box.loc-high { border-color: #f5c46a; background: rgba(245, 196, 106, 0.1); }
 .viewer-overlay-box.loc-high span { color: #f5c46a; background: rgba(40, 26, 3, 0.88); }
 .viewer-overlay-box.loc-moderate { border-color: #38c6d9; }
