@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Badge } from "@/components/ui";
+import Link from "next/link";
+import { Badge, PageHeader } from "@/components/ui";
 import { Icon } from "@/components/icons";
 import { authFetch, csrfHeader } from "@/lib/auth/clientFetch";
 
@@ -85,9 +86,8 @@ async function sha256Hex(buf: ArrayBuffer): Promise<string> {
 
 export default function AnalyzePage() {
   const router = useRouter();
-  // Upload is the primary workflow. Symptom entry remains available as an
-  // optional correction/context step, but patients are never blocked on it.
-  const [step, setStep] = useState<1 | 2>(2);
+  // Single staged workspace (01 study → 05 analyze). Symptom context stays
+  // optional: patients are never blocked on it.
   const [patientRef, setPatientRef] = useState("");
   const [drafts, setDrafts] = useState<SymptomDraft[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -113,8 +113,13 @@ export default function AnalyzePage() {
   // upload; the clinician review workspace preserves UNREVIEWED provenance.
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfStatus, setPdfStatus] = useState<"idle" | "uploading" | "uploaded" | "duplicate" | "rejected" | "error">("idle");
-  const [pdfMessage, setPdfMessage] = useState<string | null>(null);
+  const [pdfMessage, setPdfMessageState] = useState<string | null>(null);
+  const pdfMessageRef = useRef<string | null>(null);
+  const setPdfMessage = (m: string | null) => { pdfMessageRef.current = m; setPdfMessageState(m); };
   const pdfInputRef = useRef<HTMLInputElement>(null);
+  // Set when the image study was created but the attached PDF was rejected, so
+  // the user can continue without re-uploading (avoids a duplicate study).
+  const [createdStudyId, setCreatedStudyId] = useState<string | null>(null);
 
   const flagged = drafts.filter((d) => RED_FLAG_TYPES.has(d.type));
   const allLabels = GROUPS.flatMap((g) => g.items);
@@ -243,8 +248,11 @@ export default function AnalyzePage() {
   async function pick(f: File | null) {
     setFile(f);
     setError(null);
+    // A different image means a new study; the earlier one stays in history.
+    setCreatedStudyId(null);
     setFileHash(null);
     setPreviewDims(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     if (f && f.type.startsWith("image/")) {
       setPreviewUrl(URL.createObjectURL(f));
       // Client-side quality pre-checks (research signal only; the server re-checks everything).
@@ -256,6 +264,25 @@ export default function AnalyzePage() {
     } else {
       setPreviewUrl(null);
     }
+  }
+
+  /** Retry only the attachment on the study that was already created (no duplicate study). */
+  async function retryPdf() {
+    if (!createdStudyId || !pdfFile) return;
+    if (!documentExtractionConsent) { setError("Explicit DOCUMENT_EXTRACTION consent is required when a PDF is attached."); return; }
+    setState("validating");
+    setError(null);
+    try {
+      // DOCUMENT_EXTRACTION consent was recorded for this study by the first submit.
+      if (await uploadPdf(createdStudyId)) {
+        router.push(`/processing?study=${encodeURIComponent(createdStudyId)}`);
+        return;
+      }
+      setError(`The PDF document was rejected: ${pdfMessageRef.current ?? "validation failed"}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+    setState("idle");
   }
 
   async function submit() {
@@ -333,7 +360,8 @@ export default function AnalyzePage() {
 
       setProgress(100);
       if (pdfFailed) {
-        setError(`Image uploaded, but the PDF document was rejected: ${pdfMessage}`);
+        setError(`Image uploaded, but the PDF document was rejected: ${pdfMessageRef.current ?? "validation failed"}`);
+        setCreatedStudyId(studyId);
         setState("idle");
         return;
       }
@@ -349,72 +377,205 @@ export default function AnalyzePage() {
     { label: "Resolution", ok: !!previewDims && previewDims.w >= 512 && previewDims.h >= 512, pending: !previewDims, detail: previewDims ? `${previewDims.w}×${previewDims.h}` : "—" },
     { label: "File size", ok: !!file && file.size <= 25 * 1024 * 1024, pending: !file, detail: file ? `${(file.size / 1024).toFixed(0)} KB` : "—" },
   ];
+  const busy = state !== "idle";
+  const consentsReady = imageAnalysisConsent && clinicalResearchConsent && (!pdfFile || documentExtractionConsent);
+  const pdfBlocked = pdfStatus === "rejected";
+  const SCAN_TYPES: Array<[string, string]> = [["unknown", "Auto-detect (server routing)"], ["fundus", "Fundus photograph"], ["retinal_photo", "Retinal photograph"], ["oct", "OCT"], ["octa", "OCT-A"], ["faf", "Fundus autofluorescence"], ["ffa", "Fluorescein angiography"], ["icg", "ICG angiography"], ["slit_lamp", "Slit-lamp image"], ["external_eye", "External eye photograph"], ["optic_nerve", "Optic nerve image"], ["macula", "Macula image"]];
+  const scanTypeLabel = SCAN_TYPES.find(([v]) => v === scanType)?.[1] ?? scanType;
+  const eyeText = eye === "OD" ? "Right (OD)" : eye === "OS" ? "Left (OS)" : eye === "both" ? "Both (OU)" : "Not specified";
+
+  const rail: Array<{ id: string; n: string; label: string; state: "done" | "attention" | "pending"; text: string }> = [
+    { id: "intake-study", n: "01", label: "Patient / study", state: patientRef ? "done" : "pending", text: patientRef ? "Linked" : "Optional" },
+    { id: "intake-input", n: "02", label: "Input data", state: file ? (qc.some((q) => !q.pending && !q.ok) || pdfBlocked ? "attention" : "done") : "pending", text: file ? (pdfBlocked ? "PDF rejected" : qc.some((q) => !q.pending && !q.ok) ? "Check" : "Ready") : "Required" },
+    { id: "intake-context", n: "03", label: "Clinical context", state: flagged.length ? "attention" : drafts.length ? "done" : "pending", text: flagged.length ? "Red flag" : drafts.length ? `${drafts.length} symptom(s)` : "Optional" },
+    { id: "intake-review", n: "04", label: "Review & consent", state: consentsReady ? "done" : "pending", text: consentsReady ? "Authorized" : "Required" },
+    { id: "intake-analyze", n: "05", label: "Analyze", state: busy ? "attention" : "pending", text: busy ? (state === "uploading" ? "Uploading" : "Validating") : "Not started" },
+  ];
 
   return (
-    <div className="analyze-page">
-      <div className="analyze-header">
-        <div>
-          <div className="eyebrow">New analysis / Intake</div>
-          <h1>Prepare a research analysis<span className="title-period">.</span></h1>
-          <p className="analyze-lede">Upload an ophthalmic image, add optional context, and keep the review boundary visible at every step.</p>
-        </div>
-        <div className="analysis-header-status">
-          <Badge tone="demo">Research only</Badge>
-          <span><span className="dot dot-off" aria-hidden="true" /> Clinician review required</span>
-        </div>
-      </div>
-
-      {/* Horizontal workflow indicator */}
-      <div className="stepper analyze-stepper" aria-label="Workflow progress">
-        <span className="sr-only">Step {step} of 3: {step === 1 ? "Patient context" : "Scan upload"}</span>
-        <div className={`step ${step >= 1 ? (step > 1 ? "done" : "current") : ""}`} aria-current={step === 1 ? "step" : undefined}>
-          <span className="step-dot">{step > 1 ? "✓" : "1"}</span>
-          <span className="step-label">Patient Context</span>
-        </div>
-        <div className={`step-line ${step > 1 ? "done" : ""}`} aria-hidden="true" />
-        <div className={`step ${step === 2 ? "current" : ""}`} aria-current={step === 2 ? "step" : undefined}>
-          <span className="step-dot">2</span>
-          <span className="step-label">Scan Upload</span>
-        </div>
-        <div className="step-line" aria-hidden="true" />
-        <div className="step">
-          <span className="step-dot">3</span>
-          <span className="step-label">Analysis</span>
-        </div>
-      </div>
+    <div>
+      <PageHeader
+        eyebrow="New analysis · Intake"
+        title="Prepare a research analysis"
+        lede="Attach imaging and optional records, add clinical context, authorize processing, then hand off to the analysis pipeline. Quality and provenance stay visible at every step."
+        actions={<><Badge tone="demo">Research only</Badge><Badge tone="warn">Clinician review required</Badge></>}
+      />
 
       <div className="analyze-layout">
         <div className="analyze-form">
-      {step === 1 && (
-        <section className="analyze-step-panel">
-          <h2 className="analyze-step-title">Optional Patient Context</h2>
-          <p className="muted small" style={{ marginTop: 0 }}>
-            Add or correct structured symptoms if you already have them. This step is optional: uploaded records are
-            analyzed automatically and their symptoms are extracted for clinician review.
-          </p>
-
-          {flagged.length > 0 && (
-            <div className="alert danger" role="alert">
-              <span className="alert-icon" aria-hidden="true">⚠</span>
-              <div className="alert-body">
-                <strong>URGENT SYMPTOM</strong>
-                {flagged.map((f) => <div key={f.type}>{RED_FLAG_MESSAGES[f.type] ?? labelOf(f.type)}</div>)}
-                Prompt ophthalmic assessment is recommended. If vision loss is sudden or severe, seek immediate
-                professional care — do not wait for this analysis. No diagnosis is implied.
-              </div>
+          {/* 01 — Patient / study */}
+          <section className="card intake-section" id="intake-study" aria-labelledby="intake-study-title">
+            <div className="intake-head">
+              <span className="intake-num">01</span>
+              <div><h2 id="intake-study-title">Patient / study</h2><p>Link the study to a pseudonymous patient reference. Never use real names.</p></div>
             </div>
-          )}
+            <div className="field" style={{ margin: 0 }}>
+              <label htmlFor="patientRef">Patient / study identifier (optional — pseudonymous code only)</label>
+              <input id="patientRef" value={patientRef} onChange={(e) => setPatientRef(e.target.value)} placeholder="e.g. VS-2026-0001" maxLength={64} disabled={busy} />
+              <div className="field-hint">Consent is bound to this reference server-side. Manage registered patients in <Link href="/patients">Patients</Link>.</div>
+            </div>
+          </section>
 
-          <div className="card" style={{ marginTop: 12 }}>
+          {/* 02 — Input data */}
+          <section className="card intake-section" id="intake-input" aria-labelledby="intake-input-title">
+            <div className="intake-head">
+              <span className="intake-num">02</span>
+              <div><h2 id="intake-input-title">Upload records and scan</h2><p>One ophthalmic image (required) and an optional PDF record. The server re-validates everything.</p></div>
+            </div>
+
+            {!file ? (
+              <div
+                className={`dropzone${drag ? " active" : ""}`}
+                role="group"
+                aria-label="Scan upload drop area"
+                aria-describedby="scan-upload-formats"
+                onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+                onDragLeave={() => setDrag(false)}
+                onDrop={(e) => { e.preventDefault(); setDrag(false); pick(e.dataTransfer.files?.[0] ?? null); }}
+              >
+                <div className="dz-icon" aria-hidden="true"><Icon name="scan" size={24} /></div>
+                <strong>Drop an ophthalmic image here</strong>
+                <p className="small" style={{ margin: "2px 0 12px" }}>Fundus, retinal, or OCT B-scan exported as an image</p>
+                <button className="btn secondary sm" type="button" onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}><Icon name="upload" size={14} /> Browse files</button>
+                <div className="dz-formats" id="scan-upload-formats">
+                  <span>JPEG</span><span>PNG</span><span>WEBP</span><span>≤ 25 MB</span><span>DICOM detected · not analyzable</span>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="card-title">
+                  <span className="card-kicker"><Icon name="eye" size={13} /> Imaging input</span>
+                  <button className="btn ghost sm" onClick={() => pick(null)} disabled={busy}>Remove</button>
+                </div>
+                <div className="file-card">
+                  {previewUrl
+                    ? <img className="file-thumb" src={previewUrl} alt="Selected scan preview" />
+                    : <div className="file-thumb"><span>DICOM detected</span></div>}
+                  <dl className="file-meta">
+                    <div><dt>File</dt><dd>{file.name}</dd></div>
+                    <div><dt>Type</dt><dd>{file.type || "unknown"}</dd></div>
+                    <div><dt>Size</dt><dd className="num">{(file.size / 1024).toFixed(0)} KB</dd></div>
+                    <div><dt>Resolution</dt><dd className="num">{previewDims ? `${previewDims.w}×${previewDims.h}` : "—"}</dd></div>
+                    <div><dt>Modality</dt><dd>{scanType === "unknown" ? "Not declared — routed server-side" : `${scanTypeLabel} (declared)`}</dd></div>
+                    <div><dt>Laterality</dt><dd>{eyeText}</dd></div>
+                    <div style={{ gridColumn: "1 / -1" }}><dt>SHA-256 (client)</dt><dd className="mono">{fileHash ? fileHash.slice(0, 32) + "…" : "computing…"}</dd></div>
+                  </dl>
+                </div>
+                <div className="qc-list" aria-label="Pre-upload checks">
+                  {qc.map((q) => (
+                    <div className="qc-row" key={q.label}>
+                      <span>{q.label} <span className="tiny muted">{q.detail}</span></span>
+                      <span className={`qc-check ${q.pending ? "pending" : q.ok ? "pass" : "fail"}`}>{q.pending ? "Pending" : q.ok ? <><Icon name="check" size={12} /> OK</> : <><Icon name="warning" size={12} /> Check</>}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="tiny muted" style={{ margin: "8px 0 0" }}>Pre-upload checks are a research signal only. The server repeats integrity, modality, quality, and out-of-distribution gates.</p>
+
+                <div className="grid grid-2" style={{ marginTop: 16 }}>
+                  <div className="field" style={{ margin: 0 }}>
+                    <label htmlFor="scanType">Scan type</label>
+                    <select id="scanType" value={scanType} onChange={(e) => setScanType(e.target.value)} disabled={busy}>
+                      {SCAN_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                    </select>
+                  </div>
+                  <div className="field" style={{ margin: 0 }}>
+                    <span className="field-label" id="eye-label">Eye</span>
+                    <div role="group" aria-labelledby="eye-label" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {[["OD", "Right (OD)"], ["OS", "Left (OS)"], ["both", "Both"], ["unknown", "Unknown"]].map(([v, l]) => (
+                        <button key={v} type="button" className={`chip${eye === v ? " selected" : ""}`} onClick={() => setEye(v)} aria-pressed={eye === v} disabled={busy}>{l}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <details className="disclosure" style={{ marginTop: 14 }}>
+                  <summary>Optional device information — only metadata you provide is stored; nothing is invented</summary>
+                  <div className="grid grid-3">
+                    <div className="field">
+                      <label htmlFor="manufacturer">Device manufacturer</label>
+                      <input id="manufacturer" value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} placeholder="e.g. Zeiss" disabled={busy} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor="deviceModel">Device model</label>
+                      <input id="deviceModel" value={deviceModel} onChange={(e) => setDeviceModel(e.target.value)} placeholder="e.g. Visucam 524" disabled={busy} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor="scanDateTime">Scan date/time</label>
+                      <input id="scanDateTime" type="datetime-local" value={scanDateTime} onChange={(e) => setScanDateTime(e.target.value)} disabled={busy} />
+                    </div>
+                  </div>
+                </details>
+              </div>
+            )}
+            <input
+              ref={inputRef} type="file" hidden
+              accept=".jpg,.jpeg,.png,.webp,.dcm,image/jpeg,image/png,image/webp"
+              onChange={(e) => pick(e.target.files?.[0] ?? null)}
+            />
+
+            <div className="divider" />
+            {/* Optional PDF record (ingestion + security validation; extraction is automatic). */}
+            <div className="card-title">
+              <span className="card-kicker"><Icon name="document" size={13} /> Clinical record (optional PDF)</span>
+              {pdfFile && <button className="btn ghost sm" onClick={() => pickPdf(null)} disabled={busy}>Remove</button>}
+            </div>
+            {!pdfFile ? (
+              <div className="dropzone compact">
+                <button className="btn secondary sm" type="button" onClick={() => pdfInputRef.current?.click()} disabled={busy}>
+                  <Icon name="upload" size={14} /> Attach PDF
+                </button>
+                <p className="tiny muted" style={{ margin: "8px 0 0", maxWidth: 520 }}>
+                  Ophthalmic report or test result (PDF, max 25 MB). Validated for dangerous content, stored immutably, and
+                  extracted automatically. Extracted facts remain unreviewed until a clinician verifies them.
+                </p>
+              </div>
+            ) : (
+              <dl className="file-meta">
+                <div><dt>File</dt><dd>{pdfFile.name}</dd></div>
+                <div><dt>Size</dt><dd className="num">{(pdfFile.size / 1024).toFixed(0)} KB</dd></div>
+                <div><dt>Validation</dt><dd>
+                  <span className={`badge ${pdfStatus === "uploaded" ? "ok" : pdfStatus === "duplicate" ? "info" : pdfStatus === "idle" || pdfStatus === "uploading" ? "neutral" : "bad"}`}>
+                    {pdfStatus === "idle" ? "Pending upload" : pdfStatus === "uploading" ? "Uploading…" : pdfStatus.toUpperCase()}
+                  </span>
+                </dd></div>
+                {pdfMessage && <div style={{ gridColumn: "1 / -1" }}><dt>Detail</dt><dd className="small muted">{pdfMessage}</dd></div>}
+              </dl>
+            )}
+            <input
+              ref={pdfInputRef} type="file" hidden
+              accept=".pdf,application/pdf"
+              onChange={(e) => pickPdf(e.target.files?.[0] ?? null)}
+            />
+          </section>
+
+          {/* 03 — Clinical context */}
+          <section className="card intake-section" id="intake-context" aria-labelledby="intake-context-title">
+            <div className="intake-head">
+              <span className="intake-num">03</span>
+              <div><h2 id="intake-context-title">Optional patient context</h2><p>Structured symptoms are correlated with imaging <strong>after</strong> the model runs. They never create findings or diagnoses.</p></div>
+              <Badge tone="neutral">Optional</Badge>
+            </div>
+
+            {flagged.length > 0 && (
+              <div className="alert danger" role="alert">
+                <span className="alert-icon" aria-hidden="true"><Icon name="warning" size={16} /></span>
+                <div className="alert-body">
+                  <strong>URGENT SYMPTOM</strong>
+                  {flagged.map((f) => <div key={f.type}>{RED_FLAG_MESSAGES[f.type] ?? labelOf(f.type)}</div>)}
+                  Prompt ophthalmic assessment is recommended. If vision loss is sudden or severe, seek immediate
+                  professional care — do not wait for this analysis. No diagnosis is implied.
+                </div>
+              </div>
+            )}
+
             {GROUPS.map((g) => (
               <div key={g.title} style={{ marginBottom: 14 }}>
-                <div className="stat-label" style={{ marginBottom: 7 }}>{g.title}</div>
-                <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+                <div className="stat-label" style={{ marginBottom: 7 }} id={`group-${g.title}`}>{g.title}</div>
+                <div role="group" aria-labelledby={`group-${g.title}`} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {g.items.map(([type, label]) => {
                     const selected = drafts.some((d) => d.type === type);
                     return (
-                      <button key={type} className={`chip${selected ? " selected" : ""}`} onClick={() => toggleSymptom(type)} aria-pressed={selected}>
-                        {RED_FLAG_TYPES.has(type) && <span className="chip-flag" aria-hidden="true">⚠</span>}
+                      <button key={type} type="button" className={`chip${selected ? " selected" : ""}`} onClick={() => toggleSymptom(type)} aria-pressed={selected} disabled={busy}>
+                        {RED_FLAG_TYPES.has(type) && <span className="chip-flag" aria-label="red-flag symptom">⚠</span>}
                         {label}
                       </button>
                     );
@@ -422,335 +583,180 @@ export default function AnalyzePage() {
                 </div>
               </div>
             ))}
-          </div>
 
-          {drafts.length > 0 && (
-            <div className="card" style={{ marginTop: 14 }}>
-              <h3>Selected symptoms ({drafts.length})</h3>
-              {drafts.map((d) => (
-                <div key={d.type} style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 10 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <strong className="small">{labelOf(d.type)}{RED_FLAG_TYPES.has(d.type) && <span style={{ color: "var(--danger)" }}> ⚠</span>}</strong>
-                    <span style={{ display: "flex", gap: 6 }}>
-                      <button className="btn ghost sm" onClick={() => setExpanded(expanded === d.type ? null : d.type)}>
-                        {expanded === d.type ? "Collapse" : "Details"}
-                      </button>
-                      <button className="btn ghost sm" onClick={() => toggleSymptom(d.type)} aria-label={`Remove ${labelOf(d.type)}`}>Remove</button>
-                    </span>
-                  </div>
-                  {expanded === d.type ? (
-                    <div className="grid grid-2" style={{ marginTop: 10 }}>
-                      <div className="field"><label>Onset</label>
-                        <select value={d.onset} onChange={(e) => updateDraft(d.type, { onset: e.target.value as SymptomDraft["onset"] })}>
-                          <option value="sudden">Suddenly</option>
-                          <option value="gradual">Gradually</option>
-                          <option value="unknown">Unknown</option>
-                        </select>
-                      </div>
-                      <div className="field"><label>Duration</label>
-                        <select value={d.duration} onChange={(e) => updateDraft(d.type, { duration: e.target.value })}>
-                          {DURATIONS.map((v) => <option key={v} value={v}>{v.replaceAll("_", " ")}</option>)}
-                        </select>
-                      </div>
-                      <div className="field"><label>Eye</label>
-                        <select value={d.laterality} onChange={(e) => updateDraft(d.type, { laterality: e.target.value as SymptomDraft["laterality"] })}>
-                          <option value="right">Right</option>
-                          <option value="left">Left</option>
-                          <option value="both">Both</option>
-                          <option value="unknown">Unknown</option>
-                        </select>
-                      </div>
-                      <div className="field"><label>Severity</label>
-                        <select value={d.severity} onChange={(e) => updateDraft(d.type, { severity: e.target.value as SymptomDraft["severity"] })}>
-                          <option value="mild">Mild</option>
-                          <option value="moderate">Moderate</option>
-                          <option value="severe">Severe</option>
-                        </select>
-                      </div>
-                      <div className="field"><label>Progression</label>
-                        <select value={d.progression} onChange={(e) => updateDraft(d.type, { progression: e.target.value })}>
-                          {["stable", "worsening", "improving", "unknown"].map((v) => <option key={v} value={v}>{v}</option>)}
-                        </select>
-                      </div>
-                      <div className="field"><label>Frequency</label>
-                        <select value={d.frequency} onChange={(e) => updateDraft(d.type, { frequency: e.target.value })}>
-                          {["constant", "intermittent", "unknown"].map((v) => <option key={v} value={v}>{v}</option>)}
-                        </select>
-                      </div>
-                      <div className="field" style={{ gridColumn: "1 / -1" }}>
-                        <label>Description (optional)</label>
-                        <textarea rows={2} value={d.free_text} onChange={(e) => updateDraft(d.type, { free_text: e.target.value })} placeholder="Free-text description (stored with the study record)" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 5 }}>
-                      <Badge tone="neutral">{d.onset}</Badge>
-                      <Badge tone="neutral">{d.duration.replaceAll("_", " ")}</Badge>
-                      <Badge tone={d.severity === "severe" ? "warn" : "neutral"}>{d.severity}</Badge>
-                      <Badge tone="neutral">{d.laterality === "right" ? "OD" : d.laterality === "left" ? "OS" : d.laterality}</Badge>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="card" style={{ marginTop: 14, padding: "12px 16px" }}>
-            <div className="field" style={{ margin: 0 }}>
-              <label htmlFor="patientRef">Patient / study identifier (optional — use a pseudonymous code, never real names)</label>
-              <input id="patientRef" value={patientRef} onChange={(e) => setPatientRef(e.target.value)} placeholder="e.g. VS-2026-0001" maxLength={64} />
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-            <button className="btn" onClick={() => setStep(2)}>Continue to Scan Upload →</button>
-            <button className="btn ghost" onClick={() => { setDrafts([]); setStep(2); }}>Skip optional context</button>
-          </div>
-        </section>
-      )}
-
-      {step === 2 && (
-        <section className="analyze-step-panel">
-          <h2 className="analyze-step-title">Upload records and scan</h2>
-          <p className="muted small" style={{ marginTop: 0 }}>Upload an ophthalmic image and, optionally, a clinical record. Record extraction starts automatically after upload.</p>
-
-          <div className="card" style={{ marginBottom: 14, padding: "12px 16px" }}>
-            <div className="field" style={{ margin: 0 }}>
-              <label htmlFor="patientRefPrimary">Patient / study identifier (optional — use a pseudonymous code, never real names)</label>
-              <input id="patientRefPrimary" value={patientRef} onChange={(e) => setPatientRef(e.target.value)} placeholder="e.g. VS-2026-0001" maxLength={64} />
-            </div>
-            <p className="tiny muted" style={{ margin: "8px 0 0" }}>
-              <button className="btn ghost sm" type="button" onClick={() => setStep(1)}>Add optional symptom context</button>
-            </p>
-          </div>
-
-          {drafts.length > 0 && (
-            <div className="card" style={{ marginBottom: 14, padding: "12px 16px" }}>
-              <div className="card-title" style={{ marginBottom: 8 }}>
-                <h3 style={{ fontSize: "0.88rem" }}>Patient context</h3>
-                <button className="btn ghost sm" onClick={() => setStep(1)}>Edit Symptoms</button>
-              </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {patientRef && <span className="badge info">{patientRef}</span>}
+            {drafts.length > 0 && (
+              <div style={{ marginTop: 6 }}>
+                <div className="stat-label" style={{ marginBottom: 4 }}>Selected symptoms ({drafts.length})</div>
                 {drafts.map((d) => (
-                  <span key={d.type} className={`badge ${RED_FLAG_TYPES.has(d.type) ? "bad" : "neutral"}`}>
-                    {labelOf(d.type)} • {d.onset} • {d.laterality === "right" ? "OD" : d.laterality === "left" ? "OS" : d.laterality}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {!file ? (
-            <div
-              className={`dropzone upload-dropzone${drag ? " active" : ""}`}
-              role="group"
-              aria-label="Scan upload drop area"
-              aria-describedby="scan-upload-formats"
-              onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
-              onDragLeave={() => setDrag(false)}
-              onDrop={(e) => { e.preventDefault(); setDrag(false); pick(e.dataTransfer.files?.[0] ?? null); }}
-            >
-              <div className="dz-icon"><Icon name="upload" size={26} /></div>
-              <strong>Drag &amp; drop scan here</strong>
-              <p style={{ margin: "6px 0 10px" }} className="small">or</p>
-              <button className="btn secondary sm" type="button" onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}>Browse Files</button>
-              <p id="scan-upload-formats" className="tiny" style={{ marginTop: 14, color: "var(--text-3)", marginBottom: 0 }}>
-                Fundus · OCT · Supported image formats (JPEG, PNG, WEBP) · max 25 MB · DICOM detected but not analyzable
-              </p>
-            </div>
-          ) : (
-            <div className="card scan-preview-card">
-              <div className="card-title"><h3>Scan preview</h3><button className="btn ghost sm" onClick={() => pick(null)}>Remove</button></div>
-              <div className="stack-mobile scan-preview-grid" style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 16, alignItems: "start" }}>
-                {previewUrl
-                  ?
-                  <img className="scan-preview-image" src={previewUrl} alt="Selected scan preview" style={{ width: 150, height: 112, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)", background: "#000" }} />
-                  : <div className="scan-preview-placeholder" style={{ width: 150, height: 112, borderRadius: 8, background: "#000", display: "flex", alignItems: "center", justifyContent: "center", color: "#8b95a1" }}><span className="tiny">DICOM detected</span></div>}
-                <div className="kv" style={{ gridTemplateColumns: "90px 1fr" }}>
-                  <dt>Filename</dt><dd className="small" style={{ wordBreak: "break-all" }}>{file.name}</dd>
-                  <dt>Resolution</dt><dd className="small">{previewDims ? `${previewDims.w}×${previewDims.h}` : "—"}</dd>
-                  <dt>File type</dt><dd className="small">{file.type || "unknown"}</dd>
-                  <dt>SHA-256</dt><dd className="tiny muted" style={{ wordBreak: "break-all", fontFamily: "var(--mono)" }}>{fileHash ? fileHash.slice(0, 24) + "…" : "computing…"}</dd>
-                </div>
-              </div>
-              <div style={{ marginTop: 14 }}>
-                <div className="stat-label" style={{ marginBottom: 5 }}>Quality check (pre-upload, research signal)</div>
-                {qc.map((q) => (
-                  <div className="qc-row" key={q.label}>
-                    <span>{q.label} <span className="tiny muted">{q.detail}</span></span>
-                    <span className={`qc-check ${q.pending ? "pending" : q.ok ? "pass" : "fail"}`}>{q.pending ? "—" : q.ok ? "● OK" : "● Check"}</span>
+                  <div key={d.type} style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <strong className="small">{labelOf(d.type)}{RED_FLAG_TYPES.has(d.type) && <span style={{ color: "var(--danger)" }}> ⚠ red flag</span>}</strong>
+                      <span style={{ display: "flex", gap: 6 }}>
+                        <button type="button" className="btn ghost sm" onClick={() => setExpanded(expanded === d.type ? null : d.type)} aria-expanded={expanded === d.type}>
+                          {expanded === d.type ? "Collapse" : "Details"}
+                        </button>
+                        <button type="button" className="btn ghost sm" onClick={() => toggleSymptom(d.type)} aria-label={`Remove ${labelOf(d.type)}`}>Remove</button>
+                      </span>
+                    </div>
+                    {expanded === d.type ? (
+                      <div className="grid grid-3" style={{ marginTop: 10 }}>
+                        <div className="field"><label htmlFor={`${d.type}-onset`}>Onset</label>
+                          <select id={`${d.type}-onset`} value={d.onset} onChange={(e) => updateDraft(d.type, { onset: e.target.value as SymptomDraft["onset"] })}>
+                            <option value="sudden">Suddenly</option>
+                            <option value="gradual">Gradually</option>
+                            <option value="unknown">Unknown</option>
+                          </select>
+                        </div>
+                        <div className="field"><label htmlFor={`${d.type}-duration`}>Duration</label>
+                          <select id={`${d.type}-duration`} value={d.duration} onChange={(e) => updateDraft(d.type, { duration: e.target.value })}>
+                            {DURATIONS.map((v) => <option key={v} value={v}>{v.replaceAll("_", " ")}</option>)}
+                          </select>
+                        </div>
+                        <div className="field"><label htmlFor={`${d.type}-eye`}>Eye</label>
+                          <select id={`${d.type}-eye`} value={d.laterality} onChange={(e) => updateDraft(d.type, { laterality: e.target.value as SymptomDraft["laterality"] })}>
+                            <option value="right">Right</option>
+                            <option value="left">Left</option>
+                            <option value="both">Both</option>
+                            <option value="unknown">Unknown</option>
+                          </select>
+                        </div>
+                        <div className="field"><label htmlFor={`${d.type}-severity`}>Severity</label>
+                          <select id={`${d.type}-severity`} value={d.severity} onChange={(e) => updateDraft(d.type, { severity: e.target.value as SymptomDraft["severity"] })}>
+                            <option value="mild">Mild</option>
+                            <option value="moderate">Moderate</option>
+                            <option value="severe">Severe</option>
+                          </select>
+                        </div>
+                        <div className="field"><label htmlFor={`${d.type}-progression`}>Progression</label>
+                          <select id={`${d.type}-progression`} value={d.progression} onChange={(e) => updateDraft(d.type, { progression: e.target.value })}>
+                            {["stable", "worsening", "improving", "unknown"].map((v) => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </div>
+                        <div className="field"><label htmlFor={`${d.type}-frequency`}>Frequency</label>
+                          <select id={`${d.type}-frequency`} value={d.frequency} onChange={(e) => updateDraft(d.type, { frequency: e.target.value })}>
+                            {["constant", "intermittent", "unknown"].map((v) => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </div>
+                        <div className="field" style={{ gridColumn: "1 / -1" }}>
+                          <label htmlFor={`${d.type}-text`}>Description (optional)</label>
+                          <textarea id={`${d.type}-text`} rows={2} value={d.free_text} onChange={(e) => updateDraft(d.type, { free_text: e.target.value })} placeholder="Free-text description (stored with the study record)" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 5 }}>
+                        <Badge tone="neutral">{d.onset}</Badge>
+                        <Badge tone="neutral">{d.duration.replaceAll("_", " ")}</Badge>
+                        <Badge tone={d.severity === "severe" ? "warn" : "neutral"}>{d.severity}</Badge>
+                        <Badge tone="neutral">{d.laterality === "right" ? "OD" : d.laterality === "left" ? "OS" : d.laterality}</Badge>
+                      </div>
+                    )}
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
-          <input
-            ref={inputRef} type="file" hidden
-            accept=".jpg,.jpeg,.png,.webp,.dcm,image/jpeg,image/png,image/webp"
-            onChange={(e) => pick(e.target.files?.[0] ?? null)}
-          />
-
-          {/* S1: optional PDF test-result attachment (ingestion + security validation only). */}
-          <div className="card document-card" style={{ marginTop: 14 }}>
-            <div className="card-title">
-              <h3 style={{ fontSize: "0.88rem" }}>PDF test result (optional)</h3>
-              {pdfFile && <button className="btn ghost sm" onClick={() => pickPdf(null)} disabled={state !== "idle"}>Remove</button>}
-            </div>
-            {!pdfFile ? (
-              <>
-                <button className="btn secondary sm" type="button" onClick={() => pdfInputRef.current?.click()} disabled={state !== "idle"}>
-                  <Icon name="upload" size={14} /> Upload PDF
-                </button>
-                <p className="tiny muted" style={{ margin: "8px 0 0" }}>
-                  Attach an ophthalmic report or test result (PDF, max 25 MB). It is validated, stored immutably,
-                  and analyzed automatically. Extracted facts remain unreviewed until a clinician verifies them.
-                </p>
-              </>
-            ) : (
-              <div className="kv" style={{ gridTemplateColumns: "110px 1fr" }}>
-                <dt>Filename</dt><dd className="small" style={{ wordBreak: "break-all" }}>{pdfFile.name}</dd>
-                <dt>Size</dt><dd className="small">{(pdfFile.size / 1024).toFixed(0)} KB</dd>
-                <dt>Status</dt>
-                <dd className="small">
-                  <span className={`badge ${pdfStatus === "uploaded" ? "ok" : pdfStatus === "duplicate" ? "info" : pdfStatus === "idle" || pdfStatus === "uploading" ? "neutral" : "bad"}`}>
-                    {pdfStatus === "idle" ? "Pending upload" : pdfStatus === "uploading" ? "Uploading…" : pdfStatus.toUpperCase()}
-                  </span>
-                </dd>
-                {pdfMessage && <dt>Detail</dt>}
-                {pdfMessage && <dd className="tiny muted">{pdfMessage}</dd>}
               </div>
             )}
-            <input
-              ref={pdfInputRef} type="file" hidden
-              accept=".pdf,application/pdf"
-              onChange={(e) => pickPdf(e.target.files?.[0] ?? null)}
-            />
-          </div>
+          </section>
 
-          {file && (
-            <div className="card scan-details-card" style={{ marginTop: 14 }}>
-              <div className="grid grid-2">
-                <div className="field" style={{ margin: 0 }}>
-                  <label htmlFor="scanType">Scan type</label>
-                  <select id="scanType" value={scanType} onChange={(e) => setScanType(e.target.value)} disabled={state !== "idle"}>
-                    {[["unknown", "Auto-detect"], ["fundus", "Fundus photograph"], ["retinal_photo", "Retinal photograph"], ["oct", "OCT"], ["octa", "OCT-A"], ["faf", "Fundus autofluorescence"], ["ffa", "Fluorescein angiography"], ["icg", "ICG angiography"], ["slit_lamp", "Slit-lamp image"], ["external_eye", "External eye photograph"], ["optic_nerve", "Optic nerve image"], ["macula", "Macula image"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                  </select>
-                </div>
-                <div className="field" style={{ margin: 0 }}>
-                  <label>Eye</label>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {[["OD", "Right"], ["OS", "Left"], ["both", "Both"], ["unknown", "Unknown"]].map(([v, l]) => (
-                      <button key={v} className={`chip${eye === v ? " selected" : ""}`} onClick={() => setEye(v)} aria-pressed={eye === v} disabled={state !== "idle"}>{l}</button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <details className="tech" style={{ marginTop: 8 }}>
-                <summary>Optional device information — only metadata you provide is stored; nothing is invented</summary>
-                <div className="grid grid-3">
-                  <div className="field">
-                    <label htmlFor="manufacturer">Device manufacturer</label>
-                    <input id="manufacturer" value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} placeholder="e.g. Zeiss" disabled={state !== "idle"} />
-                  </div>
-                  <div className="field">
-                    <label htmlFor="deviceModel">Device model</label>
-                    <input id="deviceModel" value={deviceModel} onChange={(e) => setDeviceModel(e.target.value)} placeholder="e.g. Visucam 524" disabled={state !== "idle"} />
-                  </div>
-                  <div className="field">
-                    <label htmlFor="scanDateTime">Scan date/time</label>
-                    <input id="scanDateTime" type="datetime-local" value={scanDateTime} onChange={(e) => setScanDateTime(e.target.value)} disabled={state !== "idle"} />
-                  </div>
-                </div>
-              </details>
+          {/* 04 — Review & consent */}
+          <section className="card intake-section" id="intake-review" aria-labelledby="intake-review-title">
+            <div className="intake-head">
+              <span className="intake-num">04</span>
+              <div><h2 id="intake-review-title">Review &amp; purpose-specific consent</h2><p>Confirm what will be submitted. Each processing purpose is authorized explicitly for this study only.</p></div>
             </div>
-          )}
-
-          <div className="card consent-card" style={{ marginTop: 14, padding: "14px 16px" }}>
-            <div className="stat-label" style={{ marginBottom: 8 }}>Purpose-specific consent</div>
+            <dl className="file-meta" style={{ marginBottom: 16 }}>
+              <div><dt>Patient reference</dt><dd>{patientRef || "None (unlinked study)"}</dd></div>
+              <div><dt>Image</dt><dd>{file ? file.name : <span style={{ color: "var(--warning)" }}>Not selected</span>}</dd></div>
+              <div><dt>Declared modality · eye</dt><dd>{scanTypeLabel} · {eyeText}</dd></div>
+              <div><dt>PDF record</dt><dd>{pdfFile ? pdfFile.name : "None"}</dd></div>
+              <div><dt>Symptoms</dt><dd>{drafts.length ? `${drafts.length} structured${flagged.length ? ` · ${flagged.length} red flag` : ""}` : "None reported"}</dd></div>
+            </dl>
             <label className="consent-choice">
-              <input
-                type="checkbox"
-                checked={imageAnalysisConsent}
-                onChange={(e) => setImageAnalysisConsent(e.target.checked)}
-                disabled={state !== "idle"}
-              />
+              <input type="checkbox" checked={imageAnalysisConsent} onChange={(e) => setImageAnalysisConsent(e.target.checked)} disabled={busy} />
               <span>
                 <strong>Authorize IMAGE_MODEL_ANALYSIS for this study</strong>
                 <span className="tiny muted">Required to run the local research model. This is explicit consent for this study only; results remain unvalidated and require clinician review.</span>
               </span>
             </label>
-            <label className="consent-choice" style={{ marginTop: 10 }}>
-              <input
-                type="checkbox"
-                checked={clinicalResearchConsent}
-                onChange={(e) => setClinicalResearchConsent(e.target.checked)}
-                disabled={state !== "idle"}
-              />
+            <label className="consent-choice">
+              <input type="checkbox" checked={clinicalResearchConsent} onChange={(e) => setClinicalResearchConsent(e.target.checked)} disabled={busy} />
               <span>
                 <strong>Authorize CLINICAL_RESEARCH_ANALYSIS for specialist review</strong>
                 <span className="tiny muted">Required for multi-specialist evidence synthesis and condition-gating surfaces. It produces research hand-offs only; it never confirms a diagnosis.</span>
               </span>
             </label>
             {pdfFile && (
-              <label className="consent-choice" style={{ marginTop: 10 }}>
-                <input
-                  type="checkbox"
-                  checked={documentExtractionConsent}
-                  onChange={(e) => setDocumentExtractionConsent(e.target.checked)}
-                  disabled={state !== "idle"}
-                />
+              <label className="consent-choice">
+                <input type="checkbox" checked={documentExtractionConsent} onChange={(e) => setDocumentExtractionConsent(e.target.checked)} disabled={busy} />
                 <span>
                   <strong>Authorize DOCUMENT_EXTRACTION for the attached PDF</strong>
                   <span className="tiny muted">Required to extract candidate facts. Extracted text remains unreviewed until a clinician verifies it.</span>
                 </span>
               </label>
             )}
-          </div>
+          </section>
 
-          {error && <div className="alert danger" style={{ marginTop: 12 }}><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body"><strong>Upload failed</strong>{error}</div></div>}
-
-          {(state === "uploading" || state === "validating") && (
-            <div style={{ marginTop: 14 }} aria-live="polite">
-              <div className="meter" role="progressbar" aria-label={state === "uploading" ? "Scan upload progress" : "Upload validation progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-valuetext={`${progress}% ${state}`}><div style={{ width: `${progress}%` }} /></div>
-              <p className="small muted" style={{ marginBottom: 0 }}>{state === "uploading" ? "UPLOADING…" : "VALIDATING…"}</p>
+          {/* 05 — Analyze */}
+          <section className="card intake-section" id="intake-analyze" aria-labelledby="intake-analyze-title">
+            <div className="intake-head">
+              <span className="intake-num">05</span>
+              <div><h2 id="intake-analyze-title">Analyze</h2><p>Uploads the original unchanged (SHA-256 recorded), records consent, and starts the server-side pipeline.</p></div>
             </div>
-          )}
 
-          <div className="analyze-actions" style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 18, flexWrap: "wrap" }}>
-            <button className="btn" onClick={submit} disabled={!file || state !== "idle"}>
-              {state === "idle" ? "Continue to Analysis →" : state === "uploading" ? "Uploading…" : "Validating…"}
-            </button>
-            <button className="btn ghost" onClick={() => setStep(1)} disabled={state !== "idle"}>← Back to Patient Context</button>
-            <span className="tiny muted">Original preserved unchanged (SHA-256) on D:.</span>
-          </div>
-        </section>
-      )}
+            {error && (
+              <div className="alert danger" role="alert">
+                <span className="alert-icon" aria-hidden="true"><Icon name="warning" size={16} /></span>
+                <div className="alert-body">
+                  <strong>{createdStudyId ? "Study created — attachment rejected" : "Upload could not start"}</strong>{error}
+                  {createdStudyId && (
+                    <div className="state-actions">
+                      <button type="button" className="btn sm" onClick={() => router.push(`/processing?study=${encodeURIComponent(createdStudyId)}`)}>Continue analysis without the PDF</button>
+                      {pdfFile && pdfStatus === "idle" && (
+                        <button type="button" className="btn secondary sm" onClick={retryPdf} disabled={busy}>Attach “{pdfFile.name}” to this study</button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
+            {busy && (
+              <div style={{ marginBottom: 14 }} aria-live="polite">
+                <div className="meter" role="progressbar" aria-label={state === "uploading" ? "Scan upload progress" : "Upload validation progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-valuetext={`${Math.round(progress)}% ${state}`}><div style={{ width: `${progress}%` }} /></div>
+                <p className="small muted" style={{ marginBottom: 0 }}>{state === "uploading" ? "Uploading original scan (byte progress reported by the browser)…" : "Recording consent, symptoms, and attachments…"}</p>
+              </div>
+            )}
+
+            <div className="analyze-actions" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <button className="btn lg" onClick={submit} disabled={!file || busy || !!createdStudyId}>
+                {state === "idle" ? <>Continue to Analysis <Icon name="arrowRight" size={15} /></> : state === "uploading" ? "Uploading…" : "Validating…"}
+              </button>
+              <span className="tiny muted">{!file ? "Select an image in step 02 to continue." : !consentsReady ? "Consent in step 04 is required before processing." : "Ready — the pipeline runs as a background job."}</span>
+            </div>
+          </section>
         </div>
 
-        <aside className="analyze-rail" aria-label="Analysis guardrails and intake status">
-          <div className="card rail-card">
-            <div className="rail-kicker"><Icon name="status" size={15} /> Guardrails</div>
-            <h2>Built for a careful handoff</h2>
-            <p className="small muted">Quality and provenance stay visible through intake. Automated results still require review by a qualified eye-care professional.</p>
-            <ul className="rail-list">
-              <li><span>01</span><span>Server re-checks the image before analysis.</span></li>
-              <li><span>02</span><span>Original files are preserved unchanged.</span></li>
-              <li><span>03</span><span>Optional context remains separate from image evidence.</span></li>
+        <aside className="analyze-rail" aria-label="Intake progress and guardrails">
+          <nav className="card" aria-label="Intake steps">
+            <div className="card-kicker" style={{ marginBottom: 10 }}><Icon name="clipboard" size={13} /> Intake progress</div>
+            <ol className="workflow-rail">
+              {rail.map((r) => (
+                <li key={r.id} className={r.state === "pending" ? undefined : r.state}>
+                  <a href={`#${r.id}`}>
+                    <span className="wf-num">{r.state === "done" ? <Icon name="check" size={12} /> : r.n}</span>
+                    <span>{r.label}</span>
+                    <span className="wf-state">{r.text}</span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+          <div className="card">
+            <div className="card-kicker" style={{ marginBottom: 10 }}><Icon name="shield" size={13} /> Guardrails</div>
+            <ul className="tiny muted" style={{ margin: 0, paddingLeft: 16, display: "grid", gap: 6 }}>
+              <li>Server re-checks integrity, modality, quality, and domain before any model runs.</li>
+              <li>Original files are preserved unchanged.</li>
+              <li>Symptoms and records stay separate from image evidence.</li>
+              <li>Output is research-only and requires clinician review.</li>
             </ul>
-          </div>
-
-          <div className="card rail-card rail-readout">
-            <div className="rail-kicker"><Icon name="reports" size={15} /> Intake readout</div>
-            <div className="readout-row"><span>Scan</span><strong>{file ? "Selected" : "Not selected"}</strong></div>
-            <div className="readout-row"><span>Image hash</span><strong>{fileHash ? "Ready" : file ? "Computing…" : "—"}</strong></div>
-            <div className="readout-row"><span>Symptoms</span><strong>{drafts.length > 0 ? `${drafts.length} selected` : "Optional"}</strong></div>
-            <div className="readout-row"><span>PDF record</span><strong>{pdfFile ? "Attached" : "Optional"}</strong></div>
-            <div className="rail-state" aria-live="polite">
-              <span className={`rail-state-dot ${state}`} aria-hidden="true" />
-              {state === "idle" ? "Ready when you are" : state === "uploading" ? "Uploading scan" : "Validating inputs"}
-            </div>
           </div>
         </aside>
       </div>

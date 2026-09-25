@@ -3,9 +3,10 @@
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Badge, EmptyState } from "@/components/ui";
+import { Badge, EmptyState, PageHeader, shortId } from "@/components/ui";
 import { Icon } from "@/components/icons";
 import { authFetch } from "@/lib/auth/clientFetch";
+import { useDialog } from "@/components/Dialog";
 import { DASHBOARD_STATUS_META as STATUS_META } from "@/lib/reports/terminology";
 
 interface StudyRow {
@@ -23,9 +24,15 @@ const FILTER_TO_STATUS: Record<string, string> = {
   "out-of-distribution": "OUT_OF_DISTRIBUTION",
 };
 
+/** Grouped filters linked from the dashboard counts; each matches that count's exact status set. */
+const GROUP_FILTERS: Record<string, { label: string; statuses: string[] }> = {
+  awaiting: { label: "Awaiting review", statuses: ["URGENT_REVIEW", "CLINICAL_CORRELATION_REQUIRED", "REVIEW_REQUIRED"] },
+  attention: { label: "Needs attention", statuses: ["MODEL_FAILED", "IMAGE_NOT_SUITABLE", "UNSUPPORTED_MODALITY", "OUT_OF_DISTRIBUTION"] },
+};
+
 export default function HistoryPage() {
   return (
-    <Suspense fallback={<div role="status" aria-live="polite" style={{ display: "flex", justifyContent: "center", padding: 50 }}><div className="spinner" /><span className="sr-only">Loading history…</span></div>}>
+    <Suspense fallback={<div className="page-loading" role="status" aria-live="polite"><span className="spinner" aria-hidden="true" />Loading history…</div>}>
       <HistoryInner />
     </Suspense>
   );
@@ -40,7 +47,11 @@ function HistoryInner() {
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const filter = searchParams.get("filter");
+  const group = filter ? GROUP_FILTERS[filter] : undefined;
   const filterStatus = filter ? FILTER_TO_STATUS[filter] : undefined;
+  const filterStatuses = group ? group.statuses : filterStatus ? [filterStatus] : null;
+  const filterLabel = group ? group.label : filterStatus ? STATUS_META[filterStatus]?.label ?? filter : null;
+  const dialog = useDialog();
 
   async function load(cursor?: string, append = false) {
     if (append) setLoadingMore(true);
@@ -60,11 +71,17 @@ function HistoryInner() {
   }
   useEffect(() => { load().catch(() => { setError("Could not load studies."); setLoaded(true); }); }, []);
 
-  const visibleRows = filterStatus ? rows.filter((r) => r.dashboard_status === filterStatus) : rows;
+  const visibleRows = filterStatuses ? rows.filter((r) => filterStatuses.includes(r.dashboard_status ?? "")) : rows;
 
   async function remove(id: string) {
-    if (!confirm(`Delete study ${id}, its analysis, report, and stored original image? This cannot be undone.`)) return;
-    const res = await authFetch(`/api/studies/${id}`, { method: "DELETE" });
+    const ok = await dialog.ask({
+      title: "Permanently delete this study?",
+      tone: "danger",
+      body: <>Study <code>{id}</code>, its analysis, report, and stored original image will be deleted. This cannot be undone. The deletion is recorded in the audit trail (metadata only).</>,
+      confirmLabel: "Delete study",
+    });
+    if (!ok) return;
+    const res = await authFetch(`/api/studies/${encodeURIComponent(id)}`, { method: "DELETE" });
     if (res.ok) load(); else setError("Delete failed");
   }
 
@@ -75,56 +92,65 @@ function HistoryInner() {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-        <div>
-          <h1 style={{ marginBottom: 2 }}>History</h1>
-          <p className="muted small" style={{ margin: 0 }}>All studies stored locally on D:. Originals preserved unchanged; analyses auditable.</p>
-        </div>
-        <Link className="btn" href="/analyze"><Icon name="plus" size={14} /> New Analysis</Link>
-      </div>
+      {dialog.element}
+      <PageHeader
+        eyebrow="Clinical workspace"
+        title="Studies & History"
+        lede="Every study stored in this local workspace. Originals are preserved unchanged and every analysis is auditable."
+        actions={<Link className="btn" href="/analyze"><Icon name="plus" size={14} /> New Analysis</Link>}
+      />
 
-      {filterStatus && (
-        <p className="small" style={{ margin: "10px 0 0" }}>
-          Filtered: <strong>{STATUS_META[filterStatus]?.label ?? filter}</strong> ({visibleRows.length}){" "}
-          <Link href="/history">Clear filter</Link>
+      <nav aria-label="Filter studies by status" style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+        <Link className={`chip${!filterStatuses ? " selected" : ""}`} href="/history" aria-current={!filterStatuses ? "page" : undefined}>All</Link>
+        {group && <span className="chip selected" aria-current="page">{group.label}</span>}
+        {Object.entries(FILTER_TO_STATUS).map(([key, status]) => (
+          <Link key={key} className={`chip${filterStatus === status ? " selected" : ""}`} href={`/history?filter=${key}`} aria-current={filterStatus === status ? "page" : undefined}>
+            {STATUS_META[status]?.label ?? key}
+          </Link>
+        ))}
+      </nav>
+
+      {filterStatuses && loaded && (
+        <p className="small muted" style={{ margin: "0 0 12px" }}>
+          Showing <strong>{visibleRows.length}</strong> loaded {visibleRows.length === 1 ? "study" : "studies"} with status “{filterLabel}”.{hasMore ? " Load more to include older studies." : ""}
         </p>
       )}
 
-      {error && <div className="alert danger" role="alert" style={{ marginTop: 14 }}><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body">{error}</div></div>}
+      {error && <div className="alert danger" role="alert"><span className="alert-icon" aria-hidden="true"><Icon name="warning" size={16} /></span><div className="alert-body"><strong>Studies could not be loaded or changed</strong>{error}</div></div>}
 
-      {!loaded && <div role="status" aria-live="polite" style={{ display: "flex", justifyContent: "center", padding: 50 }}><div className="spinner" /><span className="sr-only">Loading studies…</span></div>}
+      {!loaded && <div className="loading-row" role="status" aria-live="polite"><span className="pulse-dot" aria-hidden="true" /> Loading studies…</div>}
 
       {loaded && visibleRows.length === 0 && (
-        <div style={{ marginTop: 20 }}>
-          <EmptyState icon={<Icon name="eye" size={26} />} title={filterStatus ? "No studies match this filter" : "No analyses yet"}
-            action={<Link className="btn" href="/analyze">+ New Analysis</Link>}>
-            {filterStatus
-              ? "No studies currently have this status."
-              : "Start a new ophthalmic imaging analysis to begin building a reviewable history."}
-          </EmptyState>
-        </div>
+        <EmptyState icon={<Icon name="eye" size={22} />} title={filterStatuses ? "No studies match this filter" : "No analyses yet"}
+          action={<Link className="btn" href={filterStatuses ? "/history" : "/analyze"}>{filterStatuses ? "Show all studies" : "Start a new analysis"}</Link>}>
+          {filterStatuses
+            ? "No loaded study currently has this status."
+            : "Start a new ophthalmic imaging analysis to begin building a reviewable history."}
+        </EmptyState>
       )}
 
       {loaded && visibleRows.length > 0 && (
-        <div className="card" style={{ marginTop: 18, padding: "4px 14px" }}>
-          <div className="table-wrap" tabIndex={0}>
+        <div className="card flush">
+          <div className="table-wrap" tabIndex={0} role="region" aria-label="Studies">
             <table className="table">
+              <caption className="sr-only">Stored studies</caption>
               <thead>
-                <tr><th scope="col">Date</th><th scope="col">Study</th><th scope="col">Eye</th><th scope="col">Modality</th><th scope="col">Status</th><th scope="col" style={{ textAlign: "right" }}>Actions</th></tr>
+                <tr><th scope="col">Date</th><th scope="col">Study</th><th scope="col">Eye</th><th scope="col">Modality</th><th scope="col">Status</th><th scope="col" className="actions">Actions</th></tr>
               </thead>
               <tbody>
                 {visibleRows.map((s) => (
                   <tr key={s.study_id}>
-                    <td className="small">{new Date(s.created_at).toLocaleDateString()}</td>
-                    <td><code className="tiny">{s.study_id.slice(0, 16)}…</code></td>
+                    <td className="small num">{new Date(s.created_at).toLocaleDateString()}</td>
+                    <td><span className="id-cell" title={s.study_id}>{shortId(s.study_id, 18)}</span></td>
                     <td>{s.eye}</td>
-                    <td>{s.modality}</td>
+                    <td>{s.modality.replaceAll("_", " ")}</td>
                     <td>{statusBadge(s.dashboard_status)}</td>
-                    <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                      <Link className="btn ghost sm" href={`/result?study=${s.study_id}`}>Result</Link>{" "}
-                      <Link className="btn ghost sm" href={`/report?study=${s.study_id}`}>Report</Link>{" "}
-                      <Link className="btn ghost sm" href={`/compare?current=${s.study_id}`}>Compare</Link>{" "}
-                      <button className="btn ghost sm" style={{ color: "var(--danger)" }} onClick={() => remove(s.study_id)}>Delete</button>
+                    <td className="actions">
+                      <Link className="btn ghost sm" href={`/result?study=${encodeURIComponent(s.study_id)}`}>Result</Link>{" "}
+                      <Link className="btn ghost sm" href={`/clinician?study=${encodeURIComponent(s.study_id)}`}>Review</Link>{" "}
+                      <Link className="btn ghost sm" href={`/report?study=${encodeURIComponent(s.study_id)}`}>Report</Link>{" "}
+                      <Link className="btn ghost sm" href={`/compare?current=${encodeURIComponent(s.study_id)}`}>Compare</Link>{" "}
+                      <button className="btn ghost sm" style={{ color: "var(--danger)" }} onClick={() => remove(s.study_id)} aria-label={`Delete study ${s.study_id}`}>Delete</button>
                     </td>
                   </tr>
                 ))}
@@ -132,7 +158,7 @@ function HistoryInner() {
             </table>
           </div>
           {hasMore && nextCursor && (
-            <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
+            <div style={{ display: "flex", justifyContent: "center", padding: "12px 0" }}>
               <button className="btn secondary sm" onClick={() => load(nextCursor, true)} disabled={loadingMore}>
                 {loadingMore ? "Loading…" : "Load more studies"}
               </button>
@@ -140,7 +166,7 @@ function HistoryInner() {
           )}
         </div>
       )}
-      <p className="tiny muted" style={{ marginTop: 10 }}>
+      <p className="tiny muted" style={{ marginTop: 12 }}>
         A change between scans does not automatically mean disease progression. Interpretation requires a
         qualified professional and validated quantitative algorithms.
       </p>

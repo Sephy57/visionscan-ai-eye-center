@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Badge } from "@/components/ui";
+import { Badge, PageHeader, SectionHeader } from "@/components/ui";
+import { Icon } from "@/components/icons";
 
 const CAPABILITIES: Array<[string, "IMPLEMENTED" | "DEMO" | "RESEARCH" | "NOT IMPLEMENTED" | "NOT VALIDATED", string]> = [
   ["Upload & immutable scan storage (SHA-256)", "IMPLEMENTED", "Originals written once, never modified"],
@@ -25,12 +26,12 @@ const CAPABILITIES: Array<[string, "IMPLEMENTED" | "DEMO" | "RESEARCH" | "NOT IM
 
 export default function SettingsPage() {
   return (
-    <div style={{ maxWidth: 860, margin: "0 auto" }}>
-      <h1>Settings, privacy &amp; data control</h1>
+    <div style={{ maxWidth: 960, margin: "0 auto" }}>
+      <PageHeader eyebrow="System" title="Settings, privacy & data control" lede="Where data lives, what this deployment commits to, and an honest status for every capability." />
 
-      <div className="card" style={{ marginTop: 16 }}>
-        <h3 style={{ marginTop: 0 }}>Where your data lives</h3>
-        <p className="small">Application data is configured to stay local on drive <code>D:\AI EYE ANALYSIS PLATFORM\data\</code>; build caches and source-controlled code remain outside this data root:</p>
+      <div className="card">
+        <h3 style={{ marginTop: 0, display: "flex", gap: 8, alignItems: "center" }}><Icon name="database" size={16} /> Where your data lives</h3>
+        <p className="small">Application data stays on this machine under the configured local data root (set by <code>DATA_ROOT</code>); build caches and source-controlled code remain outside it. Relative locations:</p>
         <dl className="kv">
           <dt>Original scans</dt><dd><code>data\uploads\&lt;study_id&gt;\</code> — byte-for-byte, SHA-256 recorded</dd>
           <dt>Analyses</dt><dd><code>data\processed\</code></dd>
@@ -42,7 +43,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Privacy commitments</h3>
+        <h3 style={{ marginTop: 0, display: "flex", gap: 8, alignItems: "center" }}><Icon name="lock" size={16} /> Privacy commitments</h3>
         <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>
           <li>Eye scans are sensitive medical information and are treated accordingly.</li>
           <li>No public image URLs; images served only through this local application.</li>
@@ -51,7 +52,7 @@ export default function SettingsPage() {
           <li>Device metadata is stored only when you provide it; nothing is invented.</li>
         </ul>
         <div className="alert warn" style={{ marginBottom: 0 }}>
-          <span className="alert-icon" aria-hidden="true">☂</span>
+          <span className="alert-icon" aria-hidden="true"><Icon name="warning" size={16} /></span>
           <div className="alert-body">
             <strong>Encryption at rest: NOT IMPLEMENTED.</strong>
             Authentication and role-based access control are implemented for this local workspace, but the build
@@ -70,11 +71,10 @@ export default function SettingsPage() {
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Capability status</h3>
-        <p className="small muted" style={{ marginTop: 0 }}>Explicit, honest capability levels for every subsystem.</p>
-        <div className="table-wrap" tabIndex={0}>
+        <SectionHeader title="Capability status" caption="Explicit, honest capability levels for every subsystem" level={3} />
+        <div className="table-wrap" tabIndex={0} role="region" aria-label="Capability status">
           <table className="table">
-            <thead><tr><th>Capability</th><th>Status</th><th>Note</th></tr></thead>
+            <thead><tr><th scope="col">Capability</th><th scope="col">Status</th><th scope="col">Note</th></tr></thead>
             <tbody>
               {CAPABILITIES.map(([cap, status, note]) => (
                 <tr key={cap}>

@@ -72,46 +72,60 @@ function LoginInner() {
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: "40px auto" }}>
-      <div style={{ textAlign: "center", marginBottom: 18 }}>
-        <span className="logo-mark" aria-hidden="true" style={{ display: "inline-flex" }}><Icon name="eye" size={22} /></span>
-        <h1 style={{ margin: "10px 0 2px" }}>VisionScan AI</h1>
-        <p className="muted small" style={{ margin: 0 }}>Sign in to the research environment</p>
-      </div>
-      <form className="card" onSubmit={submit} aria-describedby={error ? "login-error" : "login-status"}>
-        <div className="field">
-          <label htmlFor="username">Username</label>
-          <input id="username" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
-        </div>
-        <div className="field">
-          <label htmlFor="password">Password</label>
-          <input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </div>
-        {error && (
-          <div className="alert danger" id="login-error" role="alert" style={{ marginTop: 4 }}>
-            <span className="alert-icon" aria-hidden="true">⚠</span>
-            <div className="alert-body">{error}</div>
+    <div className="auth-layout">
+      <section className="auth-brand" aria-labelledby="login-title">
+        <span className="logo-mark" aria-hidden="true" style={{ width: 44, height: 44, borderRadius: 12 }}><Icon name="eye" size={22} /></span>
+        <div className="eyebrow" style={{ marginTop: 18 }}>Eye Center Intelligence</div>
+        <h1 id="login-title">VisionScan AI workspace</h1>
+        <p>
+          Multimodal ophthalmic research analysis with quality gates, explicit provenance, and clinician review at
+          every step. Sign in to the research environment.
+        </p>
+        <ul className="auth-points">
+          <li><Icon name="scan" size={18} /><span><strong>Quality and domain gates first</strong>Inadequate or out-of-distribution images never produce findings.</span></li>
+          <li><Icon name="layers" size={18} /><span><strong>Evidence with provenance</strong>Observed, inferred, and model-output evidence stay visibly separate.</span></li>
+          <li><Icon name="review" size={18} /><span><strong>Human authority</strong>Only a qualified clinician can finalize an interpretation.</span></li>
+        </ul>
+      </section>
+
+      <div className="auth-card">
+        <h2>Sign in</h2>
+        <p className="muted small" style={{ margin: "0 0 18px" }}>Use the account issued by your system administrator.</p>
+        <form onSubmit={submit} aria-describedby={error ? "login-error" : "login-status"}>
+          <div className="field">
+            <label htmlFor="username">Username</label>
+            <input id="username" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
           </div>
-        )}
-        <div id="login-status" role="status" aria-live="polite" aria-atomic="true" className="sr-only">
-          {status}
-        </div>
-        <button className="btn" type="submit" disabled={busy} style={{ width: "100%", marginTop: 10 }}>
-          {busy && <span className="spinner" aria-hidden="true" style={{ width: 14, height: 14, marginRight: 7 }} />}
-          {busy ? (status === "Signed in. Loading dashboard…" ? "Loading dashboard…" : "Signing in…") : "Sign in"}
-        </button>
-      </form>
-      <p className="tiny muted" style={{ textAlign: "center", marginTop: 14 }}>
-        No self-service account creation. Ask a system administrator for access.
-        Forgotten password: an administrator can issue a reset token.
-      </p>
+          <div className="field">
+            <label htmlFor="password">Password</label>
+            <input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </div>
+          {error && (
+            <div className="alert danger" id="login-error" role="alert" style={{ marginTop: 4 }}>
+              <span className="alert-icon" aria-hidden="true"><Icon name="warning" size={16} /></span>
+              <div className="alert-body">{error}</div>
+            </div>
+          )}
+          <div id="login-status" role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+            {status}
+          </div>
+          <button className="btn lg block" type="submit" disabled={busy} style={{ marginTop: 12 }}>
+            {busy && <span className="spinner sm" aria-hidden="true" />}
+            {busy ? (status === "Signed in. Loading dashboard…" ? "Loading dashboard…" : "Signing in…") : "Sign in"}
+          </button>
+        </form>
+        <p className="tiny muted" style={{ marginTop: 18, marginBottom: 0, lineHeight: 1.6 }}>
+          <Icon name="lock" size={12} /> No self-service account creation. Ask a system administrator for access.
+          Forgotten password: an administrator can issue a reset token.
+        </p>
+      </div>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", padding: 60 }}><div className="spinner" /></div>}>
+    <Suspense fallback={<div className="page-loading" role="status"><span className="spinner" aria-hidden="true" />Loading sign-in…</div>}>
       <LoginInner />
     </Suspense>
   );

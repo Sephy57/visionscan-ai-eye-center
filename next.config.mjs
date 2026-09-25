@@ -13,6 +13,24 @@ const nextConfig = {
   // Next 15/16 uses the stable top-level option. Keeping these native/server
   // packages external avoids bundling their platform-specific binaries.
   serverExternalPackages: ["sharp", "pdfjs-dist", "pdf-lib", "tesseract.js", "@napi-rs/canvas", "better-sqlite3"],
+  // Baseline response hardening for every route. The CSP deliberately limits
+  // itself to framing/base/object/form directives so it cannot break the
+  // inline theme bootstrap or Next runtime scripts; route-specific headers
+  // (e.g. `CSP: sandbox` on stored PDFs) still apply on top of these.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "same-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge, EmptyState } from "@/components/ui";
+import { Badge, EmptyState, PageHeader, PageLoading } from "@/components/ui";
 import { Icon } from "@/components/icons";
 
 interface Run {
@@ -74,16 +74,14 @@ export default function ValidationPage() {
 
   return (
     <div>
-      <div className="stat-label">ADMIN / RESEARCH validation</div>
-      <h1 style={{ marginBottom: 2 }}>Validation evidence</h1>
-      <p className="muted small">Aggregate research checks and error signals. This view never presents a clinical validation claim.</p>
+      <PageHeader eyebrow="AI & Research · Admin / research only" title="Validation evidence" lede="Aggregate research checks and error signals. This view never presents a clinical validation claim, and research metrics are not clinical accuracy." />
 
-      {error && <div className="alert danger" role="alert"><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body">Validation evidence is unavailable or your role is not permitted.</div></div>}
-      {!data && !error && <div role="status" aria-live="polite" style={{ display: "flex", justifyContent: "center", padding: 50 }}><div className="spinner" /><span className="sr-only">Loading validation evidence…</span></div>}
+      {error && <div className="alert danger" role="alert"><span className="alert-icon" aria-hidden="true"><Icon name="lock" size={16} /></span><div className="alert-body"><strong>Validation evidence unavailable</strong>This view is restricted to ADMIN and RESEARCHER roles, or the validation service did not respond. No metrics are shown rather than guessed.</div></div>}
+      {!data && !error && <PageLoading label="Loading validation evidence…" />}
       {data && (
         <>
           <div className="alert info" style={{ marginTop: 14 }}>
-            <span className="alert-icon" aria-hidden="true">◈</span>
+            <span className="alert-icon" aria-hidden="true"><Icon name="shield" size={16} /></span>
             <div className="alert-body"><strong>Aggregate-only privacy boundary</strong><br />{data.notice}</div>
           </div>
           <div className="grid grid-4" style={{ marginTop: 14 }}>
