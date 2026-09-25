@@ -937,7 +937,8 @@ export async function listClaimCandidates(limit: number, now: Date | string | nu
   // Order is the row's insertion key (created_at, id), the same key the
   // paged job listing uses, i.e. oldest-enqueued first.
   const rows = await dbSelectExcludingFieldValues<AnalysisJob>("jobs", {
-    field: "status",
+    // Same precedence as normalizeJob: status, else the legacy state field.
+    fields: ["status", "state"],
     excluded: ["running", "claimed", "stale", "completed", "failed", "error", "cancelled"],
     dueField: "retry_after_at",
     dueAtOrBefore: new Date(asTimestamp(now)).toISOString(),

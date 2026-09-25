@@ -128,8 +128,15 @@ function UserMenu() {
     fetch("/api/auth/session").then((r) => r.json()).then(setSession).catch(() => setSession({ authenticated: false }));
   }, []);
 
+  const [logoutError, setLogoutError] = useState<string | null>(null);
   async function logout() {
-    await authFetch("/api/auth/logout", { method: "POST" });
+    setLogoutError(null);
+    const res = await authFetch("/api/auth/logout", { method: "POST" }).catch(() => null);
+    // Never show the sign-in screen while the session is still active.
+    if (!res?.ok) {
+      setLogoutError("Sign-out did not complete — your session is still active. Reload the page and try again.");
+      return;
+    }
     router.replace("/login");
     router.refresh();
   }
@@ -145,6 +152,7 @@ function UserMenu() {
         <span className="status-chip-label"><span className="user-name">{session.user.username}</span> · {session.user.role}</span>
       </span>
       <button className="btn ghost sm" onClick={logout}><Icon name="logout" size={14} /> Sign out</button>
+      {logoutError && <span className="logout-error" role="alert">{logoutError}</span>}
     </div>
   );
 }

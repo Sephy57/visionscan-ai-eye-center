@@ -940,8 +940,9 @@ export async function dbPage<T>(collection: Collection, options: DbPageOptions<T
 }
 
 /**
- * Oldest rows whose top-level payload `field` is NOT one of `excluded`
- * (case-insensitive; a missing field counts as not excluded), optionally only
+ * Oldest rows whose top-level payload value — the first present of `fields`,
+ * like `a ?? b` — is NOT one of `excluded` (case-insensitive; absent counts
+ * as not excluded), optionally only
  * those whose `dueField` is absent or at/before `dueAtOrBefore` (ISO-8601
  * strings compare chronologically). SQLite evaluates the filter itself, so
  * the cost does not grow with parsing every historical row in JavaScript and
@@ -949,18 +950,18 @@ export async function dbPage<T>(collection: Collection, options: DbPageOptions<T
  * and every value is bound.
  */
 export async function dbSelectExcludingFieldValues<T>(collection: Collection, options: {
-  field: string; excluded: readonly string[]; dueField?: string; dueAtOrBefore?: string; limit: number;
+  fields: readonly string[]; excluded: readonly string[]; dueField?: string; dueAtOrBefore?: string; limit: number;
 }): Promise<T[]> {
   await ensureInitialized();
   const identifier = /^[a-z_][a-z0-9_]*$/;
-  if (!identifier.test(options.field) || (options.dueField && !identifier.test(options.dueField))) {
+  if (!options.fields.length || !options.fields.every((f) => identifier.test(f)) || (options.dueField && !identifier.test(options.dueField))) {
     throw new Error("Unsupported payload field");
   }
   const limit = Math.max(1, Math.min(MAX_PAGE_SIZE, Math.floor(options.limit)));
   const excluded = options.excluded.map((value) => value.toLowerCase());
   if (PERSISTENCE_BACKEND === "sqlite") {
     if (!sqlite) throw new Error("Database is not initialized");
-    const fieldExpr = `lower(json_extract(payload, '$.${options.field}'))`;
+    const fieldExpr = `lower(COALESCE(${options.fields.map((f) => `json_extract(payload, '$.${f}')`).join(", ")}))`;
     const clauses = [`(${fieldExpr} IS NULL${excluded.length ? ` OR ${fieldExpr} NOT IN (${excluded.map(() => "?").join(", ")})` : ""})`];
     const params: unknown[] = [...excluded];
     if (options.dueField && options.dueAtOrBefore) {
@@ -975,7 +976,7 @@ export async function dbSelectExcludingFieldValues<T>(collection: Collection, op
   const db = await loadJson();
   return Object.values((db.collections[collection] ?? {}) as Record<string, Record<string, unknown>>)
     .filter((doc) => {
-      const value = doc[options.field];
+      const value = options.fields.map((f) => doc[f]).find((v) => v !== undefined && v !== null);
       if (value !== undefined && value !== null && excluded.includes(String(value).toLowerCase())) return false;
       if (options.dueField && options.dueAtOrBefore) {
         const due = doc[options.dueField];

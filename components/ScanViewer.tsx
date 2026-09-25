@@ -62,19 +62,25 @@ export default function ScanViewer({
   const [loaded, setLoaded] = useState(false);
   // Overlays are drawn only once the original itself has loaded: a missing
   // or unavailable source must never look as if the image were there.
-  const [source, setSource] = useState<SourceAvailabilityResult>({ state: "CHECKING" });
-  useEffect(() => { setSource({ state: "CHECKING" }); }, [src]);
+  // Keyed by the src it describes, so a new src reads as CHECKING without a
+  // reset effect (an effect could overwrite an onLoad that already fired
+  // for a cached image and leave the viewer stuck "loading").
+  const [sourceFor, setSourceFor] = useState<{ src: string; result: SourceAvailabilityResult } | null>(null);
+  const source: SourceAvailabilityResult = sourceFor?.src === src ? sourceFor.result : { state: "CHECKING" };
+  const setSource = (result: SourceAvailabilityResult) => setSourceFor({ src, result });
   const failed = source.state === "SOURCE_MISSING" || source.state === "SOURCE_UNAVAILABLE";
   const sourceShown = source.state === "SOURCE_AVAILABLE";
   const diagnoseLoadFailure = () => {
-    fetch(src, { cache: "no-store" })
+    const probed = src;
+    const settle = (result: SourceAvailabilityResult) => setSourceFor({ src: probed, result });
+    fetch(probed, { cache: "no-store" })
       .then(async (response) => {
         const code = response.ok ? null : await response.json().then((j: { error?: string }) => j.error ?? null).catch(() => null);
         const result = classifySourceResponse(response.status, code, response.headers.get("content-type"));
         // The request succeeded but the browser could not decode the bytes.
-        setSource(result.state === "SOURCE_AVAILABLE" ? { state: "SOURCE_UNAVAILABLE", reason: "not_an_image" } : result);
+        settle(result.state === "SOURCE_AVAILABLE" ? { state: "SOURCE_UNAVAILABLE", reason: "not_an_image" } : result);
       })
-      .catch(() => setSource(classifySourceResponse(null)));
+      .catch(() => settle(classifySourceResponse(null)));
   };
   const [viewMode, setViewMode] = useState<"original" | "overlay" | "side_by_side">((localizations?.length ?? 0) > 0 || region ? "overlay" : "original");
 

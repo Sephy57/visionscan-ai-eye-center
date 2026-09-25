@@ -270,7 +270,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { border-radiu
   padding: 3px 11px; border-radius: var(--r-pill); white-space: nowrap;
 }
 a.status-chip:hover { text-decoration: none; border-color: var(--border-strong); color: var(--text-primary); }
-.user-chip { display: inline-flex; align-items: center; gap: 8px; }
+.logout-error { position: absolute; top: calc(100% + 6px); right: 0; z-index: 30; max-width: 280px; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--danger); border-radius: var(--r-md); background: var(--surface-elevated); color: var(--text-primary); font-size: var(--fs-xs); box-shadow: var(--shadow); }
+.user-chip { position: relative; display: inline-flex; align-items: center; gap: 8px; }
 .avatar {
   width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
   font-size: var(--fs-2xs); font-weight: 700; color: var(--brand-primary);

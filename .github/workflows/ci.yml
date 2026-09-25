@@ -165,7 +165,7 @@ jobs:
   # assets; the full asset/responsive/a11y suite remains a local gate.
   verify-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       BASE_URL: http://127.0.0.1:3000
       ALLOW_INSECURE_LOCAL_AUTH: "true"
@@ -218,10 +218,15 @@ jobs:
           test -n "$browser_path"
           echo "CHROME_PATH=$browser_path" >> "$GITHUB_ENV"
 
+      # Browser gates run against the production build so they exercise the
+      # production CSP and server behaviour, not the dev server's relaxations.
+      - name: Production build
+        run: npm run build
+
       - name: Start isolated local server
         shell: bash
         run: |
-          nohup npm run dev -- --hostname 127.0.0.1 > "$RUNNER_TEMP/visionscan-browser.log" 2>&1 &
+          nohup npm run start -- --hostname 127.0.0.1 > "$RUNNER_TEMP/visionscan-browser.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/visionscan-browser.pid"
           curl --fail --retry 30 --retry-delay 2 --retry-connrefused "$BASE_URL/login" > /dev/null
 

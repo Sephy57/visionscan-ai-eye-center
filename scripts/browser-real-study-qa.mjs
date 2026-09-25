@@ -12,14 +12,25 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import { chromium } from "playwright-core";
 import sharp from "sharp";
+import { PDFDocument, StandardFonts } from "pdf-lib";
 
 const require = createRequire(import.meta.url);
 const axeSource = fs.readFileSync(require.resolve("axe-core/axe.min.js"), "utf8");
 
 const BASE = process.env.BASE_URL || "http://localhost:3000";
 const CHROME = process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
-const USERNAME = process.env.BROWSER_QA_USERNAME || process.env.BROWSER_CI_USERNAME || process.env.SMOKE_ADMIN_USERNAME || "smoke-admin";
-const PASSWORD = process.env.BROWSER_QA_PASSWORD || process.env.BROWSER_CI_PASSWORD || process.env.SMOKE_ADMIN_PASSWORD || "SmokeTest#Local1234";
+const CONFIGURED_USERNAME = process.env.BROWSER_QA_USERNAME || process.env.BROWSER_CI_USERNAME || process.env.SMOKE_ADMIN_USERNAME;
+const CONFIGURED_PASSWORD = process.env.BROWSER_QA_PASSWORD || process.env.BROWSER_CI_PASSWORD || process.env.SMOKE_ADMIN_PASSWORD;
+// The repo's local smoke account is only a default on a loopback server;
+// anywhere else explicit credentials are required. This gate never creates
+// an account (CI's browser:ci step bootstraps its own ephemeral one).
+const LOOPBACK = ["localhost", "127.0.0.1", "[::1]"].includes(new URL(BASE).hostname);
+if (!LOOPBACK && (!CONFIGURED_USERNAME || !CONFIGURED_PASSWORD)) {
+  console.error("Set BROWSER_QA_USERNAME and BROWSER_QA_PASSWORD for a non-loopback BASE_URL.");
+  process.exit(2);
+}
+const USERNAME = CONFIGURED_USERNAME || "smoke-admin";
+const PASSWORD = CONFIGURED_PASSWORD || "SmokeTest#Local1234";
 const THEMES = ["dark", "light"];
 const WIDTHS = [320, 375, 390, 414, 768, 1024, 1280, 1440, 1920];
 const AXE_WIDTHS = new Set([320, 768, 1280, 1920]);
@@ -48,9 +59,6 @@ async function syntheticFundus() {
 }
 
 async function signIn(context) {
-  // A fresh CI database accepts a one-time bootstrap; an existing local
-  // database refuses it (403) and the configured account is used instead.
-  await context.request.post(`${BASE}/api/auth/bootstrap-admin`, { data: { username: USERNAME, password: PASSWORD, display_name: "Browser QA" } }).catch(() => null);
   const login = await context.request.post(`${BASE}/api/auth/login`, { data: { username: USERNAME, password: PASSWORD } });
   if (!login.ok()) throw new Error(`login failed (HTTP ${login.status()}); set BROWSER_QA_USERNAME/BROWSER_QA_PASSWORD`);
   const csrf = (await context.storageState()).cookies.find((c) => c.name === "vsa_csrf")?.value;
@@ -74,6 +82,33 @@ async function createAnalysedStudy(context, csrf) {
   if (!analysis.ok()) throw new Error(`analysis failed (HTTP ${analysis.status()})`);
   const { analysis_mode: mode } = await analysis.json();
   return { studyId, mode };
+}
+
+/** Response headers the running server actually sends (config rules and route headers combined). */
+async function checkRuntimeHeaders(context, csrf, studyId) {
+  const page = await context.request.get(`${BASE}/login`);
+  const pageCsp = page.headersArray().filter((h) => h.name.toLowerCase() === "content-security-policy").map((h) => h.value);
+  if (pageCsp.length !== 1 || !pageCsp[0].includes("default-src 'self'") || !pageCsp[0].includes("frame-ancestors 'none'")) fail(`page CSP unexpected: ${JSON.stringify(pageCsp)}`);
+  else ok("pages send the application CSP");
+
+  // A synthetic one-page PDF (no patient data) attached to the synthetic study.
+  const pdf = await PDFDocument.create();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  pdf.addPage([595, 842]).drawText("Synthetic VisionScan QA document - no patient data", { x: 48, y: 780, size: 12, font });
+  const consent = await context.request.post(`${BASE}/api/studies/${encodeURIComponent(studyId)}/consent`, { headers: { "x-csrf-token": csrf }, data: { purpose: "DOCUMENT_EXTRACTION", consentType: "explicit" } });
+  if (!consent.ok()) return fail(`DOCUMENT_EXTRACTION consent failed (HTTP ${consent.status()})`);
+  const upload = await context.request.post(`${BASE}/api/studies/${encodeURIComponent(studyId)}/documents`, {
+    headers: { "x-csrf-token": csrf },
+    multipart: { file: { name: "synthetic-qa.pdf", mimeType: "application/pdf", buffer: Buffer.from(await pdf.save()) } },
+  });
+  if (upload.status() !== 201) return fail(`synthetic PDF upload failed (HTTP ${upload.status()})`);
+  const documentId = (await upload.json()).document?.document_id;
+  const file = await context.request.get(`${BASE}/api/documents/${encodeURIComponent(documentId)}/file`);
+  const fileCsp = file.headersArray().filter((h) => h.name.toLowerCase() === "content-security-policy").map((h) => h.value);
+  if (file.status() !== 200 || JSON.stringify(fileCsp) !== JSON.stringify(["sandbox"])) {
+    fail(`stored PDF must be served with exactly "Content-Security-Policy: sandbox"; got HTTP ${file.status()} ${JSON.stringify(fileCsp)}`);
+  } else ok("stored PDF is served with CSP sandbox (not overridden by the app CSP)");
+  if (file.headers()["x-content-type-options"] !== "nosniff") fail("stored PDF missing X-Content-Type-Options: nosniff");
 }
 
 async function settle(page) {
@@ -140,6 +175,7 @@ async function main() {
     const created = await createAnalysedStudy(setupContext, csrf);
     studyId = created.studyId;
     ok(`synthetic study ${studyId} analysed (mode ${created.mode})`);
+    await checkRuntimeHeaders(setupContext, csrf, studyId);
     const state = await setupContext.storageState();
     const routes = ["/dashboard", "/analyze", "/history", `/result?study=${studyId}`, `/clinician?study=${studyId}`, `/report?study=${studyId}`];
 
@@ -227,7 +263,7 @@ async function main() {
     console.log(`\nREAL-STUDY BROWSER QA: FAILED (${failures.length} problem(s))`);
     process.exit(1);
   }
-  console.log(`\nREAL-STUDY BROWSER QA: PASSED (${THEMES.length} themes × ${WIDTHS.length} widths × 6 routes; axe at ${[...AXE_WIDTHS].join("/")}px; 4 viewer source states)`);
+  console.log(`\nREAL-STUDY BROWSER QA: PASSED (runtime security headers; ${THEMES.length} themes × ${WIDTHS.length} widths × 6 routes; axe at ${[...AXE_WIDTHS].join("/")}px; 4 viewer source states)`);
 }
 
 main().catch((error) => { console.error(error); process.exit(1); });

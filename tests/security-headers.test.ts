@@ -54,10 +54,20 @@ describe("global security headers", () => {
     expect(global.headers.some((h) => h.key === "Strict-Transport-Security")).toBe(false);
   });
 
+  it("keeps the stored-PDF sandbox: a later, route-specific rule replaces the app CSP", async () => {
+    const all = await rules("phase-production-server");
+    const pdf = all.findIndex((r) => r.source === "/api/documents/:id/file");
+    expect(pdf).toBeGreaterThan(0);
+    expect(pdf).toBe(all.length - 1);
+    expect(all[pdf].headers).toEqual([{ key: "Content-Security-Policy", value: "sandbox" }]);
+    const { documentResponseHeaders } = await import("@/lib/documents/security");
+    expect(documentResponseHeaders("doc_x", 1)["Content-Security-Policy"]).toBe(all[pdf].headers[0].value);
+  });
+
   it("sends HSTS only for requests that arrived over HTTPS", async () => {
     const hsts = (await rules("phase-production-server")).filter((r) => r.headers.some((h) => h.key === "Strict-Transport-Security"));
     expect(hsts).toHaveLength(1);
     expect(hsts[0].has).toEqual([{ type: "header", key: "x-forwarded-proto", value: "https" }]);
-    expect(hsts[0].headers[0].value).toMatch(/^max-age=31536000/);
+    expect(hsts[0].headers[0].value).toBe("max-age=31536000");
   });
 });

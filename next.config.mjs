@@ -29,6 +29,9 @@ function contentSecurityPolicy(isDev) {
   ].join("; ");
 }
 
+/** Must stay identical to documentResponseHeaders() in lib/documents/security.ts. */
+const DOCUMENT_CSP = "sandbox";
+
 /** @type {(phase: string) => import('next').NextConfig} */
 const nextConfig = (phase) => ({
   reactStrictMode: true,
@@ -44,9 +47,10 @@ const nextConfig = (phase) => ({
   // Next 15/16 uses the stable top-level option. Keeping these native/server
   // packages external avoids bundling their platform-specific binaries.
   serverExternalPackages: ["sharp", "pdfjs-dist", "pdf-lib", "tesseract.js", "@napi-rs/canvas", "better-sqlite3"],
-  // Response hardening for every route. Route-specific headers (e.g.
-  // `CSP: sandbox` on stored PDFs) still apply on top of these; browsers
-  // enforce every CSP header they receive, so a route can only tighten it.
+  // Response hardening for every route. NOTE: in this Next.js version a
+  // header set here wins over a header of the same name set by a route
+  // handler (the handler's value is dropped, not added), so a route that
+  // needs a different CSP must get it from a later, more specific rule below.
   async headers() {
     return [
       {
@@ -67,7 +71,16 @@ const nextConfig = (phase) => ({
         // deployments must never be pinned to HTTPS.
         source: "/:path*",
         has: [{ type: "header", key: "x-forwarded-proto", value: "https" }],
-        headers: [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }],
+        // No includeSubDomains: sibling HTTP-only intranet hosts must not be pinned.
+        headers: [{ key: "Strict-Transport-Security", value: "max-age=31536000" }],
+      },
+      {
+        // Stored, user-uploaded PDFs are opened in a new tab from this
+        // origin: `sandbox` gives them a unique origin and blocks any
+        // embedded script (lib/documents/security.ts). This rule is last so
+        // it replaces the application CSP for exactly this route.
+        source: "/api/documents/:id/file",
+        headers: [{ key: "Content-Security-Policy", value: DOCUMENT_CSP }],
       },
     ];
   },

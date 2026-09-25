@@ -68,17 +68,45 @@ const REVIEW_STATUS_TEXT: Record<string, string> = {
 /** Study selection when no study is open: the real review queue, plus manual entry. */
 function ReviewQueue({ studyId, setStudyId, onOpen }: { studyId: string; setStudyId: (v: string) => void; onOpen: (id: string) => void }) {
   const [rows, setRows] = useState<QueueRow[] | null>(null);
+  const [queueError, setQueueError] = useState(false);
+  const [truncated, setTruncated] = useState(false);
   useEffect(() => {
-    fetch("/api/studies?with_status=1&limit=100").then((r) => (r.ok ? r.json() : { studies: [] }))
-      .then((j) => setRows((j.studies ?? []).filter((s: QueueRow) => ["URGENT_REVIEW", "CLINICAL_CORRELATION_REQUIRED", "REVIEW_REQUIRED"].includes(s.dashboard_status ?? ""))))
-      .catch(() => setRows([]));
+    // Follow the server's cursor so older studies still awaiting review are
+    // never hidden behind the newest page. Bounded; if the bound is reached
+    // the page says so instead of implying the queue is complete.
+    const AWAITING = ["URGENT_REVIEW", "CLINICAL_CORRELATION_REQUIRED", "REVIEW_REQUIRED"];
+    const MAX_PAGES = 20;
+    let active = true;
+    (async () => {
+      const found: QueueRow[] = [];
+      let cursor: string | null = null;
+      for (let page = 0; page < MAX_PAGES; page += 1) {
+        const res: Response = await fetch(`/api/studies?with_status=1&limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const body: { studies?: QueueRow[]; has_more?: boolean; next_cursor?: string | null } = await res.json();
+        found.push(...(body.studies ?? []).filter((s: QueueRow) => AWAITING.includes(s.dashboard_status ?? "")));
+        cursor = body.has_more ? body.next_cursor ?? null : null;
+        if (!cursor) break;
+      }
+      if (!active) return;
+      setTruncated(Boolean(cursor));
+      setRows(found);
+    })().catch(() => { if (active) { setQueueError(true); setRows([]); } });
+    return () => { active = false; };
   }, []);
   return (
     <div className="grid stack-mobile" style={{ gridTemplateColumns: "minmax(0, 1.6fr) minmax(260px, 1fr)", alignItems: "start" }}>
       <section aria-labelledby="queue-title" style={{ minWidth: 0 }}>
         <SectionHeader eyebrow="Queue" title="Studies awaiting review" id="queue-title" caption="Urgent first · real server-computed status" />
         {!rows && <div className="loading-row" role="status"><span className="pulse-dot" aria-hidden="true" /> Loading review queue…</div>}
-        {rows && rows.length === 0 && (
+        {queueError && (
+          <div className="alert danger" role="alert"><span className="alert-icon" aria-hidden="true"><Icon name="warning" size={16} /></span>
+            <div className="alert-body"><strong>Review queue unavailable</strong>The study list could not be loaded, so no queue is shown rather than an empty one. Retry, or open a study by its ID.</div></div>
+        )}
+        {truncated && (
+          <p className="small muted">Showing studies awaiting review among the 2,000 most recent. Older studies may also need review — see <Link href="/history?filter=awaiting">Studies & History</Link>.</p>
+        )}
+        {rows && !queueError && rows.length === 0 && (
           <EmptyState icon={<Icon name="review" size={22} />} title="No studies awaiting review" action={<Link className="btn secondary" href="/history">Browse all studies</Link>}>
             Every analyzed study visible to your account has a recorded clinician decision, or no analysis has completed yet.
           </EmptyState>

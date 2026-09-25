@@ -76,6 +76,19 @@ describe("external worker claim candidates", () => {
     expect(await mine("wccC_")).toEqual(["wccC_legacy", "wccC_weird"]);
   });
 
+  it("uses the legacy state field when status is absent, so old finished rows cannot fill the limit", async () => {
+    for (let i = 0; i < 10; i += 1) {
+      const legacyDone = job(`wccG_legacy_done_${i}`, "completed", i);
+      delete (legacyDone as Partial<AnalysisJob>).status;
+      await put(legacyDone);
+    }
+    await put(job("wccG_new_queued", "queued", 20));
+    // Max page: other test files may leave older queued rows in the shared run database.
+    const ids = (await listClaimCandidates(100, T0 + 10_000 * 60_000)).map((c) => c.job_id);
+    expect(ids.filter((id) => id.startsWith("wccG_legacy"))).toEqual([]);
+    expect(ids).toContain("wccG_new_queued");
+  });
+
   it("leaves out a retry that is not yet due so it cannot hold newer queued work", async () => {
     await put(job("wccD_retry_later", "retryable", 0, { retry_after_at: at(500) }));
     await put(job("wccD_queued", "queued", 5));

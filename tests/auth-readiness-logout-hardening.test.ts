@@ -5,8 +5,8 @@ import { createSession, validateSession, SESSION_COOKIE, CSRF_COOKIE } from "@/l
 const READY = (await import("@/app/api/health/ready/route")) as typeof import("@/app/api/health/ready/route");
 const LOGOUT = (await import("@/app/api/auth/logout/route")) as typeof import("@/app/api/auth/logout/route");
 
-function request(path: string, method: string, cookies: Record<string, string> = {}, csrfHeader?: string): NextRequest {
-  const headers: Record<string, string> = { cookie: Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join("; ") };
+function request(path: string, method: string, cookies: Record<string, string> = {}, csrfHeader?: string, extra: Record<string, string> = {}): NextRequest {
+  const headers: Record<string, string> = { cookie: Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join("; "), host: "localhost:3000", ...extra };
   if (csrfHeader !== undefined) headers["x-csrf-token"] = csrfHeader;
   return new NextRequest(new URL(path, "http://localhost:3000"), { method, headers });
 }
@@ -60,6 +60,27 @@ describe("/api/auth/logout CSRF", () => {
     expect((await validateSession(token)).valid).toBe(false);
     const cleared = res.cookies.getAll().filter((c) => c.value === "" && c.maxAge === 0).map((c) => c.name).sort();
     expect(cleared).toEqual([CSRF_COOKIE, SESSION_COOKIE].sort());
+  });
+
+  it("rejects a cross-site request without the CSRF token (fetch metadata or foreign Origin)", async () => {
+    const crossSite: Array<Record<string, string>> = [{ "sec-fetch-site": "cross-site" }, { "sec-fetch-site": "same-site" }, { origin: "https://attacker.example" }];
+    for (const extra of crossSite) {
+      const { token, cookies } = await session(`xsite${Object.values(extra)[0].length}`);
+      const res = await LOGOUT.POST(request("/api/auth/logout", "POST", cookies, undefined, extra));
+      expect(res.status).toBe(403);
+      expect((await validateSession(token)).valid).toBe(true);
+    }
+  });
+
+  it("lets the app itself sign out when its CSRF cookie was lost (same-origin proof)", async () => {
+    const sameOrigin: Array<Record<string, string>> = [{ "sec-fetch-site": "same-origin" }, { origin: "http://localhost:3000" }];
+    for (const extra of sameOrigin) {
+      const { token, cookies } = await session(`same${Object.keys(extra)[0].length}`);
+      delete (cookies as Record<string, string>)[CSRF_COOKIE];
+      const res = await LOGOUT.POST(request("/api/auth/logout", "POST", cookies, undefined, extra));
+      expect(res.status).toBe(200);
+      expect((await validateSession(token)).valid).toBe(false);
+    }
   });
 
   it("stays idempotent without a valid session (nothing to protect)", async () => {
