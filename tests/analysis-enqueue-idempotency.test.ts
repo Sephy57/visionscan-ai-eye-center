@@ -1,12 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// Keep enqueue from dispatching in-process execution: this test covers the
-// queue contract only, not model inference.
+// Keep enqueue from dispatching in-process execution: this file covers the
+// queue contract only, not model inference. (The in-process re-dispatch path
+// is covered in analysis-enqueue-dispatch.test.ts.)
 vi.hoisted(() => { process.env.VISIONSCAN_EXTERNAL_WORKER = "true"; });
 
 import { dbAll, dbDelete, dbGet, dbPut } from "@/lib/storage/db";
 import { recordConsent } from "@/lib/consent/consent";
 import { enqueueAnalysis, type AnalysisJob } from "@/lib/jobs/queue";
+import { recentAudit } from "@/lib/audit";
 
 const studies: string[] = [];
 afterEach(async () => {
@@ -30,6 +32,11 @@ async function consentedStudy(): Promise<string> {
 const analysisJobsFor = async (studyId: string) =>
   (await dbAll<AnalysisJob>("jobs")).filter((j) => j.study_id === studyId && j.kind === "analysis");
 
+async function setJob(jobId: string, patch: Partial<AnalysisJob>): Promise<void> {
+  const current = (await dbGet<AnalysisJob>("jobs", jobId))!;
+  await dbPut("jobs", jobId, { ...current, ...patch });
+}
+
 describe("analysis enqueue idempotency", () => {
   it("concurrent duplicate requests for one study create exactly one job", async () => {
     // Regression: React StrictMode re-ran the processing page effect in
@@ -41,17 +48,16 @@ describe("analysis enqueue idempotency", () => {
     expect(await analysisJobsFor(studyId)).toHaveLength(1);
   });
 
-  it("reuses queued, running and retryable jobs but never a terminal one", async () => {
+  it("reuses queued, running, retryable and stale jobs but never a terminal one", async () => {
     const studyId = await consentedStudy();
     const first = await enqueueAnalysis(studyId);
-    for (const status of ["running", "retryable"] as const) {
-      const current = (await dbGet<AnalysisJob>("jobs", first.job_id))!;
-      await dbPut("jobs", first.job_id, { ...current, status, state: status });
+    for (const status of ["running", "retryable", "stale"] as const) {
+      await setJob(first.job_id, { status, state: status });
       expect((await enqueueAnalysis(studyId)).job_id).toBe(first.job_id);
     }
     for (const status of ["completed", "failed", "cancelled"] as const) {
       const jobs = await analysisJobsFor(studyId);
-      for (const job of jobs) await dbPut("jobs", job.job_id, { ...job, status, state: status });
+      for (const job of jobs) await setJob(job.job_id, { status, state: status });
       const next = await enqueueAnalysis(studyId);
       expect(jobs.map((j) => j.job_id)).not.toContain(next.job_id);
     }
@@ -59,11 +65,35 @@ describe("analysis enqueue idempotency", () => {
     expect(await analysisJobsFor(studyId)).toHaveLength(4);
   });
 
+  it("does not reuse a job whose cancellation is pending", async () => {
+    const studyId = await consentedStudy();
+    const first = await enqueueAnalysis(studyId);
+    await setJob(first.job_id, { status: "running", state: "running", cancellation_requested: true });
+    expect((await enqueueAnalysis(studyId)).job_id).not.toBe(first.job_id);
+  });
+
+  it("does not reuse a waiting job already past its queue/service budget", async () => {
+    const studyId = await consentedStudy();
+    const first = await enqueueAnalysis(studyId);
+    await setJob(first.job_id, { created_at: new Date(Date.now() - 7 * 24 * 3600_000).toISOString() });
+    expect((await enqueueAnalysis(studyId)).job_id).not.toBe(first.job_id);
+  });
+
   it("does not share a job across different studies", async () => {
     const [s1, s2] = [await consentedStudy(), await consentedStudy()];
     const [j1, j2] = await Promise.all([enqueueAnalysis(s1), enqueueAnalysis(s2)]);
     expect(j1.job_id).not.toBe(j2.job_id);
-    expect(j1.study_id).toBe(s1);
-    expect(j2.study_id).toBe(s2);
+    expect([j1.study_id, j2.study_id]).toEqual([s1, s2]);
+  });
+
+  it("records a reused request as its own audit action", async () => {
+    const studyId = await consentedStudy();
+    await enqueueAnalysis(studyId);
+    await enqueueAnalysis(studyId);
+    const events = (await recentAudit(500))
+      .filter((e) => e.studyId === studyId && e.action.startsWith("job.enqueue"))
+      .map((e) => e.action)
+      .sort();
+    expect(events).toEqual(["job.enqueue", "job.enqueue.reused"]);
   });
 });
