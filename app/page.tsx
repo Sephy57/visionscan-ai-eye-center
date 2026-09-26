@@ -28,18 +28,19 @@ export default function LandingPage() {
     <div className="landing-page">
       <section className="landing-hero" aria-labelledby="landing-title">
         <div className="landing-copy">
-          <div className="eyebrow eyebrow-warn"><span aria-hidden="true">⚠</span> Research environment</div>
-          <h1 id="landing-title">Ophthalmic imaging, with a clearer path to review.</h1>
+          <div className="eyebrow eyebrow-warn"><Icon name="shield" size={13} /> Research environment · Eye Center Intelligence</div>
+          <h1 id="landing-title">Multimodal ophthalmic evidence, with a clear path to human review.</h1>
           <p className="landing-lede">
-            Analyze ophthalmic imaging, identify potentially significant findings, and organize clinical review in
-            one workspace. Built validation-first: every result is structured, auditable, and reviewed by professionals.
+            Bring fundus photographs, OCT, clinical records, and symptoms into one workspace. Local research models
+            surface signals with explicit provenance; qualified clinicians remain the only authority. Built
+            validation-first: every result is structured, auditable, and reviewed.
           </p>
           <div className="landing-actions">
-            <Link className="btn landing-primary" href="/analyze"><Icon name="analysis" size={15} /> Start Analysis</Link>
-            <Link className="btn secondary" href="/dashboard"><Icon name="dashboard" size={15} /> View Demo</Link>
+            <Link className="btn lg" href="/analyze"><Icon name="analysis" size={15} /> Start analysis</Link>
+            <Link className="btn secondary lg" href="/dashboard"><Icon name="dashboard" size={15} /> Open workspace</Link>
           </div>
           <div className="landing-signals" aria-label="Workspace principles">
-            <span><Icon name="status" size={14} /> Quality gates first</span>
+            <span><Icon name="scan" size={14} /> Quality gates first</span>
             <span><Icon name="reports" size={14} /> Auditable output</span>
             <span><Icon name="review" size={14} /> Human review required</span>
           </div>
@@ -97,31 +98,31 @@ export default function LandingPage() {
           </div>
           <p className="muted">Infrastructure for real clinical AI — not a chatbot that guesses diseases from photographs.</p>
         </div>
-        <div className="grid grid-3 landing-feature-grid">
+        <div className="feature-grid">
           {FEATURES.map(([icon, title, body], index) => (
-            <div className="card feature-card" key={title}>
-              <div className="feature-topline"><span className="feature-index">0{index + 1}</span><Icon name={icon} size={18} /></div>
+            <div className="feature" key={title}>
+              <div className="feature-top"><span className="feature-index">0{index + 1}</span><Icon name={icon} size={18} /></div>
               <h3>{title}</h3>
-              <p className="muted small" style={{ marginBottom: 0 }}>{body}</p>
+              <p>{body}</p>
             </div>
           ))}
         </div>
       </section>
 
       <section className="landing-section" aria-labelledby="pipeline-title">
-        <div className="pipeline-panel card">
-          <div className="section-intro pipeline-intro">
+        <div>
+          <div className="section-intro">
             <div>
               <div className="eyebrow">02 / Traceable flow</div>
               <h2 id="pipeline-title">The analysis pipeline</h2>
             </div>
             <p className="muted">Each stage keeps its own gate, provenance, and review boundary.</p>
           </div>
-          <div className="pipeline-grid">
+          <div className="pipeline-strip">
             {PIPELINE.map(([n, title, body]) => (
-              <div className="pipeline-step" key={n}>
-                <span className="pipeline-number">{n}</span>
-                <div><h3>{title}</h3><p className="muted tiny">{body}</p></div>
+              <div key={n}>
+                <span className="pipeline-number">STAGE 0{n}</span>
+                <h3>{title}</h3><p>{body}</p>
               </div>
             ))}
           </div>
@@ -151,12 +152,12 @@ export default function LandingPage() {
             </article>
           ))}
         </div>
-        <div className="phase2-callout"><strong>Research state is explicit.</strong> Local inference can produce technical observations only. It does not establish a diagnosis, normality, treatment, or clinical validity.</div>
+        <div className="alert info" style={{ marginTop: 14 }}><span className="alert-icon" aria-hidden="true"><Icon name="info" size={16} /></span><div className="alert-body"><strong>Research state is explicit.</strong> Local inference can produce technical observations only. It does not establish a diagnosis, normality, treatment, or clinical validity.</div></div>
       </section>
 
       <section className="landing-section landing-disclaimer" aria-labelledby="disclaimer-title">
         <div className="alert warn" style={{ alignItems: "center", marginBottom: 0 }}>
-          <span className="alert-icon" aria-hidden="true">⚠</span>
+          <span className="alert-icon" aria-hidden="true"><Icon name="shield" size={18} /></span>
           <div className="alert-body">
             <strong id="disclaimer-title">What this platform is not</strong>
             It is not a medical device, it has not been clinically validated, and no accuracy claims are made.

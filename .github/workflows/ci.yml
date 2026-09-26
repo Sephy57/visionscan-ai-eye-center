@@ -165,7 +165,7 @@ jobs:
   # assets; the full asset/responsive/a11y suite remains a local gate.
   verify-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
     env:
       BASE_URL: http://127.0.0.1:3000
       ALLOW_INSECURE_LOCAL_AUTH: "true"
@@ -218,15 +218,30 @@ jobs:
           test -n "$browser_path"
           echo "CHROME_PATH=$browser_path" >> "$GITHUB_ENV"
 
+      # Browser gates run against the production build so they exercise the
+      # production CSP and server behaviour, not the dev server's relaxations.
+      - name: Production build
+        run: npm run build
+
       - name: Start isolated local server
         shell: bash
         run: |
-          nohup npm run dev -- --hostname 127.0.0.1 > "$RUNNER_TEMP/visionscan-browser.log" 2>&1 &
+          nohup npm run start -- --hostname 127.0.0.1 > "$RUNNER_TEMP/visionscan-browser.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/visionscan-browser.pid"
           curl --fail --retry 30 --retry-delay 2 --retry-connrefused "$BASE_URL/login" > /dev/null
 
       - name: Hosted browser smoke
         run: npm run browser:ci
+
+      # Both release gates reuse the synthetic account bootstrapped above.
+      - name: Accessibility (axe WCAG A/AA, dark and light themes)
+        env:
+          SMOKE_ADMIN_USERNAME: ${{ env.BROWSER_CI_USERNAME }}
+          SMOKE_ADMIN_PASSWORD: ${{ env.BROWSER_CI_PASSWORD }}
+        run: npm run browser:a11y
+
+      - name: Real-study responsive, overflow, accessibility and viewer source states
+        run: npm run browser:real-study
 
       - name: Stop server and show log
         if: always()

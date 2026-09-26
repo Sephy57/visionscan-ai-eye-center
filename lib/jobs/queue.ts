@@ -11,7 +11,7 @@
  * service execution path rather than creating a second implementation.
  */
 
-import { dbPut, dbGet, dbPage, dbTransaction, type DbPageResult, type DbTransaction } from "../storage/db";
+import { dbPut, dbGet, dbPage, dbSelectExcludingFieldValues, dbTransaction, type DbPageResult, type DbTransaction } from "../storage/db";
 import { newId } from "../storage/files";
 import { audit } from "../audit";
 import { JobCancelledError, makeJobProgress, type JobProgress, type ProgressUpdate } from "./control";
@@ -316,12 +316,45 @@ export async function enqueueAnalysis(studyId: string): Promise<AnalysisJob> {
     throw new Error(`CONSENT_REQUIRED:${consentPurposeForJob("analysis")}:${consent.status}`);
   }
   await ensureStartupRecovery();
-  const job = queuedJob(studyId, "analysis");
-  await dbPut("jobs", job.job_id, job);
-  await audit({ actor: "system", action: "job.enqueue", studyId, outcome: "ok", detail: job.job_id });
-  // Fire-and-forget worker execution; UI polls job status.
+  // Idempotent per study: a duplicate request (double submit, a second tab,
+  // or React StrictMode re-running the processing page's effect in
+  // development) reuses the study's active analysis job. Two concurrent
+  // executions would otherwise both compute a result for the same analysis
+  // id and the second would fail on the immutable-effect guard. The check and
+  // the insert share one transaction so near-simultaneous requests cannot
+  // both create a job.
+  const nowMs = Date.now();
+  const { job, reused } = await dbTransaction((tx) => {
+    const active = tx.where<AnalysisJob>("jobs", "study_id", studyId)
+      .map((candidate) => normalizeJob(candidate))
+      .find((candidate) => candidate.kind === "analysis" && isReusableActiveJob(candidate, nowMs));
+    if (active) return { job: active, reused: true };
+    const created = queuedJob(studyId, "analysis");
+    tx.put("jobs", created.job_id, created);
+    return { job: created, reused: false };
+  }, { immediate: true });
+  await audit({ actor: "system", action: reused ? "job.enqueue.reused" : "job.enqueue", studyId, outcome: "ok", detail: job.job_id });
+  // Fire-and-forget worker execution; UI polls job status. A reused job is
+  // dispatched again too: if the process that queued it restarted before
+  // claiming it, nothing else would run it in in-process mode. claimJob is
+  // transactional, so dispatching a job that is already running or not yet
+  // due is a no-op.
   dispatchJob(job.job_id);
   return job;
+}
+
+/**
+ * A non-terminal job that a duplicate enqueue may return. A job with a
+ * pending cancellation, or a waiting job already past its queue/service
+ * budget, would only end without a result, so a new request gets a fresh job.
+ */
+function isReusableActiveJob(job: AnalysisJob, nowMs: number): boolean {
+  if (terminalStatuses.has(job.status) || isCancelled(job)) return false;
+  if (job.status === "queued" || job.status === "retryable") {
+    const age = classifyJobAge({ created_at: job.created_at, now: nowMs, policy: job.deadline_policy ?? resolveJobDeadlinePolicy() });
+    if (age.outcome !== "WITHIN_BUDGET") return false;
+  }
+  return true;
 }
 
 /** Enqueue document text/OCR extraction as an async job (S2). */
@@ -570,7 +603,7 @@ export async function claimJob(
     });
     persistJob(tx, jobId, running);
     return running;
-  });
+  }, { immediate: true });
   return claimed ? normalizeJob(claimed) : null;
 }
 
@@ -889,6 +922,36 @@ async function waitForJobResources(options: {
     },
   });
 }
+
+/**
+ * Oldest claimable (queued or retryable) jobs. SQL applies the status filter
+ * before limiting returned candidates, so claimable jobs are found however
+ * many terminal jobs precede them; filtering a fixed page of the oldest rows
+ * would starve every new job once the history exceeded that page. The current
+ * JSON-field predicates and created_at ordering may still scan/sort history.
+ */
+export async function listClaimCandidates(limit: number, now: Date | string | number = Date.now()): Promise<AnalysisJob[]> {
+  // Selected in SQL: rows whose status is not a non-claimable one (a missing
+  // or unknown legacy status normalizes to "queued") and whose retry delay,
+  // if any, has elapsed. A retry that is not yet due is left out, so it can
+  // never hold newer queued work behind it.
+  // Order is the row's insertion key (created_at, id), the same key the
+  // paged job listing uses, i.e. oldest-enqueued first.
+  const rows = await dbSelectExcludingFieldValues<AnalysisJob>("jobs", {
+    // Same precedence as normalizeJob: status, else the legacy state field.
+    fields: ["status", "state"],
+    excluded: ["running", "claimed", "stale", "completed", "failed", "error", "cancelled"],
+    dueField: "retry_after_at",
+    dueAtOrBefore: new Date(asTimestamp(now)).toISOString(),
+    limit,
+  });
+  return rows
+    .map((job) => normalizeJob(job))
+    .filter((job) => job.status === "queued" || job.status === "retryable");
+}
+
+/** Candidates examined per worker pass: a claim can still lose a race or hit a cancellation/deadline. */
+const CLAIM_CANDIDATES_PER_PASS = 8;
 
 /** Schedule a bounded retry without keeping the process alive solely for a
  * maintenance timer. The durable retry_after_at remains authoritative if the
@@ -1270,12 +1333,10 @@ export async function runWorkerOnce(options: {
   const workerId = options.workerId?.trim() || workerInstanceId;
   const maxJobs = Math.max(1, Math.min(1, Math.floor(options.maxJobs ?? 1)));
   const recovery = await recoverJobsOnStartup({ workerId, startWorkers: false });
-  const page = await listJobsPage({ limit: 32, direction: "asc" });
-  const candidates = page.items
-    .filter((job) => job.status === "queued" || job.status === "retryable")
-    .slice(0, maxJobs);
+  const candidates = await listClaimCandidates(CLAIM_CANDIDATES_PER_PASS);
   const claimedIds: string[] = [];
   for (const job of candidates) {
+    if (claimedIds.length >= maxJobs) break;
     if (options.canClaim && !(await options.canClaim())) break;
     await processJob(job.job_id, workerId, {
       canClaim: options.canClaim,

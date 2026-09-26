@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
+import { classifySourceResponse, SOURCE_STATE_COPY, type SourceAvailabilityResult } from "@/lib/imaging/sourceAvailability";
 
 /**
  * Ophthalmic imaging viewer.
@@ -34,6 +35,10 @@ export interface ScanViewerProps {
   overlayStatus?: "CLINICALLY_VALIDATED" | "RESEARCH" | "CANDIDATE_ONLY" | "DEMO";
   infoOverlay?: { eye?: string; modality?: string; analysisLabel?: string };
   overlayUnavailableNote?: string;
+  /** Classification-only model output (e.g. OCT class): no pixel localization exists and none is drawn. */
+  classificationOnly?: boolean;
+  /** Shown with a missing/unavailable source when derived evidence (e.g. PDF OCT regions) still exists. Never a substitute image. */
+  derivativeNote?: string;
   showToolbar?: boolean;
   viewerId?: string;
   // Controlled mode (used by Compare for synchronized zoom/pan)
@@ -45,7 +50,7 @@ export interface ScanViewerProps {
 export default function ScanViewer({
   src, alt, region = null, regionLabel = "AI-highlighted region",
   localizations, infoOverlay, overlayUnavailableNote = "No validated localization data available.",
-  overlayStatus, showToolbar = true, viewerId, zoom: controlledZoom, onZoomChange, onReset,
+  overlayStatus, classificationOnly = false, derivativeNote, showToolbar = true, viewerId, zoom: controlledZoom, onZoomChange, onReset,
 }: ScanViewerProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -55,6 +60,28 @@ export default function ScanViewer({
   const [dragging, setDragging] = useState(false);
   const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
   const [loaded, setLoaded] = useState(false);
+  // Overlays are drawn only once the original itself has loaded: a missing
+  // or unavailable source must never look as if the image were there.
+  // Keyed by the src it describes, so a new src reads as CHECKING without a
+  // reset effect (an effect could overwrite an onLoad that already fired
+  // for a cached image and leave the viewer stuck "loading").
+  const [sourceFor, setSourceFor] = useState<{ src: string; result: SourceAvailabilityResult } | null>(null);
+  const source: SourceAvailabilityResult = sourceFor?.src === src ? sourceFor.result : { state: "CHECKING" };
+  const setSource = (result: SourceAvailabilityResult) => setSourceFor({ src, result });
+  const failed = source.state === "SOURCE_MISSING" || source.state === "SOURCE_UNAVAILABLE";
+  const sourceShown = source.state === "SOURCE_AVAILABLE";
+  const diagnoseLoadFailure = () => {
+    const probed = src;
+    const settle = (result: SourceAvailabilityResult) => setSourceFor({ src: probed, result });
+    fetch(probed, { cache: "no-store" })
+      .then(async (response) => {
+        const code = response.ok ? null : await response.json().then((j: { error?: string }) => j.error ?? null).catch(() => null);
+        const result = classifySourceResponse(response.status, code, response.headers.get("content-type"));
+        // The request succeeded but the browser could not decode the bytes.
+        settle(result.state === "SOURCE_AVAILABLE" ? { state: "SOURCE_UNAVAILABLE", reason: "not_an_image" } : result);
+      })
+      .catch(() => settle(classifySourceResponse(null)));
+  };
   const [viewMode, setViewMode] = useState<"original" | "overlay" | "side_by_side">((localizations?.length ?? 0) > 0 || region ? "overlay" : "original");
 
   const zoom = controlledZoom ?? internalZoom;
@@ -111,9 +138,9 @@ export default function ScanViewer({
     !!box && [box.x, box.y, box.w, box.h].every(Number.isFinite) && box.x >= 0 && box.y >= 0 && box.w > 0 && box.h > 0 && box.x + box.w <= 1 && box.y + box.h <= 1;
   const renderableOverlays = (localizations ?? []).filter((loc) => loc.kind === "bounding_box" && boundedBox(loc.coordinates));
   const overlayStatusMissing = (localizations?.length ?? 0) > 0 && !overlayStatus;
-  const hasRenderableOverlays = renderableOverlays.length > 0 && !overlayStatusMissing;
+  const hasRenderableOverlays = renderableOverlays.length > 0 && !overlayStatusMissing && sourceShown;
   const unsupportedOverlayCount = Math.max(0, (localizations?.length ?? 0) - renderableOverlays.length);
-  const boundedRegion = region && boundedBox(region) ? region : null;
+  const boundedRegion = region && boundedBox(region) && sourceShown ? region : null;
   const hasAnyOverlay = hasRenderableOverlays || boundedRegion !== null;
   const overlayIssue = overlayStatusMissing
     ? "Overlay hidden because its validation/research status was not provided."
@@ -124,7 +151,26 @@ export default function ScanViewer({
     ? { left: `${boundedRegion.x * 100}%`, top: `${boundedRegion.y * 100}%`, width: `${boundedRegion.w * 100}%`, height: `${boundedRegion.h * 100}%`, position: "absolute" }
     : null;
 
-  const renderPane = (showLayers: boolean, paneLabel: string, primary: boolean) => (
+  const failureCopy = failed
+    ? SOURCE_STATE_COPY[source.state as "SOURCE_MISSING" | "SOURCE_UNAVAILABLE"][source.reason ?? "service_error"]
+      ?? SOURCE_STATE_COPY.SOURCE_UNAVAILABLE.service_error
+    : null;
+  let sourceBadge: { tone: string; glyph: string; label: string };
+  switch (source.state) {
+    case "SOURCE_AVAILABLE":
+      sourceBadge = { tone: "ok", glyph: "●", label: "Source available · original" };
+      break;
+    case "SOURCE_MISSING":
+      sourceBadge = { tone: "bad", glyph: "○", label: "Source missing" };
+      break;
+    case "SOURCE_UNAVAILABLE":
+      sourceBadge = { tone: "bad", glyph: "○", label: "Source unavailable" };
+      break;
+    default:
+      sourceBadge = { tone: "pending", glyph: "◌", label: "Loading original…" };
+  }
+
+  const renderPane =(showLayers: boolean, paneLabel: string, primary: boolean) => (
     <div className="viewer-pane" role="group" aria-label={paneLabel}>
       <span className="viewer-hint">{paneLabel}</span>
       <div
@@ -143,17 +189,20 @@ export default function ScanViewer({
           loading="lazy"
           decoding="async"
           style={{ width: imgSize.w || "auto", height: imgSize.h || "auto" }}
-          onLoad={primary ? () => setLoaded(true) : undefined}
+          onLoad={primary ? () => { setLoaded(true); setSource({ state: "SOURCE_AVAILABLE" }); } : undefined}
+          onError={primary ? diagnoseLoadFailure : undefined}
         />
         {showLayers && regionStyle && (
-          <div className="viewer-overlay-box" style={regionStyle}>
+          <div className={`viewer-overlay-box${boundedRegion && boundedRegion.x + boundedRegion.w / 2 > 0.5 ? " label-end" : ""}`} style={regionStyle}>
             <span>{regionLabel}{overlayStatus ? ` (${overlayStatus.replaceAll("_", " ")})` : ""}</span>
           </div>
         )}
         {showLayers && hasRenderableOverlays && renderableOverlays.map((loc) => loc.coordinates ? (
           <div
             key={loc.id}
-            className={`viewer-overlay-box loc-${loc.priority ?? "moderate"}`}
+            // Boxes in the right half anchor their label to the right edge so it
+            // grows inward instead of being clipped by the viewport.
+            className={`viewer-overlay-box loc-${loc.priority ?? "moderate"}${loc.coordinates.x + loc.coordinates.w / 2 > 0.5 ? " label-end" : ""}`}
             style={{
               left: `${loc.coordinates.x * 100}%`, top: `${loc.coordinates.y * 100}%`,
               width: `${loc.coordinates.w * 100}%`, height: `${loc.coordinates.h * 100}%`,
@@ -169,7 +218,7 @@ export default function ScanViewer({
   );
 
   return (
-    <div className="viewer-frame" id={viewerId}>
+    <div className="viewer-frame" id={viewerId} data-source-state={source.state}>
       {/* Image info overlay — rendered AROUND the scan, never burned into pixels */}
       {infoOverlay && (
         <div className="viewer-info" aria-hidden="true">
@@ -181,7 +230,7 @@ export default function ScanViewer({
 
       <div
         ref={viewportRef}
-        className={`viewer-viewport${dragging ? " dragging" : ""}${viewMode === "side_by_side" ? " side-by-side" : ""}`}
+        className={`viewer-viewport${dragging ? " dragging" : ""}${viewMode === "side_by_side" ? " side-by-side" : ""}${failed ? " failed" : ""}`}
         onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -206,24 +255,51 @@ export default function ScanViewer({
         {viewMode === "side_by_side" ? (
           <>{renderPane(false, "Original scan — unmodified pixels", true)}{renderPane(true, "Overlay — annotations rendered separately", false)}</>
         ) : renderPane(viewMode === "overlay", viewMode === "overlay" ? "Overlay view — original pixels unchanged" : "Original scan — unmodified pixels", true)}
+        {failureCopy && (
+          <div className="viewer-failed" role="alert">
+            <Icon name="warning" size={18} />
+            <strong>{failureCopy.title}</strong>
+            <span>{failureCopy.body}</span>
+            {derivativeNote && <span className="viewer-derivative"><strong>Derivative available:</strong> {derivativeNote}</span>}
+          </div>
+        )}
       </div>
 
       {showToolbar && (
-        <div className="viewer-toolbar" role="toolbar" aria-label="Viewer controls">
-          <button className="vbtn" onClick={fitToScreen}><Icon name="fit" size={12} /> Fit</button>
-          <button className="vbtn" onClick={() => { setImgSize((s) => s); setZoom(1); }} aria-label="Actual size">1:1</button>
-          <button className="vbtn" onClick={() => zoomBy(1.25)} aria-label="Zoom in"><Icon name="plus" size={12} /></button>
-          <button className="vbtn" onClick={() => zoomBy(1 / 1.25)} aria-label="Zoom out"><Icon name="minus" size={12} /></button>
-          <button className="vbtn" onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); onReset?.(); }}><Icon name="reset" size={12} /> Reset</button>
-          <button className={`vbtn${viewMode === "original" ? " on" : ""}`} onClick={() => setViewMode("original")} aria-pressed={viewMode === "original"}>Original</button>
-          <button className={`vbtn${viewMode === "overlay" ? " on" : ""}`} onClick={() => setViewMode("overlay")} aria-pressed={viewMode === "overlay"} disabled={!hasAnyOverlay} title={!hasAnyOverlay ? overlayIssue : "Show annotations over the original scan"}>Overlay</button>
-          <button className={`vbtn${viewMode === "side_by_side" ? " on" : ""}`} onClick={() => setViewMode("side_by_side")} aria-pressed={viewMode === "side_by_side"} disabled={!hasAnyOverlay} title={!hasAnyOverlay ? overlayIssue : "Compare original and annotated views"}>Side-by-side</button>
-          <span className="spacer" />
-          {hasRenderableOverlays && overlayStatus && <span className="tiny viewer-layer-status">{overlayStatus.replaceAll("_", " ")} overlay</span>}
-          {!hasRenderableOverlays && boundedRegion == null && <span className="tiny muted">{overlayIssue}</span>}
-          <span className="tiny muted" aria-live="polite">Zoom {Math.round(zoom * 100)}%; pan {Math.round(offset.x)}, {Math.round(offset.y)}</span>
-          <button className="vbtn" onClick={fullscreen} aria-label="Fullscreen"><Icon name="fullscreen" size={12} /> Fullscreen</button>
-        </div>
+        <>
+          <div className="viewer-toolbar" role="toolbar" aria-label="Viewer controls">
+            <button className="vbtn" onClick={fitToScreen} title="Fit image to viewer (0)"><Icon name="fit" size={13} /> Fit</button>
+            <button className="vbtn" onClick={() => { setImgSize((s) => s); setZoom(1); }} aria-label="Actual size">1:1</button>
+            <button className="vbtn" onClick={() => zoomBy(1.25)} aria-label="Zoom in" title="Zoom in (+)"><Icon name="plus" size={13} /></button>
+            <button className="vbtn" onClick={() => zoomBy(1 / 1.25)} aria-label="Zoom out" title="Zoom out (−)"><Icon name="minus" size={13} /></button>
+            <button className="vbtn" onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); onReset?.(); }} title="Reset zoom and pan"><Icon name="reset" size={13} /> Reset</button>
+            <span className="tb-sep" aria-hidden="true" />
+            <button className={`vbtn${viewMode === "original" ? " on" : ""}`} onClick={() => setViewMode("original")} aria-pressed={viewMode === "original"}>Original</button>
+            <button className={`vbtn${viewMode === "overlay" ? " on" : ""}`} onClick={() => setViewMode("overlay")} aria-pressed={viewMode === "overlay"} disabled={!hasAnyOverlay} title={!hasAnyOverlay ? overlayIssue : "Show annotations over the original scan"}>Overlay</button>
+            <button className={`vbtn${viewMode === "side_by_side" ? " on" : ""}`} onClick={() => setViewMode("side_by_side")} aria-pressed={viewMode === "side_by_side"} disabled={!hasAnyOverlay} title={!hasAnyOverlay ? overlayIssue : "Compare original and annotated views"}>Side-by-side</button>
+            <span className="spacer" />
+            <button className="vbtn" onClick={fullscreen} aria-label="Fullscreen"><Icon name="fullscreen" size={13} /> Fullscreen</button>
+          </div>
+          <div className="viewer-status">
+            <span className={`viewer-source ${sourceBadge.tone}`}>
+              <span aria-hidden="true">{sourceBadge.glyph}</span>
+              {sourceBadge.label}
+            </span>
+            {hasRenderableOverlays && overlayStatus
+              ? <span className="viewer-legend"><span className="viewer-layer-status"><span className="legend-swatch" aria-hidden="true" />{overlayStatus.replaceAll("_", " ")} overlay · {renderableOverlays.length} region{renderableOverlays.length === 1 ? "" : "s"}</span><span>Boxes are research localizations, not diagnoses.</span></span>
+              : boundedRegion ? <span className="viewer-legend"><span className="viewer-layer-status"><span className="legend-swatch" aria-hidden="true" />{regionLabel}</span></span>
+              : <span>{classificationOnly ? "No overlay: classification-only output" : overlayIssue}</span>}
+            <span className="spacer" style={{ flex: 1 }} />
+            <span className="readout" aria-live="polite">Zoom {Math.round(zoom * 100)}% · pan {Math.round(offset.x)}, {Math.round(offset.y)}</span>
+          </div>
+          {classificationOnly && (
+            <div className="classification-only" role="note">
+              <Icon name="info" size={15} />
+              <span><strong>CLASSIFICATION ONLY · NO PIXEL-LEVEL LOCALIZATION AVAILABLE</strong>
+                The model returns an image-level class estimate. No region, heatmap, or saliency map is produced, and none is drawn.</span>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 import { ADAPTER_REGISTRY } from "@/lib/devices/adapter";
 import { SUPPORTED_MODALITIES } from "@/lib/models/modalities";
-import { Badge, EmptyState } from "@/components/ui";
+import { Badge, EmptyState, PageHeader } from "@/components/ui";
 import { Icon } from "@/components/icons";
 
 const SUPPORTED_INPUTS: Array<[string, string, "ok" | "warn" | "neutral"]> = [
@@ -18,8 +18,7 @@ const SUPPORTED_INPUTS: Array<[string, string, "ok" | "warn" | "neutral"]> = [
 export default function DevicesPage() {
   return (
     <div>
-      <h1>Device manager</h1>
-      <p className="muted">Device → Device Adapter → Normalized Imaging Format → AI Analysis Pipeline. Deliberately not hard-coded to any manufacturer.</p>
+      <PageHeader eyebrow="System" title="Device manager" lede="Device → Device Adapter → Normalized Imaging Format → AI Analysis Pipeline. Deliberately not hard-coded to any manufacturer; connectivity is never faked." />
 
       <div className="card" style={{ marginTop: 16 }}>
         <div className="card-title"><h3>Connected devices</h3><Badge tone="neutral">0 connected</Badge></div>

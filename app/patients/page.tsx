@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Badge, EmptyState, ErrorState } from "@/components/ui";
+import { EmptyState, ErrorState, PageHeader } from "@/components/ui";
+import { Icon } from "@/components/icons";
 import { authFetch } from "@/lib/auth/clientFetch";
 
 /**
@@ -80,101 +81,94 @@ export default function PatientsPage() {
 
   return (
     <div>
-      <header style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: "1.5rem", margin: 0 }}>Patients</h1>
-        <p className="text-muted" style={{ margin: "4px 0 0" }}>
-          Eye-center patient registry. Records hold structured history, encounters, and linked studies.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Clinical workspace"
+        title="Patients"
+        lede="Eye-center patient registry. Records hold structured history, encounters, and linked studies. Use pseudonymous identifiers only."
+        actions={<Link className="btn" href="/analyze"><Icon name="plus" size={14} /> New analysis</Link>}
+      />
 
-      <section aria-label="Patient search" style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-        <input
-          type="search"
-          placeholder="Search by patient identifier or label…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") load(query); }}
-          aria-label="Patient search"
-          style={{ flex: 1, minWidth: 220 }}
-        />
-        <button className="btn secondary sm" onClick={() => load(query)}>Search</button>
-        <button className="btn ghost sm" onClick={() => { setQuery(""); load(); }}>Clear</button>
-      </section>
+      <div className="grid stack-mobile" style={{ gridTemplateColumns: "minmax(0, 1.5fr) minmax(280px, 1fr)", alignItems: "start", marginBottom: 20 }}>
+        <section className="card" aria-label="Patient search">
+          <div className="card-kicker" style={{ marginBottom: 10 }}><Icon name="search" size={13} /> Search registry</div>
+          <div className="inline-form">
+            <input
+              type="search"
+              placeholder="Search by patient identifier or label…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") load(query); }}
+              aria-label="Patient search"
+            />
+            <button className="btn secondary sm" onClick={() => load(query)}>Search</button>
+            <button className="btn ghost sm" onClick={() => { setQuery(""); load(); }}>Clear</button>
+          </div>
+        </section>
 
-      <section aria-label="New patient record" style={{ marginBottom: 24, padding: 16, border: "1px solid var(--border, #ddd)", borderRadius: 8 }}>
-        <h2 style={{ fontSize: "1.05rem", margin: "0 0 8px" }}>Register patient</h2>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <input
-            placeholder="Patient identifier (e.g. VS-2026-0001)"
-            value={newRef}
-            onChange={(e) => setNewRef(e.target.value)}
-            maxLength={64}
-            aria-label="Patient identifier"
-            style={{ minWidth: 240 }}
-          />
-          <input
-            placeholder="Display label (optional)"
-            value={newLabel}
-            onChange={(e) => setNewLabel(e.target.value)}
-            maxLength={120}
-            aria-label="Display label"
-            style={{ minWidth: 200 }}
-          />
-          <button className="btn primary sm" onClick={createPatient} disabled={creating}>
+        <section className="card" aria-labelledby="register-title">
+          <h2 id="register-title" style={{ fontSize: "0.95rem", margin: "0 0 10px" }}>Register patient</h2>
+          <div className="field" style={{ marginTop: 0 }}>
+            <label htmlFor="new-patient-ref">Patient identifier</label>
+            <input id="new-patient-ref" placeholder="e.g. VS-2026-0001" value={newRef} onChange={(e) => setNewRef(e.target.value)} maxLength={64} />
+          </div>
+          <div className="field">
+            <label htmlFor="new-patient-label">Display label (optional)</label>
+            <input id="new-patient-label" placeholder="Non-identifying label" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} maxLength={120} />
+          </div>
+          <button className="btn sm" onClick={createPatient} disabled={creating}>
             {creating ? "Creating…" : "Create record"}
           </button>
-        </div>
-        {createError && <p role="alert" style={{ color: "var(--bad, #b00)", margin: "8px 0 0" }}>{createError}</p>}
-      </section>
+          {createError && <p role="alert" className="field-error">{createError}</p>}
+        </section>
+      </div>
 
       {error && <ErrorState title={error} causes={["You may not have permission to view patients.", "The server may be unreachable."]} onRetryHref="/patients" />}
 
+      {!error && !loaded && <div className="loading-row" role="status"><span className="pulse-dot" aria-hidden="true" /> Loading patients…</div>}
+
       {!error && loaded && rows.length === 0 && (
-        <EmptyState icon={<span aria-hidden>🗂</span>} title="No patients registered yet">
-          <p>Create a patient record above, or upload a study with a patient identifier.</p>
+        <EmptyState icon={<Icon name="patients" size={22} />} title={query ? "No patients match this search" : "No patients registered yet"}>
+          {query ? "Try a different identifier or clear the search." : "Create a patient record above, or upload a study with a patient identifier."}
         </EmptyState>
       )}
 
       {rows.length > 0 && (
-        <>
-        <div className="table-wrap" tabIndex={0}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: "left", padding: 8 }}>Patient</th>
-              <th style={{ textAlign: "left", padding: 8 }}>Label</th>
-              <th style={{ textAlign: "left", padding: 8 }}>Encounters</th>
-              <th style={{ textAlign: "left", padding: 8 }}>Linked studies</th>
-              <th style={{ textAlign: "left", padding: 8 }}>Registered</th>
-              <th aria-label="Actions" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((p) => (
-              <tr key={p.patient_id}>
-                <td style={{ padding: 8 }}>
-                  <Link href={`/patients/${p.patient_id}`}><strong>{p.patient_ref}</strong></Link>
-                </td>
-                <td style={{ padding: 8 }}>{p.display_label || <span className="text-muted">—</span>}</td>
-                <td style={{ padding: 8 }}>{p.encounter_count}</td>
-                <td style={{ padding: 8 }}>{p.study_count}</td>
-                <td style={{ padding: 8 }}>{new Date(p.created_at).toLocaleDateString()}</td>
-                <td style={{ padding: 8 }}>
-                  <Badge tone="neutral">record</Badge>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-        {hasMore && nextCursor && (
-          <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 4px" }}>
-            <button className="btn secondary sm" onClick={() => load(query, nextCursor, true)} disabled={loadingMore}>
-              {loadingMore ? "Loading…" : "Load more patients"}
-            </button>
+        <div className="card flush">
+          <div className="table-wrap" tabIndex={0} role="region" aria-label="Patients">
+            <table className="table">
+              <caption className="sr-only">Registered patients</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Patient</th>
+                  <th scope="col">Label</th>
+                  <th scope="col">Encounters</th>
+                  <th scope="col">Linked studies</th>
+                  <th scope="col">Registered</th>
+                  <th scope="col" className="actions">Open</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((p) => (
+                  <tr key={p.patient_id}>
+                    <td><Link href={`/patients/${encodeURIComponent(p.patient_id)}`}><strong>{p.patient_ref}</strong></Link></td>
+                    <td>{p.display_label || <span className="muted">—</span>}</td>
+                    <td className="num">{p.encounter_count}</td>
+                    <td className="num">{p.study_count}</td>
+                    <td className="small muted">{new Date(p.created_at).toLocaleDateString()}</td>
+                    <td className="actions"><Link className="btn ghost sm" href={`/patients/${encodeURIComponent(p.patient_id)}`} aria-label={`Open patient ${p.patient_ref}`}>Profile <Icon name="arrowRight" size={13} /></Link></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-        </>
+          {hasMore && nextCursor && (
+            <div style={{ display: "flex", justifyContent: "center", padding: "12px 0" }}>
+              <button className="btn secondary sm" onClick={() => load(query, nextCursor, true)} disabled={loadingMore}>
+                {loadingMore ? "Loading…" : "Load more patients"}
+              </button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

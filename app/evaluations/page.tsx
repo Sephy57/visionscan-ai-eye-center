@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge, EmptyState } from "@/components/ui";
+import { Badge, EmptyState, PageHeader, PageLoading } from "@/components/ui";
 import { Icon } from "@/components/icons";
 
 interface Run {
@@ -25,23 +25,27 @@ const pct = (x: number | null) => (x === null ? "—" : (x * 100).toFixed(1) + "
 
 export default function EvaluationsPage() {
   const [runs, setRuns] = useState<Run[] | null>(null);
+  const [denied, setDenied] = useState(false);
 
   useEffect(() => {
-    fetch("/api/evaluations").then((r) => r.json()).then((j) => setRuns(j.runs ?? [])).catch(() => setRuns([]));
+    fetch("/api/evaluations")
+      .then((r) => { if (!r.ok) { setDenied(true); return { runs: [] }; } return r.json(); })
+      .then((j) => setRuns(j.runs ?? []))
+      .catch(() => { setDenied(true); setRuns([]); });
   }, []);
 
   return (
     <div>
-      <div className="stat-label">Research evaluation dashboard</div>
-      <h1 style={{ marginBottom: 2 }}>Model Evaluation</h1>
-      <p className="muted small">
-        Per-split metrics with failure analysis. <strong>No single &ldquo;AI accuracy&rdquo; score is reported</strong> —
-        performance is always broken out per split, per metric, per subgroup, with false-negative analysis.
-      </p>
+      <PageHeader eyebrow="AI & Research" title="Model Evaluation" lede={<>Per-split research metrics with failure analysis. <strong>No single &ldquo;AI accuracy&rdquo; score is reported</strong> — performance is always broken out per split and metric, with false-negative analysis. Research metrics are not clinical validation.</>} />
 
-      {!runs && <div style={{ display: "flex", justifyContent: "center", padding: 50 }}><div className="spinner" /></div>}
+      {!runs && <PageLoading label="Loading evaluation runs…" />}
 
-      {runs?.length === 0 && (
+      {denied && (
+        <div className="alert danger" role="alert"><span className="alert-icon" aria-hidden="true"><Icon name="lock" size={16} /></span>
+          <div className="alert-body"><strong>Evaluation runs unavailable</strong>This view is restricted to ADMIN and RESEARCHER roles, or the evaluation service did not respond.</div></div>
+      )}
+
+      {!denied && runs?.length === 0 && (
         <div style={{ marginTop: 18 }}>
           <EmptyState icon={<Icon name="status" size={24} />} title="No evaluation runs yet">
             Evaluation runs are created from locked or external test datasets via{" "}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge, StatusCard } from "@/components/ui";
+import { Badge, PageHeader, StatusCard } from "@/components/ui";
 
 interface AdminData {
   audit_tail: Array<{ ts: string; actor: string; action: string; studyId?: string; outcome: string; detail?: string }>;
@@ -27,7 +27,7 @@ interface SelfTest {
 }
 interface OperationsData {
   status: string;
-  checks?: Record<string, unknown>;
+  checks?: Record<string, { ok?: boolean; models?: number; consistency_problems?: number } | undefined>;
   persistence?: {
     database_bytes?: number; jobs_total?: number; jobs_active?: number; stale_leases?: number; failed_jobs?: number; reconciliation_errors?: number;
     backup?: { status?: string; latest_at?: string | null; age_seconds?: number | null; usable_count?: number; phi_included?: boolean };
@@ -47,6 +47,8 @@ export default function AdminPage() {
   const [operations, setOperations] = useState<OperationsData | null>(null);
   const [reconciliation, setReconciliation] = useState<ReconciliationData | null>(null);
   const [running, setRunning] = useState(false);
+  const [live, setLive] = useState<boolean | null>(null);
+  const [auditAuthorized, setAuditAuthorized] = useState<boolean | null>(null);
   const [auditCursor, setAuditCursor] = useState<string | null>(null);
   const [auditHasMore, setAuditHasMore] = useState(false);
   const [loadingAudit, setLoadingAudit] = useState(false);
@@ -57,6 +59,7 @@ export default function AdminPage() {
       const query = new URLSearchParams({ limit: "50" });
       if (cursor) query.set("cursor", cursor);
       const response = await fetch(`/api/admin?${query.toString()}`);
+      setAuditAuthorized(response.ok);
       if (!response.ok) throw new Error("audit unavailable");
       const payload = await response.json() as AdminData;
       setData((previous) => append && previous
@@ -71,6 +74,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     loadAudit().catch(() => {});
+    fetch("/api/health/live").then((r) => setLive(r.ok)).catch(() => setLive(false));
     fetch("/api/models").then((r) => r.json()).then(setModels).catch(() => {});
     fetch("/api/health/ready").then((r) => r.json()).then(setOperations).catch(() => {});
     fetch("/api/admin/metrics").then((r) => r.json()).then((r) => setOperations((previous) => ({ ...(previous ?? {}), ...r }))).catch(() => {});
@@ -86,19 +90,31 @@ export default function AdminPage() {
 
   return (
     <div>
-      <h1>System status</h1>
-      <p className="muted">Software health, model registry, and audit trail. Operational ≠ validated: each is reported separately and honestly.</p>
+      <PageHeader eyebrow="System" title="System status" lede="Software health, model registry, and audit trail. Operational ≠ validated: each is probed and reported separately. Nothing on this page is assumed healthy without a check." />
 
-      <div className="grid grid-4" style={{ marginTop: 18 }}>
-        <StatusCard label="Application" value="Operational" tone="ok" />
-        <StatusCard label="Database" value="Operational" tone="ok" detail="SQLite WAL/full-sync on D:" />
-        <StatusCard label="Storage" value="Operational" tone="ok" detail="uploads / processed / reports on D:" />
-        <StatusCard label="Image Quality Engine" value="Operational" tone="ok" detail="Thresholds not clinically validated" />
-        <StatusCard label="AI Model" value="RESEARCH ONLY" tone="warn" detail="Hash-verified fundus/DR/OCT artifacts; no clinical validation" />
-        <StatusCard label="Safety Engine" value="Operational" tone="ok" detail="Triage rules, safety validator" />
-        <StatusCard label="Audit Logging" value="Operational" tone="ok" detail="Append-only NDJSON on D:" />
-        <StatusCard label="Auth / RBAC" value="Operational" tone="ok" detail="Session, role, CSRF, and resource-scope checks enforced" />
-      </div>
+      {(() => {
+        const check = (key: string) => operations?.checks?.[key]?.ok;
+        const probe = (ok: boolean | undefined | null, yes: string, no: string, pending = "Checking…"): { value: string; tone: "ok" | "bad" | "neutral" } =>
+          ok === undefined || ok === null ? { value: operations || live !== null ? pending : "Checking…", tone: "neutral" } : ok ? { value: yes, tone: "ok" } : { value: no, tone: "bad" };
+        const storageOk = check("storage_uploads") === undefined ? undefined : Boolean(check("storage_uploads") && check("storage_reports"));
+        const selftestState = selftest ? (selftest.all_passed ? { value: "Self-test passed", tone: "ok" as const } : { value: "Self-test failures", tone: "bad" as const }) : { value: "Not probed", tone: "neutral" as const };
+        const research = (models?.models ?? []).filter((m) => m.status === "RESEARCH").length;
+        const cards: Array<{ label: string; value: string; tone: "ok" | "warn" | "bad" | "neutral"; detail: string }> = [
+          { label: "Application", ...probe(live, "Responding", "Unreachable"), detail: "Liveness probe /api/health/live" },
+          { label: "Database", ...probe(check("database"), "Ready", "Not ready", "Not reported"), detail: "Readiness check: connection + schema" },
+          { label: "Storage", ...probe(storageOk, "Ready", "Missing root", "Not reported"), detail: "Upload and report roots present on local disk" },
+          { label: "Model registry", ...probe(check("model_registry"), "Consistent", "Inconsistent", "Not reported"), detail: `${operations?.checks?.model_registry?.models ?? "—"} registered · inference not probed` },
+          { label: "AI models", value: models ? `${research} RESEARCH ONLY` : "—", tone: models ? "warn" : "neutral", detail: "Hash-verified research artifacts; no clinical validation" },
+          { label: "Quality & safety engines", ...selftestState, detail: selftest ? `${selftest.passed}/${selftest.total} self-test checks` : "Run the self-test below to verify with synthetic images" },
+          { label: "Audit logging", value: data ? `${data.audit_tail.length} event(s) readable` : auditAuthorized === false ? "Unavailable" : "Checking…", tone: data ? "ok" : auditAuthorized === false ? "bad" : "neutral", detail: "Append-only, metadata only" },
+          { label: "Auth / RBAC", value: auditAuthorized === null ? "Checking…" : auditAuthorized ? "Enforced" : "Denied", tone: auditAuthorized === null ? "neutral" : auditAuthorized ? "ok" : "warn", detail: auditAuthorized ? "This ADMIN-only request passed session, role, and scope checks" : "Session, role, CSRF, and resource-scope checks are server-side" },
+        ];
+        return (
+          <div className="grid grid-4">
+            {cards.map((c) => <StatusCard key={c.label} label={c.label} value={c.value} tone={c.tone} detail={c.detail} />)}
+          </div>
+        );
+      })()}
 
       <div className="card" style={{ marginTop: 20 }}>
         <div className="card-title"><h3>Durable operations</h3><Badge tone={operations?.status === "ready" ? "ok" : "warn"}>{operations?.status ?? "loading"}</Badge></div>
@@ -134,17 +150,17 @@ export default function AdminPage() {
       <div className="card" style={{ marginTop: 20 }}>
         <div className="card-title"><h3>Reconciliation plan</h3><Badge tone={(reconciliation?.issues?.length ?? 0) > 0 ? "warn" : "ok"}>{reconciliation ? `${reconciliation.issues?.length ?? 0} issue(s)` : "loading"}</Badge></div>
         <p className="tiny muted">Read-only scan. Repairs require a separate, explicit administrator action; originals are never auto-deleted.</p>
-        {(reconciliation?.issues ?? []).length > 0 && <div style={{ overflowX: "auto" }} tabIndex={0}><table className="table"><thead><tr><th>Kind</th><th>Resource</th><th>Detail</th></tr></thead><tbody>{(reconciliation?.issues ?? []).slice(0, 100).map((issue) => <tr key={issue.issue_id}><td><code className="tiny">{issue.kind}</code></td><td className="small">{issue.resource}</td><td className="tiny muted">{issue.detail}</td></tr>)}</tbody></table></div>}
+        {(reconciliation?.issues ?? []).length > 0 && <div className="table-wrap" tabIndex={0} role="region" aria-label="Table"><table className="table"><thead><tr><th>Kind</th><th>Resource</th><th>Detail</th></tr></thead><tbody>{(reconciliation?.issues ?? []).slice(0, 100).map((issue) => <tr key={issue.issue_id}><td><code className="tiny">{issue.kind}</code></td><td className="small">{issue.resource}</td><td className="tiny muted">{issue.detail}</td></tr>)}</tbody></table></div>}
         {(reconciliation?.issues ?? []).length === 0 && <p className="muted small">No reconciliation issues found.</p>}
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>
         <div className="card-title">
           <h3>Model registry</h3>
-          {models?.model_store_status && <Badge tone={models.model_store_status.populated ? "ok" : "neutral"}>data\models: {models.model_store_status.populated ? "research artifacts" : "empty"}</Badge>}
+          {models?.model_store_status && <Badge tone={models.model_store_status.populated ? "ok" : "neutral"}>Model store: {models.model_store_status.populated ? "research artifacts" : "empty"}</Badge>}
         </div>
         {models?.consistency_problems && models.consistency_problems.length > 0 && (
-          <div className="alert danger"><span className="alert-icon" aria-hidden="true">⚠</span><div className="alert-body"><strong>Registry consistency problems</strong>{JSON.stringify(models.consistency_problems)}</div></div>
+          <div className="alert danger"><span className="alert-icon" aria-hidden="true">!</span><div className="alert-body"><strong>Registry consistency problems</strong>{JSON.stringify(models.consistency_problems)}</div></div>
         )}
         <div className="grid grid-2">
           {(models?.models ?? []).map((m) => (
@@ -175,7 +191,7 @@ export default function AdminPage() {
 
       <div className="card" style={{ marginTop: 20 }}>
         <div className="card-title"><h3>Pipeline component registry</h3></div>
-        <div style={{ overflowX: "auto" }} tabIndex={0}>
+        <div className="table-wrap" tabIndex={0} role="region" aria-label="Table">
           <table className="table">
             <thead><tr><th>Component</th><th>Version</th><th>Implementation</th><th>Validation status</th><th>Notes</th></tr></thead>
             <tbody>
@@ -206,7 +222,7 @@ export default function AdminPage() {
               <strong>{selftest.passed}/{selftest.total} checks passed</strong>{" "}
               {selftest.all_passed ? <Badge tone="ok">ALL PASSED</Badge> : <Badge tone="bad">FAILURES DETECTED</Badge>}
             </p>
-            <div style={{ overflowX: "auto" }} tabIndex={0}>
+            <div className="table-wrap" tabIndex={0} role="region" aria-label="Table">
               <table className="table">
                 <thead><tr><th>Check</th><th>Result</th><th>Detail</th></tr></thead>
                 <tbody>
@@ -226,7 +242,7 @@ export default function AdminPage() {
 
       <div className="card" style={{ marginTop: 20 }}>
         <div className="card-title"><h3>Audit trail</h3><Badge tone="neutral">append-only, metadata only</Badge></div>
-        <div style={{ overflowX: "auto", maxHeight: 420, overflowY: "auto" }} tabIndex={0}>
+        <div className="table-wrap" style={{ maxHeight: 420, overflowY: "auto" }} tabIndex={0} role="region" aria-label="Audit trail">
           <table className="table">
             <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Study</th><th>Outcome</th><th>Detail</th></tr></thead>
             <tbody>

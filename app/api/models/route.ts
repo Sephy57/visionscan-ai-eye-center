@@ -32,7 +32,8 @@ export async function GET(req: NextRequest) {
     components: Object.values(COMPONENTS),
     adapters: ADAPTER_REGISTRY,
     model_store_status: {
-      path: "D:\\AI EYE ANALYSIS PLATFORM\\data\\models",
+      // Redacted: the UI never needs the server filesystem location.
+      path: "<configured-model-root>",
       populated: installedResearchArtifacts.length > 0,
       note: installedResearchArtifacts.length > 0
         ? `${installedResearchArtifacts.length} hash-verified research artifact(s) are installed. All remain RESEARCH-only; no clinical validation is claimed.`

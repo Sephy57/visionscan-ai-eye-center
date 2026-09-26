@@ -457,6 +457,8 @@ function persistJson(db: DbShape): Promise<void> {
 interface SyncTransaction {
   get<T>(collection: Collection, id: string): T | null;
   all<T>(collection: Collection): T[];
+  /** Rows whose indexed relational column equals `value`, oldest first. */
+  where<T>(collection: Collection, column: RelationalColumn, value: string): T[];
   put<T>(collection: Collection, id: string, doc: T): void;
   delete(collection: Collection, id: string): boolean;
   deleteMany(collection: Collection, ids: readonly string[]): number;
@@ -514,6 +516,15 @@ function sqliteTransaction(): SyncTransaction {
       const rows = connection
         .prepare(`SELECT id, payload FROM ${tableName(collection)} ORDER BY created_at, id`)
         .all() as Array<{ id: string; payload: string }>;
+      return rows.map((row) => clone(parsePayload<T>(collection, row.id, row.payload)));
+    },
+    where<T>(collection: Collection, column: RelationalColumn, value: string) {
+      // `column` is constrained to the fixed RELATIONAL_COLUMNS allow-list, so
+      // it is never caller-controlled SQL; the value is always bound.
+      if (!RELATIONAL_COLUMNS.includes(column)) throw new Error(`Unsupported relational column: ${column}`);
+      const rows = connection
+        .prepare(`SELECT id, payload FROM ${tableName(collection)} WHERE ${column} = ? ORDER BY created_at, id`)
+        .all(value) as Array<{ id: string; payload: string }>;
       return rows.map((row) => clone(parsePayload<T>(collection, row.id, row.payload)));
     },
     put<T>(collection: Collection, id: string, doc: T) {
@@ -593,7 +604,23 @@ export async function closeDatabase(): Promise<void> {
   startupRecoveryDone = false;
 }
 
-export async function dbTransaction<T>(work: (tx: DbTransaction) => T): Promise<T> {
+export interface DbTransactionOptions {
+  /**
+   * Take SQLite's write lock at BEGIN (BEGIN IMMEDIATE). Use for
+   * read-then-write decisions (claim, idempotent enqueue) that other
+   * processes sharing the database file may race: a deferred transaction
+   * that reads first can fail with SQLITE_BUSY_SNAPSHOT when it upgrades to
+   * a write, which busy_timeout cannot retry.
+   */
+  immediate?: boolean;
+}
+
+// The legacy JSON backend clones one shared cache per transaction; running
+// transactions one at a time keeps a concurrent read-modify-write from
+// overwriting another's changes.
+let jsonTransactionChain: Promise<unknown> = Promise.resolve();
+
+export async function dbTransaction<T>(work: (tx: DbTransaction) => T, options: DbTransactionOptions = {}): Promise<T> {
   await ensureInitialized();
   if (PERSISTENCE_BACKEND === "sqlite") {
     if (!sqlite) throw new Error("Database is not initialized");
@@ -602,9 +629,14 @@ export async function dbTransaction<T>(work: (tx: DbTransaction) => T): Promise<
       assertSyncResult(result);
       return result;
     });
-    return transaction() as T;
+    return (options.immediate ? transaction.immediate() : transaction()) as T;
   }
+  const run = jsonTransactionChain.then(() => jsonTransaction(work));
+  jsonTransactionChain = run.catch(() => undefined);
+  return run;
+}
 
+async function jsonTransaction<T>(work: (tx: DbTransaction) => T): Promise<T> {
   const current = await loadJson();
   const draft = clone(current);
   const tx: DbTransaction = {
@@ -616,6 +648,12 @@ export async function dbTransaction<T>(work: (tx: DbTransaction) => T): Promise<
       return Object.values((draft.collections[collection] ?? {}) as Record<string, unknown>).map((value) =>
         clone(value as TValue),
       );
+    },
+    where<TValue>(collection: Collection, column: RelationalColumn, value: string) {
+      return Object.values((draft.collections[collection] ?? {}) as Record<string, Record<string, unknown>>)
+        .filter((doc) => referenceValue(doc, column) === value)
+        .sort((a, b) => String(a.created_at ?? "").localeCompare(String(b.created_at ?? "")) || String(a.id ?? "").localeCompare(String(b.id ?? "")))
+        .map((doc) => clone(doc as TValue));
     },
     put<TValue>(collection: Collection, id: string, doc: TValue) {
       if (collection === "clinician_reviews" && (draft.collections[collection] as Record<string, unknown> | undefined)?.[id] !== undefined) {
@@ -898,6 +936,57 @@ async function jsonPage<T>(collection: Collection, options: DbPageOptions<T>): P
 export async function dbPage<T>(collection: Collection, options: DbPageOptions<T> = {}): Promise<DbPageResult<T>> {
   await ensureInitialized();
   return PERSISTENCE_BACKEND === "sqlite" ? sqlitePage(collection, options) : jsonPage(collection, options);
+}
+
+/**
+ * Oldest rows whose top-level payload value — the first present of `fields`,
+ * like `a ?? b` — is NOT one of `excluded` (case-insensitive; absent counts
+ * as not excluded), optionally only those whose `dueField` is absent or
+ * at/before `dueAtOrBefore` (ISO-8601
+ * strings compare chronologically). SQLite evaluates the filter itself, so
+ * the cost does not grow with parsing every historical row in JavaScript and
+ * there is no page-scan ceiling. Field names are restricted to identifiers
+ * and every value is bound.
+ */
+export async function dbSelectExcludingFieldValues<T>(collection: Collection, options: {
+  fields: readonly string[]; excluded: readonly string[]; dueField?: string; dueAtOrBefore?: string; limit: number;
+}): Promise<T[]> {
+  await ensureInitialized();
+  const identifier = /^[a-z_][a-z0-9_]*$/;
+  if (!options.fields.length || !options.fields.every((f) => identifier.test(f)) || (options.dueField && !identifier.test(options.dueField))) {
+    throw new Error("Unsupported payload field");
+  }
+  const limit = Math.max(1, Math.min(MAX_PAGE_SIZE, Math.floor(options.limit)));
+  const excluded = options.excluded.map((value) => value.toLowerCase());
+  if (PERSISTENCE_BACKEND === "sqlite") {
+    if (!sqlite) throw new Error("Database is not initialized");
+    const fieldExpr = `lower(COALESCE(${options.fields.map((f) => `json_extract(payload, '$.${f}')`).join(", ")}))`;
+    const clauses = [`(${fieldExpr} IS NULL${excluded.length ? ` OR ${fieldExpr} NOT IN (${excluded.map(() => "?").join(", ")})` : ""})`];
+    const params: unknown[] = [...excluded];
+    if (options.dueField && options.dueAtOrBefore) {
+      const dueExpr = `json_extract(payload, '$.${options.dueField}')`;
+      clauses.push(`(${dueExpr} IS NULL OR ${dueExpr} <= ?)`);
+      params.push(options.dueAtOrBefore);
+    }
+    const rows = sqlite
+      .prepare(`SELECT id, payload FROM ${tableName(collection)} WHERE ${clauses.join(" AND ")} ORDER BY created_at, id LIMIT ?`)
+      .all(...params, limit) as Array<{ id: string; payload: string }>;
+    return rows.map((row) => clone(parsePayload<T>(collection, row.id, row.payload)));
+  }
+  const db = await loadJson();
+  return Object.values((db.collections[collection] ?? {}) as Record<string, Record<string, unknown>>)
+    .filter((doc) => {
+      const value = options.fields.map((f) => doc[f]).find((v) => v !== undefined && v !== null);
+      if (value !== undefined && excluded.includes(String(value).toLowerCase())) return false;
+      if (options.dueField && options.dueAtOrBefore) {
+        const due = doc[options.dueField];
+        if (due !== undefined && due !== null && String(due) > options.dueAtOrBefore) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => String(a.created_at ?? "").localeCompare(String(b.created_at ?? "")) || String(a.id ?? "").localeCompare(String(b.id ?? "")))
+    .slice(0, limit)
+    .map((doc) => clone(doc as T));
 }
 
 /** Cheap aggregate count used by bounded list endpoints and dashboards. */

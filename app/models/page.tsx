@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui";
+import { Badge, PageHeader } from "@/components/ui";
 import { Icon } from "@/components/icons";
 
 interface ModelData {
@@ -140,7 +140,7 @@ function ModelRow({ m }: { m: ModelData["models"][number] }) {
         <dt>Checksum</dt><dd className="tiny" style={{ fontFamily: "var(--mono)" }}>{m.sha256_masked ?? "no artifact (placeholder)"}</dd>
         <dt>Regulatory status</dt><dd className="tiny">{m.regulatory_status === "none" ? "None — regulatory review required before clinical use" : m.regulatory_status}</dd>
         <dt>Integrity</dt><dd>{m.integrity.trusted ? <Badge tone="ok">verified</Badge> : <Badge tone="bad">rejected</Badge>}</dd>
-        <dt>Metrics</dt><dd className="tiny">Not measured (no evaluation evidence)</dd>
+        <dt>Registry metrics</dt><dd className="tiny">{Object.entries(m.performance ?? {}).filter(([, v]) => v !== null && v !== undefined).map(([k, v]) => `${k}: ${v}`).join(" · ") || "Not measured in the registry record — see research validation evidence below"}</dd>
       </dl>
       <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
         <button className="btn ghost sm" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
@@ -181,22 +181,26 @@ export default function ModelsPage() {
 
   return (
     <div>
-      <div className="stat-label">Model management</div>
-      <h1 style={{ marginBottom: 2 }}>Models</h1>
-      <p className="muted small">
-        Registered models, their status and <strong>why</strong> they hold it. Status transitions require
-        registered evidence — a typed &ldquo;validated: true&rdquo; is never accepted.
-      </p>
+      <PageHeader eyebrow="AI & Research" title="Models" lede={<>Registered models, their status, and <strong>why</strong> they hold it. Status transitions require registered evidence — a typed &ldquo;validated: true&rdquo; is never accepted. Research metrics are never clinical accuracy claims.</>} />
+
+      <div className="card" style={{ padding: "12px 16px", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }} aria-label="Model status legend">
+        <span className="stat-label">Status legend</span>
+        <Badge tone="warn">RESEARCH — real local inference, uncalibrated</Badge>
+        <Badge tone="demo">DEMO — synthetic placeholder output</Badge>
+        <Badge tone="neutral">UNAVAILABLE — not installed or integrity rejected</Badge>
+        <Badge tone="bad">UNSUPPORTED — no model for this task</Badge>
+        <Badge tone="warn">NOT VALIDATED — no clinical validation</Badge>
+      </div>
 
       {data?.consistency_problems && data.consistency_problems.length > 0 && (
         <div className="alert danger" style={{ marginTop: 14 }}>
-          <span className="alert-icon" aria-hidden="true">⚠</span>
+          <span className="alert-icon" aria-hidden="true">!</span>
           <div className="alert-body"><strong>Registry consistency problems</strong>{JSON.stringify(data.consistency_problems)}</div>
         </div>
       )}
 
       <div className="alert info" style={{ marginTop: 16 }}>
-        <span className="alert-icon" aria-hidden="true">◈</span>
+        <span className="alert-icon" aria-hidden="true"><Icon name="info" size={16} /></span>
         <div className="alert-body">
           <strong>Model store</strong>
           {data?.model_store_status.note ?? "Model store status is unavailable; no clinical model is presumed validated."}
@@ -224,7 +228,7 @@ export default function ModelsPage() {
                   <tr key={`${entry.modality}-${entry.target_id}`}>
                     <td>{entry.display_name}</td>
                     <td className="tiny">{entry.modality} · {entry.task.replaceAll("_", " ")}</td>
-                    <td><Badge tone={entry.state === "RESEARCH_ANATOMY_ONLY" ? "warn" : "bad"}>{entry.state.replaceAll("_", " ")}</Badge></td>
+                    <td><Badge tone={entry.state === "RESEARCH_PIPELINE" || entry.state === "RESEARCH_ANATOMY_ONLY" ? "warn" : entry.state === "UNSUPPORTED_IMAGE_ANALYSIS" ? "bad" : "neutral"}>{entry.state.replaceAll("_", " ")}</Badge></td>
                     <td className="tiny">{entry.model_id ?? "none"}<br />Pipeline: {entry.pipeline_enabled ? "enabled" : "disabled"}</td>
                     <td className="tiny">{entry.localization.replaceAll("_", " ")}<br />{entry.calibration.replaceAll("_", " ")}</td>
                   </tr>
@@ -300,7 +304,7 @@ export default function ModelsPage() {
         <div className="card-title"><h3>Status ladder &amp; evidence requirements</h3></div>
         <div className="table-wrap" tabIndex={0}>
           <table className="table">
-            <thead><tr><th>Transition</th><th>Required evidence</th></tr></thead>
+            <thead><tr><th scope="col">Transition</th><th scope="col">Required evidence</th></tr></thead>
             <tbody>
               <tr><td><code>DEMO → RESEARCH</code></td><td className="tiny">Research-use acknowledgement; output labeled RESEARCH USE ONLY.</td></tr>
               <tr><td><code>RESEARCH → INTERNAL_VALIDATION</code></td><td className="tiny">≥1 registered evaluation on internal held-out data + validation date.</td></tr>
