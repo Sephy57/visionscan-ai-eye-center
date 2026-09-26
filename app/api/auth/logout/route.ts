@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 /**
  * True only for a request the browser itself marks as coming from this
  * origin (Fetch Metadata), or, for browsers without it, whose Origin header
- * names this host. Page script cannot forge either header.
+ * exactly matches the request origin. Page script cannot forge either header.
  */
 function isSameOriginRequest(req: NextRequest): boolean {
   const site = req.headers.get("sec-fetch-site");
@@ -16,7 +16,7 @@ function isSameOriginRequest(req: NextRequest): boolean {
   const origin = req.headers.get("origin");
   if (!origin) return false;
   try {
-    return new URL(origin).host === (req.headers.get("host") ?? req.nextUrl.host);
+    return new URL(origin).origin === req.nextUrl.origin;
   } catch {
     return false;
   }

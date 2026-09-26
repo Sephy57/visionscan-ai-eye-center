@@ -203,9 +203,7 @@ jobs and then filtered for `queued`, so with more than 32 historical jobs it nev
 scanner. Regression test: `tests/worker-claim-candidates.test.ts` (40 terminal jobs ahead of a queued one; ordering
 and terminal exclusion). No model, threshold, or medical-reasoning code was touched.
 
-Observed once, not reproduced: under `next dev` in default in-process mode a job failed with
-`IMMUTABLE_EFFECT_CONFLICT:analyses/…` (the job pipeline's own duplicate-write guard). It did not occur in any of the
-production-build runs. Not investigated further (see §35).
+Superseded by the root-cause fix and fresh verification in §36: React StrictMode could send duplicate analysis requests; the processing page now shares an in-flight request per study and the server reuses the active job transactionally. The fresh synthetic `next dev` journey reached results with one `POST /api/analyze` and no conflict.
 
 ## 31. Visual QA
 
@@ -251,7 +249,7 @@ fixed: broken image with overlay when an original is missing; duplicate priority
 - `/api/models` still includes MODEL_ROOT-relative `file_path` values (not rendered). *(Re-checked at `5519d2d`: still true.)*
 - ~~Logout POST has no CSRF check (pre-existing; worst case forced logout).~~ *Resolved after this report (commit
   `acd9796`): logout with a live session requires the CSRF header or a verifiable same-origin request.*
-- One unexplained `IMMUTABLE_EFFECT_CONFLICT` under `next dev` in-process mode (§30); not seen on the production build.
+- ~~One unexplained `IMMUTABLE_EFFECT_CONFLICT` under `next dev` in-process mode (§30).~~ Resolved in `0dde7d6`/`dff1b30`; fresh reproduction and regression evidence are recorded in §36.
 - The repo's `browser:responsive` / `browser:a11y` gates only visit result/clinician/report without a study and only
   the dark theme; the loaded-study and light-theme checks in this report were run with ad-hoc scripts that are not
   yet part of the repo gates.
@@ -292,3 +290,59 @@ Vitest full suite, `browser:*` gates, `visual-qa`, `smoke`, light-theme axe, ove
 production build, `npm audit`). These remain the evidence recorded by the implementing session and by
 `docs/VISIONSCAN_FINAL_SYSTEM_CLOSURE_REPORT.md` §10; hosted CI (above) independently re-ran the repository's
 `verify`, `verify-windows`, and `verify-browser` gates on `5519d2d`.
+
+## 36. Codex release-closure verification (2026-09-27, Asia/Manila)
+
+This is a fresh closure pass against the actual remote UI branch. The original `D:\AI EYE ANALYSIS PLATFORM` checkout remained on `ui-modernization` at `e5c2571e1cd2e647e491ffcd40bf4ba150d0e133`; its two tracked Phase 4 edits and all Phase 4 untracked artifacts remained present and unchanged. Verification and closure edits were made in the managed worktree `C:\Users\pc\.codex\worktrees\ui-closure-verification\AI EYE ANALYSIS PLATFORM`, based on the then-current `origin/ui-modernization` SHA `dc1cf5138b8c7c2bdc04690b16dbc815a4c37419`. `main` remained `6e7f253474a5b6f3a4a76acd3ca2c875507e4253`.
+
+The reported `data/tmp/ui-qa/` directory did not exist at the final check. Nothing there was deleted. The independently created QA databases contain only synthetic accounts/studies; the dedicated real-study gate and separately run synthetic journeys lifecycle-deleted their studies and logged out. The smoke, accessibility, keyboard, and responsive browser gates closed their contexts without calling the logout endpoint. The temp directory remains at `%TEMP%\visionscan-ui-closure-qa-20260927` because the automatic command-safety policy rejected recursive cleanup; no server process references it. This directory is separate from the D: project data.
+
+### Codex changes
+
+- Logout now compares the complete `Origin` origin (scheme, host, and port) with the request origin. A live-session regression proves that same-host, wrong-scheme Origin is rejected with HTTP 403 and the session remains valid.
+- `tests/worker-claim-candidates.test.ts` now includes a two-process SQLite claim race. Separate Node processes contend on the same queued job; exactly one worker claims it. The external worker now fails closed if configured with the legacy JSON backend, whose transaction serialization is process-local. The test also retains backlog, retry, ordering, and bounded-result coverage.
+- `scripts/browser-real-study-qa.mjs` now logs out its synthetic account after deleting the synthetic study and fails if logout does not succeed.
+- No model, threshold, clinical-reasoning, or Phase 4 evaluation code was changed. No dependency was changed.
+
+### Fresh local gates
+
+| Gate | Result in this closure pass |
+|---|---|
+| `npm ci` | PASS, 305 packages installed in the managed worktree |
+| `npm run lint` | PASS |
+| `npx tsc --noEmit` | PASS |
+| Full Vitest suite (`npm test -- --pool=forks --maxWorkers=1 --minWorkers=1`) | PASS — 96 files passed, 2 skipped; 1,238 tests passed, 47 skipped |
+| `npm run build` (Next.js 16.3.4, webpack) | PASS, 22 static pages generated and all routes compiled |
+| `npm audit --omit=dev` | PASS — 0 production dependency vulnerabilities |
+| Full `npm audit` | 2 moderate advisories, limited to dev tooling `vitest` and transitive `@vitest/mocker`; no high/critical findings; no dependency changes made |
+| Secret scan | PASS — 640 tracked text files, 0 high-confidence findings |
+| Filesystem audit on the original D: project | PASS — source, Git, data stores, models, logs, and temp root are on D: |
+
+The 47 skipped tests comprise 11 explicit live-Python opt-ins, 8 missing s9 model artifacts, 3 missing s10 research artifacts, 3 missing Phase 3 specialist artifacts, 6 missing DR packages/venvs/images, 8 missing fundus-lesion packages/venvs/images, 7 missing OCT packages/venvs/images, and 1 missing model-competition baseline manifest. They do not establish model performance or Phase 4 validation. Model/artifact-dependent tests were not enabled or represented as passing.
+
+### Fresh production browser verification
+
+The production server used dedicated isolated SQLite/data roots under the Windows temp directory; it did not read or modify the original checkout's database or historical studies. `ALLOW_INSECURE_LOCAL_AUTH=true` was set only for these loopback-only synthetic browser runs because the login route requires HTTPS otherwise.
+
+- Authenticated browser smoke: **7/7** checks passed, including UI login to dashboard and route structure.
+- axe accessibility: **44/44** checks passed across 11 routes, dark/light themes, and 320/1280 px.
+- Responsive browser gate: **88/88** checks passed across 11 routes at 320, 375, 414, 768, 1024, 1280, 1440, and 1920 px, with no horizontal overflow.
+- Keyboard/focus browser gate: **23/23** checks passed, including Enter-to-submit login, skip links and bounded tab walks on 9 routes, plus mobile navigation focus trap, Escape close, and focus restoration.
+- Real-study browser gate: synthetic `DEMO_ONLY` analysis passed on 6 study routes × 2 themes × 9 widths (108 route/layout combinations), including zero horizontal overflow, long-token wrapping, axe at 320/768/1280/1920 px, and all four viewer states (`SOURCE_AVAILABLE`, `SOURCE_MISSING`, forbidden, service error). It checked runtime page CSP and the stored-PDF `sandbox` response header. Synthetic study deletion and logout both passed.
+- Separate full synthetic Playwright journey (outside the checked-in browser gate): UI login → dashboard → synthetic image upload and consent → processing → result → available original viewer and evidence → clinician case action (HTTP 200, `clinician_reviewed`) → report → history → study deletion → logout. It sent exactly one analysis POST, with no browser errors or server 5xx responses. The case action was performed only on the synthetic QA study; no patient data was used.
+- Development StrictMode reproduction: the same synthetic processing route reached results with exactly one `POST /api/analyze`, no browser errors, and no `IMMUTABLE_EFFECT_CONFLICT` in the server output. The study was deleted and session logged out.
+
+### Prior incidents and security
+
+- **Exit code 127:** not reproduced as an application startup failure. The exact Git Bash `npx next start -p 3108 --hostname 127.0.0.1` command launched Next.js 16.3.4 and served `/login` with HTTP 200; `node.exe`, `npm.cmd`, and `npx.cmd` resolve under `C:\Program Files\nodejs`. The earlier system closure report documents the historical 127 as MSYS reporting the native `-1` exit after the test harness force-killed its own server process. This pass made no repository change for that harness shutdown behavior.
+- **`IMMUTABLE_EFFECT_CONFLICT`:** fixed by `0dde7d6` and hardened in `dff1b30`. Source inspection confirmed the client in-flight guard and server-side `BEGIN IMMEDIATE` per-study reuse. The new dev journey observed one POST; the existing concurrent-enqueue regression test proves three simultaneous enqueue calls return one job.
+- **Readiness:** the fresh auth/readiness test asserts anonymous responses expose exactly `{status}` with matching 200/503 and `no-store`; authenticated checks expose only dependency `ok` flags and model counts, never paths, schema, pragmas, backend or error text.
+- **Logout CSRF:** the fresh focused tests cover matching/missing/invalid CSRF, cross-site and foreign origins, same-host scheme mismatch, valid same-origin fallback, invalid/no session, session preservation, and cookie clearing. All 9 tests passed.
+- **Production headers:** 5 security-header tests passed. The real production server sent the application CSP and the stored-PDF sandbox. The production policy includes `frame-ancestors 'none'`, `nosniff`, same-origin referrer/resource policies, and restrictive Permissions Policy. HSTS is emitted only when `x-forwarded-proto: https`; no HSTS is added to plain-HTTP localhost.
+- **Worker:** the SQL query returns at most the configured candidate limit and excludes terminal backlog before selection; due retries are ordered without hiding newer eligible work; SQLite claim/reuse uses immediate transactions. The new SQLite multi-process race had exactly one winner. The external worker now refuses the legacy JSON backend, whose transaction serialization is process-local. The JSON status/retry predicates and `created_at` ordering are not indexed, so the query may scan and sort the full jobs table as history grows; the 250-row regression proves local correctness and runtime only at that size, not large-history query bounds. Existing scope and relational-integrity tests passed; scheduling is global FIFO and does not claim tenant-fair scheduling.
+
+### Hosted CI baseline before the Codex push
+
+At the time this section was authored, the exact current remote head `dc1cf5138b8c7c2bdc04690b16dbc815a4c37419` had green `CI` run [36220851437](https://github.com/Sephy57/visionscan-ai-eye-center/actions/runs/36220851437), event `pull_request`, completed 2026-09-26T05:32:28Z. `verify`, `verify-windows`, and `verify-browser` all succeeded. This is the baseline run, not a claim that it covers the Codex closure commit. The Codex closure commit requires and receives a new exact-head PR run after normal push; final run/commit status is reported with the closure handoff.
+
+The pre-existing PR remains draft; it was not marked ready or merged. Engineering closure is not clinical validation.

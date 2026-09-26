@@ -5,10 +5,10 @@ import { createSession, validateSession, SESSION_COOKIE, CSRF_COOKIE } from "@/l
 const READY = (await import("@/app/api/health/ready/route")) as typeof import("@/app/api/health/ready/route");
 const LOGOUT = (await import("@/app/api/auth/logout/route")) as typeof import("@/app/api/auth/logout/route");
 
-function request(path: string, method: string, cookies: Record<string, string> = {}, csrfHeader?: string, extra: Record<string, string> = {}): NextRequest {
+function request(path: string, method: string, cookies: Record<string, string> = {}, csrfHeader?: string, extra: Record<string, string> = {}, base = "http://localhost:3000"): NextRequest {
   const headers: Record<string, string> = { cookie: Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join("; "), host: "localhost:3000", ...extra };
   if (csrfHeader !== undefined) headers["x-csrf-token"] = csrfHeader;
-  return new NextRequest(new URL(path, "http://localhost:3000"), { method, headers });
+  return new NextRequest(new URL(path, base), { method, headers });
 }
 
 async function session(tag: string) {
@@ -70,6 +70,13 @@ describe("/api/auth/logout CSRF", () => {
       expect(res.status).toBe(403);
       expect((await validateSession(token)).valid).toBe(true);
     }
+  });
+
+  it("rejects an Origin with the right host but a different scheme", async () => {
+    const { token, cookies } = await session("scheme-mismatch");
+    const res = await LOGOUT.POST(request("/api/auth/logout", "POST", cookies, undefined, { origin: "http://localhost:3000" }, "https://localhost:3000"));
+    expect(res.status).toBe(403);
+    expect((await validateSession(token)).valid).toBe(true);
   });
 
   it("lets the app itself sign out when its CSRF cookie was lost (same-origin proof)", async () => {

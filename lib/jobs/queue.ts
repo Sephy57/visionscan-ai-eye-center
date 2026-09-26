@@ -924,10 +924,11 @@ async function waitForJobResources(options: {
 }
 
 /**
- * Oldest claimable (queued or retryable) jobs. The status filter runs inside
- * the bounded page scanner, so claimable jobs are found however many terminal
- * jobs precede them; filtering a fixed page of the oldest rows would starve
- * every new job once the history exceeded that page.
+ * Oldest claimable (queued or retryable) jobs. SQL applies the status filter
+ * before limiting returned candidates, so claimable jobs are found however
+ * many terminal jobs precede them; filtering a fixed page of the oldest rows
+ * would starve every new job once the history exceeded that page. The current
+ * JSON-field predicates and created_at ordering may still scan/sort history.
  */
 export async function listClaimCandidates(limit: number, now: Date | string | number = Date.now()): Promise<AnalysisJob[]> {
   // Selected in SQL: rows whose status is not a non-claimable one (a missing

@@ -9,6 +9,11 @@ export {};
 process.env.VISIONSCAN_WORKER_PROCESS = "true";
 process.env.VISIONSCAN_EXTERNAL_WORKER = "true";
 
+const { PERSISTENCE_BACKEND } = await import("../lib/config");
+if (PERSISTENCE_BACKEND !== "sqlite") {
+  throw new Error("External worker requires SQLite persistence; the legacy JSON backend is single-process only.");
+}
+
 const { runWorkerOnce } = await import("../lib/jobs/queue");
 const { terminateAllTrackedProcessTrees, activeTrackedProcessCount } = await import("../lib/jobs/processControl");
 const { WorkerLifecycle, resolveWorkerShutdownPolicy } = await import("../lib/jobs/workerLifecycle");

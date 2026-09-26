@@ -265,6 +265,11 @@ async function main() {
       console.log(`cleanup: synthetic study ${removed?.ok() ? "deleted" : `NOT deleted (HTTP ${removed?.status() ?? "error"})`}`);
       if (!removed?.ok()) failures.push("synthetic study cleanup failed");
     }
+    if (csrf) {
+      const logout = await setupContext.request.post(`${BASE}/api/auth/logout`, { headers: { "x-csrf-token": csrf } }).catch(() => null);
+      if (logout?.ok()) ok("synthetic session logged out after study cleanup");
+      else failures.push(`synthetic session logout failed (HTTP ${logout?.status() ?? "error"})`);
+    }
     await browser.close();
   }
   if (failures.length) {
