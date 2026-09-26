@@ -1,6 +1,7 @@
 # VisionScan AI Eye Center — UI/UX Modernization Final Report
 
 Date: 2026-09-25 · Branch: `ui-modernization` (from `main`) · Author: Claude Code (Opus 5.5)
+Release-state correction: 2026-09-26 (see [Release closure verification](#release-closure-verification-2026-09-26)).
 
 Companion document: [`docs/UI_UX_MODERNIZATION_AUDIT.md`](UI_UX_MODERNIZATION_AUDIT.md) (pre-implementation audit,
 route map, route classification, design direction).
@@ -14,8 +15,8 @@ route map, route classification, design direction).
 | 3. Branch | `ui-modernization`, created from `main` at the starting HEAD |
 | 4. Working tree | Clean except the pre-existing untracked `deliverables/` (decks/videos, unrelated, deliberately not committed) |
 | 5. Commits | (a) `lib/jobs/queue.ts` external-worker claim fix + regression test; (b) UI/UX modernization + audit + this report |
-| 6. Push status | **Not pushed.** The branch is local; pushing publishes to `github.com/Sephy57/visionscan-ai-eye-center` and was left for the owner to approve. |
-| 7. CI status | **Not run** (requires push). All CI-equivalent gates were executed locally (§32). |
+| 6. Push status | **Pushed** to `origin/ui-modernization` (`github.com/Sephy57/visionscan-ai-eye-center`); the UI release head before this correction was `5519d2d974a92b38e65a59cd971aa1354ae76055`. Not merged; `main`/`origin/main` remain at `6e7f253`. Draft PR [#1](https://github.com/Sephy57/visionscan-ai-eye-center/pull/1) → `main`. *(Corrected 2026-09-26; the original text said "Not pushed".)* |
+| 7. CI status | **Hosted CI passed on `5519d2d`:** workflow `CI`, run [36181202457](https://github.com/Sephy57/visionscan-ai-eye-center/actions/runs/36181202457) (trigger `pull_request`, PR #1) — `verify` ✅, `verify-windows` ✅, `verify-browser` ✅. The local gates in §32 were run earlier (previously verified locally). *(Corrected 2026-09-26; the original text said "Not run".)* |
 
 ## 8. Plugin usage
 
@@ -241,12 +242,15 @@ fixed: broken image with overlay when an original is missing; duplicate priority
 
 ## 35. Known limitations
 
-- Not pushed; CI not run on the hosted runners.
-- CSP is framing/base/object/form only — no `script-src`/`img-src` defence-in-depth yet (needs a nonce or hash for
-  the inline theme script; Next's CSP guide pattern).
-- `/api/health/ready` remains unauthenticated and returns DB schema/migration/pragma detail (no paths).
-- `/api/models` still includes MODEL_ROOT-relative `file_path` values (not rendered).
-- Logout POST has no CSRF check (pre-existing; worst case forced logout).
+- ~~Not pushed; CI not run on the hosted runners.~~ *Superseded 2026-09-26: pushed; hosted CI green on `5519d2d` (§6–7).*
+- CSP: *updated 2026-09-26 — at `5519d2d` the CSP includes `script-src`/`img-src` (commit `acd9796` and follow-ups), but
+  `script-src` uses `'unsafe-inline'` (no nonce/hash for the inline theme script). Originally: framing/base/object/form only.*
+- ~~`/api/health/ready` remains unauthenticated and returns DB schema/migration/pragma detail (no paths).~~ *Resolved
+  after this report (commit `acd9796`): at `5519d2d` readiness returns only per-check `ok` flags and model counts; schema
+  metadata moved to admin-only `/api/admin/operations`. The endpoint is still unauthenticated by design.*
+- `/api/models` still includes MODEL_ROOT-relative `file_path` values (not rendered). *(Re-checked at `5519d2d`: still true.)*
+- ~~Logout POST has no CSRF check (pre-existing; worst case forced logout).~~ *Resolved after this report (commit
+  `acd9796`): logout with a live session requires the CSRF header or a verifiable same-origin request.*
 - One unexplained `IMMUTABLE_EFFECT_CONFLICT` under `next dev` in-process mode (§30); not seen on the production build.
 - The repo's `browser:responsive` / `browser:a11y` gates only visit result/clinician/report without a study and only
   the dark theme; the loaded-study and light-theme checks in this report were run with ad-hoc scripts that are not
@@ -262,5 +266,29 @@ fixed: broken image with overlay when an original is missing; duplicate priority
 Basis: UI implementation complete across all routes; every major route visually inspected in a real browser at
 desktop and mobile; responsive, accessibility (dark + light), keyboard, structure, smoke, hosted-CI and full unit
 gates pass on the final production build; the full clinical journey passes end to end; security review found no
-HIGH/MEDIUM issue; no known release-blocking UI regression. Outstanding before release: push the branch and let
-hosted CI run (§6–7), and the LOW items in §35.
+HIGH/MEDIUM issue; no known release-blocking UI regression. ~~Outstanding before release: push the branch and let
+hosted CI run (§6–7)~~ — done (see below); remaining: the LOW items in §35.
+
+*Note on the original basis text:* "hosted-CI … gates pass" above was written before the branch was pushed; hosted
+CI has since been verified directly (next section).
+
+## Release closure verification (2026-09-26)
+
+Separate closure session; UI code was **not** changed. Two categories of evidence are kept distinct:
+
+**Verified in this closure session (directly observed on 2026-09-26, ~05:17 UTC):**
+
+| Check | Result |
+|---|---|
+| `origin/ui-modernization` before this correction | `5519d2d974a92b38e65a59cd971aa1354ae76055` (after `git fetch --prune`) |
+| `origin/main` / `main` | `6e7f253474a5b6f3a4a76acd3ca2c875507e4253` — untouched, not merged |
+| Hosted CI on `5519d2d` | workflow `CI`, run [36181202457](https://github.com/Sephy57/visionscan-ai-eye-center/actions/runs/36181202457), event `pull_request` (PR #1, draft, mergeable), completed 2026-09-25T19:47:35Z — `verify` success, `verify-windows` success, `verify-browser` success. These are all jobs defined in `.github/workflows/ci.yml` at that commit (triggers: push to `main`, `pull_request`). Branch protection / required checks are unavailable on this repository plan, so no additional required checks exist. |
+| Earlier hosted failure | run [36179460754](https://github.com/Sephy57/visionscan-ai-eye-center/actions/runs/36179460754) on `e5fa082`: `verify-browser` failed (report `h1` overflowed 29 px at 320 px on the Linux fallback font); fixed in `28e8c25`, green in run [36180485139](https://github.com/Sephy57/visionscan-ai-eye-center/actions/runs/36180485139) and again in run 36181202457 |
+| §35 limitation re-check | by source inspection at `5519d2d` (see strike-throughs/notes in §35) |
+| This correction commit | documentation only; CI for it is reported in the PR #1 checks for the new head |
+
+**Previously verified locally (not re-run in this closure session):** every result in §25–§33 (TypeScript, ESLint,
+Vitest full suite, `browser:*` gates, `visual-qa`, `smoke`, light-theme axe, overflow scans, UI journey E2E,
+production build, `npm audit`). These remain the evidence recorded by the implementing session and by
+`docs/VISIONSCAN_FINAL_SYSTEM_CLOSURE_REPORT.md` §10; hosted CI (above) independently re-ran the repository's
+`verify`, `verify-windows`, and `verify-browser` gates on `5519d2d`.
