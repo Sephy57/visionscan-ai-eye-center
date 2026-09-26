@@ -151,15 +151,18 @@ clinical accuracy. Privacy strings preserved (source-contract tests pass).
 ## 25. Responsive
 
 Repo gate `browser:responsive` (11 routes × 8 widths incl. 320–1920, production build): **PASS 88/88**.
-Additional loaded-study scan (real study on result/clinician/report + 9 other routes at 320, 375, 390, 414, 768,
+Historical ad-hoc loaded-study scan (real study on result/clinician/report + 9 other routes at 320, 375, 390, 414, 768,
 1024, 1280, 1440, 1920): found horizontal overflow of 15–118 px on `/result`, `/clinician`, `/report` at ≤414 px
 caused by long unbreakable model identifiers; fixed with a design-system `overflow-wrap: anywhere` rule for running
-text; final re-scan on the rebuilt production bundle: **0 overflow on all 12 routes at all 9 widths**. The repo gate misses this because it only visits those routes without a study.
+text; final re-scan on the rebuilt production bundle: **0 overflow on all 12 routes at all 9 widths**. The later
+reproducible `browser-real-study` gate covers loaded synthetic studies on 6 routes; fresh results are in §36.
 
 ## 26. Accessibility
 
 - Repo gate `browser:a11y` (axe WCAG 2.0/2.1 A+AA, 11 routes, 320 + 1280, dark): **PASS 22/22** (after fixing
   colour-only in-text links and removing the page entrance animation that axe sampled mid-fade).
+- At that point the axe script covered dark mode only; the checked-in gate was subsequently extended to light mode,
+  with fresh 44/44 results across both themes recorded in §36.
 - Light theme (added, 14 routes incl. loaded result/clinician/report): initially failed contrast on every route;
   fixed four light tokens (`--brand-primary #097286`, `--prov-model #097286`, `--warning #875700`,
   `--prov-not-assessed #606d7d`, all ≥4.6:1 on their tinted surfaces): **PASS 14/14**.
@@ -250,9 +253,9 @@ fixed: broken image with overlay when an original is missing; duplicate priority
 - ~~Logout POST has no CSRF check (pre-existing; worst case forced logout).~~ *Resolved after this report (commit
   `acd9796`): logout with a live session requires the CSRF header or a verifiable same-origin request.*
 - ~~One unexplained `IMMUTABLE_EFFECT_CONFLICT` under `next dev` in-process mode (§30).~~ Resolved in `0dde7d6`/`dff1b30`; fresh reproduction and regression evidence are recorded in §36.
-- The repo's `browser:responsive` / `browser:a11y` gates only visit result/clinician/report without a study and only
-  the dark theme; the loaded-study and light-theme checks in this report were run with ad-hoc scripts that are not
-  yet part of the repo gates.
+- ~~The repo's `browser:responsive` / `browser:a11y` gates only visit routes without a study and only the dark theme;
+  loaded-study and light-theme checks were ad hoc.~~ Resolved by the reproducible synthetic `browser-real-study` gate
+  and the two-theme axe gate; fresh results are recorded in §36.
 - Several local studies reference originals missing from `data/uploads` (data hygiene, not code); the viewer now
   reports this honestly.
 - Bundle size not profiled against HEAD.
