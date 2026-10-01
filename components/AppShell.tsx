@@ -1,7 +1,7 @@
 "use client";
 
 import Link, { useLinkStatus } from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Icon, IconName } from "./icons";
 import { authFetch } from "@/lib/auth/clientFetch";
@@ -121,7 +121,6 @@ function ThemeToggle() {
 interface SessionInfo { authenticated: boolean; user?: { username: string; role: string } }
 
 function UserMenu() {
-  const router = useRouter();
   const [session, setSession] = useState<SessionInfo | null>(null);
 
   useEffect(() => {
@@ -137,8 +136,11 @@ function UserMenu() {
       setLogoutError("Sign-out did not complete — your session is still active. Reload the page and try again.");
       return;
     }
-    router.replace("/login");
-    router.refresh();
+    // A full navigation, not a client-side transition: the still-mounted
+    // sidebar would otherwise re-prefetch every protected route against the
+    // ended session (each answered by a redirect that surfaces as a 404 in the
+    // console), and a reload drops all in-memory client state at sign-out.
+    window.location.replace("/login");
   }
 
   if (!session?.authenticated || !session.user) {

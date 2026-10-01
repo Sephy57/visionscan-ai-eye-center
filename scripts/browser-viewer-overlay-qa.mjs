@@ -324,6 +324,21 @@ async function main() {
       checkAlignment("zoomed 144%", zoomed, QA_REGIONS) && ok("zoom: regions stay aligned after zooming in");
       const ctrlPrevented = await page.evaluate(() => { const e = new KeyboardEvent("keydown", { key: "=", ctrlKey: true, bubbles: true, cancelable: true }); document.querySelector(".viewer-viewport").dispatchEvent(e); return e.defaultPrevented; });
       check(!ctrlPrevented, "Ctrl+= is swallowed by the viewer (breaks browser zoom)");
+      // Pan (keyboard and mouse drag) moves image and boxes together.
+      const beforePan = await measure(page);
+      for (let i = 0; i < 3; i++) await page.keyboard.press("ArrowLeft");
+      await page.waitForTimeout(150);
+      const keyPanned = await measure(page);
+      check(Math.abs(keyPanned.img.x - beforePan.img.x) > 20, "pan: keyboard arrows did not move the image");
+      checkAlignment("after keyboard pan", keyPanned, QA_REGIONS) && ok("pan: keyboard pan keeps regions aligned");
+      const vp = await frame.locator(".viewer-viewport").boundingBox();
+      await page.mouse.move(vp.x + vp.width / 2, vp.y + vp.height / 2);
+      await page.mouse.down(); await page.mouse.move(vp.x + vp.width / 2 + 45, vp.y + vp.height / 2 + 30, { steps: 6 }); await page.mouse.up();
+      await page.waitForTimeout(150);
+      const dragged = await measure(page);
+      check(Math.abs(dragged.img.x - keyPanned.img.x) > 20, "pan: mouse drag did not move the image");
+      checkAlignment("after mouse drag", dragged, QA_REGIONS) && ok("pan: mouse drag keeps regions aligned");
+      check(dragged.src === overlay.src && dragged.natural.w === overlay.natural.w, "pan changed the source image");
       await page.keyboard.press("0");
 
       // Window resize must not reset a chosen zoom, and must keep alignment.

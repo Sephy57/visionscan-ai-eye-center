@@ -172,8 +172,11 @@ function ClinicianInner() {
   const [viewRequest, setViewRequest] = useState(0);
   const showRegion = (box: Finding["region"]) => { setActiveRegion(box); setViewRequest((n) => n + 1); };
 
-  async function load(id: string) {
-    setErr(null); setMsg(null);
+  // `keepMessage`: refreshing after a review action must not wipe the
+  // "Action … recorded" confirmation that action has just set.
+  async function load(id: string, keepMessage = false) {
+    setErr(null);
+    if (!keepMessage) setMsg(null);
     try {
       const [res, eventsRes] = await Promise.all([
         fetch(`/api/studies/${encodeURIComponent(id)}`),
@@ -215,7 +218,7 @@ function ClinicianInner() {
       else {
         setErr(null);
         setMsg(`Action "${action.replaceAll("_", " ")}" recorded. AI output, clinician interpretation, and final report are stored separately and every change is audited.`);
-        setNote(""); setReviewReason(""); load(studyId);
+        setNote(""); setReviewReason(""); load(studyId, true);
       }
     } finally {
       setBusy(false);

@@ -54,9 +54,9 @@ single regressing commit was found. Four separate defects produced a
    React keyed the finding list on it, and `lib/clinical/reviewEvents.ts`
    resolves a finding's model with `.find()` on it.
 
-Environment note: the checked-in `better-sqlite3` binary is built for Node 20
-(ABI 115). Under Node 24 every database-backed API answers 500, which also
-looks like an empty result page. Run the app with Node 20.
+Environment note: the `better-sqlite3` binary installed in this workspace was
+built for Node 20 (ABI 115). Under Node 24 every database-backed API answers
+500, which also looks like an empty result page. Run the app with Node 20.
 
 ## What changed
 
@@ -97,6 +97,50 @@ fundus image to reconcile a specific image; set `OUT_DIR` for screenshots. In a
 production build, the documented `ALLOW_INSECURE_LOCAL_AUTH=true` is required
 for plain-HTTP loopback login. Regions injected by the script are labelled
 `synthetic-qa` and are viewer test geometry, never model output.
+
+## Integration addendum (runtime, dependency, journey)
+
+- **Runtime.** The project's runtime is Node 20: CI pins `node-version: 20`
+  and the validated runtime here was Node 20.20.2. The `better-sqlite3@11.10.0`
+  install used here loads under Node 20 (ABI 115) and failed under Node 24
+  (ABI 137). The lockfile pins no binary, so `>=20.9.0 <21` is a policy aligned
+  with CI and with what was validated, not a limit forced by the lockfile
+  (whether 11.10.0 has a Node 24 prebuild was not established). `.nvmrc` (20)
+  and `engines` now say so, and `lib/storage/db.ts` turns an
+  `ERR_DLOPEN_FAILED` into an actionable message (it also keeps the ABI numbers
+  when Node reports them) instead of a bare HTTP 500. No dependency was
+  downgraded or rebuilt.
+- **Dependency.** `next` 16.3.4 had the critical advisory GHSA-vcvr-r3jv-pc5j
+  (RCE in `next/og`, fixed in 16.3.6). Upgraded within the same minor to
+  16.3.8, which is patch-only and also carries the 16.3.8 security fixes (image
+  optimization SSRF and several cache advisories). `npm audit --omit=dev`
+  reports 0 vulnerabilities; the remaining findings are dev tooling
+  (`eslint`/`vitest` internals) and are not shipped.
+- **Logout.** After sign-out the still-mounted sidebar re-prefetched every
+  protected route against the ended session, each answered by the auth proxy's
+  redirect and logged as a console 404. Sign-out now navigates with
+  `window.location.replace("/login")` after the server confirms logout, which
+  also drops all in-memory client state.
+- **Independent model check.** Running the registered probe directly on the
+  same input gives 1 region with geometry identical to the persisted and
+  rendered one; input and model SHA-256 match the values the pipeline recorded.
+  Each analysis spawns a fresh worker process, so the model is loaded per
+  request: about 11 s with the model files in the OS cache and 76-89 s once
+  with them uncached.
+- **Real failure states.** A corrupted model artifact gives
+  `analysis_mode: MODEL_FAILED` with no findings; deleting the stored original
+  gives `SOURCE_MISSING` with no boxes. Both show explicit captions and no
+  normal/healthy claim.
+- **Journey gate.** `npm run browser:journey` drives login through the real
+  form, upload, consent, analysis, processing, result, overlay, evidence,
+  clinician review, report, history and logout. It fails if the model did not
+  run, on an HTTP 5xx seen by the page or on a status-checked API call, a
+  console error, a broken loaded image, a rendered localization absent from the
+  stored analysis, colliding finding ids, or a session token that still works
+  after sign-out. The overlay counts as exercised only when the input yields a
+  region (use `VIEWER_QA_FIXTURE` / `JOURNEY_MIN_REGIONS`). Run it only against
+  an isolated data root: deleting the study removes its source bytes but the
+  audit trail and review history are retained by design.
 
 ## Not established by this work
 
