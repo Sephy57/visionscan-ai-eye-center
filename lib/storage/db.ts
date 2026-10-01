@@ -278,7 +278,26 @@ function initializeSqliteConnection(): Database.Database {
     );
   }
   assertDatabaseFileIsSQLite(DATABASE_FILE);
-  const connection = new Database(DATABASE_FILE);
+  let connection: Database.Database;
+  try {
+    connection = new Database(DATABASE_FILE);
+  } catch (error) {
+    // A native binding built for another Node ABI otherwise surfaces as an
+    // opaque HTTP 500 from every database-backed route.
+    if ((error as NodeJS.ErrnoException)?.code === "ERR_DLOPEN_FAILED") {
+      // ERR_DLOPEN_FAILED is usually an ABI mismatch but can also be a missing library
+      // or a wrong-platform binary.  Keep the ABI numbers when Node reports them, and
+      // leave the original text (which carries a filesystem path) in `cause` only.
+      const abis = String((error as Error).message).match(/NODE_MODULE_VERSION (\d+)/g)?.map((m) => m.replace("NODE_MODULE_VERSION ", ""));
+      const detail = abis && abis.length >= 2 ? `The binding was built for ABI ${abis[0]} and this runtime needs ABI ${abis[1]}. ` : "";
+      throw new Error(
+        `The better-sqlite3 native binding could not be loaded by this Node.js runtime (running ${process.version}, ABI ${process.versions.modules}). ${detail}`
+        + "VisionScan targets Node 20 (see .nvmrc and package.json engines); run it under Node 20, or reinstall dependencies for the runtime you use.",
+        { cause: error },
+      );
+    }
+    throw error;
+  }
   try {
     connection.pragma("foreign_keys = ON");
     connection.pragma("journal_mode = WAL");

@@ -2,6 +2,9 @@
   "name": "eye-ai-platform",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0 <21"
+  },
   "description": "AI Eye Scan Analysis & Clinical Decision-Support Platform (screening architecture - NOT a medical device; demo/synthetic analysis not for clinical use)",
   "scripts": {
     "dev": "next dev -p 3000",
@@ -18,6 +21,8 @@
     "browser:keyboard": "node scripts/browser-keyboard-qa.mjs",
     "browser:asset-e2e": "node scripts/browser-asset-e2e.mjs",
     "browser:real-study": "node scripts/browser-real-study-qa.mjs",
+    "browser:viewer-overlay": "node scripts/browser-viewer-overlay-qa.mjs",
+    "browser:journey": "node scripts/browser-journey-qa.mjs",
     "qa:phase8:screenshots": "node scripts/phase8-screenshot-qa.mjs",
     "browser:ci": "node scripts/browser-ci.mjs",
     "browser:phase10:clean": "node scripts/phase10-browser-clean.mjs",
@@ -89,7 +94,7 @@
   "dependencies": {
     "@napi-rs/canvas": "^1.0.8",
     "better-sqlite3": "^11.10.0",
-    "next": "^16.3.4",
+    "next": "^16.3.8",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.10.38",
     "react": "18.3.1",
@@ -98,7 +103,7 @@
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "^16.3.4",
+    "@next/eslint-plugin-next": "^16.3.8",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "20.14.10",
     "@types/react": "18.3.3",

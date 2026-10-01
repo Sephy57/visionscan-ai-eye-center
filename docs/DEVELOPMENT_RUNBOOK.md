@@ -6,7 +6,7 @@ DEVICE - NOT FOR CLINICAL USE**.
 
 ## Prerequisites
 
-- Windows with Node.js 20+, npm, and a local Chromium/Chrome installation.
+- Windows with Node.js 20 (see `.nvmrc`; CI and the native `better-sqlite3` binding target Node 20), npm, and a local Chromium/Chrome installation.
 - Dependencies installed with `npm install`.
 - Optional local ophthalmic model runtime under `.venv-ophthalmic`; missing
   models/runtime must result in an explicit unavailable or synthetic path.

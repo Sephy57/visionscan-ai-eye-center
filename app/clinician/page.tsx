@@ -8,6 +8,9 @@ import { Badge, ConfidenceIndicator, QualityPanel, EmptyState, PageHeader, Prove
 import { Icon } from "@/components/icons";
 import { useDialog } from "@/components/Dialog";
 import { DASHBOARD_STATUS_META } from "@/lib/reports/terminology";
+import { sameRegion } from "@/lib/imaging/overlayGeometry";
+import { deriveViewerAnalysisState } from "@/lib/imaging/viewerAnalysisState";
+import type { FundusAbnormalityState } from "@/lib/models/fundusAbnormality";
 import { authFetch } from "@/lib/auth/clientFetch";
 
 interface Finding {
@@ -25,7 +28,8 @@ interface Bundle {
     quality: { acceptable: boolean; status: string; score: number; artifacts: string[]; metrics: Record<string, number | boolean> };
     model_registry?: { model_id: string; model_version: string; model_status: string; device_compatibility: { compatible: boolean; note: string } };
     fundus_abnormality?: {
-      state: string; validation_state: string;
+      state: FundusAbnormalityState; validation_state: string;
+      model_id: string | null; model_version: string | null; quality_state?: string; ood_state?: string;
       regions: Array<{ id: string; finding_type: string; localization: { kind: "bounding_box"; coordinates: { x: number; y: number; w: number; h: number } }; note: string }>;
     };
     patient_context?: { reported: boolean; symptoms: Array<{ type: string; label?: string; onset: string; duration: string; severity: string; laterality: string; progression: string; free_text?: string | null }>; red_flags: string[]; note: string };
@@ -159,9 +163,20 @@ function ClinicianInner() {
   const [busy, setBusy] = useState(false);
   const [activeRegion, setActiveRegion] = useState<Finding["region"]>(null);
   const dialog = useDialog();
+  // A finding's region and the fundus localization are the same stored box:
+  // highlight the drawn one rather than adding a duplicate.
+  const fundusRegions = bundle?.analysis?.fundus_abnormality?.regions ?? [];
+  const activeFundusRegion = activeRegion ? fundusRegions.find((r) => sameRegion(r.localization.coordinates, activeRegion)) ?? null : null;
+  // Counts every explicit "View region", so asking again for the same region
+  // returns the viewer to its overlay even after the user chose Original.
+  const [viewRequest, setViewRequest] = useState(0);
+  const showRegion = (box: Finding["region"]) => { setActiveRegion(box); setViewRequest((n) => n + 1); };
 
-  async function load(id: string) {
-    setErr(null); setMsg(null);
+  // `keepMessage`: refreshing after a review action must not wipe the
+  // "Action … recorded" confirmation that action has just set.
+  async function load(id: string, keepMessage = false) {
+    setErr(null);
+    if (!keepMessage) setMsg(null);
     try {
       const [res, eventsRes] = await Promise.all([
         fetch(`/api/studies/${encodeURIComponent(id)}`),
@@ -203,7 +218,7 @@ function ClinicianInner() {
       else {
         setErr(null);
         setMsg(`Action "${action.replaceAll("_", " ")}" recorded. AI output, clinician interpretation, and final report are stored separately and every change is audited.`);
-        setNote(""); setReviewReason(""); load(studyId);
+        setNote(""); setReviewReason(""); load(studyId, true);
       }
     } finally {
       setBusy(false);
@@ -323,6 +338,16 @@ function ClinicianInner() {
         </div>
       )}
 
+      {bundle && !bundle.analysis && (
+        <div style={{ marginTop: 16 }}>
+          <StatePanel tone="warn" icon="info" role="status" title="Analysis not run for this study"
+            what="The study is open, but no analysis result is stored for it, so there is no model output, localization or finding to review."
+            why="The analysis may not have been started, may still be queued, or its stored result may have been withheld by the read-time safety checks."
+            next="Open the results workspace to start or check the analysis, then return here."
+            actions={<Link className="btn secondary sm" href={`/result?study=${encodeURIComponent(studyId)}`}>Results workspace</Link>} />
+        </div>
+      )}
+
       {bundle?.analysis && (
         <>
           <dl className="identity-bar" aria-label="Study identity">
@@ -385,10 +410,13 @@ function ClinicianInner() {
               <ScanViewer
                 src={`/api/studies/${encodeURIComponent(studyId)}/image`}
                 alt={`Original scan ${bundle.study?.study_id}`}
-                region={activeRegion}
-                localizations={(bundle.analysis.fundus_abnormality?.regions ?? []).map((r) => ({ id: r.id, finding_id: r.id, kind: r.localization.kind, coordinates: r.localization.coordinates, priority: "high" as const, note: `SUSPICIOUS REGION — ${r.finding_type.replaceAll("_", " ")}` }))}
-                overlayStatus={(bundle.analysis.fundus_abnormality?.regions ?? []).length ? (bundle.analysis.fundus_abnormality?.validation_state === "CLINICALLY_VALIDATED" ? "CLINICALLY_VALIDATED" : "RESEARCH") : undefined}
-                overlayUnavailableNote={(bundle.analysis.fundus_abnormality?.regions ?? []).length ? undefined : "AI localization is not available for this result."}
+                region={activeFundusRegion ? null : activeRegion}
+                highlightedId={activeFundusRegion?.id ?? null}
+                selectionNonce={viewRequest}
+                analysisState={deriveViewerAnalysisState({ analysis: bundle.analysis, modality: bundle.study?.modality, laterality: bundle.study?.eye })}
+                localizations={fundusRegions.map((r) => ({ id: r.id, finding_id: r.id, kind: r.localization.kind, coordinates: r.localization.coordinates, priority: "high" as const, note: `SUSPICIOUS REGION — ${r.finding_type.replaceAll("_", " ")}` }))}
+                overlayStatus={fundusRegions.length ? (bundle.analysis.fundus_abnormality?.validation_state === "CLINICALLY_VALIDATED" ? "CLINICALLY_VALIDATED" : "RESEARCH") : undefined}
+                overlayUnavailableNote={fundusRegions.length ? undefined : "AI localization is not available for this result."}
               />
               <p className="tiny muted" style={{ marginBottom: 0, marginTop: 8 }}>
                 SHA-256: <span className="mono">{bundle.study?.original_sha256.slice(0, 24)}…</span> — original preserved unchanged.
@@ -419,7 +447,7 @@ function ClinicianInner() {
                     <button className="btn danger sm" onClick={() => act("reject", f.id)} disabled={busy}><Icon name="x" size={13} /> Reject</button>
                     <button className="btn secondary sm" onClick={() => correctFinding(f)} disabled={busy}>Correct</button>
                     <button className="btn secondary sm" onClick={() => act("indeterminate", f.id)} disabled={busy}>Indeterminate</button>
-                    {f.region && <button className="btn ghost sm" onClick={() => setActiveRegion(f.region ?? null)}><Icon name="target" size={13} /> View region</button>}
+                    {f.region && <button className="btn ghost sm" onClick={() => showRegion(f.region ?? null)}><Icon name="target" size={13} /> View region</button>}
                   </div>
                 </div>
               ))}

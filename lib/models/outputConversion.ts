@@ -76,7 +76,9 @@ export function convertRawModelOutputToFindings(params: {
 
     const displayConfidence = calibratedConfidence ?? rawConfidence;
     return {
-      id: `rf_${params.study_id}_${i}`,
+      // Namespaced by model: every provider numbers its findings from 0, and
+      // finding ids key React lists and clinician review lookups.
+      id: `rf_${params.study_id}_${params.model.model_id}_${i}`,
       type: f.finding_type,
       location: f.location ?? "unspecified",
       severity: f.severity ?? "indeterminate",

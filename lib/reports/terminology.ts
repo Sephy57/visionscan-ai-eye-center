@@ -67,7 +67,9 @@ export type NoResultState =
   | "MODEL_UNAVAILABLE"                // inference could not run at all
   | "MODEL_NOT_VALIDATED_FOR_IMAGE"    // modality mismatch for this model
   | "IMAGE_NOT_SUITABLE"                // quality gate failure
-  | "IMAGE_OUT_OF_DISTRIBUTION";        // S13 - distinct from quality/modality: image characteristics fall outside the model's validated operating conditions (see lib/analysis/ood.ts)
+  | "IMAGE_OUT_OF_DISTRIBUTION"         // S13 - distinct from quality/modality: image characteristics fall outside the model's validated operating conditions (see lib/analysis/ood.ts)
+  | "MODEL_OUTPUT_INVALID"              // the model ran but its output failed contract validation and was discarded
+  | "MODEL_INTEGRITY_FAILURE";          // the model file did not match its recorded hash, so it was not run
 
 export const NO_RESULT_COPY: Record<NoResultState, { headline: string; body: string }> = {
   NO_TARGET_FINDING_DETECTED: {
@@ -90,14 +92,24 @@ export const NO_RESULT_COPY: Record<NoResultState, { headline: string; body: str
     headline: "IMAGE OUTSIDE SUPPORTED ANALYSIS CONDITIONS",
     body: "This image's characteristics (e.g. acquisition device, illumination, or resolution) fall outside the conditions this research model was built for. No automated finding was produced.",
   },
+  MODEL_OUTPUT_INVALID: {
+    headline: "AI OUTPUT REJECTED",
+    body: "The model returned output that failed validation and was discarded. No finding was inferred and nothing was substituted. This is not a normal result.",
+  },
+  MODEL_INTEGRITY_FAILURE: {
+    headline: "MODEL FILE FAILED ITS INTEGRITY CHECK",
+    body: "The model file did not match its recorded fingerprint, so it was not run. No finding was inferred. Ask an administrator to restore the verified model file.",
+  },
 };
 
 /** Maps a research-analysis result's raw state (+ finding count) to the five distinct presentation states above. Returns null for COMPLETED-with-findings (a real result, not a "nothing to show" state) and for NOT_A_STUDY (handled separately, not a result state at all). */
 export function noResultStateFor(
-  rawState: "NOT_A_STUDY" | "UNSUPPORTED_MODALITY" | "IMAGE_QUALITY_INSUFFICIENT" | "OUT_OF_DISTRIBUTION" | "INFERENCE_UNAVAILABLE" | "COMPLETED",
+  rawState: "NOT_A_STUDY" | "UNSUPPORTED_MODALITY" | "IMAGE_QUALITY_INSUFFICIENT" | "OUT_OF_DISTRIBUTION" | "INFERENCE_UNAVAILABLE" | "MODEL_OUTPUT_INVALID" | "MODEL_INTEGRITY_FAILURE" | "COMPLETED",
   findingCount: number
 ): NoResultState | null {
   switch (rawState) {
+    case "MODEL_OUTPUT_INVALID": return "MODEL_OUTPUT_INVALID";
+    case "MODEL_INTEGRITY_FAILURE": return "MODEL_INTEGRITY_FAILURE";
     case "COMPLETED": return findingCount === 0 ? "NO_TARGET_FINDING_DETECTED" : null;
     case "INFERENCE_UNAVAILABLE": return "MODEL_UNAVAILABLE";
     case "UNSUPPORTED_MODALITY": return "MODEL_NOT_VALIDATED_FOR_IMAGE";
