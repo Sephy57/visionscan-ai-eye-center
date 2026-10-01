@@ -23,6 +23,8 @@ type ResearchState =
   | "IMAGE_QUALITY_INSUFFICIENT"
   | "OUT_OF_DISTRIBUTION"
   | "INFERENCE_UNAVAILABLE"
+  | "MODEL_OUTPUT_INVALID"
+  | "MODEL_INTEGRITY_FAILURE"
   | "COMPLETED";
 
 type Laterality = "OD" | "OS" | "OU" | "UNKNOWN";
@@ -99,6 +101,8 @@ const NO_RESULT_SEVERITY: Record<keyof typeof NO_RESULT_COPY, "danger" | "warn">
   MODEL_NOT_VALIDATED_FOR_IMAGE: "warn",
   NO_TARGET_FINDING_DETECTED: "warn",
   IMAGE_OUT_OF_DISTRIBUTION: "warn",
+  MODEL_OUTPUT_INVALID: "danger",
+  MODEL_INTEGRITY_FAILURE: "danger",
 };
 
 export default function ResearchAnalysisPanel({ studyId, originalImageUrl, eye }: { studyId: string; originalImageUrl: string; eye?: string }) {
@@ -108,11 +112,16 @@ export default function ResearchAnalysisPanel({ studyId, originalImageUrl, eye }
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const res = await authFetch(`/api/studies/${encodeURIComponent(studyId)}/research-analysis`);
-      if (cancelled) return;
-      if (!res.ok) { setUnavailable(true); return; }
-      const j = await res.json();
-      setResult(j);
+      try {
+        const res = await authFetch(`/api/studies/${encodeURIComponent(studyId)}/research-analysis`);
+        if (cancelled) return;
+        if (!res.ok) { setUnavailable(true); return; }
+        const j = await res.json();
+        if (!cancelled) setResult(j);
+      } catch {
+        // A network or parse failure is an unavailable service, never an empty panel.
+        if (!cancelled) setUnavailable(true);
+      }
     })();
     return () => { cancelled = true; };
   }, [studyId]);
@@ -127,8 +136,22 @@ export default function ResearchAnalysisPanel({ studyId, originalImageUrl, eye }
       </div>
     );
   }
-  if (result === null) return null;
-  if (result.state === "NOT_A_STUDY") return null;
+  if (result === null) {
+    return (
+      <div className="card" role="status" aria-live="polite">
+        <div className="card-title"><h3>Research anatomy analysis</h3><Badge tone="neutral">LOADING</Badge></div>
+        <p className="small muted" style={{ marginBottom: 0 }}>Checking for a stored research analysis. Nothing has been inferred yet.</p>
+      </div>
+    );
+  }
+  if (result.state === "NOT_A_STUDY") {
+    return (
+      <div className="card" role="status">
+        <div className="card-title"><h3>Research anatomy analysis</h3><Badge tone="neutral">NOT RUN</Badge></div>
+        <p className="small muted" style={{ marginBottom: 0 }}>This view is not a stored study, so no research analysis was run. No anatomy finding or disease conclusion was inferred.</p>
+      </div>
+    );
+  }
 
   const localizations: Localization[] = result.findings
     .filter((f) => !!f.region)

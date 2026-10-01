@@ -25,7 +25,9 @@ describe("fundus abnormality layer", () => {
 
   it("does not fabricate a region from an unlocalized or invalid model output", () => {
     const r = resultFromResearchDetector({ raw: { inference_status: "completed", findings: [{ finding_type: "anything", localization: { kind: "bounding_box", coordinates: { x: 0.9, y: 0.2, w: 0.3, h: 0.2 } } }] }, quality, ood, modelId: "research", modelVersion: "1", supportedFindingTypes: new Set() });
-    expect(r.state).toBe("NO_TARGET_ABNORMALITY_DETECTED");
+    // An unusable box is a model fault, not a negative: it must never read as
+    // "no target abnormality" (see fundus-overlay-restoration.test.ts).
+    expect(r.state).toBe("MODEL_UNAVAILABLE");
     expect(r.regions).toEqual([]);
   });
 

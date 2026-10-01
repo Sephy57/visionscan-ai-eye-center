@@ -18,6 +18,7 @@
     "browser:keyboard": "node scripts/browser-keyboard-qa.mjs",
     "browser:asset-e2e": "node scripts/browser-asset-e2e.mjs",
     "browser:real-study": "node scripts/browser-real-study-qa.mjs",
+    "browser:viewer-overlay": "node scripts/browser-viewer-overlay-qa.mjs",
     "qa:phase8:screenshots": "node scripts/phase8-screenshot-qa.mjs",
     "browser:ci": "node scripts/browser-ci.mjs",
     "browser:phase10:clean": "node scripts/phase10-browser-clean.mjs",

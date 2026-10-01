@@ -12,6 +12,8 @@ import { Badge, ConfidenceIndicator, EmptyState, EvidenceState, type EvidenceSta
 import { Icon, type IconName } from "@/components/icons";
 import { presentQuality } from "@/lib/analysis/qualityPresentation";
 import { coverageForModality } from "@/lib/models/ophthalmicCoverage";
+import { sameRegion } from "@/lib/imaging/overlayGeometry";
+import { deriveViewerAnalysisState } from "@/lib/imaging/viewerAnalysisState";
 
 interface Finding {
   id: string; type: string; location: string; severity: string;
@@ -289,6 +291,10 @@ function ResultInner() {
   const [err, setErr] = useState<string | null>(null);
   const [evidence, setEvidence] = useState<EvidenceSummary | null | EvidenceUnavailable>(null);
   const [activeRegion, setActiveRegion] = useState<Finding["region"]>(null);
+  // Counts every explicit "View on scan", so asking again for the same region
+  // returns the viewer to its overlay even after the user chose Original.
+  const [viewRequest, setViewRequest] = useState(0);
+  const showRegion = (box: Finding["region"]) => { setActiveRegion(box); setViewRequest((n) => n + 1); };
   // Presentation Mode / Clinician View: a client-side-only display
   // preference, not a safety state. It never changes what the server
   // computed (diagnosis gate, quality, OOD, findings) - it only shows or
@@ -369,6 +375,46 @@ function ResultInner() {
   const qp = presentQuality({ quality_status: a.quality.status, detected_artifacts: a.quality.artifacts });
   const ood = a.ood?.detected === true;
   const hasImage = !!data.study;
+  // One stored localization can appear both as a lesion finding and as a
+  // fundus region.  Match them by their exact stored geometry so the viewer
+  // highlights the drawn box instead of adding a second one, and so the list
+  // below counts each real region once.
+  const fundusRegions = fundus?.regions ?? [];
+  const activeFundusRegion = activeRegion ? fundusRegions.find((r) => sameRegion(r.localization.coordinates, activeRegion)) ?? null : null;
+  const unmatchedRegions = fundusRegions.filter((r) => !a.findings.some((f) => sameRegion(f.region, r.localization.coordinates)));
+  const localizedFindings = a.findings.filter((f) => !!f.region);
+  const imageLevelFindings = a.findings.filter((f) => !f.region);
+  const viewerState = deriveViewerAnalysisState({ analysis: a, modality: a.study?.modality, laterality: a.study?.eye });
+  // Nothing observed: either the viewer's state explains why, or the legacy mode-based copy applies.
+  const nothingObserved = !abnormal && fundusRegions.length === 0;
+  const viewerExplainsEmpty = isFundusStudy && viewerState.code !== "NO_LOCALIZED_SIGNALS";
+  const localizationSummary = fundusRegions.length > 0
+    ? `${fundusRegions.length} research localization${fundusRegions.length === 1 ? "" : "s"} from ${fundus?.model_id ?? "an unrecorded model"}${fundus?.model_version ? ` v${fundus.model_version}` : ""}; research output, not validated.`
+    : `${viewerState.headline}.`;
+  const localizedHeading = localizedFindings.some((f) => f.synthetic) ? "Localized signals (includes demo / synthetic output)" : "Localized research signals";
+  const renderFindingCard = (f: Finding) => (
+    <div key={f.id} className={`finding-card${f.synthetic ? " synthetic" : ""}`}>
+      <div className="finding-head">
+        <h4>RETINAL FINDING — {f.type.replaceAll("_", " ").toUpperCase()}</h4>
+        {f.synthetic
+          ? <span className="badge demo">DEMO / SYNTHETIC</span>
+          : <span className="badge warn">RESEARCH / UNVALIDATED</span>}
+      </div>
+      <dl className="kv tiny" style={{ gridTemplateColumns: "105px 1fr", marginBottom: 8 }}>
+        <dt>Location</dt><dd>{f.location.replaceAll("_", " ")}</dd>
+        <dt>Laterality</dt><dd>{a.study?.eye}</dd>
+        <dt>Model</dt><dd>{f.model_id}</dd>
+        <dt>Validation</dt><dd>Not clinically validated</dd>
+        <dt>Localization</dt><dd>{f.region ? "Bounding box (research overlay — View on scan)" : "Not localized — image-level estimate"}</dd>
+        <dt>Priority</dt><dd>{f.severity === "severe" || f.severity === "moderate" ? "Requires clinician review" : "Routine review"}</dd>
+      </dl>
+      <ConfidenceIndicator finding={f} />
+      <p className="tiny" style={{ margin: "8px 0 8px" }}>{f.explanation}</p>
+      {f.region && hasImage
+        ? <button className="btn secondary sm" onClick={() => showRegion(f.region ?? null)}><Icon name="target" size={13} /> View on scan</button>
+        : <span className="tiny muted">{f.region ? "The original image is unavailable, so this region cannot be shown." : "This model does not localize; there is nothing to show on the scan."}</span>}
+    </div>
+  );
   const redFlags = a.patient_context?.red_flags ?? [];
   const hasRedFlag = redFlags.length > 0;
   const fundusCoverage = coverageForModality("FUNDUS");
@@ -494,9 +540,12 @@ function ResultInner() {
               <ScanViewer
                 src={`/api/studies/${encodeURIComponent(study)}/image`}
                 alt={`Original scan ${data.study?.study_id}`}
-                region={activeRegion}
-                localizations={(fundus?.regions ?? []).map((r) => ({ id: r.id, finding_id: r.id, kind: r.localization.kind, coordinates: r.localization.coordinates, priority: "high" as const, note: `SUSPICIOUS REGION — ${r.finding_type.replaceAll("_", " ")}` }))}
-                overlayStatus={fundus?.regions?.length ? (fundus.validation_state === "CLINICALLY_VALIDATED" ? "CLINICALLY_VALIDATED" : "RESEARCH") : undefined}
+                region={activeFundusRegion ? null : activeRegion}
+                highlightedId={activeFundusRegion?.id ?? null}
+                selectionNonce={viewRequest}
+                analysisState={viewerState}
+                localizations={fundusRegions.map((r) => ({ id: r.id, finding_id: r.id, kind: r.localization.kind, coordinates: r.localization.coordinates, priority: "high" as const, note: `SUSPICIOUS REGION — ${r.finding_type.replaceAll("_", " ")}` }))}
+                overlayStatus={fundusRegions.length ? (fundus?.validation_state === "CLINICALLY_VALIDATED" ? "CLINICALLY_VALIDATED" : "RESEARCH") : undefined}
                 classificationOnly={isOctStudy && a.oct_assessment?.state === "CLASS_ESTIMATED"}
                 derivativeNote={(a.oct_region_results?.length ?? 0) > 0
                   ? `${a.oct_region_results!.length} bounded OCT region(s) derived from the linked PDF remain listed under multimodal evidence. They are not a substitute for this original.`
@@ -541,8 +590,16 @@ function ResultInner() {
           </section>
 
           <div className="card">
-            <div className="card-title"><h3>Observed signals</h3><span style={{ display: "flex", gap: 6 }}><Provenance kind="model" /><Badge tone="neutral">{a.findings.length + (fundus?.regions?.length ?? 0)}</Badge></span></div>
-            {!abnormal && !(fundus?.regions?.length) && (
+            <div className="card-title"><h3>Observed signals</h3><span style={{ display: "flex", gap: 6 }}><Provenance kind="model" /><Badge tone="neutral">{a.findings.length + unmatchedRegions.length}</Badge></span></div>
+            {nothingObserved && viewerExplainsEmpty && (
+              // A fundus study with nothing drawn says why, in the same words as the viewer.
+              <div className="empty-state compact" data-state-code={viewerState.code}>
+                <h3 style={{ fontSize: "0.9rem" }}>{viewerState.headline}</h3>
+                <p className="tiny muted" style={{ marginBottom: 8 }}>{viewerState.detail}</p>
+                <p className="tiny muted" style={{ margin: 0 }}>Model {fundus?.model_id ?? a.model_registry?.model_id ?? "—"} · {mode.replaceAll("_", " ")}</p>
+              </div>
+            )}
+            {nothingObserved && !viewerExplainsEmpty && (
               <div className="empty-state compact">
                 <h3 style={{ fontSize: "0.9rem" }}>{mode === "MODEL_FAILED" ? "MODEL FAILED — NO FINDING INFERRED" : mode === "NO_MODEL_EXECUTED" ? "NO APPLICABLE MODEL EXECUTED" : mode === "RESEARCH_MODEL_ANALYSIS" || mode === "MIXED_RESEARCH_AND_DEMO" ? "NO TARGET FINDING DETECTED" : "NO VALIDATED FINDINGS"}</h3>
                 <p className="tiny muted" style={{ marginBottom: 8 }}>
@@ -551,36 +608,24 @@ function ResultInner() {
                 <p className="tiny muted" style={{ margin: 0 }}>Model {a.model_registry?.model_id ?? "—"} · {mode.replaceAll("_", " ")}</p>
               </div>
             )}
-            {a.findings.map((f) => (
-              <div key={f.id} className={`finding-card${f.synthetic ? " synthetic" : ""}`}>
-                <div className="finding-head">
-                  <h4>RETINAL FINDING — {f.type.replaceAll("_", " ").toUpperCase()}</h4>
-                  {f.synthetic
-                    ? <span className="badge demo">DEMO / SYNTHETIC</span>
-                    : <span className="badge warn">RESEARCH / UNVALIDATED</span>}
-                </div>
-                <dl className="kv tiny" style={{ gridTemplateColumns: "105px 1fr", marginBottom: 8 }}>
-                  <dt>Location</dt><dd>{f.location.replaceAll("_", " ")}</dd>
-                  <dt>Laterality</dt><dd>{a.study?.eye}</dd>
-                  <dt>Model</dt><dd>{f.model_id}</dd>
-                  <dt>Validation</dt><dd>Not clinically validated</dd>
-                  <dt>Localization</dt><dd>{f.region ? "Bounding box (research overlay — View on scan)" : "Not available"}</dd>
-                  <dt>Priority</dt><dd>{f.severity === "severe" || f.severity === "moderate" ? "Requires clinician review" : "Routine review"}</dd>
-                </dl>
-                <ConfidenceIndicator finding={f} />
-                <p className="tiny" style={{ margin: "8px 0 8px" }}>{f.explanation}</p>
-                {f.region && hasImage
-                  ? <button className="btn secondary sm" onClick={() => setActiveRegion(f.region ?? null)}><Icon name="target" size={13} /> View on scan</button>
-                  : <span className="tiny muted">No validated localization data available.</span>}
-              </div>
-            ))}
-            {(fundus?.regions ?? []).map((region) => (
+            {(localizedFindings.length > 0 || unmatchedRegions.length > 0) && (
+              <h4 className="signal-group-title">{localizedHeading}</h4>
+            )}
+            {localizedFindings.map(renderFindingCard)}
+            {unmatchedRegions.map((region) => (
               <div key={region.id} className="finding-card">
                 <div className="finding-head"><h4>SUSPICIOUS REGION — {region.finding_type.replaceAll("_", " ").toUpperCase()}</h4><span className="badge warn">RESEARCH</span></div>
                 <p className="tiny" style={{ margin: "8px 0" }}>{region.note}</p>
-                <button className="btn secondary sm" onClick={() => setActiveRegion(region.localization.coordinates)}><Icon name="target" size={13} /> View on scan</button>
+                <button className="btn secondary sm" onClick={() => showRegion(region.localization.coordinates)}><Icon name="target" size={13} /> View on scan</button>
               </div>
             ))}
+            {imageLevelFindings.length > 0 && (
+              <>
+                <h4 className="signal-group-title">Image-level model estimates (not localized)</h4>
+                <p className="tiny muted" style={{ margin: "0 0 8px" }}>These describe the whole image, not a region, and are kept apart from the localized signals above. Neither is a diagnosis.</p>
+                {imageLevelFindings.map(renderFindingCard)}
+              </>
+            )}
           </div>
 
           <div className="card">
@@ -946,7 +991,7 @@ function ResultInner() {
                 <dt>Heuristic uncertainty score</dt><dd>{(a.uncertainty.overall * 100).toFixed(0)}% (not calibrated confidence)</dd>
                 <dt>Clinical interpretation gate</dt>
                 <dd>{a.diagnosis_gate?.clinical_interpretation === "DIAGNOSIS" ? "DIAGNOSIS" : "REQUIRES CLINICAL CORRELATION"}{a.diagnosis_gate && a.diagnosis_gate.reasons.length > 0 ? ` — ${a.diagnosis_gate.reasons.join(" ")}` : ""}</dd>
-                <dt>Localization data</dt><dd>No validated localization data available (future validated models will populate this via the visualization API).</dd>
+                <dt>Localization data</dt><dd>{localizationSummary}</dd>
                 <dt>Original SHA-256</dt><dd className="mono" style={{ wordBreak: "break-all", fontSize: "0.76rem" }}>{data.study?.original_sha256}</dd>
               </dl>
             </details>

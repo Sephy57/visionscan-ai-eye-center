@@ -801,29 +801,58 @@ details.tech[open] summary, details.disclosure[open] summary { margin-bottom: 10
 .viewer-img-wrap { position: absolute; top: 50%; left: 50%; transform-origin: center; will-change: transform; }
 .viewer-img-wrap img { display: block; max-width: none; user-select: none; -webkit-user-drag: none; }
 .viewer-overlay-box { position: absolute; border: 1.5px dashed #38c6d9; background: rgba(56, 198, 217, 0.08); border-radius: 3px; pointer-events: none; }
-/* Labels wrap within a viewport-relative width and start from the box edge
-   nearest the image centre, so a long finding name is never clipped. */
-.viewer-overlay-box span { position: absolute; top: 0; left: 0; width: max-content; max-width: min(220px, 40vw); font: 600 0.6rem/1.3 var(--font); background: rgba(3, 26, 33, 0.88); color: #8fe6f1; padding: 2px 6px; border-radius: 3px; margin: 3px; white-space: normal; overflow-wrap: anywhere; }
-.viewer-overlay-box.label-end span { left: auto; right: 0; }
-.viewer-overlay-box.loc-high { border-color: #f5c46a; background: rgba(245, 196, 106, 0.1); }
-.viewer-overlay-box.loc-high span { color: #f5c46a; background: rgba(40, 26, 3, 0.88); }
-.viewer-overlay-box.loc-moderate { border-color: #38c6d9; }
-.viewer-overlay-box.loc-low { border-color: #aebccb; background: rgba(174, 188, 203, 0.06); }
-.viewer-hint { position: absolute; top: 10px; left: 10px; z-index: 4; font: 600 0.625rem/1.3 var(--mono); letter-spacing: 0.05em; color: #aebccb; background: rgba(6, 11, 17, 0.72); padding: 3px 8px; border-radius: 4px; pointer-events: none; }
+/* The wrapper is scaled by the viewer zoom; labels and rings divide it back out
+   so they keep one on-screen size from 0.5x to 8x.  A label grows sideways from
+   its box: ScanViewer picks the side with room and sets --label-room (screen px)
+   so a long finding name is never clipped by the pane edge.  The 220px cap and
+   the 14px ring offset are mirrored in lib/imaging/overlayGeometry.ts. */
+.viewer-overlay-box .viewer-label { z-index: 2; position: absolute; top: 0; left: 0; width: max-content; max-width: min(220px, var(--label-room, 220px), 40vw); font: 600 0.6rem/1.3 var(--font); background: rgba(3, 26, 33, 0.88); color: #8fe6f1; padding: 2px 6px; border-radius: 3px; margin: calc(3px / var(--viewer-zoom, 1)); white-space: normal; overflow-wrap: anywhere; transform: scale(calc(1 / var(--viewer-zoom, 1))); transform-origin: top left; }
+.viewer-overlay-box.label-end .viewer-label { left: auto; right: 0; transform-origin: top right; }
+.viewer-overlay-box.loc-high { color: #f5c46a; border-color: #f5c46a; background: rgba(245, 196, 106, 0.1); }
+.viewer-overlay-box.loc-high .viewer-label { color: #f5c46a; background: rgba(40, 26, 3, 0.88); }
+.viewer-overlay-box.loc-moderate { color: #38c6d9; border-color: #38c6d9; }
+.viewer-overlay-box.loc-low { color: #aebccb; border-color: #aebccb; background: rgba(174, 188, 203, 0.06); }
+/* Region too small to see: a ring (fixed 30px on screen at any zoom) centred on
+   the real box.  The dashed box itself is still the true extent. */
+.viewer-overlay-box .viewer-locator { z-index: 3; position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; box-sizing: border-box; border: 2px solid currentColor; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7); transform: translate(-50%, -50%) scale(calc(1 / var(--viewer-zoom, 1))); pointer-events: none; }
+/* Near the bottom edge the label sits above its box instead of below the top edge. */
+.viewer-overlay-box.label-up .viewer-label { top: auto; bottom: calc(100% + 3px / var(--viewer-zoom, 1)); transform-origin: bottom left; }
+.viewer-overlay-box.label-up.label-end .viewer-label { transform-origin: bottom right; }
+.viewer-overlay-box.has-locator .viewer-label { top: calc(14px / var(--viewer-zoom, 1)); left: calc(14px / var(--viewer-zoom, 1)); }
+.viewer-overlay-box.has-locator.label-end .viewer-label { left: auto; right: calc(14px / var(--viewer-zoom, 1)); }
+.viewer-overlay-box.has-locator.label-up .viewer-label { top: auto; bottom: calc(14px / var(--viewer-zoom, 1)); }
+.viewer-overlay-box.is-active { border-style: solid; border-width: 2px; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85); background: rgba(255, 255, 255, 0.12); }
+.viewer-overlay-box.is-active .viewer-label { box-shadow: 0 0 0 1px currentColor; }
+.viewer-hint { position: absolute; top: 10px; left: 10px; z-index: 4; max-width: calc(100% - 140px); font: 600 0.625rem/1.3 var(--mono); letter-spacing: 0.05em; color: #aebccb; background: rgba(6, 11, 17, 0.72); padding: 3px 8px; border-radius: 4px; pointer-events: none; }
 .viewer-toolbar { display: flex; align-items: center; gap: 2px; padding: 6px 8px; background: var(--surface-elevated); border-top: 1px solid var(--border); flex-wrap: wrap; }
 .viewer-toolbar .spacer { flex: 1; }
 .viewer-toolbar .tb-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
 .vbtn { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 4px 9px; border-radius: var(--r-sm); background: transparent; border: 1px solid transparent; color: var(--text-secondary); font: 600 var(--fs-xs) var(--font); cursor: pointer; transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease); }
-.vbtn:hover:not(:disabled) { background: var(--surface-interactive); color: var(--text-primary); }
+.vbtn:hover:not(:disabled):not([aria-disabled="true"]) { background: var(--surface-interactive); color: var(--text-primary); }
 .vbtn.on { background: var(--accent-soft); color: var(--brand-primary); border-color: color-mix(in srgb, var(--brand-primary) 26%, transparent); }
-.vbtn:disabled { opacity: 0.42; cursor: not-allowed; }
+.vbtn:disabled, .vbtn[aria-disabled="true"] { opacity: 0.42; cursor: not-allowed; }
+.vbtn:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 1px; }
 .viewer-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 12px; border-top: 1px solid var(--border); background: var(--surface); font-size: var(--fs-xs); color: var(--text-muted); }
 .viewer-status .readout { font-family: var(--mono); font-size: var(--fs-2xs); }
 .viewer-layer-status { color: var(--warning); font-weight: 650; }
+/* What the analysis behind the viewer did. Always present once an analysis
+   exists, so an empty image area is never unexplained. */
+.viewer-state { display: grid; gap: 4px; padding: 10px 12px; border-top: 1px solid var(--border); border-left: 3px solid var(--text-muted); background: var(--surface); font-size: var(--fs-xs); color: var(--text-secondary); }
+.viewer-state strong { color: var(--text-primary); font-size: var(--fs-sm); }
+.viewer-state.tone-warn { border-left-color: var(--warning); }
+.viewer-state.tone-bad { border-left-color: var(--danger); }
+.viewer-state.tone-neutral { border-left-color: var(--brand-primary); }
+.viewer-prov { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 4px 0 0; font-size: var(--fs-2xs); color: var(--text-muted); }
+.viewer-prov div { display: flex; gap: 5px; min-width: 0; }
+.viewer-prov dt { font-weight: 600; }
+.viewer-prov dt::after { content: ":"; }
+.viewer-prov dd { margin: 0; color: var(--text-secondary); overflow-wrap: anywhere; min-width: 0; }
 .viewer-legend { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .legend-swatch { display: inline-block; width: 12px; height: 9px; border: 1.5px dashed currentColor; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
 .classification-only { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--warning) 6%, var(--surface)); font-size: var(--fs-xs); color: var(--text-secondary); }
 .classification-only strong { color: var(--warning); letter-spacing: 0.08em; font-size: var(--fs-2xs); display: block; }
+.signal-group-title { margin: 14px 0 8px; font-size: var(--fs-sm); font-weight: 650; color: var(--text-secondary); }
+.signal-group-title:first-child { margin-top: 0; }
 
 /* ============================================================================
    Specialist board

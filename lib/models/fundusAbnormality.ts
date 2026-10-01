@@ -10,6 +10,7 @@
 import type { QualityResult } from "../imaging/quality";
 import type { RawModelOutput } from "./outputContract";
 import { canonicalModality } from "./modalities";
+import { clipToUnit, isBoundedBox } from "../imaging/overlayGeometry";
 
 export type FundusAbnormalityState =
   | "NO_TARGET_ABNORMALITY_DETECTED"
@@ -92,13 +93,21 @@ export function resultFromResearchDetector(input: {
 }): FundusAbnormalityResult {
   const unavailable = unavailableFundusAbnormalityResult(input.quality, input.ood, "FUNDUS");
   if (unavailable.state !== "MODEL_UNAVAILABLE") return unavailable;
+  const rawLimitations = input.raw.limitations ?? [];
+  const attributed = { ...unavailable, model_id: input.modelId, model_version: input.modelVersion };
   if (input.raw.inference_status !== "completed") {
-    return { ...unavailable, model_id: input.modelId, model_version: input.modelVersion, limitations: ["Research detector failed or timed out; no finding was inferred.", ...(input.raw.limitations ?? [])] };
+    return { ...attributed, limitations: ["Research detector failed or timed out; no finding was inferred.", ...rawLimitations] };
   }
   const regions: FundusAbnormalityRegion[] = [];
+  // Findings the model returned that could not become a drawable region
+  // (no box, a non-box localization, or unusable geometry).
+  let rejected = 0;
   for (const finding of input.raw.findings ?? []) {
-    const c = finding.localization?.coordinates;
-    if (finding.localization?.kind !== "bounding_box" || !c || ![c.x, c.y, c.w, c.h].every(Number.isFinite) || c.x < 0 || c.y < 0 || c.w < 0 || c.h < 0 || c.x + c.w > 1 || c.y + c.h > 1) continue;
+    const loc = finding.localization;
+    // Same rounding tolerance the raw-output contract applies; a box is clipped
+    // to the image, never moved or resized beyond that noise.
+    if (loc?.kind !== "bounding_box" || !isBoundedBox(loc.coordinates)) { rejected += 1; continue; }
+    const c = clipToUnit(loc.coordinates);
     const type = input.supportedFindingTypes.has(finding.finding_type)
       ? finding.finding_type as FundusAbnormalityRegion["finding_type"]
       : "other_suspicious_retinal_region";
@@ -108,15 +117,27 @@ export function resultFromResearchDetector(input: {
       note: type === "other_suspicious_retinal_region" ? "Suspicious region detected by research model; type not established." : "Research-model localization; requires ophthalmic review.",
     });
   }
+  const one = rejected === 1;
+  if (!regions.length && rejected > 0) {
+    // The model did report something, but none of it could be placed on the
+    // image.  Reporting that as "no target abnormality" would turn a model
+    // fault into a negative.
+    return { ...attributed,
+      limitations: [`Research detector returned ${rejected} finding${one ? "" : "s"} without a usable box (missing or invalid geometry); none could be shown and nothing was inferred.`, ...rawLimitations] };
+  }
   if (!regions.length) {
-    return { ...unavailable, state: "NO_TARGET_ABNORMALITY_DETECTED", model_id: input.modelId, model_version: input.modelVersion,
-      limitations: ["No target abnormality was detected by this research model. Other abnormalities may still be present.", ...(input.raw.limitations ?? [])], validation_state: "RESEARCH" };
+    return { ...attributed, state: "NO_TARGET_ABNORMALITY_DETECTED",
+      limitations: ["No target abnormality was detected by this research model. Other abnormalities may still be present.", ...rawLimitations], validation_state: "RESEARCH" };
   }
   return {
     state: regions.length > 1 ? "MULTIPLE_ABNORMALITIES" : "SUSPICIOUS_ABNORMALITY", regions,
     model_id: input.modelId, model_version: input.modelVersion, model_score: null,
     score_semantics: "NOT_A_DIAGNOSTIC_PROBABILITY", calibration_state: "NOT_CALIBRATED", quality_state: input.quality.quality_status,
     ood_state: "IN_DISTRIBUTION", validation_state: "RESEARCH",
-    limitations: ["Research output only; it does not establish a diagnosis or rule out other retinal disease.", ...(input.raw.limitations ?? [])],
+    limitations: [
+      "Research output only; it does not establish a diagnosis or rule out other retinal disease.",
+      ...(rejected > 0 ? [`${rejected} further finding${one ? " was" : "s were"} returned without a usable box and ${one ? "is" : "are"} not shown.`] : []),
+      ...rawLimitations,
+    ],
   };
 }
